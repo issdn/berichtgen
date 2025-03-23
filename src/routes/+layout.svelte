@@ -25,7 +25,7 @@
 						>{session?.user?.name
 							?.split(' ')
 							.map((s) => s[0])
-							.join('')}</Avatar.Fallback
+							.join('') ?? 'IC'}</Avatar.Fallback
 					>
 				</Avatar.Root>
 			</div>
