@@ -5,7 +5,7 @@
 	let files = $state<FileList | null>(null);
 </script>
 
-<div class="flex h-full w-full flex-col p-8 md:flex-row">
+<div class="h-main flex w-full flex-col px-8 pb-8 md:flex-row">
 	<div class="h-full w-full">
 		<Howto></Howto>
 	</div>

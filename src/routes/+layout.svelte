@@ -9,7 +9,7 @@
 	let { children } = $props();
 </script>
 
-<div class="flex h-16 flex-row items-center justify-end px-4">
+<div class="h-nav flex flex-row items-center justify-end px-4 md:px-8">
 	<Popover.Root>
 		<Popover.Trigger>
 			<Avatar.Root>

@@ -76,3 +76,11 @@
     @apply h-full w-full;
   }
 }
+
+.h-nav {
+  @apply h-16 md:h-20;
+}
+
+.h-main {
+  @apply h-[calc(100%-4rem)] md:h-[calc(100%-5rem)]
+}
