@@ -6,16 +6,29 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import Google from '$lib/svg/Google.svelte';
 	import { enhance } from '$app/forms';
-	let { children } = $props();
+	import { Label } from '$lib/components/ui/label';
+	let { children, data } = $props();
+
+	const { session } = data;
 </script>
 
 <div class="h-nav flex flex-row items-center justify-end px-4 md:px-8">
 	<Popover.Root>
 		<Popover.Trigger>
-			<Avatar.Root>
-				<Avatar.Image src="https://github.com/shadcn.png" alt="@shadcn" />
-				<Avatar.Fallback>CN</Avatar.Fallback>
-			</Avatar.Root>
+			<div class="flex flex-row items-center gap-x-4">
+				{#if session?.user?.name !== null}
+					<Label>{session?.user?.name}</Label>
+				{/if}
+				<Avatar.Root>
+					<Avatar.Image src={session?.user?.image} alt="Avatar" />
+					<Avatar.Fallback
+						>{session?.user?.name
+							?.split(' ')
+							.map((s) => s[0])
+							.join('')}</Avatar.Fallback
+					>
+				</Avatar.Root>
+			</div>
 		</Popover.Trigger>
 		<Popover.Content class="flex w-56 flex-col gap-y-2">
 			<form method="POST" action={`/signin`} use:enhance>
