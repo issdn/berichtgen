@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { File } from 'lucide-svelte';
+	import { File, FileCheck } from 'lucide-svelte';
 
 	let { files = $bindable<FileList | null>() } = $props();
 
@@ -30,6 +30,7 @@
 		preventDefaults(e);
 		isDraggingIn = false;
 		files = e.dataTransfer?.files;
+		console.log(files);
 	}
 </script>
 
@@ -43,7 +44,25 @@
 	ondragover={handleDragOver}
 	ondrop={handleDrop}
 >
-	<input accept=".odt,.docx,.pdf" bind:this={input} type="file" multiple style="display:none" />
-	<File size={48} />
-	<label for="dropzone" class="pointer-events-none"> Drop files here! </label>
+	<input
+		bind:files
+		accept=".odt,.docx,.pdf"
+		bind:this={input}
+		type="file"
+		multiple
+		style="display:none"
+	/>
+	{#if files != null && files.length > 0}
+		<FileCheck size={48} />
+		<label for="dropzone" class="pointer-events-none w-full px-8">
+			<ol>
+				{#each files as file}
+					<li class="overflow-hidden truncate">{file.name}</li>
+				{/each}
+			</ol>
+		</label>
+	{:else}
+		<File size={48} />
+		<label for="dropzone" class="pointer-events-none"> Dateien hier droppen </label>
+	{/if}
 </button>
