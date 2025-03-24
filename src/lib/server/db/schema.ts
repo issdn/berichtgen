@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm';
 import { integer, sqliteTable, text, primaryKey } from 'drizzle-orm/sqlite-core';
 import type { AdapterAccountType } from 'next-auth/adapters';
 
@@ -90,6 +89,16 @@ export const llmProviders = sqliteTable('llmProvider', {
 	price: integer({ mode: 'number' }).notNull()
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
-	llmProviders: many(llmProviders)
-}));
+export const usersLLMProviders = sqliteTable(
+	'userLLMProvider',
+	{
+		userId: text('userId')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		providerId: text('providerId')
+			.notNull()
+			.references(() => llmProviders.id, { onDelete: 'cascade' }),
+		token: text('token')
+	},
+	(t) => [primaryKey({ columns: [t.userId, t.providerId] })]
+);

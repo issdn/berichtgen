@@ -9,5 +9,11 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 		signIn: '/signin',
 		signOut: '/signout'
 	},
-	adapter: DrizzleAdapter(db)
+	adapter: DrizzleAdapter(db),
+	callbacks: {
+		async session({ session, user }) {
+			session.userId = user.id;
+			return session;
+		}
+	}
 });
