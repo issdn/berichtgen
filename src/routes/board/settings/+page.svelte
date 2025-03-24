@@ -1,34 +1,22 @@
 <script lang="ts">
-	import * as Form from '$lib/components/ui/form/index.js';
-	import SuperDebug, { superForm } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { providersSchema } from './schema.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import ProviderInput from '$lib/components/settings/ProviderInput.svelte';
+
 	const { data } = $props();
 
-	const { form: validator } = data;
-
-	const form = superForm(validator, {
-		validators: zodClient(providersSchema),
-		dataType: 'json'
-	});
-
-	const { form: formData, enhance } = form;
+	const { providers } = data;
 </script>
 
-<SuperDebug data={formData} />
-
-<form method="POST" use:enhance>
-	{#each $formData.providers as provider, i}
-		<Form.Field {form} name="providers">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>{provider.name}</Form.Label>
-					<Input {...props} bind:value={$formData.providers[i].token} />
-				{/snippet}
-			</Form.Control>
-			<Form.Description />
-			<Form.FieldErrors />
-		</Form.Field>
-	{/each}
-</form>
+<div class="flex flex-row md:px-64">
+	<Card.Root class="w-full">
+		<Card.Header>
+			<Card.Title>Deine LLM-Verpküpfungen</Card.Title>
+			<Card.Description>Hier kannst du deine eigene API-Keys hinzufügen.</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			{#each providers as provider}
+				<ProviderInput {provider} />
+			{/each}
+		</Card.Content>
+	</Card.Root>
+</div>

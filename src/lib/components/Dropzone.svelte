@@ -30,7 +30,6 @@
 		preventDefaults(e);
 		isDraggingIn = false;
 		files = e.dataTransfer?.files;
-		console.log(files);
 	}
 </script>
 
