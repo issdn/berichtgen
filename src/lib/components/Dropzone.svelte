@@ -51,17 +51,6 @@
 		multiple
 		style="display:none"
 	/>
-	{#if files != null && files.length > 0}
-		<FileCheck size={48} />
-		<label for="dropzone" class="pointer-events-none w-full px-8">
-			<ol>
-				{#each files as file}
-					<li class="overflow-hidden truncate">{file.name}</li>
-				{/each}
-			</ol>
-		</label>
-	{:else}
-		<File size={48} />
-		<label for="dropzone" class="pointer-events-none"> Dateien hier droppen </label>
-	{/if}
+	<File size={48} />
+	<label for="dropzone" class="pointer-events-none"> Dateien hier droppen </label>
 </button>

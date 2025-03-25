@@ -3,12 +3,16 @@
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { ModeWatcher } from 'mode-watcher';
 	import '../app.css';
+	import { CircuitBoard } from 'lucide-svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { goto } from '$app/navigation';
 	let { children, data } = $props();
 
 	const { session } = data;
 </script>
 
-<div class="h-nav flex flex-row items-center justify-end px-4 md:px-8">
+<div class="h-nav flex flex-row items-center justify-between px-4 md:px-8">
+	<Button onclick={() => goto('/board')} variant="link"><CircuitBoard size={46} />BOARD</Button>
 	<SettingsPopover {session}></SettingsPopover>
 </div>
 
