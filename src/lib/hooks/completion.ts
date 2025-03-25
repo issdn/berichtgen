@@ -1,4 +1,4 @@
-import type { Entry } from 'llm-berichtsheft-json';
+import type { Entry } from '$lib/types';
 import OpenAI from 'openai';
 
 export async function getCompletions(

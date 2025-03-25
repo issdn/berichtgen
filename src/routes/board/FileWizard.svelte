@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
-	import { parseDOCX, parseDOCXData } from 'llm-berichtsheft-json';
+	import { parseDOCX, parseDOCXData } from '$lib/parse/docx_parser';
 	import { onDestroy, onMount } from 'svelte';
 	import { Progress } from '$lib/components/ui/progress/index.js';
 
