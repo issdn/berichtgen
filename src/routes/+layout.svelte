@@ -11,7 +11,7 @@
 	const { session } = data;
 </script>
 
-<div class="h-nav flex flex-row items-center justify-between px-4 md:px-8">
+<div class="h-nav flex flex-row items-center justify-between px-8 md:px-8">
 	<Button onclick={() => goto('/board')} variant="link"><CircuitBoard size={46} />BOARD</Button>
 	<SettingsPopover {session}></SettingsPopover>
 </div>
