@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { File, FileCheck } from 'lucide-svelte';
+	import { File } from 'lucide-svelte';
 
 	let { files = $bindable<FileList | null>() } = $props();
 

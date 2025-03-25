@@ -1,8 +1,9 @@
 import JSZip from 'jszip';
 import { XMLParser } from 'fast-xml-parser';
-import type { ImageLike } from 'tesseract.js';
+import type { ImageLike, Scheduler } from 'tesseract.js';
+import { IncuriaError, IncuriaErrorType } from '$lib/types';
 
-export async function parseDOCXData(data: Uint8Array, worker: Tesseract.Worker | null = null) {
+export async function parseDOCXData(data: Uint8Array, scheduler: Scheduler | null = null) {
 	const zip = new JSZip();
 	const docx = await zip.loadAsync(data);
 	const parser = new XMLParser({
@@ -11,7 +12,7 @@ export async function parseDOCXData(data: Uint8Array, worker: Tesseract.Worker |
 	});
 
 	const textsOrRelIds: (string | [string])[] = [];
-	const withImages = worker !== null;
+	const withImages = scheduler !== null;
 
 	const fileData = await docx.files['word/document.xml'].async('string');
 	const xml = parser.parse(fileData);
@@ -27,34 +28,36 @@ export async function parseDOCXData(data: Uint8Array, worker: Tesseract.Worker |
 	return { ...imagesAndRels, withImages, textsOrRelIds };
 }
 
-export async function* parseDOCX(
+export async function parseDOCX(
 	{ images, imgRels, withImages, textsOrRelIds }: Awaited<ReturnType<typeof parseDOCXData>>,
-	worker: Tesseract.Worker | null = null
+	scheduler: Scheduler | null = null
 ) {
-	try {
-		for (const textOrId of textsOrRelIds) {
+	return Promise.all(
+		textsOrRelIds.map(async (textOrId) => {
 			if (Array.isArray(textOrId)) {
 				const rel = imgRels.get(textOrId[0]);
 				if (rel === undefined) {
-					yield '';
-					continue;
+					throw new IncuriaError(
+						IncuriaErrorType.DOCX_FAULTY,
+						'DOCX Foto könnte nicht gefunden werden.'
+					);
 				}
 				const fileData = images.get(rel);
 				if (fileData === undefined) {
-					yield '';
-					continue;
+					throw new IncuriaError(
+						IncuriaErrorType.DOCX_FAULTY,
+						'DOCX Foto könnte nicht gefunden werden.'
+					);
 				}
 				if (withImages) {
-					const result = await worker!.recognize(fileData as ImageLike);
-					yield result.data.text;
+					const result = await scheduler!.addJob('recognize', fileData as ImageLike);
+					return result.data.text;
 				}
 			} else {
-				yield textOrId;
+				return textOrId;
 			}
-		}
-	} finally {
-		if (withImages) await worker!.terminate();
-	}
+		}) as Promise<string>[]
+	);
 }
 
 function findAllWT(
