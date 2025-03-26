@@ -36,7 +36,7 @@ class WizardScheduler {
 
 	scheduler: Scheduler | null = null;
 
-	result = $state<Promise<Required<Entry>[]> | null>(null);
+	result = $state<Promise<string> | null>(null);
 
 	processInit = $state<Promise<void> | null>(null);
 
@@ -54,7 +54,8 @@ class WizardScheduler {
 		this.result = (async () => {
 			const result = combineJSONs(this.finished ?? []);
 			await this.scheduler?.terminate();
-			return result;
+			const blob = new Blob([JSON.stringify(result)], { type: 'application/json' });
+			return URL.createObjectURL(blob);
 		})();
 	}
 
@@ -94,16 +95,15 @@ class WizardScheduler {
 				const timed = spreadEntriesAcrossWeeks(completion, [
 					{ startDate: '2025-3-25', endDate: '2025-3-26' }
 				]);
+				progress.step = { step: WizardStep.DONE };
 				onResult(timed);
 			}
 		} catch (e) {
-			if (e instanceof IncuriaError) {
+			if (e instanceof Error) {
 				progress.step = { step: WizardStep.ERROR, message: e.message };
 			} else {
 				progress.step = { step: WizardStep.ERROR, message: 'Unbekannter Fehler' };
 			}
-		} finally {
-			progress.step = { step: WizardStep.DONE };
 		}
 	}
 }
