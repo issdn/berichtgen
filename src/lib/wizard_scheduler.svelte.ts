@@ -11,6 +11,8 @@ class WizardScheduler {
 
 	scheduler: Scheduler | null = null;
 
+	done = $state(false);
+
 	async createWorkerPool() {
 		const { createScheduler, createWorker } = await import('tesseract.js');
 		const scheduler = createScheduler();
@@ -22,10 +24,15 @@ class WizardScheduler {
 
 	async run() {
 		this.scheduler = await this.createWorkerPool();
+		this.done = false;
 	}
 
 	async finish() {
 		await this.scheduler?.terminate();
+		this.done = true;
+		this.files = null;
+		this.finished = [];
+		this.filesReady = 0;
 	}
 
 	async onResult(file: File, text: string) {

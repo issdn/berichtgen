@@ -1,14 +1,9 @@
 <script lang="ts">
-	import { File } from 'lucide-svelte';
+	import { File, FileCheck } from 'lucide-svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 
-	let files = $state<FileList | null>(null);
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
-
-	$effect(() => {
-		wizardScheduler.files = files;
-	});
 
 	function preventDefaults(e: Event) {
 		e.preventDefault();
@@ -33,7 +28,7 @@
 	async function handleDrop(e: DragEvent) {
 		preventDefaults(e);
 		isDraggingIn = false;
-		files = e.dataTransfer?.files ?? null;
+		wizardScheduler.files = e.dataTransfer?.files ?? null;
 		await wizardScheduler.run();
 	}
 </script>
@@ -49,13 +44,24 @@
 	ondrop={handleDrop}
 >
 	<input
-		bind:files
+		bind:files={wizardScheduler.files}
 		accept=".odt,.docx,.pdf"
 		bind:this={input}
 		type="file"
 		multiple
 		style="display:none"
 	/>
-	<File size={48} />
-	<label for="dropzone" class="pointer-events-none"> Dateien hier droppen </label>
+	{#if wizardScheduler.files != null && wizardScheduler.files.length > 0}
+		<FileCheck size={48} />
+		<label for="dropzone" class="pointer-events-none w-full px-8">
+			<ol>
+				{#each wizardScheduler.files as file}
+					<li class="overflow-hidden truncate">{file.name}</li>
+				{/each}
+			</ol>
+		</label>
+	{:else}
+		<File size={48} />
+		<label for="dropzone" class="pointer-events-none"> Dateien hier droppen </label>
+	{/if}
 </button>
