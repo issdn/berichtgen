@@ -30,7 +30,10 @@ export async function parseDOCXData(data: Uint8Array, scheduler: Scheduler | nul
 
 export async function parseDOCX(
 	{ images, imgRels, withImages, textsOrRelIds }: Awaited<ReturnType<typeof parseDOCXData>>,
-	scheduler: Scheduler | null = null
+	{
+		scheduler = null,
+		onChunkFinished
+	}: { scheduler?: Scheduler | null; onChunkFinished?: ((chunk: string) => void) | null }
 ) {
 	return Promise.all(
 		textsOrRelIds.map(async (textOrId) => {
@@ -51,9 +54,11 @@ export async function parseDOCX(
 				}
 				if (withImages) {
 					const result = await scheduler!.addJob('recognize', fileData as ImageLike);
+					onChunkFinished?.(result.data.text);
 					return result.data.text;
 				}
 			} else {
+				onChunkFinished?.(textOrId);
 				return textOrId;
 			}
 		}) as Promise<string>[]

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import FileWizard from './FileWizard.svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import Progress from '$lib/components/ui/progress/progress.svelte';
 </script>
 
 <div class="relative h-full w-full rounded-lg bg-secondary p-8">
@@ -9,8 +9,11 @@
 		{#each wizardScheduler.files as file, i}
 			{#if i <= wizardScheduler.filesReady + wizardScheduler.batchSize}
 				<FileWizard {file}>
-					{#snippet children({ step, message })}
-						<span class="overflow-hidden truncate">{file.name} {step} {message}</span>
+					{#snippet children({ step, message, value, max })}
+						<div class="flex h-12 flex-row items-center gap-x-4 bg-background px-4">
+							<span class="overflow-hidden truncate">{file.name} {step} {message}</span>
+							<Progress {max} {value} />
+						</div>
 					{/snippet}
 				</FileWizard>
 			{:else}
@@ -19,22 +22,3 @@
 		{/each}
 	{/if}
 </div>
-
-{#if wizardScheduler.done === true}
-	<Dialog.Root
-		open={(wizardScheduler.done = true)}
-		onOpenChange={(isOpen) => {
-			if (isOpen === false) wizardScheduler.done = false;
-		}}
-	>
-		<Dialog.Content>
-			<Dialog.Header>
-				<Dialog.Title>Are you sure absolutely sure?</Dialog.Title>
-				<Dialog.Description>
-					This action cannot be undone. This will permanently delete your account and remove your
-					data from our servers.
-				</Dialog.Description>
-			</Dialog.Header>
-		</Dialog.Content>
-	</Dialog.Root>
-{/if}

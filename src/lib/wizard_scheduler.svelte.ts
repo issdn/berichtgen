@@ -1,17 +1,21 @@
 import type { Scheduler } from 'tesseract.js';
+import type { Entry } from './types';
+import { combineJSONs } from './parse/combine';
 
 class WizardScheduler {
 	batchSize = 1;
 
 	files: FileList | null = $state(null);
 
-	finished = $state<{ text: string; file: File }[]>([]);
+	finished = $state<{ text: Required<Entry>[]; file: File }[] | null>(null);
 
 	filesReady = $state(0);
 
 	scheduler: Scheduler | null = null;
 
 	done = $state(false);
+
+	result = $state<Required<Entry>[] | null>(null);
 
 	async createWorkerPool() {
 		const { createScheduler, createWorker } = await import('tesseract.js');
@@ -25,22 +29,23 @@ class WizardScheduler {
 	async run() {
 		this.scheduler = await this.createWorkerPool();
 		this.done = false;
+		this.finished = null;
+		this.filesReady = 0;
+		this.files = null;
 	}
 
 	async finish() {
+		this.result = combineJSONs((this.finished ?? []).map(({ text }) => text));
 		await this.scheduler?.terminate();
 		this.done = true;
-		this.files = null;
-		this.finished = [];
-		this.filesReady = 0;
+		console.log(this.result);
 	}
 
-	async onResult(file: File, text: string) {
-		this.finished = [...this.finished, { file, text }];
+	async onResult(file: File, text: Required<Entry>[]) {
+		this.finished = [...(this.finished ?? []), { file, text }];
 		this.filesReady += 1;
 		if (this.files !== null && this.finished.length === this.files.length) {
 			await this.finish();
-			console.log(this.finished);
 		}
 	}
 }

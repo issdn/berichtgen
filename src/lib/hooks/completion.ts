@@ -1,12 +1,25 @@
-import type { Entry } from '$lib/types';
+import { IncuriaError, IncuriaErrorType, type Entry } from '$lib/types';
 import OpenAI from 'openai';
 
-export async function getCompletions(
-	text: string,
-	systemPrompt: string = context_prompt,
-	apiKey: string,
+export async function getCompletions({
+	text,
+	apiKey,
+	systemPrompt = context_prompt,
 	maxChunkSize = 15000
-) {
+}: {
+	text: string;
+	apiKey: string;
+	systemPrompt?: string;
+	maxChunkSize?: number;
+}) {
+	return [
+		{
+			qualifikationen: ['Eine Qualifikation'],
+			text: 'Mein Tag als Abababa',
+			datum: '2025-3-24'
+		}
+	];
+
 	const openai = new OpenAI({
 		baseURL: 'https://api.deepseek.com',
 		apiKey
@@ -36,25 +49,20 @@ export async function getCompletions(
 
 	const entries: Entry[] = [];
 
-	const rejected: string[] = [];
-
-	let invalidJSONCompletions = '';
-
 	completions.forEach((completion) => {
 		if (completion.status === 'rejected') {
-			rejected.push(completion.reason);
-			return;
+			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, completion.reason);
 		}
 		const completionValue = completion.value;
 		if (completionValue == null) return;
 		try {
 			entries.push(...JSON.parse(completionValue).lessons);
-		} catch (_) {
-			invalidJSONCompletions += `${completionValue}\n`;
+		} catch {
+			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, completionValue);
 		}
 	});
 
-	return { entries, rejected, invalidJSONCompletions };
+	return entries;
 }
 
 function splitByMaxLength(text: string, maxLength: number) {

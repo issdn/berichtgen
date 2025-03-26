@@ -1,21 +1,23 @@
-import { createWorker } from 'tesseract.js';
+import { createWorker, createScheduler } from 'tesseract.js';
 import { createCanvas } from 'canvas';
 import { parsePDF, parsePDFData } from '$lib/parse/pdf_parser';
 import { parseDOCX, parseDOCXData } from '$lib/parse/docx_parser';
 import { expect, test } from 'bun:test';
 
 test('Read text from docx kurwa', async () => {
-	const worker = await createWorker('eng');
+	const scheduler = await createScheduler();
+	scheduler.addWorker(await createWorker('eng'));
 	const file = await Bun.file('./src/test/text_img.docx').bytes();
-	const docxData = await parseDOCXData(file, worker);
-	const response = await parseDOCX(docxData, worker);
+	const docxData = await parseDOCXData(file, scheduler);
+	const response = await parseDOCX(docxData, scheduler);
 
-	await worker.terminate();
+	await scheduler.terminate();
 	expect(response.join('\n')).toBe(['NORMAL TEXT', 'IMAGE TEXT\n'].join('\n'));
 });
 
 test('Read text from pdf kurwa', async () => {
-	const worker = await createWorker('eng');
+	const scheduler = await createScheduler();
+	scheduler.addWorker(await createWorker('eng'));
 	const file = await Bun.file('./src/test/text_img.pdf').bytes();
 	const stream = parsePDF(await parsePDFData(new Uint8Array(file)), {
 		worker,

@@ -16,7 +16,8 @@ export enum IncuriaErrorType {
 	INVALID_FILE,
 	FORMAT_NOT_SUPPORTED,
 	DEVELOPERS_FAULT,
-	DOCX_FAULTY
+	DOCX_FAULTY,
+	INVALID_JSON_FROM_AI
 }
 
 export class IncuriaError extends Error {
