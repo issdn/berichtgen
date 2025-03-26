@@ -25,11 +25,14 @@
 		isDraggingIn = true;
 	}
 
-	async function handleDrop(e: DragEvent) {
+	function handleDrop(e: DragEvent) {
 		preventDefaults(e);
 		isDraggingIn = false;
-		wizardScheduler.files = e.dataTransfer?.files ?? null;
-		await wizardScheduler.run();
+	}
+
+	function handleChange(e: Event) {
+		wizardScheduler.files = (e.target as HTMLInputElement | undefined)?.files ?? null;
+		wizardScheduler.processInit = wizardScheduler.init();
 	}
 </script>
 
@@ -42,15 +45,9 @@
 	ondragleave={handleDragLeave}
 	ondragover={handleDragOver}
 	ondrop={handleDrop}
+	onchange={handleChange}
 >
-	<input
-		bind:files={wizardScheduler.files}
-		accept=".odt,.docx,.pdf"
-		bind:this={input}
-		type="file"
-		multiple
-		style="display:none"
-	/>
+	<input accept=".odt,.docx,.pdf" bind:this={input} type="file" multiple style="display:none" />
 	{#if wizardScheduler.files != null && wizardScheduler.files.length > 0}
 		<FileCheck size={48} />
 		<label for="dropzone" class="pointer-events-none w-full px-8">

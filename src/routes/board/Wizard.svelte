@@ -1,24 +1,37 @@
 <script lang="ts">
-	import FileWizard from './FileWizard.svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import Progress from '$lib/components/ui/progress/progress.svelte';
 </script>
 
-<div class="relative h-full w-full rounded-lg bg-secondary p-8">
-	{#if wizardScheduler.files != null}
-		{#each wizardScheduler.files as file, i}
-			{#if i <= wizardScheduler.filesReady + wizardScheduler.batchSize}
-				<FileWizard {file}>
-					{#snippet children({ step, message, value, max })}
-						<div class="flex h-12 flex-row items-center gap-x-4 bg-background px-4">
-							<span class="overflow-hidden truncate">{file.name} {step} {message}</span>
+<div class="relative h-full w-full gap-y-8 rounded-lg bg-secondary p-8">
+	{#if wizardScheduler.result !== null}
+		{#await wizardScheduler.result then result}
+			<div class="flex h-12 flex-row items-center gap-x-4 bg-background px-4">
+				<span class="overflow-hidden truncate">YOUR FILE IS READY</span>
+			</div>
+		{/await}
+	{/if}
+	{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
+		{$inspect(wizardScheduler.schedule)}
+		{#await wizardScheduler.processInit}
+			<p>Loading...</p>
+		{:then}
+			{#each wizardScheduler.schedule as { wizardFile }, i}
+				{@const { file, max, step, value } = wizardFile}
+				{#if i <= wizardScheduler.filesReady + wizardScheduler.batchSize}
+					<div class="flex h-14 flex-col justify-center gap-y-1 bg-background px-4">
+						<div class="flex h-full w-full flex-row items-center gap-x-4">
+							<span class="overflow-hidden truncate">{file.name}</span>
 							<Progress {max} {value} />
 						</div>
-					{/snippet}
-				</FileWizard>
-			{:else}
-				<span class="overflow-hidden truncate">{file.name}</span>
-			{/if}
-		{/each}
+						<span class="text-sm">{step.step} {step.message}</span>
+					</div>
+				{:else}
+					<span class="overflow-hidden truncate">{file.name}</span>
+				{/if}
+			{/each}
+		{:catch e}
+			<span>Initialisierung fehlgeschlagen</span>
+		{/await}
 	{/if}
 </div>
