@@ -1,66 +1,43 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
 	import { parseDOCX, parseDOCXData } from '$lib/parse/docx_parser';
 	import { onMount, type Snippet } from 'svelte';
-	import type { Scheduler } from 'tesseract.js';
 	import { IncuriaError, IncuriaErrorType, WizardStep } from '$lib/types';
+	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 
 	const {
 		file,
-		onResult,
-		errorSnippet,
-		loadingSnippet,
-		loadedSnippet,
-		scheduler
+		children
 	}: {
 		file: File;
-		onResult: (file: string) => void;
-		errorSnippet: Snippet<[string]>;
-		loadingSnippet: Snippet<[WizardStep]>;
-		loadedSnippet: Snippet;
-		scheduler: Scheduler;
+		children: Snippet<[{ step: WizardStep; message?: string | null }]>;
 	} = $props();
 
-	let text = $state<string[]>([]);
-
-	let error = $state<string | null>(null);
-
-	let loaded = $state(false);
+	// svelte-ignore state_referenced_locally
+	let step = $state<{ step: WizardStep; message?: string | null }>({ step: WizardStep.PROCESSING });
 
 	async function processFiles() {
-		text = [];
+		let text: string[] = [];
 		try {
 			const data = new Uint8Array(await file.arrayBuffer());
 			if (data === null)
 				throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Unbekannter Fehler');
 			else {
-				const docxData = await parseDOCXData(data, scheduler);
-				text = await parseDOCX(docxData, scheduler);
+				const docxData = await parseDOCXData(data, wizardScheduler.scheduler);
+				text = await parseDOCX(docxData, wizardScheduler.scheduler);
 			}
 		} catch (e) {
 			if (e instanceof Error) {
-				error = e.message;
+				step = { step: WizardStep.ERROR, message: e.message };
 			} else {
-				error = 'Unbekannter Fehler';
+				step = { step: WizardStep.ERROR, message: 'Unbekannter Fehler' };
 			}
 		} finally {
-			onResult(text.join('\n'));
-			loaded = true;
+			step = { step: WizardStep.DONE };
+			wizardScheduler.onResult(file, text.join('\n'));
 		}
 	}
 
 	onMount(() => processFiles());
 </script>
 
-<div
-	transition:fly
-	class="flex h-12 w-full flex-row items-center gap-x-2 rounded-sm bg-background px-4"
->
-	{#if error != null}
-		{@render errorSnippet(error)}
-	{:else if loaded}
-		{@render loadedSnippet()}
-	{:else}
-		{@render loadingSnippet(WizardStep.PROCESSING)}
-	{/if}
-</div>
+{@render children(step)}

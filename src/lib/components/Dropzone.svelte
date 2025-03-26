@@ -1,10 +1,14 @@
 <script lang="ts">
 	import { File } from 'lucide-svelte';
+	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 
-	let { files = $bindable<FileList | null>() } = $props();
-
+	let files = $state<FileList | null>(null);
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
+
+	$effect(() => {
+		wizardScheduler.files = files;
+	});
 
 	function preventDefaults(e: Event) {
 		e.preventDefault();
@@ -26,10 +30,11 @@
 		isDraggingIn = true;
 	}
 
-	function handleDrop(e: DragEvent) {
+	async function handleDrop(e: DragEvent) {
 		preventDefaults(e);
 		isDraggingIn = false;
-		files = e.dataTransfer?.files;
+		files = e.dataTransfer?.files ?? null;
+		await wizardScheduler.run();
 	}
 </script>
 
