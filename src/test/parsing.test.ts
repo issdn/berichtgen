@@ -19,8 +19,8 @@ test('Read text from pdf kurwa', async () => {
 	const scheduler = await createScheduler();
 	scheduler.addWorker(await createWorker('eng'));
 	const file = await Bun.file('./src/test/text_img.pdf').bytes();
-	const stream = parsePDF(await parsePDFData(new Uint8Array(file)), {
-		worker,
+	const result = await parsePDF(await parsePDFData(new Uint8Array(file)), {
+		scheduler,
 		getNewCanvas: (width, height) => {
 			const canvas = createCanvas(width, height) as unknown as HTMLCanvasElement;
 			canvas.toBlob = function (callback) {
@@ -30,12 +30,7 @@ test('Read text from pdf kurwa', async () => {
 			return { canvas, context: canvas.getContext('2d')! };
 		}
 	});
-	const response: string[] = [];
 
-	for await (const text of stream) {
-		response.push(text);
-	}
-
-	await worker.terminate();
-	expect(response.join('\n')).toBe(['IMAGE TEXT\n'].join('\n'));
+	await scheduler.terminate();
+	expect(result.join('\n')).toBe(['IMAGE TEXT\n'].join('\n'));
 });

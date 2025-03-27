@@ -30,10 +30,8 @@ export async function parseDOCXData(data: Uint8Array, scheduler: Scheduler | nul
 
 export async function parseDOCX(
 	{ images, imgRels, withImages, textsOrRelIds }: Awaited<ReturnType<typeof parseDOCXData>>,
-	{
-		scheduler = null,
-		onChunkFinished
-	}: { scheduler?: Scheduler | null; onChunkFinished?: ((chunk: string) => void) | null }
+	scheduler: Scheduler | null = null,
+	onChunkFinished: ((chunk: string) => void) | null = null
 ) {
 	return Promise.all(
 		textsOrRelIds.map(async (textOrId) => {

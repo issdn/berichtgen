@@ -5,6 +5,7 @@ import { parseDOCX, parseDOCXData } from '$lib/parse/docx_parser';
 import { IncuriaError, IncuriaErrorType, WizardStep } from '$lib/types';
 import { getCompletions } from '$lib/hooks/completion';
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
+import { parsePDF, parsePDFData } from './parse/pdf_parser';
 
 class WizardScheduler {
 	batchSize = 5;
@@ -68,36 +69,56 @@ class WizardScheduler {
 		return scheduler;
 	}
 
+	async parseByFileType(file: File, progress: WizardFileProcess) {
+		function onProgress() {
+			progress.value += 1;
+		}
+		const data = new Uint8Array(await file.arrayBuffer());
+		if (data === null) throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Unbekannter Fehler');
+		switch (file.type) {
+			case 'application/pdf': {
+				const pdfData = await parsePDFData(data);
+				progress.max = pdfData.numPages;
+				return await parsePDF(
+					pdfData,
+					{
+						scheduler: this.scheduler,
+						getNewCanvas(width, height) {
+							const canvas = new OffscreenCanvas(width, height);
+							const context = canvas.getContext('2d')!;
+							return { canvas, context };
+						}
+					},
+					onProgress
+				);
+			}
+			case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+				const docxData = await parseDOCXData(data, wizardScheduler.scheduler);
+				return await parseDOCX(docxData, this.scheduler, () => {
+					progress.value += 1;
+				});
+			}
+			default:
+				throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Dateityp nicht unterstützt.');
+		}
+	}
+
 	async processFiles(
 		file: File,
 		progress: WizardFileProcess,
 		onResult: (result: Required<Entry>[]) => void
 	) {
 		try {
-			const data = new Uint8Array(await file.arrayBuffer());
-			if (data === null)
-				throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Unbekannter Fehler');
-			else {
-				const docxData = await parseDOCXData(data, wizardScheduler.scheduler);
-				progress.max = docxData.textsOrRelIds.length;
-				const text = (
-					await parseDOCX(docxData, {
-						scheduler: wizardScheduler.scheduler,
-						onChunkFinished() {
-							progress.value += 1;
-						}
-					})
-				).join('\n');
-				const completion = await getCompletions({
-					text,
-					apiKey: 'sk-a75d88242ebe42bb9e14ebd1b6c8124f'
-				});
-				const timed = spreadEntriesAcrossWeeks(completion, [
-					{ startDate: '2025-3-25', endDate: '2025-3-26' }
-				]);
-				progress.step = { step: WizardStep.DONE };
-				onResult(timed);
-			}
+			const text = (await this.parseByFileType(file, progress)).join('\n');
+			const completion = await getCompletions({
+				text,
+				apiKey: 'sk-a75d88242ebe42bb9e14ebd1b6c8124f'
+			});
+			const timed = spreadEntriesAcrossWeeks(completion, [
+				{ startDate: '2025-3-25', endDate: '2025-3-26' }
+			]);
+			progress.step = { step: WizardStep.DONE };
+			onResult(timed);
 		} catch (e) {
 			if (e instanceof Error) {
 				progress.step = { step: WizardStep.ERROR, message: e.message };
