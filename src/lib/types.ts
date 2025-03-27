@@ -30,9 +30,10 @@ export class IncuriaError extends Error {
 }
 
 export enum WizardStep {
-	PROCESSING = 'Verarbeitung',
-	AI_COMPLETION = 'KI-Generierung',
-	TIME_SPREADING = 'Zeitliche Verteilung',
-	DONE = 'Fertig',
-	ERROR = 'Fehler'
+	INITIALISING,
+	PROCESSING,
+	AI_COMPLETION,
+	TIME_SPREADING,
+	DONE,
+	ERROR
 }

@@ -39,7 +39,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <button
 	id="dropzone"
-	class={`flex h-full w-full flex-col items-center justify-center gap-y-2 border-2 border-dashed text-sm text-border transition-colors duration-300 hover:border-primary hover:text-primary ${isDraggingIn ? 'border-primary text-primary' : 'text-border hover:border-primary hover:text-primary'}`}
+	class={`flex h-full w-full flex-col items-center justify-center gap-y-2 border border-dashed text-sm text-border transition-colors duration-300 hover:border-primary hover:text-primary ${isDraggingIn ? 'border-primary text-primary' : 'text-border hover:border-primary hover:text-primary'}`}
 	onclick={() => input?.click()}
 	ondragenter={handleDragEnter}
 	ondragleave={handleDragLeave}
