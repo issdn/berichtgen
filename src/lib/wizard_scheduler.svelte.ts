@@ -18,13 +18,13 @@ class WizardScheduler {
 			return [...this.files!].map((file) => {
 				const wizardFile = new WizardFileProcess(file);
 				const processFunction = () =>
-					this.processFiles(file, wizardFile, async (text: Required<Entry>[]) => {
+					this.processFile(file, wizardFile, async (text: Required<Entry>[]) => {
 						this.finished = [...(this.finished ?? []), text];
 						this.filesReady += 1;
 						if (this.files !== null && this.finished.length === this.files.length) {
 							this.finish();
 						} else {
-							this.schedule?.at(this.filesReady)?.processFunction();
+							this.schedule?.at(this.filesReady + this.batchSize)?.processFunction();
 						}
 					});
 				return { wizardFile, processFunction };
@@ -96,16 +96,14 @@ class WizardScheduler {
 				const docxData = await parseDOCXData(data, wizardScheduler.scheduler);
 				await this.createWorkerPool(docxData.images.size);
 				progress.max = docxData.textsOrRelIds.length;
-				return await parseDOCX(docxData, this.scheduler, () => {
-					progress.value += 1;
-				});
+				return await parseDOCX(docxData, this.scheduler, onProgress);
 			}
 			default:
 				throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Dateityp nicht unterstützt.');
 		}
 	}
 
-	async processFiles(
+	async processFile(
 		file: File,
 		progress: WizardFileProcess,
 		onResult: (result: Required<Entry>[]) => void
