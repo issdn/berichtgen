@@ -37,7 +37,7 @@
   --foreground: 0 0% 100%;
   --card: 30 8.333333333333332% 9.411764705882353%;
   --card-foreground: 0 0% 100%;
-  --popover: 26.666666666666664 7.438016528925619% 23.725490196078432%;
+  --popover: 30 8.333333333333332% 9.411764705882353%;
   --popover-foreground: 0 0% 100%;
   --primary: 28.615384615384617 52.845528455284565% 24.117647058823533%;
   --primary-foreground: 240 0% 100%;
@@ -78,4 +78,32 @@
 
 .h-main {
   @apply h-[calc(100%-4rem)] md:h-[calc(100%-5rem)]
+}
+
+@font-face {
+  font-family: 'Cormorant';
+  font-style: normal;
+  font-weight: lighter;
+  src: url('/fonts/Cormorant-Light.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cormorant';
+  font-style: normal;
+  font-weight: normal;
+  src: url('/fonts/Cormorant-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cormorant';
+  font-style: normal;
+  font-weight: bold;
+  src: url('/fonts/Cormorant-Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Cormorant';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/fonts/Cormorant-Medium.ttf') format('truetype');
 }
