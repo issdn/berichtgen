@@ -19,18 +19,24 @@ test('Read text from pdf kurwa', async () => {
 	const scheduler = await createScheduler();
 	scheduler.addWorker(await createWorker('eng'));
 	const file = await Bun.file('./src/test/text_img.pdf').bytes();
-	const result = await parsePDF(await parsePDFData(new Uint8Array(file)), {
+	const imageExtractProp = {
 		scheduler,
-		getNewCanvas: (width, height) => {
-			const canvas = createCanvas(width, height) as unknown as HTMLCanvasElement;
-			canvas.toBlob = function (callback) {
+		getNewCanvas: (width: number, height: number) => {
+			const canvas = createCanvas(width, height) as unknown as OffscreenCanvas;
+			canvas.convertToBlob = function () {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				callback((canvas as any).toBuffer());
+				return (canvas as any).toBuffer();
 			};
 			return { canvas, context: canvas.getContext('2d')! };
 		}
-	});
+	};
+	const { blobsOrNullsAndPages, nrImages } = await parsePDFData(
+		new Uint8Array(file),
+		imageExtractProp
+	);
+	const result = await parsePDF(blobsOrNullsAndPages, imageExtractProp);
 
 	await scheduler.terminate();
+	expect(nrImages).toBe(1);
 	expect(result.join('\n')).toBe(['IMAGE TEXT\n'].join('\n'));
 });

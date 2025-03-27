@@ -42,7 +42,8 @@ class WizardScheduler {
 	processInit = $state<Promise<void> | null>(null);
 
 	async init() {
-		this.scheduler = await this.createWorkerPool();
+		const { createScheduler } = await import('tesseract.js');
+		this.scheduler = createScheduler();
 		this.result = null;
 		this.finished = null;
 		this.filesReady = 0;
@@ -60,13 +61,11 @@ class WizardScheduler {
 		})();
 	}
 
-	async createWorkerPool() {
-		const { createScheduler, createWorker } = await import('tesseract.js');
-		const scheduler = createScheduler();
-		for (let i = 0; i < clamp(this.files!.length * 0.1, 1, 25); i++) {
-			scheduler.addWorker(await createWorker('deu'));
+	async createWorkerPool(nrImages: number) {
+		const { createWorker } = await import('tesseract.js');
+		for (let i = 0; i < clamp(nrImages * 0.1, 1, 25); i++) {
+			this.scheduler!.addWorker(await createWorker('deu'));
 		}
-		return scheduler;
 	}
 
 	async parseByFileType(file: File, progress: WizardFileProcess) {
@@ -77,10 +76,11 @@ class WizardScheduler {
 		if (data === null) throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Unbekannter Fehler');
 		switch (file.type) {
 			case 'application/pdf': {
-				const pdfData = await parsePDFData(data);
-				progress.max = pdfData.numPages;
+				const { nrImages, blobsOrNullsAndPages } = await parsePDFData(data);
+				await this.createWorkerPool(nrImages);
+				progress.max = blobsOrNullsAndPages.length;
 				return await parsePDF(
-					pdfData,
+					blobsOrNullsAndPages,
 					{
 						scheduler: this.scheduler,
 						getNewCanvas(width, height) {
@@ -94,6 +94,8 @@ class WizardScheduler {
 			}
 			case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
 				const docxData = await parseDOCXData(data, wizardScheduler.scheduler);
+				await this.createWorkerPool(docxData.images.size);
+				progress.max = docxData.textsOrRelIds.length;
 				return await parseDOCX(docxData, this.scheduler, () => {
 					progress.value += 1;
 				});
