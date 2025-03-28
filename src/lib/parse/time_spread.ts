@@ -1,32 +1,30 @@
 import type { DateRange, Entry } from '$lib/types';
-import dayjs from 'dayjs';
-import weekOfYear from 'dayjs/plugin/weekOfYear.js';
-import weekday from 'dayjs/plugin/weekday.js';
-dayjs.extend(weekOfYear);
-dayjs.extend(weekday);
+import { startOfYear, CalendarDate, parseDate, startOfWeek } from '@internationalized/date';
+
+const LOCALE = 'de-DE';
 
 export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
 	dateRanges: DateRange[]
 ): Required<Entry>[] {
-	const datesAsDayjs = dateRanges.map(({ startDate, endDate, hours }) => ({
-		startDate: dayjs(startDate),
-		endDate: dayjs(endDate),
+	const convertedDates = dateRanges.map(({ startDate, endDate, hours }) => ({
+		startDate: parseDate(startDate),
+		endDate: parseDate(endDate),
 		hours
 	}));
 
-	const hoursSum = datesAsDayjs.reduce(
+	const hoursSum = convertedDates.reduce(
 		(prev, { startDate, endDate, hours }) =>
-			prev + (hours ?? endDate.day(1).diff(startDate.day(1), 'week') + 1),
+			prev + (hours ?? getWeek(endDate, LOCALE) - getWeek(startDate, LOCALE) + 1),
 		0
 	);
 
-	const sorted = datesAsDayjs.sort((a, b) => a.startDate.diff(b.startDate, 'day'));
+	const sorted = convertedDates.sort((a, b) => a.startDate.compare(b.startDate));
 
 	const minWeek = sorted[0];
 
-	const weeks = datesAsDayjs.reduce((prev, { startDate, endDate }) => {
-		return prev + endDate.day(1).diff(startDate.day(1), 'week') + 1;
+	const weeks = convertedDates.reduce((prev, { startDate, endDate }) => {
+		return prev + getWeek(endDate, LOCALE) - getWeek(startDate, LOCALE) + 1;
 	}, 0);
 
 	const newEntries: Required<Entry>[] = [];
@@ -38,7 +36,7 @@ export function spreadEntriesAcrossWeeks(
 
 	let currWeekIndex = 0;
 	let entriesTotal = 0;
-	let mondayOfWeek = dayjs(minWeek.startDate).day(1);
+	let mondayOfWeek = startOfWeek(minWeek.startDate, LOCALE, 'mon');
 
 	for (let i = 0; i < weeks; i += 1) {
 		const { entriesPerWeek, startDate, endDate } = adjustedForHours[currWeekIndex];
@@ -50,11 +48,16 @@ export function spreadEntriesAcrossWeeks(
 		entriesTotal += entriesPerWeek;
 
 		if (i * entriesPerWeek + entriesPerWeek < weeks * entriesPerWeek)
-			mondayOfWeek = mondayOfWeek.add(7, 'day');
+			mondayOfWeek = mondayOfWeek.add({ days: 7 });
 
-		if (!(mondayOfWeek.week() >= startDate.week() && mondayOfWeek.week() <= endDate.week())) {
+		if (
+			!(
+				getWeek(mondayOfWeek, LOCALE) >= getWeek(startDate, LOCALE) &&
+				getWeek(mondayOfWeek, LOCALE) <= getWeek(endDate, LOCALE)
+			)
+		) {
 			currWeekIndex++;
-			mondayOfWeek = sorted[currWeekIndex].startDate.day(1);
+			mondayOfWeek = startOfWeek(sorted[currWeekIndex].startDate, LOCALE);
 		}
 	}
 
@@ -65,6 +68,18 @@ export function spreadEntriesAcrossWeeks(
 	return newEntries;
 }
 
-function cloneObjectWithDate(entries: Entry[], i: number, date: dayjs.Dayjs): Required<Entry> {
-	return { ...entries[i], datum: date.clone().format('YYYY-MM-DD') };
+function cloneObjectWithDate(entries: Entry[], i: number, date: CalendarDate): Required<Entry> {
+	return {
+		...entries[i],
+		datum: date.toString()
+	};
+}
+
+function getWeek(date: CalendarDate, locale: string) {
+	const weekStart = startOfWeek(date, locale);
+	const yearStart = startOfWeek(startOfYear(date), locale);
+
+	const dayOfYear =
+		date.calendar.toJulianDay(weekStart) - yearStart.calendar.toJulianDay(yearStart);
+	return dayOfYear / 7;
 }

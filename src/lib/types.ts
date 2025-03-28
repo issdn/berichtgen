@@ -1,5 +1,3 @@
-import type { Dayjs } from 'dayjs';
-
 export interface Entry {
 	qualifikationen: string[];
 	text: string;
@@ -7,8 +5,8 @@ export interface Entry {
 }
 
 export interface DateRange {
-	startDate: string | Date | Dayjs;
-	endDate: string | Date | Dayjs;
+	startDate: string;
+	endDate: string;
 	hours?: number;
 }
 

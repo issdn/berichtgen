@@ -47,11 +47,11 @@ test('Spread multiple entries across multiple weeks.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-3-4',
-				endDate: '2025-3-17'
+				startDate: '2025-03-04',
+				endDate: '2025-03-17'
 			}
 		])
-	).toContainEqual(expected);
+	).toMatchSnapshot(expected);
 });
 
 test('Spread one entry across multiple weeks.', () => {
@@ -73,11 +73,11 @@ test('Spread one entry across multiple weeks.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-3-4',
-				endDate: '2025-3-24'
+				startDate: '2025-03-04',
+				endDate: '2025-03-24'
 			}
 		])
-	).toContainEqual(expected);
+	).toMatchSnapshot(expected);
 });
 
 test('Spread multiple entries across one week.', () => {
@@ -117,11 +117,11 @@ test('Spread multiple entries across one week.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-3-4',
-				endDate: '2025-3-5'
+				startDate: '2025-03-04',
+				endDate: '2025-03-05'
 			}
 		])
-	).toContainEqual(expected);
+	).toMatchSnapshot(expected);
 });
 
 test('Spread multiple entries across multiple week ranges.', () => {
@@ -161,15 +161,15 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-3-4',
-				endDate: '2025-3-5'
+				startDate: '2025-03-04',
+				endDate: '2025-03-05'
 			},
 			{
-				startDate: '2025-4-7',
-				endDate: '2025-4-8'
+				startDate: '2025-04-07',
+				endDate: '2025-04-08'
 			}
 		])
-	).toContainEqual(expected);
+	).toMatchSnapshot(expected);
 });
 
 test('Spread multiple entries across multiple week ranges.', () => {
@@ -227,15 +227,15 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-3-3',
-				endDate: '2025-3-5',
+				startDate: '2025-03-03',
+				endDate: '2025-03-05',
 				hours: 30
 			},
 			{
-				startDate: '2025-4-7',
-				endDate: '2025-4-8',
+				startDate: '2025-04-07',
+				endDate: '2025-04-08',
 				hours: 20
 			}
 		])
-	).toContainEqual(expected);
+	).toMatchSnapshot(expected);
 });

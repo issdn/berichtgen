@@ -1,4 +1,6 @@
 <script lang="ts">
+	import WizardFile from './WizardFile.svelte';
+
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import Progress from '$lib/components/ui/progress/progress.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -25,36 +27,6 @@
 		}
 	}
 </script>
-
-{#snippet renderFileProcess({
-	value,
-	max,
-	name,
-	step,
-	message
-}: {
-	max: number;
-	value: number;
-	name: string;
-	step: WizardStep;
-	message?: string;
-})}
-	{@const { icon: Icon, label } = statusFromStep(step)}
-	<div transition:slide class="flex flex-col justify-center gap-y-4 bg-muted p-4">
-		<div class="flex h-full w-full flex-row items-center gap-x-4">
-			<span class="basis-1/4 overflow-hidden truncate">{name}</span>
-			{#if step < 3}
-				<Progress class="basis-3/4" {max} {value} />
-			{/if}
-		</div>
-		<div class="flex flex-row justify-between opacity-65">
-			<div class="flex flex-row items-center gap-x-1">
-				<Icon size={18} /><span class="text-sm font-medium">{label}</span>
-			</div>
-			<span class="text-sm font-medium">{value}/{max}</span>
-		</div>
-	</div>
-{/snippet}
 
 <div class="relative h-full w-full gap-y-8 rounded-lg border">
 	<div
@@ -85,7 +57,7 @@
 				{#each wizardScheduler.schedule as { wizardFile }, i}
 					{@const { file, max, step, value } = wizardFile}
 					{#if i <= wizardScheduler.filesReady + wizardScheduler.batchSize}
-						{@render renderFileProcess({ value, max, ...step, name: file.name })}
+						<WizardFile {value} {max} {...step} name={file.name} />
 					{:else}
 						<span class="overflow-hidden truncate">{file.name}</span>
 					{/if}
