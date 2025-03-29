@@ -1,10 +1,12 @@
+import type { DateRange } from 'bits-ui';
+
 export interface Entry {
 	qualifikationen: string[];
 	text: string;
 	datum?: string;
 }
 
-export interface DateRange {
+export interface IncuriaWeightedDateRange {
 	startDate: string;
 	endDate: string;
 	hours?: number;
@@ -35,3 +37,5 @@ export enum WizardStep {
 	DONE,
 	ERROR
 }
+
+export type IncuriaDateRange = Required<Omit<DateRange, 'end'>> & Omit<DateRange, 'start'>;

@@ -1,11 +1,11 @@
-import type { DateRange, Entry } from '$lib/types';
+import type { IncuriaWeightedDateRange, Entry } from '$lib/types';
 import { startOfYear, CalendarDate, parseDate, startOfWeek } from '@internationalized/date';
 
 const LOCALE = 'de-DE';
 
 export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
-	dateRanges: DateRange[]
+	dateRanges: IncuriaWeightedDateRange[]
 ): Required<Entry>[] {
 	const convertedDates = dateRanges.map(({ startDate, endDate, hours }) => ({
 		startDate: parseDate(startDate),
