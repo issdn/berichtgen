@@ -3,6 +3,7 @@
 	import { Binary, Bug, Check, Coffee, WandSparkles, Calendar } from 'lucide-svelte';
 	import { WizardStep } from '$lib/types';
 	import { slide } from 'svelte/transition';
+	import TimeSpreadDialog from '$lib/components/TimeSpreadDialog.svelte';
 
 	const {
 		value,
@@ -39,11 +40,12 @@
 </script>
 
 <div transition:slide class="flex flex-col justify-center gap-y-4 bg-muted p-4">
-	<div class="flex h-full w-full flex-row items-center gap-x-4">
+	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
 		<span class="basis-1/4 overflow-hidden truncate">{name}</span>
 		{#if step < 3}
 			<Progress class="basis-3/4" {max} {value} />
 		{/if}
+		<TimeSpreadDialog data={[]} />
 	</div>
 	<div class="flex flex-row justify-between opacity-65">
 		<div class="flex flex-row items-center gap-x-1">

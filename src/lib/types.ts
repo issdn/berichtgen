@@ -38,4 +38,8 @@ export enum WizardStep {
 	ERROR
 }
 
-export type IncuriaDateRange = Required<Omit<DateRange, 'end'>> & Omit<DateRange, 'start'>;
+type RemoveUndefined<T> = {
+	[K in keyof T]: Exclude<T[K], undefined>;
+};
+
+export type IncuriaDateRange = Pick<RemoveUndefined<DateRange>, 'end'> & Pick<DateRange, 'start'>;

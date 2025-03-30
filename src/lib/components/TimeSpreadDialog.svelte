@@ -1,0 +1,72 @@
+<script lang="ts">
+	import TimeSpreadRow from './TimeSpreadRow.svelte';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { today, type DateValue } from '@internationalized/date';
+	import { Calendar, Clock } from 'lucide-svelte';
+	import { superForm } from 'sveltekit-superforms';
+	import { zodClient } from 'sveltekit-superforms/adapters';
+	import { dateRangeSchema, type DateRangeSchema } from './time_spread_schematic';
+	import { buttonVariants } from './ui/button';
+	import { slide } from 'svelte/transition';
+
+	let { data = $bindable() }: { data: DateRangeSchema['values'] } = $props();
+
+	// End date is today by default. Is there no start date, then it is invalid.
+	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
+
+	function newRow(id: number) {
+		return {
+			id,
+			hours: 0,
+			daterange: { start: undefined, end: today('Europe/Berlin') as DateValue }
+		};
+	}
+
+	const { form, errors, enhance, validateForm, ...rest } = superForm(
+		{
+			values: [newRow(0)]
+		} as DateRangeSchema,
+		{
+			dataType: 'json',
+			validators: zodClient(dateRangeSchema),
+			async onChange() {
+				const { valid } = await validateForm();
+				if (valid) {
+					data = $form.values;
+					$form.values = [...$form.values, newRow($form.values.length)];
+				}
+			}
+		}
+	);
+</script>
+
+<Dialog.Root>
+	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}><Calendar /></Dialog.Trigger>
+	<Dialog.Content class="w-full">
+		<Dialog.Header>
+			<Dialog.Title>Wähle Datumbereiche!</Dialog.Title>
+			<Dialog.Description
+				>Der letzte (ungefüllte) Eintrag wird nicht übernommen 😉</Dialog.Description
+			>
+		</Dialog.Header>
+		<div class="flex w-full flex-col gap-y-2">
+			<div class="flex w-full flex-row gap-x-4">
+				<span class="basis-3/4 px-1 font-medium text-muted-foreground">Datumsbereich</span>
+				<span class="basis-1/4 px-1 font-medium text-muted-foreground">Stunden</span>
+			</div>
+			<div class="flex w-full flex-col gap-y-2">
+				<form method="POST" use:enhance>
+					{#each $form.values as _, index}
+						<div transition:slide class="flex w-full flex-row gap-x-4">
+							<TimeSpreadRow
+								{index}
+								formData={form}
+								form={{ form, errors, enhance, validateForm, ...rest }}
+							/>
+						</div>
+					{/each}
+				</form>
+			</div>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
