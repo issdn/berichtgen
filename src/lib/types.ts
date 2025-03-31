@@ -30,12 +30,13 @@ export class IncuriaError extends Error {
 }
 
 export enum WizardStep {
-	INITIALISING,
-	PROCESSING,
-	AI_COMPLETION,
-	TIME_SPREADING,
-	DONE,
-	ERROR
+	INITIALISING = 'init',
+	PROCESSING = 'process',
+	AI_COMPLETION = 'completion',
+	TIME_SPREADING = 'time_spread',
+	DONE = 'done',
+	ERROR = 'error',
+	WAITING = 'waiting'
 }
 
 type RemoveUndefined<T> = {

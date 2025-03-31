@@ -1,35 +1,24 @@
 import type { Scheduler } from 'tesseract.js';
-import type { Entry } from './types';
+import type { Entry, IncuriaWeightedDateRange } from './types';
 import { combineJSONs } from './parse/combine';
 import { parseDOCX, parseDOCXData } from '$lib/parse/docx_parser';
 import { IncuriaError, IncuriaErrorType, WizardStep } from '$lib/types';
 import { getCompletions } from '$lib/hooks/completion';
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 import { parsePDF, parsePDFData } from './parse/pdf_parser';
+import fsm from 'svelte-fsm';
 
 class WizardScheduler {
 	batchSize = 5;
 
 	files: FileList | null = $state(null);
 
-	schedule: { wizardFile: WizardFileProcess; processFunction: () => Promise<void> }[] | null =
-		$derived.by(() => {
-			if (this.files === null || this.files.length === 0) return null;
-			return [...this.files!].map((file) => {
-				const wizardFile = new WizardFileProcess(file);
-				const processFunction = () =>
-					this.processFile(file, wizardFile, async (text: Required<Entry>[]) => {
-						this.finished = [...(this.finished ?? []), text];
-						this.filesReady += 1;
-						if (this.files !== null && this.finished.length === this.files.length) {
-							this.finish();
-						} else {
-							this.schedule?.at(this.filesReady + this.batchSize)?.processFunction();
-						}
-					});
-				return { wizardFile, processFunction };
-			});
+	schedule: ReturnType<WizardScheduler['createProcessStateMachine']>[] | null = $derived.by(() => {
+		if (this.files === null || this.files.length === 0) return null;
+		return [...this.files!].map((file) => {
+			return this.createProcessStateMachine(file);
 		});
+	});
 
 	finished = $state<Required<Entry>[][] | null>(null);
 
@@ -48,7 +37,7 @@ class WizardScheduler {
 		this.finished = null;
 		this.filesReady = 0;
 		for (let i = 0; i < this.batchSize; i++) {
-			this.schedule?.at(i)?.processFunction();
+			this.schedule?.at(i)?.machine.run();
 		}
 	}
 
@@ -103,29 +92,116 @@ class WizardScheduler {
 		}
 	}
 
-	async processFile(
-		file: File,
-		progress: WizardFileProcess,
-		onResult: (result: Required<Entry>[]) => void
-	) {
-		try {
-			const text = (await this.parseByFileType(file, progress)).join('\n');
-			const completion = await getCompletions({
-				text,
-				apiKey: 'sk-a75d88242ebe42bb9e14ebd1b6c8124f'
-			});
-			const timed = spreadEntriesAcrossWeeks(completion, [
-				{ startDate: '2025-3-25', endDate: '2025-3-26' }
-			]);
-			progress.step = { step: WizardStep.DONE };
-			onResult(timed);
-		} catch (e) {
-			if (e instanceof Error) {
-				progress.step = { step: WizardStep.ERROR, message: e.message };
-			} else {
-				progress.step = { step: WizardStep.ERROR, message: 'Unbekannter Fehler' };
+	createProcessStateMachine(file: File) {
+		const progress = new WizardFileProcess(file);
+		// eslint-disable-next-line @typescript-eslint/no-this-alias
+		const scheduler = this;
+		const machine = fsm(WizardStep.INITIALISING, {
+			[WizardStep.INITIALISING]: {
+				_enter() {
+					progress.step = WizardStep.INITIALISING;
+				},
+				run: WizardStep.PROCESSING
+			},
+			[WizardStep.PROCESSING]: {
+				_enter() {
+					progress.step = WizardStep.PROCESSING;
+					scheduler
+						.parseByFileType(file, progress)
+						.then((value) => {
+							progress.snapshot = value.join('\n');
+							this.next();
+						})
+						.catch((e) => {
+							if (e instanceof Error) {
+								progress.message = e.message;
+							} else {
+								progress.message = 'Unbekannter Fehler bei Verarbeitung.';
+							}
+							this.error();
+						});
+				},
+				next: () => WizardStep.AI_COMPLETION,
+				error: () => WizardStep.ERROR
+			},
+			[WizardStep.AI_COMPLETION]: {
+				_enter() {
+					console.log('PROCESSING');
+					progress.step = WizardStep.AI_COMPLETION;
+					getCompletions({
+						text: progress.snapshot as string,
+						apiKey: 'sk-a75d88242ebe42bb9e14ebd1b6c8124f'
+					})
+						.then((value) => {
+							progress.snapshot = value;
+							this.next();
+						})
+						.catch((e) => {
+							if (e instanceof Error) {
+								progress.message = e.message;
+							} else {
+								progress.message = 'Unbekannter Fehler bei Umformulierung.';
+							}
+							this.error();
+						});
+				},
+				next: () => WizardStep.TIME_SPREADING,
+				error: () => WizardStep.ERROR
+			},
+			[WizardStep.WAITING]: {
+				_enter() {
+					progress.step = WizardStep.WAITING;
+				}
+			},
+			[WizardStep.TIME_SPREADING]: {
+				_enter() {
+					progress.step = WizardStep.TIME_SPREADING;
+				},
+				run: async (ranges?: IncuriaWeightedDateRange[]) => {
+					if (!ranges) return WizardStep.WAITING;
+					try {
+						progress.snapshot = spreadEntriesAcrossWeeks(progress.snapshot as Entry[], [
+							{ startDate: '2025-3-25', endDate: '2025-3-26' }
+						]);
+					} catch (e) {
+						if (e instanceof Error) {
+							progress.message = e.message;
+						} else {
+							progress.message = 'Unbekannter Fehler bei Umformulierung.';
+						}
+						return WizardStep.ERROR;
+					}
+					return WizardStep.DONE;
+				}
+			},
+			[WizardStep.DONE]: {
+				_enter() {
+					progress.step = WizardStep.DONE;
+					scheduler.finished = [
+						...(scheduler.finished ?? []),
+						progress.snapshot as Required<Entry>[]
+					];
+					scheduler.filesReady += 1;
+					if (scheduler.files !== null && scheduler.finished.length === scheduler.files.length) {
+						scheduler.finish();
+					} else {
+						scheduler.schedule?.at(scheduler.filesReady + scheduler.batchSize)?.machine.run();
+					}
+				}
+			},
+			[WizardStep.ERROR]: {
+				_enter() {
+					progress.step = WizardStep.ERROR;
+					scheduler.filesReady += 1;
+					if (scheduler.files !== null && scheduler.finished?.length === scheduler.files.length) {
+						scheduler.finish();
+					} else {
+						scheduler.schedule?.at(scheduler.filesReady + scheduler.batchSize)?.machine.run();
+					}
+				}
 			}
-		}
+		});
+		return { progress, machine };
 	}
 }
 
@@ -135,11 +211,15 @@ export let wizardScheduler = new WizardScheduler();
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
 
 export class WizardFileProcess {
+	snapshot: string | Entry[] | Required<Entry[]> | undefined;
+
 	value: number = $state(0);
 
 	max: number = $state(0);
 
-	step: { step: WizardStep; message?: string } = $state({ step: WizardStep.PROCESSING });
+	step: WizardStep = $state(WizardStep.INITIALISING);
+
+	message?: string;
 
 	file: File;
 
