@@ -4,14 +4,10 @@
 	import { WizardStep } from '$lib/types';
 	import { slide } from 'svelte/transition';
 	import TimeSpreadDialog from '$lib/components/TimeSpreadDialog.svelte';
-	import type { WizardFileProcess } from '$lib/wizard_scheduler.svelte';
+	import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
-	const {
-		progress
-	}: {
-		progress: WizardFileProcess;
-	} = $props();
+	const { progress, machine }: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
 
 	function statusFromStep(step: WizardStep) {
 		switch (step) {
@@ -44,7 +40,7 @@
 		<Tooltip.Provider>
 			<Tooltip.Root open={progress.step === WizardStep.WAITING}>
 				<Tooltip.Trigger>
-					<TimeSpreadDialog data={[]} />
+					<TimeSpreadDialog onValidChange={(data) => (progress.dateRanges = data)} />
 				</Tooltip.Trigger>
 				<Tooltip.Content>
 					<p>Bitte datiere die Datei.</p>

@@ -2,14 +2,14 @@
 	import TimeSpreadRow from './TimeSpreadRow.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { today, type DateValue } from '@internationalized/date';
-	import { Calendar, Clock } from 'lucide-svelte';
+	import { Calendar } from 'lucide-svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { dateRangeSchema, type DateRangeSchema } from './time_spread_schematic';
 	import { buttonVariants } from './ui/button';
 	import { slide } from 'svelte/transition';
 
-	let { data = $bindable() }: { data: DateRangeSchema['values'] } = $props();
+	let { onValidChange }: { onValidChange: (data: DateRangeSchema['values']) => void } = $props();
 
 	// End date is today by default. Is there no start date, then it is invalid.
 	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
@@ -32,7 +32,7 @@
 			async onChange() {
 				const { valid } = await validateForm();
 				if (valid) {
-					data = $form.values;
+					onValidChange($form.values);
 					$form.values = [...$form.values, newRow($form.values.length)];
 				}
 			}

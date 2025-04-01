@@ -1,5 +1,5 @@
 import type { Scheduler } from 'tesseract.js';
-import type { Entry, IncuriaWeightedDateRange } from './types';
+import type { Entry } from './types';
 import { combineJSONs } from './parse/combine';
 import { parseDOCX, parseDOCXData } from '$lib/parse/docx_parser';
 import { IncuriaError, IncuriaErrorType, WizardStep } from '$lib/types';
@@ -7,8 +7,10 @@ import { getCompletions } from '$lib/hooks/completion';
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 import { parsePDF, parsePDFData } from './parse/pdf_parser';
 import fsm from 'svelte-fsm';
+import { today } from '@internationalized/date';
+import type { DateRangeSchema } from './components/time_spread_schematic';
 
-class WizardScheduler {
+export class WizardScheduler {
 	batchSize = 5;
 
 	files: FileList | null = $state(null);
@@ -161,7 +163,12 @@ class WizardScheduler {
 					}
 					try {
 						progress.snapshot = spreadEntriesAcrossWeeks(progress.snapshot as Entry[], [
-							{ startDate: '2025-3-25', endDate: '2025-3-26' }
+							{
+								daterange: {
+									start: today('Europe/Berlin').subtract({ weeks: 3 }),
+									end: today('Europe/Berlin')
+								}
+							}
 						]);
 						this.next();
 					} catch (e) {
@@ -216,7 +223,7 @@ const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, 
 export class WizardFileProcess {
 	snapshot: string | Entry[] | Required<Entry[]> | undefined;
 
-	dateRanges: IncuriaWeightedDateRange[] | null = $state(null);
+	dateRanges: DateRangeSchema['values'] | null = $state(null);
 
 	value: number = $state(0);
 

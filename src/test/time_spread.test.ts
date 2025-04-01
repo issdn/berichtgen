@@ -1,4 +1,5 @@
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
+import { parseDate } from '@internationalized/date';
 import { expect, test } from 'bun:test';
 
 test('Spread multiple entries across multiple weeks.', () => {
@@ -47,8 +48,10 @@ test('Spread multiple entries across multiple weeks.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-03-04',
-				endDate: '2025-03-17'
+				daterange: {
+					start: parseDate('2025-03-04'),
+					end: parseDate('2025-03-17')
+				}
 			}
 		])
 	).toMatchSnapshot(expected);
@@ -73,8 +76,10 @@ test('Spread one entry across multiple weeks.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-03-04',
-				endDate: '2025-03-24'
+				daterange: {
+					start: parseDate('2025-03-04'),
+					end: parseDate('2025-03-24')
+				}
 			}
 		])
 	).toMatchSnapshot(expected);
@@ -117,8 +122,10 @@ test('Spread multiple entries across one week.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-03-04',
-				endDate: '2025-03-05'
+				daterange: {
+					start: parseDate('2025-03-04'),
+					end: parseDate('2025-03-05')
+				}
 			}
 		])
 	).toMatchSnapshot(expected);
@@ -161,12 +168,16 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-03-04',
-				endDate: '2025-03-05'
+				daterange: {
+					start: parseDate('2025-03-04'),
+					end: parseDate('2025-03-05')
+				}
 			},
 			{
-				startDate: '2025-04-07',
-				endDate: '2025-04-08'
+				daterange: {
+					start: parseDate('2025-04-07'),
+					end: parseDate('2025-04-08')
+				}
 			}
 		])
 	).toMatchSnapshot(expected);
@@ -227,13 +238,17 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	expect(
 		spreadEntriesAcrossWeeks(entries, [
 			{
-				startDate: '2025-03-03',
-				endDate: '2025-03-05',
+				daterange: {
+					start: parseDate('2025-03-03'),
+					end: parseDate('2025-03-05')
+				},
 				hours: 30
 			},
 			{
-				startDate: '2025-04-07',
-				endDate: '2025-04-08',
+				daterange: {
+					start: parseDate('2025-04-07'),
+					end: parseDate('2025-04-08')
+				},
 				hours: 20
 			}
 		])

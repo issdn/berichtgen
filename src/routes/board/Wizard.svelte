@@ -34,7 +34,7 @@
 			{#await wizardScheduler.processInit then}
 				{#each wizardScheduler.schedule as { progress, machine }, i}
 					{#if i <= wizardScheduler.filesReady + wizardScheduler.batchSize}
-						<WizardFile {progress} />
+						<WizardFile {progress} {machine} />
 					{:else}
 						<span class="overflow-hidden truncate">{progress.file.name}</span>
 					{/if}

@@ -1,3 +1,4 @@
+import type { DateValue } from '@internationalized/date';
 import type { DateRange } from 'bits-ui';
 
 export interface Entry {
@@ -7,8 +8,10 @@ export interface Entry {
 }
 
 export interface IncuriaWeightedDateRange {
-	startDate: string;
-	endDate: string;
+	daterange: {
+		start: DateValue;
+		end: DateValue;
+	};
 	hours?: number;
 }
 

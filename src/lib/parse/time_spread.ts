@@ -1,5 +1,5 @@
 import type { IncuriaWeightedDateRange, Entry } from '$lib/types';
-import { startOfYear, CalendarDate, parseDate, startOfWeek } from '@internationalized/date';
+import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date';
 
 const LOCALE = 'de-DE';
 
@@ -7,24 +7,27 @@ export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
 	dateRanges: IncuriaWeightedDateRange[]
 ): Required<Entry>[] {
-	const convertedDates = dateRanges.map(({ startDate, endDate, hours }) => ({
-		startDate: parseDate(startDate),
-		endDate: parseDate(endDate),
-		hours
-	}));
-
-	const hoursSum = convertedDates.reduce(
-		(prev, { startDate, endDate, hours }) =>
-			prev + (hours ?? getWeek(endDate, LOCALE) - getWeek(startDate, LOCALE) + 1),
+	const hoursSum = dateRanges.reduce(
+		(prev, { daterange, hours }) =>
+			prev +
+			(hours ??
+				getWeek(daterange.end as CalendarDate, LOCALE) -
+					getWeek(daterange.start as CalendarDate, LOCALE) +
+					1),
 		0
 	);
 
-	const sorted = convertedDates.sort((a, b) => a.startDate.compare(b.startDate));
+	const sorted = dateRanges.sort((a, b) => a.daterange.start.compare(b.daterange.end));
 
 	const minWeek = sorted[0];
 
-	const weeks = convertedDates.reduce((prev, { startDate, endDate }) => {
-		return prev + getWeek(endDate, LOCALE) - getWeek(startDate, LOCALE) + 1;
+	const weeks = dateRanges.reduce((prev, { daterange }) => {
+		return (
+			prev +
+			getWeek(daterange.end as CalendarDate, LOCALE) -
+			getWeek(daterange.start as CalendarDate, LOCALE) +
+			1
+		);
 	}, 0);
 
 	const newEntries: Required<Entry>[] = [];
@@ -36,10 +39,10 @@ export function spreadEntriesAcrossWeeks(
 
 	let currWeekIndex = 0;
 	let entriesTotal = 0;
-	let mondayOfWeek = startOfWeek(minWeek.startDate, LOCALE, 'mon');
+	let mondayOfWeek = startOfWeek(minWeek.daterange.start, LOCALE, 'mon') as CalendarDate;
 
 	for (let i = 0; i < weeks; i += 1) {
-		const { entriesPerWeek, startDate, endDate } = adjustedForHours[currWeekIndex];
+		const { entriesPerWeek, daterange } = adjustedForHours[currWeekIndex];
 
 		for (let j = 0; j < entriesPerWeek; j++) {
 			newEntries.push(cloneObjectWithDate(entries, entriesTotal + j, mondayOfWeek));
@@ -52,12 +55,12 @@ export function spreadEntriesAcrossWeeks(
 
 		if (
 			!(
-				getWeek(mondayOfWeek, LOCALE) >= getWeek(startDate, LOCALE) &&
-				getWeek(mondayOfWeek, LOCALE) <= getWeek(endDate, LOCALE)
+				getWeek(mondayOfWeek, LOCALE) >= getWeek(daterange.start as CalendarDate, LOCALE) &&
+				getWeek(mondayOfWeek, LOCALE) <= getWeek(daterange.end as CalendarDate, LOCALE)
 			)
 		) {
 			currWeekIndex++;
-			mondayOfWeek = startOfWeek(sorted[currWeekIndex].startDate, LOCALE);
+			mondayOfWeek = startOfWeek(sorted[currWeekIndex].daterange.start, LOCALE) as CalendarDate;
 		}
 	}
 
