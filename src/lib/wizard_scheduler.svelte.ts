@@ -126,7 +126,6 @@ class WizardScheduler {
 			},
 			[WizardStep.AI_COMPLETION]: {
 				_enter() {
-					console.log('PROCESSING');
 					progress.step = WizardStep.AI_COMPLETION;
 					getCompletions({
 						text: progress.snapshot as string,
@@ -151,28 +150,32 @@ class WizardScheduler {
 			[WizardStep.WAITING]: {
 				_enter() {
 					progress.step = WizardStep.WAITING;
-				}
+				},
+				stop: WizardStep.TIME_SPREADING
 			},
 			[WizardStep.TIME_SPREADING]: {
 				_enter() {
 					progress.step = WizardStep.TIME_SPREADING;
-				},
-				run: async (ranges?: IncuriaWeightedDateRange[]) => {
-					if (!ranges) return WizardStep.WAITING;
+					if (!progress.dateRanges) {
+						this.wait();
+					}
 					try {
 						progress.snapshot = spreadEntriesAcrossWeeks(progress.snapshot as Entry[], [
 							{ startDate: '2025-3-25', endDate: '2025-3-26' }
 						]);
+						this.next();
 					} catch (e) {
 						if (e instanceof Error) {
 							progress.message = e.message;
 						} else {
 							progress.message = 'Unbekannter Fehler bei Umformulierung.';
 						}
-						return WizardStep.ERROR;
+						this.error();
 					}
-					return WizardStep.DONE;
-				}
+				},
+				next: () => WizardStep.DONE,
+				error: () => WizardStep.ERROR,
+				wait: () => WizardStep.WAITING
 			},
 			[WizardStep.DONE]: {
 				_enter() {
@@ -212,6 +215,8 @@ const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, 
 
 export class WizardFileProcess {
 	snapshot: string | Entry[] | Required<Entry[]> | undefined;
+
+	dateRanges: IncuriaWeightedDateRange[] | null = $state(null);
 
 	value: number = $state(0);
 

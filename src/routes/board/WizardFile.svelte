@@ -1,11 +1,11 @@
 <script lang="ts">
 	import Progress from '$lib/components/ui/progress/progress.svelte';
-	import { Binary, Bug, Check, Coffee, WandSparkles, Calendar } from 'lucide-svelte';
+	import { Binary, Bug, Check, Coffee, WandSparkles, Calendar, Clock } from 'lucide-svelte';
 	import { WizardStep } from '$lib/types';
 	import { slide } from 'svelte/transition';
 	import TimeSpreadDialog from '$lib/components/TimeSpreadDialog.svelte';
 	import type { WizardFileProcess } from '$lib/wizard_scheduler.svelte';
-	import { onMount } from 'svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
 	const {
 		progress
@@ -26,7 +26,7 @@
 			case WizardStep.DONE:
 				return { icon: Check, label: 'Fertig' };
 			case WizardStep.WAITING:
-				return { icon: Check, label: 'Warten' };
+				return { icon: Clock, label: 'Warten auf Eingabe' };
 			case WizardStep.ERROR:
 				return { icon: Bug, label: 'Fehler' };
 		}
@@ -41,7 +41,16 @@
 		{#if progress.step === WizardStep.PROCESSING}
 			<Progress class="basis-3/4" max={progress.max} value={progress.value} />
 		{/if}
-		<TimeSpreadDialog data={[]} />
+		<Tooltip.Provider>
+			<Tooltip.Root open={progress.step === WizardStep.WAITING}>
+				<Tooltip.Trigger>
+					<TimeSpreadDialog data={[]} />
+				</Tooltip.Trigger>
+				<Tooltip.Content>
+					<p>Bitte datiere die Datei.</p>
+				</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
 	</div>
 	<div class="flex flex-row justify-between opacity-65">
 		<div class="flex flex-row items-center gap-x-1">
