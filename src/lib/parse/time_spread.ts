@@ -1,11 +1,12 @@
-import type { IncuriaWeightedDateRange, Entry } from '$lib/types';
+import type { ValidIncuriaDateRanges } from '$lib/components/time_spread_schematic';
+import type { Entry } from '$lib/types';
 import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date';
 
 const LOCALE = 'de-DE';
 
 export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
-	dateRanges: IncuriaWeightedDateRange[]
+	dateRanges: ValidIncuriaDateRanges
 ): Required<Entry>[] {
 	const hoursSum = dateRanges.reduce(
 		(prev, { daterange, hours }) =>
@@ -17,7 +18,7 @@ export function spreadEntriesAcrossWeeks(
 		0
 	);
 
-	const sorted = dateRanges.sort((a, b) => a.daterange.start.compare(b.daterange.end));
+	const sorted = dateRanges.sort((a, b) => a.daterange.start!.compare(b.daterange.end));
 
 	const minWeek = sorted[0];
 
@@ -39,7 +40,7 @@ export function spreadEntriesAcrossWeeks(
 
 	let currWeekIndex = 0;
 	let entriesTotal = 0;
-	let mondayOfWeek = startOfWeek(minWeek.daterange.start, LOCALE, 'mon') as CalendarDate;
+	let mondayOfWeek = startOfWeek(minWeek.daterange.start!, LOCALE, 'mon') as CalendarDate;
 
 	for (let i = 0; i < weeks; i += 1) {
 		const { entriesPerWeek, daterange } = adjustedForHours[currWeekIndex];
@@ -60,7 +61,7 @@ export function spreadEntriesAcrossWeeks(
 			)
 		) {
 			currWeekIndex++;
-			mondayOfWeek = startOfWeek(sorted[currWeekIndex].daterange.start, LOCALE) as CalendarDate;
+			mondayOfWeek = startOfWeek(sorted[currWeekIndex].daterange.start!, LOCALE) as CalendarDate;
 		}
 	}
 

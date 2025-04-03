@@ -7,7 +7,6 @@ import { getCompletions } from '$lib/hooks/completion';
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 import { parsePDF, parsePDFData } from './parse/pdf_parser';
 import fsm from 'svelte-fsm';
-import { today } from '@internationalized/date';
 import type { DateRangeSchema } from './components/time_spread_schematic';
 
 export class WizardScheduler {
@@ -153,23 +152,20 @@ export class WizardScheduler {
 				_enter() {
 					progress.step = WizardStep.WAITING;
 				},
-				stop: WizardStep.TIME_SPREADING
+				run: WizardStep.TIME_SPREADING
 			},
 			[WizardStep.TIME_SPREADING]: {
 				_enter() {
 					progress.step = WizardStep.TIME_SPREADING;
-					if (!progress.dateRanges) {
+					if (progress.dateRanges.length === 0) {
 						this.wait();
+						return;
 					}
 					try {
-						progress.snapshot = spreadEntriesAcrossWeeks(progress.snapshot as Entry[], [
-							{
-								daterange: {
-									start: today('Europe/Berlin').subtract({ weeks: 3 }),
-									end: today('Europe/Berlin')
-								}
-							}
-						]);
+						progress.snapshot = spreadEntriesAcrossWeeks(
+							progress.snapshot as Entry[],
+							progress.dateRanges
+						);
 						this.next();
 					} catch (e) {
 						if (e instanceof Error) {
@@ -223,7 +219,7 @@ const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, 
 export class WizardFileProcess {
 	snapshot: string | Entry[] | Required<Entry[]> | undefined;
 
-	dateRanges: DateRangeSchema['values'] | null = $state(null);
+	dateRanges: DateRangeSchema['values'] = $state([]);
 
 	value: number = $state(0);
 

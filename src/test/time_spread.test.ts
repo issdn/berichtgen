@@ -1,6 +1,35 @@
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 import { parseDate } from '@internationalized/date';
-import { expect, test } from 'bun:test';
+import { expect, test } from 'vitest';
+
+test('Spread single entry across multiple weeks.', () => {
+	const entries = [
+		{
+			datum: '2025-03-24',
+			qualifikationen: ['Allgemeinbildende Fächer'],
+			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
+		}
+	];
+
+	const expected = [
+		{
+			datum: '2025-03-24',
+			qualifikationen: ['Allgemeinbildende Fächer'],
+			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
+		}
+	];
+
+	const received = spreadEntriesAcrossWeeks(entries, [
+		{
+			daterange: {
+				start: parseDate('2025-03-25'),
+				end: parseDate('2025-04-01')
+			}
+		}
+	]);
+
+	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
+});
 
 test('Spread multiple entries across multiple weeks.', () => {
 	const entries = [

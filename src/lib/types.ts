@@ -1,5 +1,4 @@
 import type { DateValue } from '@internationalized/date';
-import type { DateRange } from 'bits-ui';
 
 export interface Entry {
 	qualifikationen: string[];
@@ -41,9 +40,3 @@ export enum WizardStep {
 	ERROR = 'error',
 	WAITING = 'waiting'
 }
-
-type RemoveUndefined<T> = {
-	[K in keyof T]: Exclude<T[K], undefined>;
-};
-
-export type IncuriaDateRange = Pick<RemoveUndefined<DateRange>, 'end'> & Pick<DateRange, 'start'>;

@@ -1,15 +1,19 @@
 <script lang="ts">
 	import TimeSpreadRow from './TimeSpreadRow.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { today, type DateValue } from '@internationalized/date';
+	import { parseDate, today, type DateValue } from '@internationalized/date';
 	import { Calendar } from 'lucide-svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { dateRangeSchema, type DateRangeSchema } from './time_spread_schematic';
 	import { buttonVariants } from './ui/button';
 	import { slide } from 'svelte/transition';
+	import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 
-	let { onValidChange }: { onValidChange: (data: DateRangeSchema['values']) => void } = $props();
+	let {
+		onClose,
+		onValidChange
+	}: { onClose: () => void; onValidChange: (data: DateRangeSchema['values']) => void } = $props();
 
 	// End date is today by default. Is there no start date, then it is invalid.
 	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
@@ -17,7 +21,6 @@
 	function newRow(id: number) {
 		return {
 			id,
-			hours: 0,
 			daterange: { start: undefined, end: today('Europe/Berlin') as DateValue }
 		};
 	}
@@ -40,7 +43,11 @@
 	);
 </script>
 
-<Dialog.Root>
+<Dialog.Root
+	onOpenChange={(isOpen) => {
+		if (isOpen === false) onClose();
+	}}
+>
 	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}><Calendar /></Dialog.Trigger>
 	<Dialog.Content class="w-full">
 		<Dialog.Header>

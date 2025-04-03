@@ -20,11 +20,11 @@
 			case WizardStep.TIME_SPREADING:
 				return { icon: Calendar, label: 'Zeitliche Verteilung...' };
 			case WizardStep.DONE:
-				return { icon: Check, label: 'Fertig' };
+				return { icon: Check, label: 'Fertig 📜' };
 			case WizardStep.WAITING:
 				return { icon: Clock, label: 'Warten auf Eingabe' };
 			case WizardStep.ERROR:
-				return { icon: Bug, label: 'Fehler' };
+				return { icon: Bug, label: 'Fehler 😭' };
 		}
 	}
 
@@ -40,7 +40,14 @@
 		<Tooltip.Provider>
 			<Tooltip.Root open={progress.step === WizardStep.WAITING}>
 				<Tooltip.Trigger>
-					<TimeSpreadDialog onValidChange={(data) => (progress.dateRanges = data)} />
+					<TimeSpreadDialog
+						onClose={() => {
+							if (progress.dateRanges.length > 0) {
+								machine.run();
+							}
+						}}
+						onValidChange={(data) => (progress.dateRanges = data)}
+					/>
 				</Tooltip.Trigger>
 				<Tooltip.Content>
 					<p>Bitte datiere die Datei.</p>
