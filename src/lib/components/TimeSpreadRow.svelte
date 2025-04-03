@@ -67,6 +67,7 @@
 	<Form.Control>
 		{#snippet children({ props })}
 			<Input
+				min={1}
 				{...props}
 				bind:value={$formData.values[index].hours}
 				type="number"

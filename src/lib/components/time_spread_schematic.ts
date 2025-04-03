@@ -6,9 +6,14 @@ export const dateRangeSchema = z.object({
 		.object({
 			id: z.number().int().min(0),
 			daterange: z.custom<IncuriaDateRange>(
-				({ start, end }) => start !== undefined && end !== undefined
+				({ start, end }) => start !== undefined && end !== undefined,
+				{ message: 'Mindestens eine Woche muss gewählt werden.' }
 			),
-			hours: z.number().int().optional().nullable()
+			hours: z
+				.number({ message: 'Stunden müssen Zahlen sein.' })
+				.int({ message: 'Stunden müssen ganze Zahlen sein.' })
+				.optional()
+				.nullable()
 		})
 		.array()
 });

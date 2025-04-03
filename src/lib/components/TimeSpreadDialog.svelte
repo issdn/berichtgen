@@ -3,20 +3,18 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { parseDate, today, type DateValue } from '@internationalized/date';
 	import { Calendar } from 'lucide-svelte';
-	import { superForm } from 'sveltekit-superforms';
+	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { dateRangeSchema, type DateRangeSchema } from './time_spread_schematic';
 	import { buttonVariants } from './ui/button';
 	import { slide } from 'svelte/transition';
+	import { zod } from 'sveltekit-superforms/adapters';
 	import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 
 	let {
 		onClose,
 		onValidChange
 	}: { onClose: () => void; onValidChange: (data: DateRangeSchema['values']) => void } = $props();
-
-	// End date is today by default. Is there no start date, then it is invalid.
-	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
 
 	function newRow(id: number) {
 		return {
@@ -25,11 +23,12 @@
 		};
 	}
 
+	// End date is today by default. Is there no start date, then it is invalid.
+	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
 	const { form, errors, enhance, validateForm, ...rest } = superForm(
+		defaults({ values: [newRow(0)] }, zod(dateRangeSchema)),
 		{
-			values: [newRow(0)]
-		} as DateRangeSchema,
-		{
+			SPA: true,
 			dataType: 'json',
 			validators: zodClient(dateRangeSchema),
 			async onChange() {
@@ -41,6 +40,8 @@
 			}
 		}
 	);
+
+	validateForm({ update: true });
 </script>
 
 <Dialog.Root
