@@ -37,6 +37,7 @@ export enum WizardStep {
 	AI_COMPLETION = 'completion',
 	TIME_SPREADING = 'time_spread',
 	DONE = 'done',
+	CANCELLED = 'cancelled',
 	ERROR = 'error',
 	WAITING = 'waiting'
 }

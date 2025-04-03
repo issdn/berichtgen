@@ -21,8 +21,6 @@ export class WizardScheduler {
 		});
 	});
 
-	finished = $state<Required<Entry>[][] | null>(null);
-
 	filesReady = $state(0);
 
 	scheduler: Scheduler | null = null;
@@ -35,7 +33,6 @@ export class WizardScheduler {
 		const { createScheduler } = await import('tesseract.js');
 		this.scheduler = createScheduler();
 		this.result = null;
-		this.finished = null;
 		this.filesReady = 0;
 		for (let i = 0; i < this.batchSize; i++) {
 			this.schedule?.at(i)?.machine.run();
@@ -44,7 +41,11 @@ export class WizardScheduler {
 
 	finish() {
 		this.result = (async () => {
-			const result = combineJSONs(this.finished ?? []);
+			const finishedFiles = this.schedule!.reduce((prev, { progress }) => {
+				if (progress.finished != null) return [...prev, progress.finished];
+				return prev;
+			}, [] as Required<Entry>[][]);
+			const result = combineJSONs(finishedFiles);
 			await this.scheduler?.terminate();
 			const blob = new Blob([JSON.stringify(result)], { type: 'application/json' });
 			return URL.createObjectURL(blob);
@@ -97,16 +98,24 @@ export class WizardScheduler {
 		const progress = new WizardFileProcess(file);
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const scheduler = this;
+		function onFileDone() {
+			scheduler.filesReady += 1;
+			if (scheduler.files !== null && scheduler.filesReady === scheduler.files.length) {
+				scheduler.finish();
+			} else {
+				scheduler.schedule?.at(scheduler.filesReady + scheduler.batchSize)?.machine.run();
+			}
+		}
 		const machine = fsm(WizardStep.INITIALISING, {
 			[WizardStep.INITIALISING]: {
-				_enter() {
-					progress.step = WizardStep.INITIALISING;
-				},
 				run: WizardStep.PROCESSING
 			},
 			[WizardStep.PROCESSING]: {
 				_enter() {
-					progress.step = WizardStep.PROCESSING;
+					if (progress.cancelled) {
+						this.cancel();
+						return;
+					}
 					scheduler
 						.parseByFileType(file, progress)
 						.then((value) => {
@@ -123,11 +132,15 @@ export class WizardScheduler {
 						});
 				},
 				next: () => WizardStep.AI_COMPLETION,
-				error: () => WizardStep.ERROR
+				error: () => WizardStep.ERROR,
+				cancel: () => WizardStep.CANCELLED
 			},
 			[WizardStep.AI_COMPLETION]: {
 				_enter() {
-					progress.step = WizardStep.AI_COMPLETION;
+					if (progress.cancelled) {
+						this.cancel();
+						return;
+					}
 					getCompletions({
 						text: progress.snapshot as string,
 						apiKey: 'sk-a75d88242ebe42bb9e14ebd1b6c8124f'
@@ -146,17 +159,25 @@ export class WizardScheduler {
 						});
 				},
 				next: () => WizardStep.TIME_SPREADING,
-				error: () => WizardStep.ERROR
+				error: () => WizardStep.ERROR,
+				cancel: () => WizardStep.CANCELLED
 			},
 			[WizardStep.WAITING]: {
 				_enter() {
-					progress.step = WizardStep.WAITING;
+					if (progress.cancelled) {
+						this.cancel();
+						return;
+					}
 				},
-				run: WizardStep.TIME_SPREADING
+				run: WizardStep.TIME_SPREADING,
+				cancel: () => WizardStep.CANCELLED
 			},
 			[WizardStep.TIME_SPREADING]: {
 				_enter() {
-					progress.step = WizardStep.TIME_SPREADING;
+					if (progress.cancelled) {
+						this.cancel();
+						return;
+					}
 					if (progress.dateRanges.length === 0) {
 						this.wait();
 						return;
@@ -178,32 +199,28 @@ export class WizardScheduler {
 				},
 				next: () => WizardStep.DONE,
 				error: () => WizardStep.ERROR,
-				wait: () => WizardStep.WAITING
+				wait: () => WizardStep.WAITING,
+				cancel: () => WizardStep.CANCELLED
 			},
 			[WizardStep.DONE]: {
 				_enter() {
-					progress.step = WizardStep.DONE;
-					scheduler.finished = [
-						...(scheduler.finished ?? []),
-						progress.snapshot as Required<Entry>[]
-					];
-					scheduler.filesReady += 1;
-					if (scheduler.files !== null && scheduler.finished.length === scheduler.files.length) {
-						scheduler.finish();
-					} else {
-						scheduler.schedule?.at(scheduler.filesReady + scheduler.batchSize)?.machine.run();
+					if (progress.cancelled) {
+						this.cancel();
+						return;
 					}
-				}
+					progress.finished = progress.snapshot as Required<Entry>[];
+					onFileDone();
+				},
+				cancel: () => WizardStep.CANCELLED
 			},
 			[WizardStep.ERROR]: {
 				_enter() {
-					progress.step = WizardStep.ERROR;
-					scheduler.filesReady += 1;
-					if (scheduler.files !== null && scheduler.finished?.length === scheduler.files.length) {
-						scheduler.finish();
-					} else {
-						scheduler.schedule?.at(scheduler.filesReady + scheduler.batchSize)?.machine.run();
-					}
+					onFileDone();
+				}
+			},
+			[WizardStep.CANCELLED]: {
+				_enter() {
+					onFileDone();
 				}
 			}
 		});
@@ -217,7 +234,9 @@ export let wizardScheduler = new WizardScheduler();
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
 
 export class WizardFileProcess {
-	snapshot: string | Entry[] | Required<Entry[]> | undefined;
+	snapshot: string | Entry[] | Required<Entry>[] | undefined;
+
+	finished: Required<Entry>[] | null = null;
 
 	dateRanges: DateRangeSchema['values'] = $state([]);
 
@@ -225,11 +244,11 @@ export class WizardFileProcess {
 
 	max: number = $state(0);
 
-	step: WizardStep = $state(WizardStep.INITIALISING);
-
 	message?: string;
 
 	file: File;
+
+	cancelled: boolean = false;
 
 	constructor(file: File) {
 		this.file = file;
