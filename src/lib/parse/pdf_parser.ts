@@ -80,6 +80,7 @@ export class PDFParser extends Parser {
 				))
 			);
 		}
+		this.freeWorkers();
 		return result;
 	}
 

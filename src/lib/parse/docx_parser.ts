@@ -68,6 +68,7 @@ export class DOCXParser extends Parser {
 				))
 			);
 		}
+		this.freeWorkers();
 		return result;
 	}
 

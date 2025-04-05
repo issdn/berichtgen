@@ -29,6 +29,10 @@ export class WizardScheduler {
 
 	processInit = $state<Promise<void> | null>(null);
 
+	workersInUse = 0;
+
+	workersNr = 0;
+
 	async init() {
 		const { createScheduler } = await import('tesseract.js');
 		this.scheduler = createScheduler();
