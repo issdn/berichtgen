@@ -16,7 +16,7 @@ type ImageExtractProp = {
 		| null;
 };
 
-// Basically parsing goes like this -> get fundamental Data about the file so that some progress could be shown to the user.
+// Basically parsing goes like this -> get fundamental Data about the file so that some context could be shown to the user.
 // Here it's number of texts and images. Then pass it to the real, heavy parse function so that it parses the text.
 export async function parsePDF(
 	blobsOrNullsAndPages: Awaited<ReturnType<typeof parsePDFData>>['blobsOrNullsAndPages'],

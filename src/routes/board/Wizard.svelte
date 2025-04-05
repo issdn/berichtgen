@@ -32,11 +32,11 @@
 	<div class="flex flex-col gap-y-1 p-1">
 		{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 			{#await wizardScheduler.processInit then}
-				{#each wizardScheduler.schedule as { progress, machine }, i}
+				{#each wizardScheduler.schedule as { context, machine }, i}
 					{#if i <= wizardScheduler.filesReady + wizardScheduler.batchSize}
-						<WizardFile {progress} {machine} />
+						<WizardFile {context} {machine} />
 					{:else}
-						<span class="overflow-hidden truncate">{progress.file.name}</span>
+						<span class="overflow-hidden truncate">{context.file.name}</span>
 					{/if}
 				{/each}
 			{/await}

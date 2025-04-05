@@ -30,37 +30,55 @@ export async function parseDOCXData(data: Uint8Array, scheduler: Scheduler | nul
 
 export async function parseDOCX(
 	{ images, imgRels, withImages, textsOrRelIds }: Awaited<ReturnType<typeof parseDOCXData>>,
+	batchSize: number,
 	scheduler: Scheduler | null = null,
 	onChunkFinished: ((chunk: string) => void) | null = null
 ) {
-	return Promise.all(
-		textsOrRelIds.map(async (textOrId) => {
-			if (Array.isArray(textOrId)) {
-				const rel = imgRels.get(textOrId[0]);
-				if (rel === undefined) {
-					throw new IncuriaError(
-						IncuriaErrorType.DOCX_FAULTY,
-						'DOCX Foto könnte nicht gefunden werden.'
-					);
-				}
-				const fileData = images.get(rel);
-				if (fileData === undefined) {
-					throw new IncuriaError(
-						IncuriaErrorType.DOCX_FAULTY,
-						'DOCX Foto könnte nicht gefunden werden.'
-					);
-				}
-				if (withImages) {
-					const result = await scheduler!.addJob('recognize', fileData as ImageLike);
-					onChunkFinished?.(result.data.text);
-					return result.data.text;
-				}
-			} else {
-				onChunkFinished?.(textOrId);
-				return textOrId;
-			}
-		}) as Promise<string>[]
-	);
+	const result = [];
+	for (let i = 0; i < textsOrRelIds.length; i += batchSize) {
+		result.push(
+			...(await Promise.all(
+				textsOrRelIds
+					.slice(i, i + batchSize)
+					.map(async (textOrId) =>
+						parseChunk(textOrId, { images, imgRels, withImages }, scheduler, onChunkFinished)
+					) as Promise<string>[]
+			))
+		);
+	}
+	return result;
+}
+
+async function parseChunk(
+	textOrId: string | [string],
+	{ images, imgRels, withImages }: Omit<Awaited<ReturnType<typeof parseDOCXData>>, 'textsOrRelIds'>,
+	scheduler: Scheduler | null = null,
+	onChunkFinished: ((chunk: string) => void) | null = null
+) {
+	if (Array.isArray(textOrId)) {
+		const rel = imgRels.get(textOrId[0]);
+		if (rel === undefined) {
+			throw new IncuriaError(
+				IncuriaErrorType.DOCX_FAULTY,
+				'DOCX Foto könnte nicht gefunden werden.'
+			);
+		}
+		const fileData = images.get(rel);
+		if (fileData === undefined) {
+			throw new IncuriaError(
+				IncuriaErrorType.DOCX_FAULTY,
+				'DOCX Foto könnte nicht gefunden werden.'
+			);
+		}
+		if (withImages) {
+			const result = await scheduler!.addJob('recognize', fileData as ImageLike);
+			onChunkFinished?.(result.data.text);
+			return result.data.text;
+		}
+	} else {
+		onChunkFinished?.(textOrId);
+		return textOrId;
+	}
 }
 
 function findAllWT(

@@ -41,8 +41,8 @@ export class WizardScheduler {
 
 	finish() {
 		this.result = (async () => {
-			const finishedFiles = this.schedule!.reduce((prev, { progress }) => {
-				if (progress.finished != null) return [...prev, progress.finished];
+			const finishedFiles = this.schedule!.reduce((prev, { context }) => {
+				if (context.finished != null) return [...prev, context.finished];
 				return prev;
 			}, [] as Required<Entry>[][]);
 			const result = combineJSONs(finishedFiles);
@@ -54,14 +54,16 @@ export class WizardScheduler {
 
 	async createWorkerPool(nrImages: number) {
 		const { createWorker } = await import('tesseract.js');
-		for (let i = 0; i < clamp(nrImages * 0.1, 1, 25); i++) {
+		const nrWorkers = clamp(nrImages * 0.1, 1, 25);
+		for (let i = 0; i < nrWorkers; i++) {
 			this.scheduler!.addWorker(await createWorker('deu'));
 		}
+		return nrWorkers;
 	}
 
-	async parseByFileType(file: File, progress: WizardFileProcess) {
+	async parseByFileType(file: File, context: WizardFileContext) {
 		function onProgress() {
-			progress.value += 1;
+			context.value += 1;
 		}
 		const data = new Uint8Array(await file.arrayBuffer());
 		if (data === null) throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Unbekannter Fehler');
@@ -69,7 +71,7 @@ export class WizardScheduler {
 			case 'application/pdf': {
 				const { nrImages, blobsOrNullsAndPages } = await parsePDFData(data);
 				await this.createWorkerPool(nrImages);
-				progress.max = blobsOrNullsAndPages.length;
+				context.max = blobsOrNullsAndPages.length;
 				return await parsePDF(
 					blobsOrNullsAndPages,
 					{
@@ -85,9 +87,9 @@ export class WizardScheduler {
 			}
 			case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
 				const docxData = await parseDOCXData(data, wizardScheduler.scheduler);
-				await this.createWorkerPool(docxData.images.size);
-				progress.max = docxData.textsOrRelIds.length;
-				return await parseDOCX(docxData, this.scheduler, onProgress);
+				const batchSize = await this.createWorkerPool(docxData.images.size);
+				context.max = docxData.textsOrRelIds.length;
+				return await parseDOCX(docxData, batchSize, this.scheduler, onProgress);
 			}
 			default:
 				throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Dateityp nicht unterstützt.');
@@ -95,7 +97,7 @@ export class WizardScheduler {
 	}
 
 	createProcessStateMachine(file: File) {
-		const progress = new WizardFileProcess(file);
+		const context = new WizardFileContext(file);
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const scheduler = this;
 		function onFileDone() {
@@ -112,21 +114,21 @@ export class WizardScheduler {
 			},
 			[WizardStep.PROCESSING]: {
 				_enter() {
-					if (progress.cancelled) {
+					if (context.cancelled) {
 						this.cancel();
 						return;
 					}
 					scheduler
-						.parseByFileType(file, progress)
+						.parseByFileType(file, context)
 						.then((value) => {
-							progress.snapshot = value.join('\n');
+							context.snapshot = value.join('\n');
 							this.next();
 						})
 						.catch((e) => {
 							if (e instanceof Error) {
-								progress.message = e.message;
+								context.message = e.message;
 							} else {
-								progress.message = 'Unbekannter Fehler bei Verarbeitung.';
+								context.message = 'Unbekannter Fehler bei Verarbeitung.';
 							}
 							this.error();
 						});
@@ -137,23 +139,23 @@ export class WizardScheduler {
 			},
 			[WizardStep.AI_COMPLETION]: {
 				_enter() {
-					if (progress.cancelled) {
+					if (context.cancelled) {
 						this.cancel();
 						return;
 					}
 					getCompletions({
-						text: progress.snapshot as string,
+						text: context.snapshot as string,
 						apiKey: 'sk-a75d88242ebe42bb9e14ebd1b6c8124f'
 					})
 						.then((value) => {
-							progress.snapshot = value;
+							context.snapshot = value;
 							this.next();
 						})
 						.catch((e) => {
 							if (e instanceof Error) {
-								progress.message = e.message;
+								context.message = e.message;
 							} else {
-								progress.message = 'Unbekannter Fehler bei Umformulierung.';
+								context.message = 'Unbekannter Fehler bei Umformulierung.';
 							}
 							this.error();
 						});
@@ -164,7 +166,7 @@ export class WizardScheduler {
 			},
 			[WizardStep.WAITING]: {
 				_enter() {
-					if (progress.cancelled) {
+					if (context.cancelled) {
 						this.cancel();
 						return;
 					}
@@ -174,25 +176,25 @@ export class WizardScheduler {
 			},
 			[WizardStep.TIME_SPREADING]: {
 				_enter() {
-					if (progress.cancelled) {
+					if (context.cancelled) {
 						this.cancel();
 						return;
 					}
-					if (progress.dateRanges.length === 0) {
+					if (context.dateRanges.length === 0) {
 						this.wait();
 						return;
 					}
 					try {
-						progress.snapshot = spreadEntriesAcrossWeeks(
-							progress.snapshot as Entry[],
-							progress.dateRanges
+						context.snapshot = spreadEntriesAcrossWeeks(
+							context.snapshot as Entry[],
+							context.dateRanges
 						);
 						this.next();
 					} catch (e) {
 						if (e instanceof Error) {
-							progress.message = e.message;
+							context.message = e.message;
 						} else {
-							progress.message = 'Unbekannter Fehler bei Umformulierung.';
+							context.message = 'Unbekannter Fehler bei Umformulierung.';
 						}
 						this.error();
 					}
@@ -204,11 +206,11 @@ export class WizardScheduler {
 			},
 			[WizardStep.DONE]: {
 				_enter() {
-					if (progress.cancelled) {
+					if (context.cancelled) {
 						this.cancel();
 						return;
 					}
-					progress.finished = progress.snapshot as Required<Entry>[];
+					context.finished = context.snapshot as Required<Entry>[];
 					onFileDone();
 				},
 				cancel: () => WizardStep.CANCELLED
@@ -224,7 +226,7 @@ export class WizardScheduler {
 				}
 			}
 		});
-		return { progress, machine };
+		return { context, machine };
 	}
 }
 
@@ -233,7 +235,7 @@ export let wizardScheduler = new WizardScheduler();
 
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
 
-export class WizardFileProcess {
+export class WizardFileContext {
 	snapshot: string | Entry[] | Required<Entry>[] | undefined;
 
 	finished: Required<Entry>[] | null = null;

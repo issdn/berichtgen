@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Progress from '$lib/components/ui/progress/progress.svelte';
 	import { Binary, XIcon, Check, Coffee, WandSparkles, Calendar, Clock, Bug } from 'lucide-svelte';
 	import { WizardStep } from '$lib/types';
 	import { slide } from 'svelte/transition';
@@ -7,8 +6,9 @@
 	import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import Progress from '$lib/components/ui/progress/progress.svelte';
 
-	const { progress, machine }: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
+	const { context, machine }: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
 
 	function statusFromStep(step: WizardStep) {
 		switch (step) {
@@ -36,9 +36,9 @@
 
 <div transition:slide class="flex flex-col justify-center gap-y-4 bg-muted p-4">
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
-		<span class="basis-1/4 overflow-hidden truncate">{progress.file.name}</span>
+		<span class="basis-1/4 overflow-hidden truncate">{context.file.name}</span>
 		{#if $machine === WizardStep.PROCESSING}
-			<Progress class="basis-3/4" max={progress.max} value={progress.value} />
+			<Progress class="basis-3/4" max={context.max} value={context.value} />
 		{/if}
 		{#if $machine !== WizardStep.DONE && $machine !== WizardStep.ERROR && $machine !== WizardStep.CANCELLED}
 			<div class="flex flex-row gap-x-2">
@@ -47,11 +47,11 @@
 						<Tooltip.Trigger>
 							<TimeSpreadDialog
 								onClose={() => {
-									if (progress.dateRanges.length > 0) {
+									if (context.dateRanges.length > 0) {
 										machine.run();
 									}
 								}}
-								onValidChange={(data) => (progress.dateRanges = data)}
+								onValidChange={(data) => (context.dateRanges = data)}
 							/>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -62,7 +62,7 @@
 				<Button
 					variant="outline"
 					onclick={() => {
-						progress.cancelled = true;
+						context.cancelled = true;
 						machine.run();
 					}}><XIcon /></Button
 				>
@@ -73,6 +73,6 @@
 		<div class="flex flex-row items-center gap-x-1">
 			<Icon size={18} /><span class="text-sm font-medium">{label}</span>
 		</div>
-		<span class="text-sm font-medium">{progress.value}/{progress.max}</span>
+		<span class="text-sm font-medium">{context.value}/{context.max}</span>
 	</div>
 </div>
