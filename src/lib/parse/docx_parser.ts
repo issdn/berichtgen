@@ -2,136 +2,153 @@ import JSZip from 'jszip';
 import { XMLParser } from 'fast-xml-parser';
 import type { ImageLike, Scheduler } from 'tesseract.js';
 import { IncuriaError, IncuriaErrorType } from '$lib/types';
+import type { WizardFileContext } from '$lib/wizard_scheduler.svelte';
+import { Parser } from './parser';
 
-export async function parseDOCXData(data: Uint8Array, scheduler: Scheduler | null = null) {
-	const zip = new JSZip();
-	const docx = await zip.loadAsync(data);
-	const parser = new XMLParser({
-		ignoreAttributes: false,
-		attributeNamePrefix: '@_'
-	});
+export type DOCXFileData = {
+	images: Map<string, Uint8Array<ArrayBufferLike>>;
+	imgRels: Map<string, string>;
+	textsOrRelIds: (string | [string])[];
+};
 
-	const textsOrRelIds: (string | [string])[] = [];
-	const withImages = scheduler !== null;
+export class DOCXParser extends Parser {
+	data: DOCXFileData | null = null;
 
-	const fileData = await docx.files['word/document.xml'].async('string');
-	const xml = parser.parse(fileData);
-	findAllWT(xml, textsOrRelIds, withImages);
-
-	const imagesAndRels = withImages
-		? await mapImagesToRels(docx, parser)
-		: {
-				images: new Map<string, Uint8Array>(),
-				imgRels: new Map<string, string>()
-			};
-
-	return { ...imagesAndRels, withImages, textsOrRelIds };
-}
-
-export async function parseDOCX(
-	{ images, imgRels, withImages, textsOrRelIds }: Awaited<ReturnType<typeof parseDOCXData>>,
-	batchSize: number,
-	scheduler: Scheduler | null = null,
-	onChunkFinished: ((chunk: string) => void) | null = null
-) {
-	const result = [];
-	for (let i = 0; i < textsOrRelIds.length; i += batchSize) {
-		result.push(
-			...(await Promise.all(
-				textsOrRelIds
-					.slice(i, i + batchSize)
-					.map(async (textOrId) =>
-						parseChunk(textOrId, { images, imgRels, withImages }, scheduler, onChunkFinished)
-					) as Promise<string>[]
-			))
-		);
+	constructor(context: WizardFileContext, scheduler: Scheduler | null) {
+		super(context, scheduler);
 	}
-	return result;
-}
 
-async function parseChunk(
-	textOrId: string | [string],
-	{ images, imgRels, withImages }: Omit<Awaited<ReturnType<typeof parseDOCXData>>, 'textsOrRelIds'>,
-	scheduler: Scheduler | null = null,
-	onChunkFinished: ((chunk: string) => void) | null = null
-) {
-	if (Array.isArray(textOrId)) {
-		const rel = imgRels.get(textOrId[0]);
-		if (rel === undefined) {
+	async init(data: Uint8Array) {
+		const zip = new JSZip();
+		const docx = await zip.loadAsync(data);
+		const parser = new XMLParser({
+			ignoreAttributes: false,
+			attributeNamePrefix: '@_'
+		});
+
+		const textsOrRelIds: (string | [string])[] = [];
+		this.withImages = this.scheduler !== null;
+
+		const fileData = await docx.files['word/document.xml'].async('string');
+		const xml = parser.parse(fileData);
+		this.findAllWT(xml, textsOrRelIds, this.withImages);
+
+		const imagesAndRels = this.withImages
+			? await this.mapImagesToRels(docx, parser)
+			: {
+					images: new Map<string, Uint8Array>(),
+					imgRels: new Map<string, string>()
+				};
+
+		this.withImages = this.withImages && imagesAndRels.images.size != 0;
+
+		this.data = {
+			...imagesAndRels,
+			textsOrRelIds
+		};
+
+		this.context.max = this.data.textsOrRelIds.length;
+		await this.createWorkerPool(this.data!.images.size);
+	}
+
+	async parse() {
+		if (this.data === null)
 			throw new IncuriaError(
-				IncuriaErrorType.DOCX_FAULTY,
-				'DOCX Foto könnte nicht gefunden werden.'
+				IncuriaErrorType.DEVELOPERS_FAULT,
+				'FileWizard wurde nicht initialisiert.'
+			);
+		const result = [];
+		for (let i = 0; i < this.data.textsOrRelIds.length; i += this.batchSize) {
+			result.push(
+				...(await Promise.all(
+					this.data.textsOrRelIds
+						.slice(i, i + this.batchSize)
+						.map(async (textOrId) => this.parseChunk(textOrId)) as Promise<string>[]
+				))
 			);
 		}
-		const fileData = images.get(rel);
-		if (fileData === undefined) {
-			throw new IncuriaError(
-				IncuriaErrorType.DOCX_FAULTY,
-				'DOCX Foto könnte nicht gefunden werden.'
-			);
-		}
-		if (withImages) {
-			const result = await scheduler!.addJob('recognize', fileData as ImageLike);
-			onChunkFinished?.(result.data.text);
-			return result.data.text;
-		}
-	} else {
-		onChunkFinished?.(textOrId);
-		return textOrId;
+		return result;
 	}
-}
 
-function findAllWT(
-	obj: Record<string, unknown>,
-	results: (string | [string])[] = [],
-	withImages: boolean
-) {
-	if (typeof obj === 'object') {
-		for (const key in obj) {
-			if (key === 'w:t') {
-				const text = obj[key] as string;
-				if (text.length > 3) results.push(text);
-			} else if (key === 'a:blip' && withImages) {
-				results.push([(obj[key] as Record<string, string>)['@_r:embed']]);
-			} else {
-				findAllWT(obj[key] as Record<string, unknown>, results, withImages);
+	private async parseChunk(textOrId: string | [string]) {
+		if (Array.isArray(textOrId)) {
+			const rel = this.data!.imgRels.get(textOrId[0]);
+			if (rel === undefined) {
+				throw new IncuriaError(
+					IncuriaErrorType.DOCX_FAULTY,
+					'DOCX Foto könnte nicht gefunden werden.'
+				);
 			}
+			const fileData = this.data!.images.get(rel);
+			if (fileData === undefined) {
+				throw new IncuriaError(
+					IncuriaErrorType.DOCX_FAULTY,
+					'DOCX Foto könnte nicht gefunden werden.'
+				);
+			}
+			if (this.withImages) {
+				const result = await this.scheduler!.addJob('recognize', fileData as ImageLike);
+				this.context.onProgress();
+				return result.data.text;
+			}
+		} else {
+			this.context.onProgress();
+			return textOrId;
 		}
 	}
-	return results;
-}
 
-async function mapImagesToRels(docx: JSZip, parser: XMLParser) {
-	const images: Map<string, Uint8Array> = new Map();
-	const imgRels: Map<string, string> = new Map();
-
-	const mediaFiles = Object.keys(docx.files).filter((fileName) =>
-		fileName.startsWith('word/media/')
-	);
-
-	const relsFiles = Object.keys(docx.files).filter((fileName) =>
-		fileName.startsWith('word/_rels/document.xml.rels')
-	);
-
-	await Promise.all(
-		mediaFiles.map(async (fileName) => {
-			const fileData = await docx.files[fileName].async('uint8array');
-			images.set(fileName.replace('word/', ''), fileData);
-		})
-	);
-
-	await Promise.all(
-		relsFiles.map(async (fileName) => {
-			const fileData = await docx.files[fileName].async('string');
-			const xml = parser.parse(fileData);
-
-			for (const rel of xml.Relationships.Relationship) {
-				if (rel['@_Target'].startsWith('media/image')) {
-					imgRels.set(rel['@_Id'], rel['@_Target']);
+	private async findAllWT(
+		obj: Record<string, unknown>,
+		results: (string | [string])[] = [],
+		withImages: boolean
+	) {
+		if (typeof obj === 'object') {
+			for (const key in obj) {
+				if (key === 'w:t') {
+					const text = obj[key] as string;
+					if (text.length > 3) results.push(text);
+				} else if (key === 'a:blip' && withImages) {
+					results.push([(obj[key] as Record<string, string>)['@_r:embed']]);
+				} else {
+					this.findAllWT(obj[key] as Record<string, unknown>, results, withImages);
 				}
 			}
-		})
-	);
+		}
+		return results;
+	}
 
-	return { images, imgRels };
+	private async mapImagesToRels(docx: JSZip, parser: XMLParser) {
+		const images: Map<string, Uint8Array> = new Map();
+		const imgRels: Map<string, string> = new Map();
+
+		const mediaFiles = Object.keys(docx.files).filter((fileName) =>
+			fileName.startsWith('word/media/')
+		);
+
+		const relsFiles = Object.keys(docx.files).filter((fileName) =>
+			fileName.startsWith('word/_rels/document.xml.rels')
+		);
+
+		await Promise.all(
+			mediaFiles.map(async (fileName) => {
+				const fileData = await docx.files[fileName].async('uint8array');
+				images.set(fileName.replace('word/', ''), fileData);
+			})
+		);
+
+		await Promise.all(
+			relsFiles.map(async (fileName) => {
+				const fileData = await docx.files[fileName].async('string');
+				const xml = parser.parse(fileData);
+
+				for (const rel of xml.Relationships.Relationship) {
+					if (rel['@_Target'].startsWith('media/image')) {
+						imgRels.set(rel['@_Id'], rel['@_Target']);
+					}
+				}
+			})
+		);
+
+		return { images, imgRels };
+	}
 }

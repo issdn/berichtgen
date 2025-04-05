@@ -1,99 +1,4 @@
-// Bun Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`Spread multiple entries across multiple weeks. 1`] = `
-[
-  {
-    "datum": "2025-03-03",
-    "qualifikationen": [
-      "Allgemeinbildende Fächer",
-    ],
-    "text": 
-"Prozesskette Lieferantenmanagement:
-Die verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl."
-,
-  },
-  {
-    "datum": "2025-03-10",
-    "qualifikationen": [
-      "Allgemeinbildende Fächer",
-    ],
-    "text": 
-"Kriterien zur Analyse und Auswahl von Lieferanten:
-Die verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen."
-,
-  },
-  {
-    "datum": "2025-03-17",
-    "qualifikationen": [
-      "Betriebswirtschaft",
-    ],
-    "text": 
-"Lieferantenbeziehungsmanagement:
-Langfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten."
-,
-  },
-  {
-    "datum": "2025-03-17",
-    "qualifikationen": [
-      "Betriebswirtschaft",
-    ],
-    "text": 
-"Risikomanagement in der Lieferkette:
-Identifikation und Bewertung von Risiken bei der Zusammenarbeit mit Lieferanten."
-,
-  },
-]
-`;
-
-exports[`Spread one entry across multiple weeks. 1`] = `
-[
-  {
-    "datum": "2025-03-03",
-    "qualifikationen": [
-      "Allgemeinbildende Fächer",
-    ],
-    "text": 
-"Prozesskette Lieferantenmanagement:
-Die verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl."
-,
-  },
-]
-`;
-
-exports[`Spread multiple entries across one week. 1`] = `
-[
-  {
-    "datum": "2025-03-03",
-    "qualifikationen": [
-      "Allgemeinbildende Fächer",
-    ],
-    "text": 
-"Prozesskette Lieferantenmanagement:
-Die verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl."
-,
-  },
-  {
-    "datum": "2025-03-03",
-    "qualifikationen": [
-      "Allgemeinbildende Fächer",
-    ],
-    "text": 
-"Kriterien zur Analyse und Auswahl von Lieferanten:
-Die verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen."
-,
-  },
-  {
-    "datum": "2025-03-03",
-    "qualifikationen": [
-      "Betriebswirtschaft",
-    ],
-    "text": 
-"Lieferantenbeziehungsmanagement:
-Langfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten."
-,
-  },
-]
-`;
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Spread multiple entries across multiple week ranges. 1`] = `
 [
@@ -180,6 +85,101 @@ Methoden und Kennzahlen zur Überwachung und Steuerung der Lieferantenleistung."
     "text": 
 "Global Sourcing:
 Vor- und Nachteile der weltweiten Beschaffung von Gütern und Dienstleistungen."
+,
+  },
+]
+`;
+
+exports[`Spread multiple entries across multiple weeks. 1`] = `
+[
+  {
+    "datum": "2025-03-03",
+    "qualifikationen": [
+      "Allgemeinbildende Fächer",
+    ],
+    "text": 
+"Prozesskette Lieferantenmanagement:
+Die verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl."
+,
+  },
+  {
+    "datum": "2025-03-10",
+    "qualifikationen": [
+      "Allgemeinbildende Fächer",
+    ],
+    "text": 
+"Kriterien zur Analyse und Auswahl von Lieferanten:
+Die verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen."
+,
+  },
+  {
+    "datum": "2025-03-17",
+    "qualifikationen": [
+      "Betriebswirtschaft",
+    ],
+    "text": 
+"Lieferantenbeziehungsmanagement:
+Langfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten."
+,
+  },
+  {
+    "datum": "2025-03-17",
+    "qualifikationen": [
+      "Betriebswirtschaft",
+    ],
+    "text": 
+"Risikomanagement in der Lieferkette:
+Identifikation und Bewertung von Risiken bei der Zusammenarbeit mit Lieferanten."
+,
+  },
+]
+`;
+
+exports[`Spread multiple entries across one week. 1`] = `
+[
+  {
+    "datum": "2025-03-03",
+    "qualifikationen": [
+      "Allgemeinbildende Fächer",
+    ],
+    "text": 
+"Prozesskette Lieferantenmanagement:
+Die verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl."
+,
+  },
+  {
+    "datum": "2025-03-03",
+    "qualifikationen": [
+      "Allgemeinbildende Fächer",
+    ],
+    "text": 
+"Kriterien zur Analyse und Auswahl von Lieferanten:
+Die verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen."
+,
+  },
+  {
+    "datum": "2025-03-03",
+    "qualifikationen": [
+      "Betriebswirtschaft",
+    ],
+    "text": 
+"Lieferantenbeziehungsmanagement:
+Langfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten."
+,
+  },
+]
+`;
+
+exports[`Spread one entry across multiple weeks. 1`] = `
+[
+  {
+    "datum": "2025-03-03",
+    "qualifikationen": [
+      "Allgemeinbildende Fächer",
+    ],
+    "text": 
+"Prozesskette Lieferantenmanagement:
+Die verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl."
 ,
   },
 ]

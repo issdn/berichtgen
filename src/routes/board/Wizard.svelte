@@ -4,6 +4,19 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Download } from 'lucide-svelte';
 	import { slide } from 'svelte/transition';
+	import { onMount } from 'svelte';
+	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+	onMount(() => {
+		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+			import('pdfjs-dist/build/pdf.worker.min?url').then((pdfWorkerURL) => {
+				pdf.GlobalWorkerOptions.workerSrc = new URL(
+					pdfWorkerURL.default,
+					import.meta.url
+				).toString();
+			});
+		}
+	});
 </script>
 
 <div class="relative h-full w-full gap-y-8 rounded-lg border">
@@ -13,11 +26,11 @@
 		<div>
 			{#if wizardScheduler.files === null}
 				<p transition:slide>Es wird auf die Dateien gewartet.</p>
-			{:else if (wizardScheduler.finished?.length ?? 0) === wizardScheduler.files.length}
+			{:else if wizardScheduler.filesReady === wizardScheduler.files.length}
 				<p transition:slide>Fertig!</p>
 			{:else}
 				<p transition:slide>
-					{wizardScheduler.finished?.length ?? 0}/{wizardScheduler.files.length}
+					{wizardScheduler.filesReady}/{wizardScheduler.files.length}
 				</p>
 			{/if}
 		</div>

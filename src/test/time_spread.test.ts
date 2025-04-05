@@ -74,16 +74,16 @@ test('Spread multiple entries across multiple weeks.', () => {
 		}
 	];
 
-	expect(
-		spreadEntriesAcrossWeeks(entries, [
-			{
-				daterange: {
-					start: parseDate('2025-03-04'),
-					end: parseDate('2025-03-17')
-				}
+	const received = spreadEntriesAcrossWeeks(entries, [
+		{
+			daterange: {
+				start: parseDate('2025-03-04'),
+				end: parseDate('2025-03-17')
 			}
-		])
-	).toMatchSnapshot(expected);
+		}
+	]);
+
+	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
 
 test('Spread one entry across multiple weeks.', () => {
@@ -102,16 +102,16 @@ test('Spread one entry across multiple weeks.', () => {
 		}
 	];
 
-	expect(
-		spreadEntriesAcrossWeeks(entries, [
-			{
-				daterange: {
-					start: parseDate('2025-03-04'),
-					end: parseDate('2025-03-24')
-				}
+	const received = spreadEntriesAcrossWeeks(entries, [
+		{
+			daterange: {
+				start: parseDate('2025-03-04'),
+				end: parseDate('2025-03-24')
 			}
-		])
-	).toMatchSnapshot(expected);
+		}
+	]);
+
+	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
 
 test('Spread multiple entries across one week.', () => {
@@ -148,16 +148,16 @@ test('Spread multiple entries across one week.', () => {
 		}
 	];
 
-	expect(
-		spreadEntriesAcrossWeeks(entries, [
-			{
-				daterange: {
-					start: parseDate('2025-03-04'),
-					end: parseDate('2025-03-05')
-				}
+	const received = spreadEntriesAcrossWeeks(entries, [
+		{
+			daterange: {
+				start: parseDate('2025-03-04'),
+				end: parseDate('2025-03-05')
 			}
-		])
-	).toMatchSnapshot(expected);
+		}
+	]);
+
+	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
 
 test('Spread multiple entries across multiple week ranges.', () => {
@@ -194,22 +194,21 @@ test('Spread multiple entries across multiple week ranges.', () => {
 		}
 	];
 
-	expect(
-		spreadEntriesAcrossWeeks(entries, [
-			{
-				daterange: {
-					start: parseDate('2025-03-04'),
-					end: parseDate('2025-03-05')
-				}
-			},
-			{
-				daterange: {
-					start: parseDate('2025-04-07'),
-					end: parseDate('2025-04-08')
-				}
+	const received = spreadEntriesAcrossWeeks(entries, [
+		{
+			daterange: {
+				start: parseDate('2025-03-04'),
+				end: parseDate('2025-03-05')
 			}
-		])
-	).toMatchSnapshot(expected);
+		},
+		{
+			daterange: {
+				start: parseDate('2025-04-07'),
+				end: parseDate('2025-04-08')
+			}
+		}
+	]);
+	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
 
 test('Spread multiple entries across multiple week ranges.', () => {
@@ -264,22 +263,22 @@ test('Spread multiple entries across multiple week ranges.', () => {
 		}
 	];
 
-	expect(
-		spreadEntriesAcrossWeeks(entries, [
-			{
-				daterange: {
-					start: parseDate('2025-03-03'),
-					end: parseDate('2025-03-05')
-				},
-				hours: 30
+	const received = spreadEntriesAcrossWeeks(entries, [
+		{
+			daterange: {
+				start: parseDate('2025-03-03'),
+				end: parseDate('2025-03-05')
 			},
-			{
-				daterange: {
-					start: parseDate('2025-04-07'),
-					end: parseDate('2025-04-08')
-				},
-				hours: 20
-			}
-		])
-	).toMatchSnapshot(expected);
+			hours: 30
+		},
+		{
+			daterange: {
+				start: parseDate('2025-04-07'),
+				end: parseDate('2025-04-08')
+			},
+			hours: 20
+		}
+	]);
+
+	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });

@@ -1,15 +1,18 @@
 import { createWorker, createScheduler } from 'tesseract.js';
 import { createCanvas } from 'canvas';
-import { parsePDF, parsePDFData } from '$lib/parse/pdf_parser';
-import { parseDOCX, parseDOCXData } from '$lib/parse/docx_parser';
-import { expect, test } from 'bun:test';
+import { DOCXParser } from '$lib/parse/docx_parser';
+import { WizardFileContext } from '$lib/wizard_scheduler.svelte';
+import { PDFParser } from '$lib/parse/pdf_parser';
+import { expect, test } from 'vitest';
+import * as fs from 'node:fs';
 
 test('Read text from docx kurwa', async () => {
 	const scheduler = await createScheduler();
 	scheduler.addWorker(await createWorker('eng'));
-	const file = await Bun.file('./src/test/text_img.docx').bytes();
-	const docxData = await parseDOCXData(file, scheduler);
-	const response = await parseDOCX(docxData, scheduler);
+	const file = await fs.readFileSync('./src/test/text_img.docx');
+	const docxParser = new DOCXParser(new WizardFileContext(file as unknown as File), scheduler);
+	await docxParser.init(new Uint8Array(file.buffer));
+	const response = await docxParser.parse();
 
 	await scheduler.terminate();
 	expect(response.join('\n')).toBe(['NORMAL TEXT', 'IMAGE TEXT\n'].join('\n'));
@@ -18,10 +21,11 @@ test('Read text from docx kurwa', async () => {
 test('Read text from pdf kurwa', async () => {
 	const scheduler = await createScheduler();
 	scheduler.addWorker(await createWorker('eng'));
-	const file = await Bun.file('./src/test/text_img.pdf').bytes();
-	const imageExtractProp = {
+	const file = await fs.readFileSync('./src/test/text_img.pdf');
+	const pdfParser = new PDFParser(
+		new WizardFileContext(file as unknown as File),
 		scheduler,
-		getNewCanvas: (width: number, height: number) => {
+		(width: number, height: number) => {
 			const canvas = createCanvas(width, height) as unknown as OffscreenCanvas;
 			canvas.convertToBlob = function () {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,14 +33,11 @@ test('Read text from pdf kurwa', async () => {
 			};
 			return { canvas, context: canvas.getContext('2d')! };
 		}
-	};
-	const { blobsOrNullsAndPages, nrImages } = await parsePDFData(
-		new Uint8Array(file),
-		imageExtractProp
 	);
-	const result = await parsePDF(blobsOrNullsAndPages, imageExtractProp);
+	await pdfParser.init(new Uint8Array(file.buffer));
+	const response = await pdfParser.parse();
 
 	await scheduler.terminate();
-	expect(nrImages).toBe(1);
-	expect(result.join('\n')).toBe(['IMAGE TEXT\n'].join('\n'));
+	expect(pdfParser.batchSize).toBe(1);
+	expect(response.join('\n')).toBe(['IMAGE TEXT\n'].join('\n'));
 });

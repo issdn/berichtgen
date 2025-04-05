@@ -1,13 +1,13 @@
 import type { Scheduler } from 'tesseract.js';
 import type { Entry } from './types';
 import { combineJSONs } from './parse/combine';
-import { parseDOCX, parseDOCXData } from '$lib/parse/docx_parser';
 import { IncuriaError, IncuriaErrorType, WizardStep } from '$lib/types';
 import { getCompletions } from '$lib/hooks/completion';
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
-import { parsePDF, parsePDFData } from './parse/pdf_parser';
+import { PDFParser } from './parse/pdf_parser';
 import fsm from 'svelte-fsm';
 import type { DateRangeSchema } from './components/time_spread_schematic';
+import { DOCXParser } from './parse/docx_parser';
 
 export class WizardScheduler {
 	batchSize = 5;
@@ -52,44 +52,23 @@ export class WizardScheduler {
 		})();
 	}
 
-	async createWorkerPool(nrImages: number) {
-		const { createWorker } = await import('tesseract.js');
-		const nrWorkers = clamp(nrImages * 0.1, 1, 25);
-		for (let i = 0; i < nrWorkers; i++) {
-			this.scheduler!.addWorker(await createWorker('deu'));
-		}
-		return nrWorkers;
-	}
-
 	async parseByFileType(file: File, context: WizardFileContext) {
-		function onProgress() {
-			context.value += 1;
-		}
 		const data = new Uint8Array(await file.arrayBuffer());
 		if (data === null) throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Unbekannter Fehler');
 		switch (file.type) {
 			case 'application/pdf': {
-				const { nrImages, blobsOrNullsAndPages } = await parsePDFData(data);
-				await this.createWorkerPool(nrImages);
-				context.max = blobsOrNullsAndPages.length;
-				return await parsePDF(
-					blobsOrNullsAndPages,
-					{
-						scheduler: this.scheduler,
-						getNewCanvas(width, height) {
-							const canvas = new OffscreenCanvas(width, height);
-							const context = canvas.getContext('2d')!;
-							return { canvas, context };
-						}
-					},
-					onProgress
-				);
+				const pdfParser = new PDFParser(context, this.scheduler, (width, height) => {
+					const canvas = new OffscreenCanvas(width, height);
+					const context = canvas.getContext('2d')!;
+					return { canvas, context };
+				});
+				await pdfParser.init(data);
+				return await pdfParser.parse();
 			}
 			case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
-				const docxData = await parseDOCXData(data, wizardScheduler.scheduler);
-				const batchSize = await this.createWorkerPool(docxData.images.size);
-				context.max = docxData.textsOrRelIds.length;
-				return await parseDOCX(docxData, batchSize, this.scheduler, onProgress);
+				const docxParser = new DOCXParser(context, this.scheduler);
+				await docxParser.init(data);
+				return await docxParser.parse();
 			}
 			default:
 				throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Dateityp nicht unterstützt.');
@@ -233,8 +212,6 @@ export class WizardScheduler {
 // eslint-disable-next-line prefer-const
 export let wizardScheduler = new WizardScheduler();
 
-const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
-
 export class WizardFileContext {
 	snapshot: string | Entry[] | Required<Entry>[] | undefined;
 
@@ -251,6 +228,10 @@ export class WizardFileContext {
 	file: File;
 
 	cancelled: boolean = false;
+
+	onProgress() {
+		this.value += 1;
+	}
 
 	constructor(file: File) {
 		this.file = file;
