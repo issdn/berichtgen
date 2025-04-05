@@ -59,6 +59,7 @@ export class DOCXParser extends Parser {
 			);
 		const result = [];
 		for (let i = 0; i < this.data.textsOrRelIds.length; i += this.batchSize) {
+			if (this.context.cancelled) break;
 			result.push(
 				...(await Promise.all(
 					this.data.textsOrRelIds

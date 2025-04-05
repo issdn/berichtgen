@@ -64,6 +64,7 @@ export class PDFParser extends Parser {
 			);
 		const result = [];
 		for (let i = 0; i < this.data.length; i += this.batchSize) {
+			if (this.context.cancelled) break;
 			result.push(
 				...(await Promise.all(
 					this.data!.slice(i, i + this.batchSize).map(async ({ blobOrNull, page }) => {
