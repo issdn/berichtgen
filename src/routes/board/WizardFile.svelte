@@ -46,6 +46,7 @@
 					<Tooltip.Root open={$machine === WizardStep.WAITING}>
 						<Tooltip.Trigger>
 							<TimeSpreadDialog
+								id={context.file.name}
 								onClose={() => {
 									if (context.dateRanges.length > 0) {
 										machine.run();

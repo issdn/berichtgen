@@ -9,12 +9,13 @@
 	import { buttonVariants } from './ui/button';
 	import { slide } from 'svelte/transition';
 	import { zod } from 'sveltekit-superforms/adapters';
-	import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 
 	let {
 		onClose,
-		onValidChange
-	}: { onClose: () => void; onValidChange: (data: DateRangeSchema['values']) => void } = $props();
+		onValidChange,
+		id
+	}: { onClose: () => void; onValidChange: (data: DateRangeSchema['values']) => void; id: string } =
+		$props();
 
 	function newRow(id: number) {
 		return {
@@ -28,6 +29,7 @@
 	const { form, errors, enhance, validateForm, ...rest } = superForm(
 		defaults({ values: [newRow(0)] }, zod(dateRangeSchema)),
 		{
+			id,
 			SPA: true,
 			dataType: 'json',
 			validators: zodClient(dateRangeSchema),
