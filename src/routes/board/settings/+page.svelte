@@ -6,7 +6,6 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ProviderAddDialog from './ProviderAddDialog.svelte';
-	import SuperDebug from 'sveltekit-superforms';
 	import { toast } from 'svelte-sonner';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { providerSchema } from './schema';

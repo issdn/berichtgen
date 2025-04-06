@@ -126,15 +126,13 @@ export class WizardScheduler {
 						this.cancel();
 						return;
 					}
-					getCompletions({
-						text: context.snapshot as string,
-						apiKey: 'sk-a75d88242ebe42bb9e14ebd1b6c8124f'
-					})
+					getCompletions(context.snapshot as string)
 						.then((value) => {
 							context.snapshot = value;
 							this.next();
 						})
 						.catch((e) => {
+							console.log(e);
 							if (e instanceof Error) {
 								context.message = e.message;
 							} else {

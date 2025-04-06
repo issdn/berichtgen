@@ -36,9 +36,11 @@
 
 <div transition:slide class="flex flex-col justify-center gap-y-4 bg-muted p-4">
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
-		<span class="basis-1/4 overflow-hidden truncate">{context.file.name}</span>
+		<span class="basis-2/5 overflow-hidden truncate">{context.file.name}</span>
 		{#if $machine === WizardStep.PROCESSING}
-			<Progress class="basis-3/4" max={context.max} value={context.value} />
+			<Progress class="basis-3/5" max={context.max} value={context.value} />
+		{:else if $machine === WizardStep.ERROR}
+			<p class="text-sm text-muted-foreground">{context.message}</p>
 		{/if}
 		{#if $machine !== WizardStep.DONE && $machine !== WizardStep.ERROR && $machine !== WizardStep.CANCELLED}
 			<div class="flex flex-row gap-x-2">
