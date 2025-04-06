@@ -10,10 +10,12 @@
 
 	let {
 		provider,
-		form
+		form,
+		onSubmit
 	}: {
-		provider: ProviderSchemaType;
+		provider: Omit<ProviderSchemaType, 'token'> & { token: ProviderSchemaType['token'] | null };
 		form: SuperForm<ProviderSchemaType>;
+		onSubmit: () => void;
 	} = $props();
 
 	let { submitting, form: data, formId, errors } = form;
@@ -52,6 +54,7 @@
 				formaction="/board/settings?/add"
 				onclick={() => {
 					$formId = provider.id;
+					onSubmit();
 					open = false;
 				}}>Speichern</Button
 			>

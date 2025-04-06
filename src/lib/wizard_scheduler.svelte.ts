@@ -132,7 +132,6 @@ export class WizardScheduler {
 							this.next();
 						})
 						.catch((e) => {
-							console.log(e);
 							if (e instanceof Error) {
 								context.message = e.message;
 							} else {

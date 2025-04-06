@@ -7,16 +7,23 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ProviderAddDialog from './ProviderAddDialog.svelte';
 	import { toast } from 'svelte-sonner';
-	import { zodClient } from 'sveltekit-superforms/adapters';
-	import { providerSchema } from './schema';
+	import { zod, zodClient } from 'sveltekit-superforms/adapters';
+	import { providerDeleteSchema, validProviderSchema } from './schema';
+	import { incuriaStore } from '$lib/stores/board.svelte';
 
 	let { data } = $props();
+
+	let action: 'delete' | 'add' = 'delete';
 
 	const form = superForm(data.form, {
 		clearOnSubmit: 'errors',
 		dataType: 'json',
-		validators: zodClient(providerSchema),
+		validators: zodClient(validProviderSchema),
 		validationMethod: 'oninput',
+		onSubmit({ validators }) {
+			if (action === 'delete') validators(zod(providerDeleteSchema));
+			else validators(zod(validProviderSchema));
+		},
 		onError({ result }) {
 			toast.error(result.error.message);
 		},
@@ -32,12 +39,17 @@
 		},
 		onUpdated({ form }) {
 			if (form.valid) {
+				incuriaStore.providers = incuriaStore.providers.map((provider) => {
+					if (provider.id === form.data.id)
+						return { ...{ ...provider, token: null }, ...form.data };
+					return provider;
+				});
 				toast.success(form.message);
 			}
 		}
 	});
 
-	const { form: formData, enhance, formId, submitting } = form;
+	const { form: formData, enhance, formId, submitting, submit } = form;
 </script>
 
 <div class="flex flex-row md:px-64">
@@ -56,7 +68,7 @@
 						</Table.Row>
 					</Table.Header>
 					<Table.Body>
-						{#each data.providers as provider}
+						{#each incuriaStore.providers as provider}
 							{@const hasToken = provider.token !== null && provider.token.length > 0}
 							<Table.Row>
 								<Table.Cell>
@@ -67,7 +79,6 @@
 								</Table.Cell>
 								<Table.Cell class="flex flex-row justify-end gap-x-2">
 									{#if hasToken}
-										<Input name="id" type="hidden"></Input>
 										<Button
 											disabled={$submitting}
 											type="submit"
@@ -75,11 +86,18 @@
 											onclick={() => {
 												$formId = $formData.id = provider.id;
 												$formData.name = provider.name;
+												action = 'delete';
 											}}
 											variant="ghost"><Trash2 /></Button
 										>
 									{:else}
-										<ProviderAddDialog {form} {provider} />
+										<ProviderAddDialog
+											onSubmit={() => {
+												action = 'add';
+											}}
+											{form}
+											{provider}
+										/>
 									{/if}
 								</Table.Cell>
 							</Table.Row>

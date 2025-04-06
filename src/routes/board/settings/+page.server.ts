@@ -1,63 +1,22 @@
 import { db } from '$lib/server/db';
-import { llmProviders, usersLLMProviders } from '$lib/server/db/schema';
+import { usersLLMProviders } from '$lib/server/db/schema';
 import { message, superValidate } from 'sveltekit-superforms';
 import type { PageServerLoad } from './$types';
-import { providerDeleteSchema, providerSchema } from './schema';
+import { providerDeleteSchema, providerSchema, validProviderSchema } from './schema';
 import { zod } from 'sveltekit-superforms/adapters';
 import { error, type Actions } from '@sveltejs/kit';
 import { eq, and } from 'drizzle-orm';
 
-function hideToken(
-	str: string,
-	visibleStart: number = 4,
-	visibleEnd: number = 2,
-	maskChar: string = '*'
-): string {
-	if (str.length <= visibleStart + visibleEnd) {
-		return str;
-	}
-
-	const maskedLength = str.length - visibleStart - visibleEnd;
-	const maskedPart = maskChar.repeat(maskedLength);
-
-	return str.slice(0, visibleStart) + maskedPart + str.slice(str.length - visibleEnd);
-}
-
-export const load: PageServerLoad = async ({ locals }) => {
-	const session = await locals.auth();
-
-	const providers = await db
-		.select({
-			id: llmProviders.id,
-			name: llmProviders.name,
-			price: llmProviders.price,
-			token: usersLLMProviders.token
-		})
-		.from(llmProviders)
-		.leftJoin(
-			usersLLMProviders,
-			and(
-				eq(usersLLMProviders.userId, session!.user!.id!),
-				eq(usersLLMProviders.providerId, llmProviders.id)
-			)
-		);
-
-	const providersHiddenTokens = providers.map((provider) => {
-		if (provider.token != null) {
-			provider.token = hideToken(provider.token);
-		}
-		return provider;
-	});
-
+export const load: PageServerLoad = async () => {
 	const form = await superValidate(zod(providerSchema));
 
-	return { form, providers: providersHiddenTokens };
+	return { form };
 };
 
 export const actions: Actions = {
 	add: async ({ request, locals }) => {
 		const session = await locals.auth();
-		const form = await superValidate(request, zod(providerSchema));
+		const form = await superValidate(request, zod(validProviderSchema));
 
 		if (!form.valid) {
 			return message(form, 'Daten sind falsch.', { status: 400 });
@@ -94,10 +53,9 @@ export const actions: Actions = {
 						eq(usersLLMProviders.userId, session!.user!.id!)
 					)
 				);
+			return message(form, `${form.data.name ?? ''} Token gelöscht!`);
 		} catch {
 			return error(406, 'Fehler beim Speichern in die Datenbank.');
 		}
-
-		return message(form, `${form.data.name ?? ''} Token gelöscht!`);
 	}
 };
