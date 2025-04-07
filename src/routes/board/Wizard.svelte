@@ -6,6 +6,7 @@
 	import { slide } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
+	import ProviderSelect from './ProviderSelect.svelte';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -23,17 +24,7 @@
 	<div
 		class="flex flex-row items-center justify-between gap-x-4 bg-muted p-4 text-muted-foreground"
 	>
-		<div>
-			{#if wizardScheduler.files === null}
-				<p transition:slide>Es wird auf die Dateien gewartet.</p>
-			{:else if wizardScheduler.filesReady === wizardScheduler.files.length}
-				<p transition:slide>Fertig!</p>
-			{:else}
-				<p transition:slide>
-					{wizardScheduler.filesReady}/{wizardScheduler.files.length}
-				</p>
-			{/if}
-		</div>
+		<ProviderSelect />
 		{#if wizardScheduler.result !== null}
 			{#await wizardScheduler.result then result}
 				<Button href={result} download="bericht.json"><Download />Herunterladen</Button>

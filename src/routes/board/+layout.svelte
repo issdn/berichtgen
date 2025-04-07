@@ -4,6 +4,7 @@
 	let { data, children } = $props();
 
 	incuriaStore.providers = data.providers;
+	incuriaStore.currentProvider = data.providers[0];
 </script>
 
 {@render children()}

@@ -1,3 +1,4 @@
+import { incuriaStore } from '$lib/stores/board.svelte';
 import { IncuriaError, IncuriaErrorType, type Entry } from '$lib/types';
 import * as z from 'zod';
 
@@ -15,7 +16,7 @@ export async function getCompletions(text: string) {
 
 	const completionsPromises = messages.map(async (t) => {
 		const result = await fetch('/board/completion', {
-			body: JSON.stringify({ text: t, provider: 'Deepseek' }),
+			body: JSON.stringify({ text: t, provider: incuriaStore.currentProvider.id }),
 			method: 'POST'
 		});
 		const data = await result.json();
