@@ -14,7 +14,7 @@
 	let triggerRef = $state<HTMLButtonElement>(null!);
 
 	const selectedValue = $derived(
-		incuriaStore.providers.find((f) => f.name === incuriaStore.currentProvider.name)?.name
+		incuriaStore.providers.find((f) => f.name === incuriaStore.currentProvider)?.name
 	);
 
 	function closeAndFocusTrigger() {
@@ -51,14 +51,14 @@
 							class="px-4 py-3"
 							value={provider.name}
 							onSelect={() => {
-								incuriaStore.currentProvider.name = provider.name;
+								incuriaStore.currentProvider = provider.name;
 								closeAndFocusTrigger();
 							}}
 						>
 							<Check
 								class={cn(
 									'mr-2 size-4',
-									incuriaStore.currentProvider.name !== provider.name && 'text-transparent'
+									incuriaStore.currentProvider !== provider.name && 'text-transparent'
 								)}
 							/>
 							<div class="flex w-full flex-row items-center justify-between">
