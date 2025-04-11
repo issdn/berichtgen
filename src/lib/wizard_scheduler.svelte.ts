@@ -8,6 +8,7 @@ import { PDFParser } from './parse/pdf_parser';
 import fsm from 'svelte-fsm';
 import type { DateRangeSchema } from './components/time_spread_schematic';
 import { DOCXParser } from './parse/docx_parser';
+import { incuriaStore } from '$lib/stores/board.svelte';
 
 export class WizardScheduler {
 	batchSize = 5;
@@ -34,8 +35,10 @@ export class WizardScheduler {
 	workersNr = 0;
 
 	async init() {
-		const { createScheduler } = await import('tesseract.js');
-		this.scheduler = createScheduler();
+		if (this.scheduler === null) {
+			const { createScheduler } = await import('tesseract.js');
+			this.scheduler = createScheduler();
+		}
 		this.result = null;
 		this.filesReady = 0;
 		for (let i = 0; i < this.batchSize; i++) {
@@ -61,16 +64,21 @@ export class WizardScheduler {
 		if (data === null) throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Unbekannter Fehler');
 		switch (file.type) {
 			case 'application/pdf': {
-				const pdfParser = new PDFParser(context, this.scheduler, (width, height) => {
-					const canvas = new OffscreenCanvas(width, height);
-					const context = canvas.getContext('2d')!;
-					return { canvas, context };
-				});
+				const pdfParser = new PDFParser(
+					context,
+					this.scheduler!,
+					(width, height) => {
+						const canvas = new OffscreenCanvas(width, height);
+						const context = canvas.getContext('2d')!;
+						return { canvas, context };
+					},
+					incuriaStore.processPhotos
+				);
 				await pdfParser.init(data);
 				return await pdfParser.parse();
 			}
 			case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
-				const docxParser = new DOCXParser(context, this.scheduler);
+				const docxParser = new DOCXParser(context, this.scheduler!, incuriaStore.processPhotos);
 				await docxParser.init(data);
 				return await docxParser.parse();
 			}

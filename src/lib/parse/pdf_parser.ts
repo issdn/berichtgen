@@ -10,12 +10,13 @@ export type PDFFileData = {
 	page: pdf.PDFPageProxy;
 }[];
 
-type GetCanvasFunction =
-	| ((
-			width: number,
-			height: number
-	  ) => { canvas: OffscreenCanvas; context: OffscreenCanvasRenderingContext2D })
-	| null;
+type GetCanvasFunction = (
+	width: number,
+	height: number
+) => { canvas: OffscreenCanvas; context: OffscreenCanvasRenderingContext2D };
+
+// Basically parsing goes like this -> get fundamental Data about the file so that some context could be shown to the user.
+// Here it's number of texts and images. Then pass it to the real, heavy parse function so that it parses the text.
 
 export class PDFParser extends Parser {
 	data: PDFFileData | null = null;
@@ -24,16 +25,17 @@ export class PDFParser extends Parser {
 
 	constructor(
 		context: WizardFileContext,
-		scheduler: Scheduler | null,
-		getNewCanvas: GetCanvasFunction | null
+		scheduler: Scheduler,
+		getNewCanvas: GetCanvasFunction,
+		withImages: boolean = false
 	) {
-		if ((context == null) !== (getNewCanvas == null)) {
+		if (context == null || getNewCanvas == null) {
 			throw new IncuriaError(
 				IncuriaErrorType.DEVELOPERS_FAULT,
 				'To use text from image extraction you have to pass getNewCanvas.'
 			);
 		}
-		super(context, scheduler);
+		super(context, scheduler, withImages);
 		this.getNewCanvas = getNewCanvas;
 	}
 
@@ -43,9 +45,12 @@ export class PDFParser extends Parser {
 		const blobsOrNullsAndPages = await Promise.all(
 			Array.from({ length: document.numPages }, (_, i) =>
 				(async () => {
+					let blobOrNull = null;
 					const page = await document.getPage(i + 1);
-					const blobOrNull = await this.getBlobs(page);
-					if (blobOrNull !== null) nrImages += 1;
+					if (this.withImages) {
+						blobOrNull = await this.getPageAsImageBlob(page);
+						if (blobOrNull !== null) nrImages += 1;
+					}
 					return { blobOrNull, page };
 				})()
 			)
@@ -84,7 +89,7 @@ export class PDFParser extends Parser {
 		return result;
 	}
 
-	private async getBlobs(page: pdf.PDFPageProxy) {
+	private async getPageAsImageBlob(page: pdf.PDFPageProxy) {
 		const ops = (await page.getOperatorList()).fnArray;
 		const viewport = page.getViewport({ scale: 1 });
 
@@ -104,6 +109,3 @@ export class PDFParser extends Parser {
 		return await canvas.convertToBlob();
 	}
 }
-
-// Basically parsing goes like this -> get fundamental Data about the file so that some context could be shown to the user.
-// Here it's number of texts and images. Then pass it to the real, heavy parse function so that it parses the text.

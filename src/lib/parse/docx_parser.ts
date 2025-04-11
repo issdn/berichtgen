@@ -14,8 +14,8 @@ export type DOCXFileData = {
 export class DOCXParser extends Parser {
 	data: DOCXFileData | null = null;
 
-	constructor(context: WizardFileContext, scheduler: Scheduler | null) {
-		super(context, scheduler);
+	constructor(context: WizardFileContext, scheduler: Scheduler, withImages: boolean = false) {
+		super(context, scheduler, withImages);
 	}
 
 	async init(data: Uint8Array) {
@@ -27,7 +27,6 @@ export class DOCXParser extends Parser {
 		});
 
 		const textsOrRelIds: (string | [string])[] = [];
-		this.withImages = this.scheduler !== null;
 
 		const fileData = await docx.files['word/document.xml'].async('string');
 		const xml = parser.parse(fileData);
@@ -39,8 +38,6 @@ export class DOCXParser extends Parser {
 					images: new Map<string, Uint8Array>(),
 					imgRels: new Map<string, string>()
 				};
-
-		this.withImages = this.withImages && imagesAndRels.images.size != 0;
 
 		this.data = {
 			...imagesAndRels,
@@ -88,6 +85,7 @@ export class DOCXParser extends Parser {
 					'DOCX Foto könnte nicht gefunden werden.'
 				);
 			}
+
 			if (this.withImages) {
 				const result = await this.scheduler!.addJob('recognize', fileData as ImageLike);
 				this.context.onProgress();

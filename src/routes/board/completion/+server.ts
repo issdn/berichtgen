@@ -14,6 +14,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	try {
 		const { text, provider } = schema.parse(body);
+
 		const query = await db
 			.select()
 			.from(usersLLMProviders)
@@ -22,7 +23,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			)
 			.limit(1);
 
-		const token = query[0].token;
+		const token = query[0]?.token ?? 'sum token';
 
 		return new Response(
 			JSON.stringify({

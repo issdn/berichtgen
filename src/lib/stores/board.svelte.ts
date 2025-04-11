@@ -1,9 +1,9 @@
-import type { ProviderSchemaType } from '../../routes/board/settings/schema';
+import type { ProviderSchemaType } from '$routes/board/settings/schema';
 
 class IncuriaStore {
 	_providers: ProviderSchemaType[] | null = $state(null);
 
-	_currentProvider: string | null = $state(null);
+	_currentProvider: ProviderSchemaType | null = $state(null);
 
 	get providers() {
 		return this._providers!;
@@ -18,9 +18,11 @@ class IncuriaStore {
 	}
 
 	set currentProvider(value) {
-		localStorage.setItem('provider', value);
+		localStorage.setItem('provider', value.id);
 		this._currentProvider = value;
 	}
+
+	processPhotos = $state(false);
 }
 
 export const incuriaStore = new IncuriaStore();

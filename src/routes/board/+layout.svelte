@@ -7,7 +7,10 @@
 	incuriaStore.providers = data.providers;
 
 	onMount(() => {
-		incuriaStore.currentProvider = localStorage.getItem('provider') ?? data.providers[0].name;
+		const providerId = localStorage.getItem('provider') ?? data.providers[0].id;
+
+		incuriaStore.currentProvider =
+			data.providers.find((provider) => provider.id === providerId) ?? data.providers[0];
 	});
 </script>
 
