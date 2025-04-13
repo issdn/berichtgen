@@ -58,6 +58,7 @@
 	},
 	"dependencies": {
 		"@auth/drizzle-adapter": "^1.8.0",
+		"@auth/pg-adapter": "^1.8.0",
 		"@auth/sveltekit": "^1.8.0",
 		"@libsql/client": "^0.14.0",
 		"@node-rs/argon2": "^2.0.2",
@@ -73,6 +74,8 @@
 		"neverthrow": "^8.2.0",
 		"openai": "^4.89.1",
 		"pdfjs-dist": "4.8.69",
+		"pg": "^8.14.1",
+		"postgres": "^3.4.5",
 		"svelte-fsm": "^1.2.0",
 		"tesseract.js": "^6.0.0",
 		"vitest": "^3.1.1"

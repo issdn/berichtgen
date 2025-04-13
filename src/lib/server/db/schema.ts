@@ -1,17 +1,25 @@
-import { integer, sqliteTable, text, primaryKey } from 'drizzle-orm/sqlite-core';
-import type { AdapterAccountType } from 'next-auth/adapters';
+import type { AdapterAccountType } from '@auth/sveltekit/adapters';
+import {
+	boolean,
+	integer,
+	pgTable,
+	text,
+	primaryKey,
+	timestamp,
+	numeric
+} from 'drizzle-orm/pg-core';
 
-export const users = sqliteTable('user', {
+export const users = pgTable('user', {
 	id: text('id')
 		.primaryKey()
 		.$defaultFn(() => crypto.randomUUID()),
 	name: text('name'),
 	email: text('email').unique(),
-	emailVerified: integer('emailVerified', { mode: 'timestamp_ms' }),
+	emailVerified: timestamp('emailVerified', { mode: 'date' }),
 	image: text('image')
 });
 
-export const accounts = sqliteTable(
+export const accounts = pgTable(
 	'account',
 	{
 		userId: text('userId')
@@ -28,36 +36,40 @@ export const accounts = sqliteTable(
 		id_token: text('id_token'),
 		session_state: text('session_state')
 	},
-	(account) => ({
-		compoundKey: primaryKey({
-			columns: [account.provider, account.providerAccountId]
-		})
-	})
+	(account) => [
+		{
+			compoundKey: primaryKey({
+				columns: [account.provider, account.providerAccountId]
+			})
+		}
+	]
 );
 
-export const sessions = sqliteTable('session', {
+export const sessions = pgTable('session', {
 	sessionToken: text('sessionToken').primaryKey(),
 	userId: text('userId')
 		.notNull()
 		.references(() => users.id, { onDelete: 'cascade' }),
-	expires: integer('expires', { mode: 'timestamp_ms' }).notNull()
+	expires: timestamp('expires', { mode: 'date' }).notNull()
 });
 
-export const verificationTokens = sqliteTable(
+export const verificationTokens = pgTable(
 	'verificationToken',
 	{
 		identifier: text('identifier').notNull(),
 		token: text('token').notNull(),
-		expires: integer('expires', { mode: 'timestamp_ms' }).notNull()
+		expires: timestamp('expires', { mode: 'date' }).notNull()
 	},
-	(verificationToken) => ({
-		compositePk: primaryKey({
-			columns: [verificationToken.identifier, verificationToken.token]
-		})
-	})
+	(verificationToken) => [
+		{
+			compositePk: primaryKey({
+				columns: [verificationToken.identifier, verificationToken.token]
+			})
+		}
+	]
 );
 
-export const authenticators = sqliteTable(
+export const authenticators = pgTable(
 	'authenticator',
 	{
 		credentialID: text('credentialID').notNull().unique(),
@@ -68,28 +80,28 @@ export const authenticators = sqliteTable(
 		credentialPublicKey: text('credentialPublicKey').notNull(),
 		counter: integer('counter').notNull(),
 		credentialDeviceType: text('credentialDeviceType').notNull(),
-		credentialBackedUp: integer('credentialBackedUp', {
-			mode: 'boolean'
-		}).notNull(),
+		credentialBackedUp: boolean('credentialBackedUp').notNull(),
 		transports: text('transports')
 	},
-	(authenticator) => ({
-		compositePK: primaryKey({
-			columns: [authenticator.userId, authenticator.credentialID]
-		})
-	})
+	(authenticator) => [
+		{
+			compositePK: primaryKey({
+				columns: [authenticator.userId, authenticator.credentialID]
+			})
+		}
+	]
 );
 
-export const llmProviders = sqliteTable('llmProvider', {
+export const llmProviders = pgTable('llmProvider', {
 	id: text('id')
 		.primaryKey()
 		.$defaultFn(() => crypto.randomUUID()),
 	name: text('name').notNull(),
 	url: text('url').notNull(),
-	price: integer({ mode: 'number' }).notNull()
+	price: numeric('price', { precision: 5, scale: 2 }).notNull()
 });
 
-export const usersLLMProviders = sqliteTable(
+export const usersLLMProviders = pgTable(
 	'userLLMProvider',
 	{
 		userId: text('userId')

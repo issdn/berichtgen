@@ -1,0 +1,1 @@
+INSERT INTO llm_providers (name, price, url) VALUES ('DeepSeek-V3', 1.2, 'https://api.deepsek.com');
