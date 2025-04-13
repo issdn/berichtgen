@@ -5,18 +5,21 @@
 	import '../app.css';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { goto } from '$app/navigation';
+	import DarkMode from './board/DarkMode.svelte';
+
 	let { children, data } = $props();
 
 	const { session } = data;
 </script>
 
 <div class="h-nav flex flex-row items-center justify-between px-8 md:px-8">
-	<Button
-		onclick={() => goto('/board')}
-		variant="link"
-		class="font-cormorant text-3xl dark:text-primary-foreground">Incuria</Button
+	<Button onclick={() => goto('/board')} variant="link" class="font-cormorant text-3xl"
+		>Incuria</Button
 	>
-	<SettingsPopover {session}></SettingsPopover>
+	<div class="flex flex-row gap-x-4">
+		<SettingsPopover {session}></SettingsPopover>
+		<DarkMode />
+	</div>
 </div>
 
 <Toaster />
