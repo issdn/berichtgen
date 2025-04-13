@@ -6,6 +6,8 @@ export interface Entry {
 	datum?: string;
 }
 
+export type ResultEntry = Required<Entry>;
+
 export interface IncuriaWeightedDateRange {
 	daterange: {
 		start: DateValue;
@@ -17,6 +19,9 @@ export interface IncuriaWeightedDateRange {
 export enum IncuriaErrorType {
 	INVALID_FILE,
 	FORMAT_NOT_SUPPORTED,
+	COMPLETION_FAILED,
+	PARSE_FAILED,
+	SPREAD_FAILED,
 	DEVELOPERS_FAULT,
 	DOCX_FAULTY,
 	INVALID_JSON_FROM_AI

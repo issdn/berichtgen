@@ -1,9 +1,8 @@
 import type { Scheduler } from 'tesseract.js';
-import type { Entry } from './types';
 import { combineJSONs } from './parse/combine';
-import { createStateMachineForContext } from '$lib/state_machine';
-import { WizardFileContext } from '$lib/wizard_file_context';
-
+import { WizardFileContext } from './wizard_file_context.svelte';
+import { createStateMachineForContext } from './state_machine.svelte';
+import type { Entry } from './types';
 export class WizardScheduler {
 	batchSize = 5;
 

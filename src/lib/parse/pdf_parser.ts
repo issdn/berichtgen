@@ -3,7 +3,7 @@ import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api.js';
 import type { Scheduler } from 'tesseract.js';
 import { Parser } from './parser';
-import type { WizardFileContext } from '$lib/wizard_file_context';
+import type { WizardFileContext } from '$lib/wizard_file_context.svelte';
 
 export type PDFFileData = {
 	blobOrNull: Blob | null;
@@ -17,7 +17,6 @@ type GetCanvasFunction = (
 
 // Basically parsing goes like this -> get fundamental Data about the file so that some context could be shown to the user.
 // Here it's number of texts and images. Then pass it to the real, heavy parse function so that it parses the text.
-
 export class PDFParser extends Parser {
 	data: PDFFileData | null = null;
 

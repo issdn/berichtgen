@@ -40,7 +40,7 @@
 		{#if $machine === WizardStep.PROCESSING}
 			<Progress class="basis-3/5" max={context.max} value={context.value} />
 		{:else if $machine === WizardStep.ERROR}
-			<p class="text-sm text-muted-foreground">{context.message}</p>
+			<p class="text-sm text-muted-foreground">{context.error!.message}</p>
 		{/if}
 		{#if $machine !== WizardStep.DONE && $machine !== WizardStep.ERROR && $machine !== WizardStep.CANCELLED}
 			<div class="flex flex-row gap-x-2">

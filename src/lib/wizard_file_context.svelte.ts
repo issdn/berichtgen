@@ -1,12 +1,12 @@
 import type { DateRangeSchema } from '$lib/components/time_spread_schematic';
-import type { Entry } from '$lib/types';
+import type { Entry, ResultEntry } from '$lib/types';
 
 import type { IncuriaError } from '$lib/types';
 
 export class WizardFileContext {
-	snapshot: string | Entry[] | Required<Entry>[] | undefined;
+	snapshot: string | Entry[] | ResultEntry[] | undefined;
 
-	finished: Required<Entry>[] | null = null;
+	finished: ResultEntry[] | null = null;
 
 	dateRanges: DateRangeSchema['values'] = $state([]);
 

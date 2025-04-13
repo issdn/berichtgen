@@ -10,7 +10,7 @@ import { ResultAsync, err, fromThrowable } from 'neverthrow';
 import { parseUnknownError } from '$lib/hooks/utils';
 import { getCompletions } from '$lib/hooks/completion';
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
-import type { WizardFileContext } from '$lib/wizard_file_context';
+import type { WizardFileContext } from './wizard_file_context.svelte';
 
 function parseByFileType(context: WizardFileContext, scheduler: Scheduler) {
 	return readFile(context.file).andThen((data) =>
@@ -43,23 +43,31 @@ function parseFile(
 				},
 				incuriaStore.processPhotos
 			);
-			const init = ResultAsync.fromPromise(pdfParser.init(data), (e) =>
-				parseUnknownError(e, 'Fehler beim Initialisieren des PDF Parsers')
+			return ResultAsync.fromPromise(pdfParser.init(data), (e) =>
+				parseUnknownError(
+					e,
+					'Fehler beim Initialisieren des PDF Parsers',
+					IncuriaErrorType.PARSE_FAILED
+				)
+			).andThen(() =>
+				ResultAsync.fromPromise(pdfParser.parse(), (e) =>
+					parseUnknownError(e, 'Fehler beim Parsen des PDF', IncuriaErrorType.PARSE_FAILED)
+				)
 			);
-			const parse = ResultAsync.fromPromise(pdfParser.parse(), (e) =>
-				parseUnknownError(e, 'Fehler beim Parsen des PDF')
-			);
-			return init.andThen(() => parse);
 		}
 		case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
 			const docxParser = new DOCXParser(context, scheduler, incuriaStore.processPhotos);
-			const init = ResultAsync.fromPromise(docxParser.init(data), (e) =>
-				parseUnknownError(e, 'Fehler beim Initialisieren des DOCX Parsers')
+			return ResultAsync.fromPromise(docxParser.init(data), (e) =>
+				parseUnknownError(
+					e,
+					'Fehler beim Initialisieren des DOCX Parsers',
+					IncuriaErrorType.PARSE_FAILED
+				)
+			).andThen(() =>
+				ResultAsync.fromPromise(docxParser.parse(), (e) =>
+					parseUnknownError(e, 'Fehler beim Parsen des DOCX', IncuriaErrorType.PARSE_FAILED)
+				)
 			);
-			const parse = ResultAsync.fromPromise(docxParser.parse(), (e) =>
-				parseUnknownError(e, 'Fehler beim Parsen des DOCX')
-			);
-			return init.andThen(() => parse); // =>
 		}
 		default:
 			return err(new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Dateityp nicht unterstützt.'));
@@ -147,7 +155,12 @@ export function createStateMachineForContext(
 				}
 				const throwableSpreadEntries = fromThrowable(
 					() => spreadEntriesAcrossWeeks(context.snapshot as Entry[], context.dateRanges),
-					(e) => parseUnknownError(e, 'Fehler beim Umformulieren der Einträge')
+					(e) =>
+						parseUnknownError(
+							e,
+							'Fehler beim Umformulieren der Einträge',
+							IncuriaErrorType.SPREAD_FAILED
+						)
 				);
 				throwableSpreadEntries().match(
 					(value) => {
