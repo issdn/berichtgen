@@ -1,1 +1,1 @@
-<h1>devious landing page</h1>
+<h1>Zu faul für Berichte? Fühl ich.</h1>
