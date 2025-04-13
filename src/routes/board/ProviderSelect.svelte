@@ -9,6 +9,7 @@
 	import { incuriaStore } from '$lib/stores/board.svelte';
 	import { ChevronDown, CircleAlert } from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 
 	let open = $state(false);
 	let triggerRef = $state<HTMLButtonElement>(null!);
@@ -29,6 +30,7 @@
 	<Popover.Trigger bind:ref={triggerRef}>
 		{#snippet child({ props })}
 			<Button
+				disabled={wizardScheduler.isRunning}
 				variant="ghost"
 				class="justify-between gap-x-2"
 				{...props}

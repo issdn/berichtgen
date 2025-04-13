@@ -23,6 +23,8 @@ export class WizardScheduler {
 
 	processInit = $state<Promise<void> | null>(null);
 
+	isRunning = $derived(this.schedule != null && this.schedule.length !== this.filesReady);
+
 	workersInUse = 0;
 
 	workersNr = 0;

@@ -33,6 +33,7 @@
 						{#snippet child(props)}
 							<div class="flex items-center space-x-2">
 								<Checkbox
+									disabled={wizardScheduler.isRunning}
 									{...props}
 									id="terms"
 									bind:checked={incuriaStore.processPhotos}
