@@ -18,7 +18,7 @@
 	<Popover.Trigger>
 		<div class="flex flex-row items-center gap-x-4">
 			{#if session?.user?.name !== null}
-				<Label>{session?.user?.name}</Label>
+				<Label class="cursor-pointer">{session?.user?.name}</Label>
 			{/if}
 			<Avatar.Root>
 				<Avatar.Image src={session?.user?.image} alt="Avatar" />

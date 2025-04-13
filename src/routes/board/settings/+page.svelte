@@ -65,6 +65,7 @@
 						<Table.Row>
 							<Table.Head class="w-32">Provider</Table.Head>
 							<Table.Head>Token</Table.Head>
+							<Table.Head></Table.Head>
 						</Table.Row>
 					</Table.Header>
 					<Table.Body>
