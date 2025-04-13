@@ -24,9 +24,7 @@
 </script>
 
 <div class="relative h-full w-full gap-y-8 rounded-lg border">
-	<div
-		class="flex flex-row items-center justify-between gap-x-4 bg-muted p-4 text-muted-foreground"
-	>
+	<div class="flex flex-row items-center justify-between gap-x-4 bg-muted p-4">
 		<div class="flex flex-row items-center gap-x-4">
 			<ProviderSelect />
 			<Tooltip.Provider>
@@ -69,7 +67,7 @@
 			<Button disabled={true}><Download />Herunterladen</Button>
 		{/if}
 	</div>
-	<div class="flex flex-col gap-y-1 p-1">
+	<div class="flex flex-col gap-y-1 p-4">
 		{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 			{#await wizardScheduler.processInit then}
 				{#each wizardScheduler.schedule as { context, machine }, i}

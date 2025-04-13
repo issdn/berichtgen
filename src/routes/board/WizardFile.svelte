@@ -34,7 +34,7 @@
 	let { icon: Icon, label } = $derived.by(() => statusFromStep($machine));
 </script>
 
-<div transition:slide class="flex flex-col justify-center gap-y-4 bg-muted p-4">
+<div transition:slide class="flex flex-col justify-center gap-y-4 rounded-md bg-muted p-4">
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
 		<span class="basis-2/5 overflow-hidden truncate">{context.file.name}</span>
 		{#if $machine === WizardStep.PROCESSING}
