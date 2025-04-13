@@ -45,7 +45,7 @@
 				<Button type="submit" class="w-full"><Google />Anmelden mit Google</Button>
 			</form>
 		{:else}
-			<form method="POST" action={`/signout`} use:enhance>
+			<form method="POST" action={`/signout`}>
 				<input type="hidden" name="redirectTo" value="/" />
 				<Button type="submit" class="w-full">Abmelden</Button>
 			</form>
