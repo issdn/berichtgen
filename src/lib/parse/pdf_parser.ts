@@ -3,7 +3,7 @@ import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api.js';
 import type { Scheduler } from 'tesseract.js';
 import { Parser } from './parser';
-import type { WizardFileContext } from '$lib/wizard_scheduler.svelte';
+import type { WizardFileContext } from '$lib/wizard_file_context';
 
 export type PDFFileData = {
 	blobOrNull: Blob | null;
