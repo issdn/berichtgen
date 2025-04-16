@@ -1,4 +1,15 @@
-<svg width="155" height="160" viewBox="0 0 155 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+<script lang="ts">
+	let { class: className } = $props();
+</script>
+
+<svg
+	class={className}
+	width="155"
+	height="160"
+	viewBox="0 0 155 160"
+	fill="none"
+	xmlns="http://www.w3.org/2000/svg"
+>
 	<g clip-path="url(#clip0_1_35)">
 		<g filter="url(#filter0_d_1_35)">
 			<path
