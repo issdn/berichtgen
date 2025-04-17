@@ -11,15 +11,29 @@
 		<p class="text-xl opacity-70">Automagisch generierte Berichte aus deinen Unterlagen.</p>
 	</div>
 	<div class="relative flex h-full w-full flex-col items-center justify-center">
-		<div class="relative">
-			<div class="dropzone relative flex h-56 w-96 flex-col items-center justify-center">
+		<div class="group relative">
+			<div
+				class="dropzone relative flex h-56 w-96 flex-col items-center justify-center gap-y-2 rounded-md border-4 border-dashed border-muted-foreground text-sm text-muted-foreground transition-colors duration-300 group-hover:border-foreground group-hover:text-foreground"
+			>
 				<div class="absolute left-0 top-0 h-full w-full bg-foreground opacity-15"></div>
-				<FileUp class="text-foreground opacity-50" size={48} />
-				<p class="text-sm font-medium text-foreground opacity-50">Dateien hier droppen</p>
+				<FileUp class="opacity-50" size={48} />
+				<p class="text-sm font-medium opacity-50">Dateien hier droppen</p>
 			</div>
-			<PNG class="absolute -left-[calc(50%-1.5rem)] -top-[calc(50%-3rem)] translate-x-1/2" />
-			<DOCX class="absolute -top-[calc(50%-1rem)] left-1/2 -translate-x-1/2" />
-			<PDF class="absolute -right-[calc(50%-1rem)] -top-[calc(50%-4.5rem)] -translate-x-1/2" />
+			<PNG
+				class="file absolute -left-[calc(50%-1.5rem)] -top-[calc(50%-3rem)] translate-x-1/2
+					 transition-all duration-200 ease-in-out 
+					 group-hover:-left-[calc(50%-0.5rem)] group-hover:-top-[calc(50%-2rem)]"
+			/>
+			<DOCX
+				class="file absolute -top-[calc(50%-1rem)] left-1/2 -translate-x-1/2
+					 transition-all duration-200 ease-in-out	 
+					 group-hover:-top-[calc(50%)]"
+			/>
+			<PDF
+				class="file absolute -right-[calc(50%-1rem)] -top-[calc(50%-4.5rem)] -translate-x-1/2
+					 transition-all duration-200 ease-in-out 
+					 group-hover:-right-[calc(50%)] group-hover:-top-[calc(50%-3.5rem)]"
+			/>
 		</div>
 		<img
 			class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-80 blur-[100px]"
