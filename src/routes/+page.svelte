@@ -17,9 +17,9 @@
 				<FileUp class="text-foreground opacity-50" size={48} />
 				<p class="text-sm font-medium text-foreground opacity-50">Dateien hier droppen</p>
 			</div>
-			<PNG class="absolute -left-1/2 -top-1/2 translate-x-1/2" />
-			<DOCX class="absolute -top-1/2 left-1/2 -translate-x-1/2" />
-			<PDF class="absolute -right-1/2 -top-1/2 -translate-x-1/2" />
+			<PNG class="absolute -left-[calc(50%-1.5rem)] -top-[calc(50%-3rem)] translate-x-1/2" />
+			<DOCX class="absolute -top-[calc(50%-1rem)] left-1/2 -translate-x-1/2" />
+			<PDF class="absolute -right-[calc(50%-1rem)] -top-[calc(50%-4.5rem)] -translate-x-1/2" />
 		</div>
 		<img
 			class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-80 blur-[100px]"
