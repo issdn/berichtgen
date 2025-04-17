@@ -64,7 +64,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border text-[inconsolata];
   }
   body {
     @apply bg-background text-foreground;
