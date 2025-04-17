@@ -12,7 +12,7 @@
 	const { session } = data;
 </script>
 
-<div class="h-nav flex flex-row items-center justify-between px-8 md:px-8">
+<div class="h-nav flex w-full flex-row items-center justify-between px-4 md:px-8">
 	<Button onclick={() => goto('/board')} variant="link" class="font-cormorant text-3xl"
 		>Incuria</Button
 	>
