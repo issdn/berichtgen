@@ -13,7 +13,8 @@ export const dateRangeSchema = z.object({
 				.number({ message: 'Stunden müssen Zahlen sein.' })
 				.int({ message: 'Stunden müssen ganze Zahlen sein.' })
 				.optional()
-				.nullable()
+				.nullable(),
+			location: z.string()
 		})
 		.array()
 });

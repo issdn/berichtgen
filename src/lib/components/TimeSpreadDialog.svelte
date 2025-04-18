@@ -1,14 +1,16 @@
 <script lang="ts">
 	import TimeSpreadRow from './TimeSpreadRow.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { parseDate, today, type DateValue } from '@internationalized/date';
-	import { Calendar } from 'lucide-svelte';
+	import { today, type DateValue } from '@internationalized/date';
+	import { Calendar, Trash2 } from 'lucide-svelte';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { dateRangeSchema, type DateRangeSchema } from './time_spread_schematic';
 	import { buttonVariants } from './ui/button';
 	import { slide } from 'svelte/transition';
 	import { zod } from 'sveltekit-superforms/adapters';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	let {
 		onClose,
@@ -20,7 +22,8 @@
 	function newRow(id: number) {
 		return {
 			id,
-			daterange: { start: undefined, end: today('Europe/Berlin') as DateValue }
+			daterange: { start: undefined, end: today('Europe/Berlin') as DateValue },
+			location: 'SCHULE'
 		};
 	}
 
@@ -44,6 +47,10 @@
 	);
 
 	validateForm({ update: true });
+
+	function removeRow(index: number) {
+		$form.values = $form.values.filter((_, i) => i !== index);
+	}
 </script>
 
 <Dialog.Root
@@ -52,31 +59,39 @@
 	}}
 >
 	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}><Calendar /></Dialog.Trigger>
-	<Dialog.Content class="w-full">
-		<Dialog.Header>
+	<Dialog.Content class="w-full px-4">
+		<Dialog.Header class="px-2">
 			<Dialog.Title>Wähle Datumbereiche!</Dialog.Title>
 			<Dialog.Description
 				>Der letzte (ungefüllte) Eintrag wird nicht übernommen 😉</Dialog.Description
 			>
 		</Dialog.Header>
-		<div class="flex w-full flex-col gap-y-2">
-			<div class="flex w-full flex-row gap-x-4">
-				<span class="basis-3/4 px-1 font-medium text-muted-foreground">Datumsbereich</span>
-				<span class="basis-1/4 px-1 font-medium text-muted-foreground">Stunden</span>
-			</div>
-			<div class="flex w-full flex-col gap-y-2">
-				<form method="POST" use:enhance>
-					{#each $form.values as _, index}
-						<div transition:slide class="flex w-full flex-row gap-x-4">
-							<TimeSpreadRow
-								{index}
-								formData={form}
-								form={{ form, errors, enhance, validateForm, ...rest }}
-							/>
+		<form method="POST" use:enhance>
+			<div class="max-h-[600px] w-full gap-y-8 overflow-y-auto">
+				{#each $form.values as _, index}
+					{#if index > 0}
+						<div class="relative flex h-16 flex-row items-center">
+							<Separator />
+							{#if index < $form.values.length - 1}
+								<Button
+									variant="outline"
+									class="absolute right-4 top-1/2 -translate-y-1/2"
+									onclick={() => removeRow(index)}
+								>
+									<Trash2 />
+								</Button>
+							{/if}
 						</div>
-					{/each}
-				</form>
+					{/if}
+					<div transition:slide class="flex w-full flex-row gap-x-4">
+						<TimeSpreadRow
+							{index}
+							formData={form}
+							form={{ form, errors, enhance, validateForm, ...rest }}
+						/>
+					</div>
+				{/each}
 			</div>
-		</div>
+		</form>
 	</Dialog.Content>
 </Dialog.Root>

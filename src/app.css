@@ -82,6 +82,10 @@
   @apply lg:h-[calc(100%-5rem)]
 }
 
+.w-calendar {
+  @apply w-[250px];
+}
+
 @font-face {
   font-family: 'Cormorant';
   font-style: normal;
