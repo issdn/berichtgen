@@ -23,7 +23,7 @@
 	});
 </script>
 
-<div class="relative h-full w-full gap-y-8 rounded-lg border">
+<div class="relative h-full w-full gap-y-8 rounded-lg border-4">
 	<div class="flex flex-row items-center justify-between gap-x-4 bg-muted p-4">
 		<div class="flex flex-row items-center gap-x-4">
 			<ProviderSelect />
