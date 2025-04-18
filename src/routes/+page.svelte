@@ -64,12 +64,13 @@
 						class="mb-2 flex flex-row justify-between border-b border-background pb-2 text-sm font-medium text-background"
 					>
 						<p>
-							ORT: <span class="opacity-0 duration-300 ease-in-out group-hover:opacity-100"
+							ORT: <span class="group-hover:opacity-100 lg:opacity-0 lg:duration-300 lg:ease-in-out"
 								>SCHULE</span
 							>
 						</p>
 						<p>
-							DATUM: <span class="opacity-0 duration-300 ease-in-out group-hover:opacity-100"
+							DATUM: <span
+								class="group-hover:opacity-100 lg:opacity-0 lg:duration-300 lg:ease-in-out"
 								>13.4.2025</span
 							>
 						</p>
@@ -78,7 +79,7 @@
 						class="relative h-48 overflow-hidden rounded-xl bg-foreground p-4 text-sm leading-relaxed text-background/90 shadow-inner transition-opacity"
 					>
 						<p
-							class="opacity-0 duration-200 ease-in-out group-hover:opacity-100 group-hover:duration-500"
+							class="group-hover:opacity-100 group-hover:duration-500 lg:opacity-0 lg:duration-200 lg:ease-in-out"
 						>
 							Im Fach C# Programmierung habe ich gelernt, wie man mit if-Bedingungen einfache
 							Entscheidungsstrukturen programmiert. Im Fach Wirtschaft haben wir das Thema Angebot
@@ -87,7 +88,7 @@
 							korrekt in die Bilanz einträgt.
 						</p>
 						<i
-							class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground opacity-100 duration-100 ease-in-out group-hover:opacity-0"
+							class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground opacity-0 group-hover:opacity-0 lg:opacity-100 lg:duration-100 lg:ease-in-out"
 						>
 							Kein Eintrag!
 						</i>
