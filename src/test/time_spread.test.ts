@@ -24,7 +24,8 @@ test('Spread single entry across multiple weeks.', () => {
 			daterange: {
 				start: parseDate('2025-03-25'),
 				end: parseDate('2025-04-01')
-			}
+			},
+			location: 'SCHULE'
 		}
 	]);
 
@@ -79,7 +80,8 @@ test('Spread multiple entries across multiple weeks.', () => {
 			daterange: {
 				start: parseDate('2025-03-04'),
 				end: parseDate('2025-03-17')
-			}
+			},
+			location: 'SCHULE'
 		}
 	]);
 
@@ -107,7 +109,8 @@ test('Spread one entry across multiple weeks.', () => {
 			daterange: {
 				start: parseDate('2025-03-04'),
 				end: parseDate('2025-03-24')
-			}
+			},
+			location: 'SCHULE'
 		}
 	]);
 
@@ -153,7 +156,8 @@ test('Spread multiple entries across one week.', () => {
 			daterange: {
 				start: parseDate('2025-03-04'),
 				end: parseDate('2025-03-05')
-			}
+			},
+			location: 'SCHULE'
 		}
 	]);
 
@@ -199,13 +203,15 @@ test('Spread multiple entries across multiple week ranges.', () => {
 			daterange: {
 				start: parseDate('2025-03-04'),
 				end: parseDate('2025-03-05')
-			}
+			},
+			location: 'SCHULE'
 		},
 		{
 			daterange: {
 				start: parseDate('2025-04-07'),
 				end: parseDate('2025-04-08')
-			}
+			},
+			location: 'SCHULE'
 		}
 	]);
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -269,14 +275,16 @@ test('Spread multiple entries across multiple week ranges.', () => {
 				start: parseDate('2025-03-03'),
 				end: parseDate('2025-03-05')
 			},
-			hours: 30
+			hours: 30,
+			location: 'SCHULE'
 		},
 		{
 			daterange: {
 				start: parseDate('2025-04-07'),
 				end: parseDate('2025-04-08')
 			},
-			hours: 20
+			hours: 20,
+			location: 'SCHULE'
 		}
 	]);
 

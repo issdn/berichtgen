@@ -27,4 +27,8 @@ type RemoveUndefined<T> = {
 
 export type IncuriaDateRange = Pick<RemoveUndefined<DateRange>, 'end'> & Pick<DateRange, 'start'>;
 
-export type ValidIncuriaDateRanges = { daterange: IncuriaDateRange; hours?: number | null }[];
+export type ValidIncuriaDateRanges = {
+	daterange: IncuriaDateRange;
+	hours?: number | null;
+	location: string;
+}[];

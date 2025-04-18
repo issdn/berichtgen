@@ -4,6 +4,7 @@ export interface Entry {
 	qualifikationen: string[];
 	text: string;
 	datum?: string;
+	ort?: string;
 }
 
 export type ResultEntry = Required<Entry>;

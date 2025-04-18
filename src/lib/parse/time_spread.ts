@@ -43,10 +43,10 @@ export function spreadEntriesAcrossWeeks(
 	let mondayOfWeek = startOfWeek(minWeek.daterange.start!, LOCALE, 'mon') as CalendarDate;
 
 	for (let i = 0; i < weeks; i += 1) {
-		const { entriesPerWeek, daterange } = adjustedForHours[currWeekIndex];
+		const { entriesPerWeek, daterange, location } = adjustedForHours[currWeekIndex];
 
 		for (let j = 0; j < entriesPerWeek; j++) {
-			newEntries.push(cloneObjectWithDate(entries, entriesTotal + j, mondayOfWeek));
+			newEntries.push(cloneObjectWithDate(entries[entriesTotal + j], mondayOfWeek, location));
 		}
 
 		entriesTotal += entriesPerWeek;
@@ -66,16 +66,23 @@ export function spreadEntriesAcrossWeeks(
 	}
 
 	if (entries.length > entriesTotal) {
-		newEntries.push(cloneObjectWithDate(entries, entries.length - 1, mondayOfWeek));
+		newEntries.push(
+			cloneObjectWithDate(
+				entries[entries.length - 1],
+				mondayOfWeek,
+				adjustedForHours[dateRanges.length - 1].location
+			)
+		);
 	}
 
 	return newEntries;
 }
 
-function cloneObjectWithDate(entries: Entry[], i: number, date: CalendarDate): Required<Entry> {
+function cloneObjectWithDate(entry: Entry, date: CalendarDate, location: string): Required<Entry> {
 	return {
-		...entries[i],
-		datum: date.toString()
+		...entry,
+		datum: date.toString(),
+		ort: location
 	};
 }
 

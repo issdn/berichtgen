@@ -30,8 +30,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				lessons: [
 					{
 						qualifikationen: ['Eine Qualifikation'],
-						text: 'Mein Tag als Abababa',
-						datum: '2025-3-24'
+						text: 'Mein Tag als Abababa'
 					}
 				]
 			})
