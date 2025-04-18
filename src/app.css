@@ -69,7 +69,7 @@
   body {
     @apply bg-background text-foreground;
   }
-  html,body,body>div{
+  html,body,body>div:first-child{
     @apply h-full w-full;
   }
 }
