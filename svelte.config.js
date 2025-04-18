@@ -9,7 +9,8 @@ const config = {
 	kit: {
 		adapter: adapter({ regions: ['fra1'] }),
 		alias: {
-			$routes: path.resolve('./src/routes')
+			$routes: path.resolve('./src/routes'),
+			$src: path.resolve('./src')
 		}
 	}
 };

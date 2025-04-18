@@ -2,14 +2,15 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import { superForm } from 'sveltekit-superforms/client';
-	import { Trash2 } from 'lucide-svelte';
-	import { Input } from '$lib/components/ui/input/index.js';
+	import { Trash2, UserRoundX } from 'lucide-svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ProviderAddDialog from './ProviderAddDialog.svelte';
 	import { toast } from 'svelte-sonner';
 	import { zod, zodClient } from 'sveltekit-superforms/adapters';
 	import { providerDeleteSchema, validProviderSchema } from './schema';
 	import { incuriaStore } from '$lib/stores/board.svelte';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+	import { buttonVariants } from '$lib/components/ui/button/index.js';
 
 	let { data } = $props();
 
@@ -49,63 +50,105 @@
 		}
 	});
 
-	const { form: formData, enhance, formId, submitting, submit } = form;
+	const { form: formData, enhance, formId, submitting } = form;
 </script>
 
-<div class="flex flex-row md:px-64">
-	<Card.Root class="w-full">
-		<Card.Header>
-			<Card.Title>Deine LLM-Verpküpfungen</Card.Title>
-			<Card.Description>Hier kannst du deine eigene API-Keys hinzufügen.</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			<form id="provider-form" class="flex w-full flex-col gap-y-2" method="POST" use:enhance>
-				<Table.Root>
-					<Table.Header>
-						<Table.Row>
-							<Table.Head class="w-32">Provider</Table.Head>
-							<Table.Head>Token</Table.Head>
-							<Table.Head></Table.Head>
-						</Table.Row>
-					</Table.Header>
-					<Table.Body>
-						{#each incuriaStore.providers as provider}
-							{@const hasToken = provider.token !== null && provider.token.length > 0}
+<div class="flex flex-row justify-center">
+	<div class="flex w-full max-w-[700px] flex-col gap-y-8">
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Konto Einstellungen</Card.Title>
+			</Card.Header>
+			<Card.Content>
+				<div class="flex flex-col gap-y-2">
+					<form
+						id="delete-account-form"
+						action="/board/settings?/removeAccount"
+						class="flex w-full flex-col gap-y-2"
+						method="POST"
+					>
+						<AlertDialog.Root>
+							<AlertDialog.Trigger
+								type="button"
+								class={buttonVariants({ variant: 'default', class: 'w-fit' })}
+							>
+								<UserRoundX />
+								Konto löschen
+							</AlertDialog.Trigger>
+							<AlertDialog.Content>
+								<AlertDialog.Header>
+									<AlertDialog.Title>Bist du sicher?</AlertDialog.Title>
+									<AlertDialog.Description>
+										Dieser Vorgang ist unumkehrbar. Dies wird dein Konto und deine Daten von unseren
+										Servern entfernen.
+									</AlertDialog.Description>
+								</AlertDialog.Header>
+								<AlertDialog.Footer>
+									<AlertDialog.Cancel>Abbrechen</AlertDialog.Cancel>
+									<AlertDialog.Action form="delete-account-form" type="submit"
+										>Löschen</AlertDialog.Action
+									>
+								</AlertDialog.Footer>
+							</AlertDialog.Content>
+						</AlertDialog.Root>
+					</form>
+				</div>
+			</Card.Content>
+		</Card.Root>
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Deine LLM-Verpküpfungen</Card.Title>
+				<Card.Description>Hier kannst du deine eigene API-Keys hinzufügen.</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<form id="provider-form" class="flex w-full flex-col gap-y-2" method="POST" use:enhance>
+					<Table.Root>
+						<Table.Header>
 							<Table.Row>
-								<Table.Cell>
-									{provider.name}
-								</Table.Cell>
-								<Table.Cell>
-									{hasToken ? provider.token : '---'}
-								</Table.Cell>
-								<Table.Cell class="flex flex-row justify-end gap-x-2">
-									{#if hasToken}
-										<Button
-											disabled={$submitting}
-											type="submit"
-											formaction="/board/settings?/delete"
-											onclick={() => {
-												$formId = $formData.id = provider.id;
-												$formData.name = provider.name;
-												action = 'delete';
-											}}
-											variant="ghost"><Trash2 /></Button
-										>
-									{:else}
-										<ProviderAddDialog
-											onSubmit={() => {
-												action = 'add';
-											}}
-											{form}
-											{provider}
-										/>
-									{/if}
-								</Table.Cell>
+								<Table.Head class="w-32">Provider</Table.Head>
+								<Table.Head>Token</Table.Head>
+								<Table.Head></Table.Head>
 							</Table.Row>
-						{/each}
-					</Table.Body>
-				</Table.Root>
-			</form>
-		</Card.Content>
-	</Card.Root>
+						</Table.Header>
+						<Table.Body>
+							{#each incuriaStore.providers as provider}
+								{@const hasToken = provider.token !== null && provider.token.length > 0}
+								<Table.Row>
+									<Table.Cell>
+										{provider.name}
+									</Table.Cell>
+									<Table.Cell>
+										{hasToken ? provider.token : '---'}
+									</Table.Cell>
+									<Table.Cell class="flex flex-row justify-end gap-x-2">
+										{#if hasToken}
+											<Button
+												disabled={$submitting}
+												type="submit"
+												formaction="/board/settings?/delete"
+												onclick={() => {
+													$formId = $formData.id = provider.id;
+													$formData.name = provider.name;
+													action = 'delete';
+												}}
+												variant="ghost"><Trash2 /></Button
+											>
+										{:else}
+											<ProviderAddDialog
+												onSubmit={() => {
+													action = 'add';
+												}}
+												{form}
+												{provider}
+											/>
+										{/if}
+									</Table.Cell>
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
+				</form>
+			</Card.Content>
+		</Card.Root>
+	</div>
 </div>
