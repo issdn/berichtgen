@@ -1,12 +1,12 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import { BookOpenText } from 'lucide-svelte';
+	import { BookText } from 'lucide-svelte';
 </script>
 
 <Tabs.Root value="dateien" class="flex flex-col">
 	<div class="flex flex-row items-center gap-x-2 py-2">
 		<div class="flex h-10 w-12 items-center justify-center rounded-md bg-muted">
-			<BookOpenText />
+			<BookText />
 		</div>
 		<Tabs.List>
 			<Tabs.Trigger value="dateien">Dateien</Tabs.Trigger>
