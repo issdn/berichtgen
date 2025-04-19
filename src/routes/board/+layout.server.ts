@@ -24,7 +24,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	const session = await locals.auth();
 
 	if (session === null) {
-		redirect(307, '/');
+		redirect(303, '/');
 	}
 
 	const providers = await db

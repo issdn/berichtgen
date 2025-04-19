@@ -6,7 +6,7 @@ import { providerDeleteSchema, providerSchema, validProviderSchema } from './sch
 import { zod } from 'sveltekit-superforms/adapters';
 import { error, type Actions } from '@sveltejs/kit';
 import { eq, and } from 'drizzle-orm';
-import { drizzleAdapter } from '$src/auth';
+import { drizzleAdapter, signOut } from '$src/auth';
 
 export const load: PageServerLoad = async () => {
 	const form = await superValidate(zod(providerSchema));
@@ -59,8 +59,8 @@ export const actions: Actions = {
 			return error(406, 'Fehler beim Speichern in die Datenbank.');
 		}
 	},
-	removeAccount: async ({ locals }) => {
-		const session = await locals.auth();
+	removeAccount: async (event) => {
+		const session = await event.locals.auth();
 		try {
 			await drizzleAdapter.deleteUser!(session!.user!.id!);
 		} catch {
