@@ -142,8 +142,10 @@ async function getGeminiCompletion(text: string, token: string) {
 
 	const completion = await ai.models.generateContent({
 		config: {
+			responseMimeType: 'application/json',
 			systemInstruction: context_prompt,
 			responseSchema: {
+				type: genai.Type.OBJECT,
 				properties: {
 					lessons: {
 						type: genai.Type.ARRAY,
