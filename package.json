@@ -60,7 +60,7 @@
 		"@auth/drizzle-adapter": "^1.8.0",
 		"@auth/pg-adapter": "^1.8.0",
 		"@auth/sveltekit": "^1.8.0",
-		"@google/genai": "link:@google/genai",
+		"@google/genai": "git+https://github.com/issdn/js-genai.git",
 		"@libsql/client": "^0.14.0",
 		"@node-rs/argon2": "^2.0.2",
 		"@oslojs/crypto": "^1.0.1",
