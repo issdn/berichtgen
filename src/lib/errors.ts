@@ -4,7 +4,7 @@ import {
 	IncuriaErrorType,
 	OpenaAIErrorCode
 } from '$src/lib/types';
-import * as genai from '@google/genai/web';
+import * as genai from '@google/genai';
 import OpenAI from 'openai';
 
 export class CompletionException extends Error {
@@ -22,8 +22,6 @@ export class CompletionException extends Error {
 	}
 
 	static fromUnknown(error: unknown) {
-		console.log(error);
-
 		if (error instanceof genai.ApiError) {
 			const code = genAIErrorCodeToCompletionExceptionType(error.code);
 			const message = errorCodeToMessage(code);

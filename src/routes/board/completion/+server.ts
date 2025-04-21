@@ -6,7 +6,7 @@ import type { RequestHandler } from './$types';
 import { CompletionExceptionType, OpenaAIErrorCode } from '$lib/types';
 import OpenAI from 'openai';
 import * as z from 'zod';
-import * as genai from '@google/genai/web';
+import * as genai from '@google/genai';
 import { err, ok, ResultAsync } from 'neverthrow';
 import { CompletionException } from '$src/lib/errors';
 
