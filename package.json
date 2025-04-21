@@ -60,10 +60,12 @@
 		"@auth/drizzle-adapter": "^1.8.0",
 		"@auth/pg-adapter": "^1.8.0",
 		"@auth/sveltekit": "^1.8.0",
+		"@google/genai": "link:@google/genai",
 		"@libsql/client": "^0.14.0",
 		"@node-rs/argon2": "^2.0.2",
 		"@oslojs/crypto": "^1.0.1",
 		"@oslojs/encoding": "^1.1.0",
+		"@sentry/sveltekit": "9",
 		"@sveltejs/adapter-vercel": "^5.7.0",
 		"@types/bun": "^1.2.6",
 		"@types/next-auth": "^3.15.0",
@@ -79,7 +81,6 @@
 		"postgres": "^3.4.5",
 		"svelte-fsm": "^1.2.0",
 		"tesseract.js": "^6.0.0",
-		"vitest": "^3.1.1",
-		"@google/genai": "link:@google/genai"
+		"vitest": "^3.1.1"
 	}
 }
