@@ -4,7 +4,7 @@
 	import Wizard from './Wizard.svelte';
 </script>
 
-<div class="h-main flex w-full flex-col gap-x-8 px-8 pb-8 md:flex-row">
+<div class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:flex-row">
 	<div class="h-full w-full">
 		<Howto />
 	</div>

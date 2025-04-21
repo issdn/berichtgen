@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Check from '@lucide/svelte/icons/check';
-	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import { tick } from 'svelte';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
@@ -37,14 +36,14 @@
 				role="combobox"
 				aria-expanded={open}
 			>
-				{selectedValue || 'Provider auswählen...'}
+				{selectedValue || 'Modell auswählen...'}
 				<ChevronDown class="ml-2 size-4 shrink-0 opacity-50" />
 			</Button>
 		{/snippet}
 	</Popover.Trigger>
 	<Popover.Content align="start" class="w-[400px] p-0">
 		<Command.Root>
-			<Command.Input placeholder="Provider suchen..." />
+			<Command.Input placeholder="Modell suchen..." />
 			<Command.List>
 				<Command.Empty>Kein Provider gefunden.</Command.Empty>
 				<Command.Group>
