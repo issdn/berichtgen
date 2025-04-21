@@ -1,6 +1,6 @@
-import { parseUnknownError } from '$lib/hooks/utils';
 import { incuriaStore } from '$lib/stores/board.svelte';
-import { IncuriaError, IncuriaErrorType, type Entry } from '$lib/types';
+import { IncuriaErrorType, type Entry } from '$lib/types';
+import { IncuriaError } from '$src/lib/errors';
 import { ResultAsync } from 'neverthrow';
 import * as z from 'zod';
 
@@ -18,7 +18,11 @@ export function getCompletions(text: string) {
 
 	const completionsPromises = messages.map(async (t) => {
 		const result = await fetch('/board/completion', {
-			body: JSON.stringify({ text: t, provider: incuriaStore.currentProvider.id }),
+			body: JSON.stringify({
+				text: t,
+				provider: incuriaStore.currentProvider.id,
+				owner: incuriaStore.currentProvider.owner
+			}),
 			method: 'POST'
 		});
 
@@ -30,7 +34,7 @@ export function getCompletions(text: string) {
 	});
 
 	const allCompletionsResult = ResultAsync.fromPromise(Promise.all(completionsPromises), (e) =>
-		parseUnknownError(
+		IncuriaError.fromUnknown(
 			e,
 			'Fehler beim Abrufen der Vervollständigung',
 			IncuriaErrorType.INVALID_JSON_FROM_AI

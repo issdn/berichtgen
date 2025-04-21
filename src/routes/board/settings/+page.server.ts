@@ -6,7 +6,7 @@ import { providerDeleteSchema, providerSchema, validProviderSchema } from './sch
 import { zod } from 'sveltekit-superforms/adapters';
 import { error, type Actions } from '@sveltejs/kit';
 import { eq, and } from 'drizzle-orm';
-import { drizzleAdapter, signOut } from '$src/auth';
+import { drizzleAdapter } from '$src/auth';
 
 export const load: PageServerLoad = async () => {
 	const form = await superValidate(zod(providerSchema));

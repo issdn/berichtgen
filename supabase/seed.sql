@@ -1,1 +1,2 @@
-INSERT INTO "llmProvider" (id, name, price, url) VALUES (gen_random_uuid(), 'DeepSeek-V3', 1.2, 'https://api.deepsek.com');
+INSERT INTO "llmProvider" (id, name, price, url, owner) VALUES (gen_random_uuid(), 'DeepSeek-V3', 1.2, 'https://api.deepsek.com', 'deepseek');
+INSERT INTO "llmProvider" (id, name, price, url, owner) VALUES (gen_random_uuid(), 'Gemini-1.5-Flash', 0.5, '', 'google');

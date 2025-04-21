@@ -1,72 +1,176 @@
 import { db } from '$lib/server/db';
 import { usersLLMProviders } from '$lib/server/db/schema';
 import { and, eq } from 'drizzle-orm';
-import OpenAI from 'openai';
-import * as z from 'zod';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
+import { CompletionExceptionType, OpenaAIErrorCode } from '$lib/types';
+import OpenAI from 'openai';
+import * as z from 'zod';
+import * as genai from '@google/genai/web';
+import { err, ok, ResultAsync } from 'neverthrow';
+import { CompletionException } from '$src/lib/errors';
+
+function getTokenByOwner(owner: string) {
+	switch (owner) {
+		case 'deepseek':
+			return ok(env.DEEPSEEK);
+		case 'google':
+			return ok(env.GEMINI);
+		default:
+			return err(
+				new CompletionException(
+					'Dieses Modell ist nicht verfügbar',
+					CompletionExceptionType.INVALID_TOKEN
+				)
+			);
+	}
+}
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const { user } = (await locals.auth())!;
 	const body = await request.json();
 
-	const schema = z.object({ text: z.string().nonempty(), provider: z.string().nonempty() });
+	const schema = z.object({
+		text: z.string().nonempty(),
+		provider: z.string().nonempty(),
+		owner: z.string().nonempty()
+	});
 
-	try {
-		const { text, provider } = schema.parse(body);
+	const parsed = schema.safeParse(body);
 
-		const query = await db
-			.select()
-			.from(usersLLMProviders)
-			.where(
-				and(eq(usersLLMProviders.userId, user!.id!), eq(usersLLMProviders.providerId, provider))
-			)
-			.limit(1);
-
-		const token = query[0]?.token ?? 'sum token';
-
-		return new Response(
-			JSON.stringify({
-				lessons: [
-					{
-						qualifikationen: ['Eine Qualifikation'],
-						text: 'Mein Tag als Abababa'
-					}
-				]
-			})
-		);
-
-		const openai = new OpenAI({
-			baseURL: 'https://api.deepseek.com',
-			apiKey: token ?? env.DEEPSEEK
+	if (!parsed.success) {
+		return new Response(JSON.stringify({ message: parsed.error.message }), {
+			status: OpenaAIErrorCode.BadRequestError as number
 		});
+	}
 
-		const completion = await openai.chat.completions.create({
-			messages: [
-				{
-					role: 'system',
-					content: context_prompt
-				},
-				{
-					role: 'user',
-					content: text
-				}
-			],
-			model: 'deepseek-chat',
-			response_format: { type: 'json_object' }
-		});
+	const { text, provider, owner } = parsed.data;
 
-		return new Response(completion.choices[0].message.content);
-	} catch (e) {
-		let message = '';
-		if (e instanceof Error) {
-			message = e.message;
-		} else {
-			message = 'Unbekannter Server-Fehler bei Umformulierung.';
-		}
-		return new Response(JSON.stringify({ message }), { status: 400 });
+	const incuriaToken = getTokenByOwner(owner).mapErr((e) => e.toResponse());
+
+	if (incuriaToken.isErr()) {
+		return incuriaToken.error;
+	}
+
+	const query = await db
+		.select()
+		.from(usersLLMProviders)
+		.where(and(eq(usersLLMProviders.userId, user!.id!), eq(usersLLMProviders.providerId, provider)))
+		.limit(1);
+
+	const token = query[0]?.token ?? incuriaToken.value;
+
+	if (owner === 'deepseek') {
+		return await ResultAsync.fromPromise(getOpenAICompletion(text, token), (e) =>
+			CompletionException.fromUnknown(e)
+		)
+			.mapErr((e) => e.toResponse())
+			.map(aiCompletionResultToResponse)
+			.match(
+				(result) => result,
+				(e) => e
+			);
+		// owner === 'google'
+	} else {
+		return await ResultAsync.fromPromise(getGeminiCompletion(text, token), (e) =>
+			CompletionException.fromUnknown(e)
+		)
+			.mapErr((e) => e.toResponse())
+			.map(aiCompletionResultToResponse)
+			.match(
+				(result) => result,
+				(e) => e
+			);
 	}
 };
+
+function aiCompletionResultToResponse(result: string | undefined | null) {
+	if (result === undefined || result === null) {
+		return new Response(JSON.stringify({ message: 'Die API hat nichts zurückgegeben.' }), {
+			status: CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR as number
+		});
+	}
+	return new Response(result, { status: 200 });
+}
+
+async function getOpenAICompletion(text: string, token: string) {
+	const openai = new OpenAI({
+		baseURL: 'https://api.deepseek.com',
+		apiKey: token ?? env.DEEPSEEK
+	});
+
+	const completion = await openai.chat.completions.create({
+		messages: [
+			{
+				role: 'system',
+				content: context_prompt
+			},
+			{
+				role: 'user',
+				content: text
+			}
+		],
+		model: 'deepseek-chat',
+		response_format: {
+			type: 'json_schema',
+			json_schema: {
+				name: 'incuria schema',
+				schema: {
+					lessons: {
+						type: 'array',
+						items: {
+							type: 'object',
+							properties: {
+								qualifikationen: {
+									type: 'array',
+									items: { type: 'string' }
+								},
+								text: { type: 'string' }
+							}
+						}
+					}
+				}
+			}
+		}
+	});
+
+	return completion.choices[0].message.content;
+}
+
+async function getGeminiCompletion(text: string, token: string) {
+	const ai = new genai.GoogleGenAI({ apiKey: token ?? env.GEMINI });
+
+	const completion = await ai.models.generateContent({
+		config: {
+			systemInstruction: context_prompt,
+			responseSchema: {
+				properties: {
+					lessons: {
+						type: genai.Type.ARRAY,
+						items: {
+							type: genai.Type.OBJECT,
+							properties: {
+								text: {
+									type: genai.Type.STRING
+								},
+								qualifikationen: {
+									type: genai.Type.ARRAY,
+									items: {
+										type: genai.Type.STRING
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		model: 'gemini-1.5-flash',
+		contents: text
+	});
+
+	return completion.text;
+}
 
 const context_prompt = `
 I will give you a raw text of records of lessons or a single lesson.

@@ -1,9 +1,10 @@
 import JSZip from 'jszip';
 import { XMLParser } from 'fast-xml-parser';
 import type { ImageLike, Scheduler } from 'tesseract.js';
-import { IncuriaError, IncuriaErrorType } from '$lib/types';
+import { IncuriaErrorType } from '$lib/types';
 import type { WizardFileContext } from '$lib/wizard_file_context.svelte';
 import { Parser } from './parser';
+import { IncuriaError } from '$src/lib/errors';
 
 export type DOCXFileData = {
 	images: Map<string, Uint8Array<ArrayBufferLike>>;

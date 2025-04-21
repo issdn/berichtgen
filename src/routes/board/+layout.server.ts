@@ -32,7 +32,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 			id: llmProviders.id,
 			name: llmProviders.name,
 			price: llmProviders.price,
-			token: usersLLMProviders.token
+			token: usersLLMProviders.token,
+			owner: llmProviders.owner
 		})
 		.from(llmProviders)
 		.leftJoin(

@@ -98,6 +98,7 @@ export const llmProviders = pgTable('llmProvider', {
 		.$defaultFn(() => crypto.randomUUID()),
 	name: text('name').notNull(),
 	url: text('url').notNull(),
+	owner: text('owner').notNull(),
 	price: numeric('price', { precision: 5, scale: 2 }).notNull()
 });
 
