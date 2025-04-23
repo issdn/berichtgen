@@ -2,7 +2,7 @@
 	import WizardFile from './WizardFile.svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { Download } from 'lucide-svelte';
+	import { FileCheck2, FileJson, FileType } from 'lucide-svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { onMount } from 'svelte';
@@ -10,6 +10,10 @@
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 	import ProviderSelect from './ProviderSelect.svelte';
 	import { incuriaStore } from '$lib/stores/board.svelte';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import Docx from '$src/lib/svg/DOCX.svelte';
+	import Pdf from '$src/lib/svg/PDF.svelte';
+	import Png from '$src/lib/svg/PNG.svelte';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -61,11 +65,14 @@
 			</Tooltip.Provider>
 		</div>
 		{#if wizardScheduler.result !== null}
-			{#await wizardScheduler.result then result}
-				<Button href={result} download="bericht.json"><Download />Herunterladen</Button>
+			{#await wizardScheduler.result}
+				<Dialog.Root>
+					<Dialog.Trigger><FileCheck2 /></Dialog.Trigger>
+					<Dialog.Content {children} {childrenBehind} class="max-w-min" />
+				</Dialog.Root>
 			{/await}
 		{:else}
-			<Button disabled={true}><Download />Herunterladen</Button>
+			<Button disabled={true}><FileCheck2 /></Button>
 		{/if}
 	</div>
 	<div class="flex min-h-64 flex-col gap-y-1 p-4">
@@ -82,3 +89,23 @@
 		{/if}
 	</div>
 </div>
+
+{#snippet children()}
+	<Dialog.Header>
+		<Dialog.Title>Deine Dateien sind fertig!</Dialog.Title>
+	</Dialog.Header>
+	<div class="flex w-full flex-col items-center py-4">
+		<div class="flex w-fit flex-col gap-y-2">
+			{#await wizardScheduler.result then result}
+				<Button href={result} download="bericht.json"><FileJson />Als JSON herunterladen</Button>
+				<Button href={result} download="bericht.docx"><FileType />Als DOCX herunterladen</Button>
+			{/await}
+		</div>
+	</div>
+{/snippet}
+
+{#snippet childrenBehind()}
+	<Png class="absolute -top-32 left-[calc(50%-75px)] -z-10 -translate-x-1/2" />
+	<Docx class="absolute -top-32 left-[calc(50%)] -z-10 -translate-x-1/2" />
+	<Pdf class="absolute -top-32 left-[calc(50%+75px)] -z-10 -translate-x-1/2" />
+{/snippet}
