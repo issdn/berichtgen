@@ -25,6 +25,14 @@
 			});
 		}
 	});
+
+	let dialogOpen = $state(false);
+
+	$effect(() => {
+		if (wizardScheduler.result !== null) {
+			dialogOpen = true;
+		}
+	});
 </script>
 
 <div class="relative h-full w-full gap-y-8 rounded-lg border-4">
@@ -66,7 +74,7 @@
 		</div>
 		{#if wizardScheduler.result !== null}
 			{#await wizardScheduler.result}
-				<Dialog.Root>
+				<Dialog.Root bind:open={dialogOpen}>
 					<Dialog.Trigger><FileCheck2 /></Dialog.Trigger>
 					<Dialog.Content {children} {childrenBehind} class="max-w-min" />
 				</Dialog.Root>
