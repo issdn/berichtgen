@@ -1,17 +1,15 @@
-export function countTokens(text: string): number {
-	const encoder = new TextEncoder();
-	const encoded = encoder.encode(text);
-	return encoded.length / 4;
+export function countTokens(blob: Blob): number {
+	return Math.ceil(blob.size / 4);
 }
 
-export function countUserTokens(userTokens: number, files: string[]) {
-	let nrOfFilesThatFit = 0;
+export function countUserTokens(userTokens: number, files: Blob[]) {
+	const filesThatFit: Blob[] = [];
 	const totalTokens = files.reduce((acc, file) => {
 		const count = acc + countTokens(file);
 		if (count <= userTokens) {
-			nrOfFilesThatFit++;
+			filesThatFit.push(file);
 		}
 		return count;
 	}, 0);
-	return { totalTokens, nrOfFilesThatFit };
+	return { totalTokens, filesThatFit };
 }

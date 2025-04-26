@@ -1,9 +1,18 @@
 <script lang="ts">
 	import { FileCheck, FileUp } from 'lucide-svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
+	import { countUserTokens } from '$src/lib/utils/token_counter';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import Button from '$src/lib/components/ui/button/button.svelte';
+	import { goto } from '$app/navigation';
+
+	let { userTokens }: { userTokens: number } = $props();
 
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
+
+	let error: string | null = $state(null);
+	let dialogOpen = $derived(error !== null);
 
 	function preventDefaults(e: Event) {
 		e.preventDefault();
@@ -31,8 +40,21 @@
 	}
 
 	function handleChange(e: Event) {
-		wizardScheduler.files = (e.target as HTMLInputElement | undefined)?.files ?? null;
-		wizardScheduler.processInit = wizardScheduler.init();
+		const files = (e.target as HTMLInputElement | undefined)?.files ?? null;
+		if (files != null) {
+			const filesArray = Array.from(files);
+			const { totalTokens } = countUserTokens(userTokens, filesArray);
+			const tokensAsWords = userTokens / 4;
+			const tokensAsParagraphs = userTokens / 100;
+			if (totalTokens > userTokens) {
+				error = `Du hast ${userTokens} Tokens. Das sind ${tokensAsWords} Wörter oder ${tokensAsParagraphs} Absätze. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
+				wizardScheduler.files = null;
+			} else {
+				error = null;
+				wizardScheduler.files = files;
+				wizardScheduler.processInit = wizardScheduler.init();
+			}
+		}
 	}
 </script>
 
@@ -62,3 +84,17 @@
 		<label for="dropzone" class="pointer-events-none font-medium"> Dateien hier droppen </label>
 	{/if}
 </button>
+
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Content>
+		<Dialog.Header>
+			<Dialog.Title>Nicht genüg Tokens 🥲</Dialog.Title>
+		</Dialog.Header>
+		<div class="flex flex-col gap-y-2 pt-4">
+			<p>{error}</p>
+			<div class="flex w-full flex-row justify-end">
+				<Button onclick={() => goto('/board/kauf')}>Tokens kaufen</Button>
+			</div>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>

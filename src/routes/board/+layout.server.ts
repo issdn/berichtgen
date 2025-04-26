@@ -1,5 +1,4 @@
 import { redirect } from '@sveltejs/kit';
-import type { LayoutServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { llmProviders, usersLLMProviders } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -20,10 +19,11 @@ function hideToken(
 	return str.slice(0, visibleStart) + maskedPart + str.slice(str.length - visibleEnd);
 }
 
-export const load: LayoutServerLoad = async ({ locals }) => {
+export const load = async ({ locals }) => {
 	const session = await locals.auth();
+	const userId = session?.user?.id;
 
-	if (session === null) {
+	if (userId === null || userId === undefined) {
 		redirect(303, '/');
 	}
 
@@ -53,6 +53,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
 	return {
 		session,
-		providers: providersHiddenTokens
+		providers: providersHiddenTokens,
+		userId: session!.user!.id!
 	};
 };
