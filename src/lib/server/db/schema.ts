@@ -115,3 +115,14 @@ export const usersLLMProviders = pgTable(
 	},
 	(t) => [primaryKey({ columns: [t.userId, t.providerId] })]
 );
+
+export const usersTokens = pgTable(
+	'userTokenCount',
+	{
+		userId: text('userId')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		tokens: integer('tokens').notNull().default(0)
+	},
+	(t) => [primaryKey({ columns: [t.userId] })]
+);
