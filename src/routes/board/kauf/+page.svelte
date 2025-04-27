@@ -1,42 +1,56 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import {
-		loadStripe,
-		type Stripe,
-		type StripeElements,
-		type StripeError
-	} from '@stripe/stripe-js';
-	import { Elements, Address, LinkAuthenticationElement, PaymentElement } from 'svelte-stripe';
+	import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js';
+	import { Elements, Address, PaymentElement } from 'svelte-stripe';
 	import { PUBLIC_STRIPE_KEY } from '$env/static/public';
-	import CircleAlert from '@lucide/svelte/icons/circle-alert';
-	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { toast } from 'svelte-sonner';
+	import { Badge } from '$src/lib/components/ui/badge';
+	import { Input } from '$src/lib/components/ui/input';
+	import { debounce } from '$src/lib/debounce';
+	import * as Sentry from '@sentry/browser';
+	import Spinner from '$src/lib/components/ui/Spinner.svelte';
+	import * as Alert from '$src/lib/components/ui/alert';
+	import { CircleAlert } from 'lucide-svelte';
+	import { Label } from '$src/lib/components/ui/label';
+
+	const quantityBadges = [1, 2, 3, 5, 10];
 
 	let stripe: Stripe | null = $state(null);
 	let clientSecret = $state(null);
-	let error: StripeError | null = $state(null);
 	let elements: StripeElements | null = $state(null);
 	let processing: boolean = $state(false);
+	let quantity: number = $state(1);
+	let loadingIntent: boolean = $state(false);
+	let error: string | null = $state(null);
 
 	onMount(async () => {
 		stripe = await loadStripe(PUBLIC_STRIPE_KEY, { locale: 'de' });
 
 		// create payment intent server side
-		clientSecret = await createPaymentIntent();
+		await createPaymentIntent();
 	});
 
-	async function createPaymentIntent() {
-		const response = await fetch('/board/kauf/create-payment-intent', {
-			method: 'POST',
-			headers: {
-				'content-type': 'application/json'
-			},
-			body: JSON.stringify({})
-		});
-		const { clientSecret } = await response.json();
-
-		return clientSecret;
+	async function createPaymentIntent(quantity: number = 1) {
+		loadingIntent = true;
+		try {
+			const response = await fetch(`/board/kauf/create-payment-intent?quantity=${quantity}`, {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json'
+				}
+			});
+			loadingIntent = false;
+			clientSecret = (await response.json()).clientSecret;
+		} catch (e) {
+			Sentry.captureException(e);
+			const message = e instanceof Error ? e.message : 'Ursache unbekannt';
+			toast.error('Stripe-Fehler: ' + message);
+			error = message;
+			loadingIntent = false;
+			return null;
+		}
 	}
 
 	async function submit() {
@@ -53,32 +67,62 @@
 
 		if (result?.error) {
 			// payment failed, notify user
-			error = result.error;
 			processing = false;
+			const message = result.error.message ?? 'Unbekannter Fehler beim Zahlungsvorgang';
+			toast.error(message);
+			error = message;
 		} else {
 			// payment succeeded, redirect to "thank you" page
 			goto('/board');
 		}
 	}
+
+	const debouncedCreatePaymentIntent = debounce((quantity: number) => {
+		if (quantity > 0) {
+			createPaymentIntent(quantity);
+		}
+	}, 500);
 </script>
 
-<div class="h-main flex w-full flex-row justify-center">
-	<div></div>
-	<div class="w-full max-w-[600px] p-8">
-		{#if error}
-			<Alert.Root variant="destructive">
-				<CircleAlert class="size-4" />
-				<Alert.Title>Fehler bei der Zahlung</Alert.Title>
-				<Alert.Description>{error.message}</Alert.Description>
-			</Alert.Root>
-		{/if}
+<div class="h-main flex w-full justify-center gap-x-8 p-8 lg:flex-row">
+	<div class="flex h-full w-full flex-col justify-center gap-y-4">
+		<div class="flex w-full flex-row items-center justify-end gap-x-2">
+			<div class="flex flex-row flex-wrap gap-x-2">
+				{#each quantityBadges as q}
+					<Badge
+						variant="outline"
+						class="text-md flex h-7 w-12 flex-row justify-center"
+						onclick={() => {
+							quantity = q;
+							createPaymentIntent(q);
+						}}>{q}€</Badge
+					>
+				{/each}
+			</div>
+			<div class="flex flex-row">
+				<Label class="flex w-8 flex-row items-center justify-center bg-muted text-lg">€</Label>
+				<Input
+					class="h-8 w-16"
+					bind:value={quantity}
+					onchange={(e) =>
+						debouncedCreatePaymentIntent((e.target as HTMLInputElement).value as unknown as number)}
+					placeholder="1"
+					type="number"
+					min={1}
+					max={90}
+				/>
+			</div>
+		</div>
+		<div class="h-full"></div>
+	</div>
+	<div class="flex w-full flex-col justify-center">
 		{#if clientSecret}
 			<Elements locale="de" {stripe} {clientSecret} theme="night" labels="floating" bind:elements>
 				<form on:submit|preventDefault={submit}>
 					<PaymentElement />
 					<Address mode="billing" />
 
-					<Button variant="default" disabled={processing} class="mt-4 w-full">
+					<Button variant="default" disabled={processing || loadingIntent} class="mt-4 w-full">
 						{#if processing}
 							In Bearbeitung...
 						{:else}
@@ -87,8 +131,18 @@
 					</Button>
 				</form>
 			</Elements>
+		{:else if error}
+			<div class="center-flex">
+				<Alert.Root variant="destructive">
+					<CircleAlert class="size-4" />
+					<Alert.Title>Fehler bei der Zahlung</Alert.Title>
+					<Alert.Description>{error}</Alert.Description>
+				</Alert.Root>
+			</div>
 		{:else}
-			Loading...
+			<div class="center-flex">
+				<Spinner size="2xl" />
+			</div>
 		{/if}
 	</div>
 </div>

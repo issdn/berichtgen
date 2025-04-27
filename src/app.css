@@ -86,6 +86,10 @@
   @apply w-[250px];
 }
 
+.center-flex {
+  @apply flex w-full flex-col items-center justify-center;
+}
+
 @font-face {
   font-family: 'Cormorant';
   font-style: normal;
