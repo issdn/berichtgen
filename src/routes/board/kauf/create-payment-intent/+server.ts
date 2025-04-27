@@ -24,9 +24,10 @@ export async function POST(event) {
 
 	try {
 		const paymentIntent = await stripe.paymentIntents.create({
-			amount: 300,
+			amount: quantity * 400,
 			metadata: {
-				userId
+				userId,
+				quantity
 			},
 			// note, for some EU-only payment methods it must be EUR
 			currency: 'eur',

@@ -29,7 +29,7 @@ export async function POST({ request }) {
 		event = stripe.webhooks.constructEvent(body, signature, env.PRIVATE_STRIPE_WEBHOOK_SECRET);
 	} catch (err) {
 		Sentry.captureException(err);
-		throw error(400, 'Invalid request');
+		return error(400, 'Invalid request');
 	}
 
 	// signature has been verified, so we can process events
@@ -37,11 +37,15 @@ export async function POST({ request }) {
 	if (event.type == 'charge.succeeded') {
 		// get data object
 		const userId = event.data.object.metadata.userId;
+		const quantity = parseInt(event.data.object.metadata.quantity);
+		if (!quantity) {
+			Sentry.captureException(new Error('Quantity not found in metadata'));
+			return error(400, 'Quantity not found in metadata');
+		}
 		if (!userId) {
 			Sentry.captureException(new Error('User ID not found in metadata'));
-			throw error(400, 'User ID not found in metadata');
+			return error(400, 'User ID not found in metadata');
 		}
-		const amount = event.data.object.amount;
 		try {
 			const current = await db
 				.select({ tokens: usersTokens.tokens })
@@ -49,11 +53,11 @@ export async function POST({ request }) {
 				.where(eq(usersTokens.userId, userId));
 			await db
 				.update(usersTokens)
-				.set({ tokens: current[0].tokens + (amount / 400) * 1_000_000 })
+				.set({ tokens: current[0].tokens + quantity * 1_000_000 })
 				.where(eq(usersTokens.userId, userId));
 		} catch (err) {
 			Sentry.captureException(err);
-			throw error(500, "Couldn't find user in database");
+			return error(500, "Couldn't find user in database");
 		}
 	}
 
