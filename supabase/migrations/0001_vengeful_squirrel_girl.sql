@@ -1,1 +1,0 @@
-ALTER TABLE "llmProvider" ADD COLUMN "owner" text NOT NULL;

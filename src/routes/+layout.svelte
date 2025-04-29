@@ -9,7 +9,7 @@
 	import { onMount } from 'svelte';
 
 	let { data, children } = $props();
-	let { session, supabase } = $derived(data);
+	let { session, supabase, user } = $derived(data);
 
 	onMount(() => {
 		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {
@@ -26,7 +26,7 @@
 		>Incuria</Button
 	>
 	<div class="flex flex-row gap-x-4">
-		<SettingsPopover {session}></SettingsPopover>
+		<SettingsPopover {user}></SettingsPopover>
 		<DarkMode />
 	</div>
 </div>

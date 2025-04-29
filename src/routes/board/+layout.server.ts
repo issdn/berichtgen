@@ -18,7 +18,7 @@ function hideToken(
 	return str.slice(0, visibleStart) + maskedPart + str.slice(str.length - visibleEnd);
 }
 
-export const load = async ({ locals: { session, user } }) => {
+export const load = async ({ locals: { user } }) => {
 	const providers = await db
 		.select({
 			id: llmProviders.id,
@@ -44,8 +44,6 @@ export const load = async ({ locals: { session, user } }) => {
 	});
 
 	return {
-		session,
-		providers: providersHiddenTokens,
-		userId: user!.id!
+		providers: providersHiddenTokens
 	};
 };

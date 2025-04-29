@@ -15,8 +15,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	add: async ({ request, locals }) => {
-		const session = await locals.auth();
+	add: async ({ request, locals: { user } }) => {
 		const form = await superValidate(request, zod(validProviderSchema));
 
 		if (!form.valid) {
@@ -26,7 +25,7 @@ export const actions: Actions = {
 		try {
 			await db
 				.insert(usersLLMProviders)
-				.values({ token: form.data.token, providerId: form.data.id, userId: session!.user!.id! })
+				.values({ token: form.data.token, providerId: form.data.id, userId: user!.id! })
 				.onConflictDoUpdate({
 					target: [usersLLMProviders.userId, usersLLMProviders.providerId],
 					set: { token: form.data.token }
@@ -38,8 +37,7 @@ export const actions: Actions = {
 
 		return message(form, `${form.data.name} Token hinzugefügt!`);
 	},
-	delete: async ({ request, locals }) => {
-		const session = await locals.auth();
+	delete: async ({ request, locals: { user } }) => {
 		const form = await superValidate(request, zod(providerDeleteSchema));
 
 		if (!form.valid)
@@ -51,7 +49,7 @@ export const actions: Actions = {
 				.where(
 					and(
 						eq(usersLLMProviders.providerId, form.data.id),
-						eq(usersLLMProviders.userId, session!.user!.id!)
+						eq(usersLLMProviders.userId, user!.id!)
 					)
 				);
 			return message(form, `${form.data.name ?? ''} Token gelöscht!`);
@@ -59,10 +57,9 @@ export const actions: Actions = {
 			return error(406, 'Fehler beim Speichern in die Datenbank.');
 		}
 	},
-	removeAccount: async (event) => {
-		const session = await event.locals.auth();
+	removeAccount: async ({ locals: { user } }) => {
 		try {
-			await drizzleAdapter.deleteUser!(session!.user!.id!);
+			await drizzleAdapter.deleteUser!(user!.id!);
 		} catch {
 			return error(406, 'Fehler beim Löschen des Kontos.');
 		}

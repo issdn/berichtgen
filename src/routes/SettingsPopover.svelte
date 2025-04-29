@@ -8,23 +8,23 @@
 	import { Label } from '$lib/components/ui/label';
 	import { HandCoins, Settings } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
-	import type { Session } from '@supabase/supabase-js';
+	import type { User } from '@supabase/supabase-js';
 
-	let { session }: { session: Session | null } = $props();
+	let { user }: { user: User | null } = $props();
 
-	let isLoggedIn = $derived(session !== null);
+	let isLoggedIn = $derived(user !== null);
 </script>
 
 <Popover.Root>
 	<Popover.Trigger>
 		<div class="flex flex-row items-center gap-x-4">
-			{#if session?.user?.user_metadata.name !== null}
-				<Label class="cursor-pointer">{session?.user?.user_metadata.name}</Label>
+			{#if user?.user_metadata.name !== null}
+				<Label class="cursor-pointer">{user?.user_metadata.name}</Label>
 			{/if}
 			<Avatar.Root>
-				<Avatar.Image src={session?.user?.user_metadata.image} alt="Avatar" />
+				<Avatar.Image src={user?.user_metadata.image} alt="Avatar" />
 				<Avatar.Fallback
-					>{session?.user?.user_metadata.name
+					>{(user?.user_metadata.name as string)
 						?.split(' ')
 						.map((s) => s[0])
 						.join('') ?? 'IC'}</Avatar.Fallback
