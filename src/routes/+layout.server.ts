@@ -1,7 +1,8 @@
-export const load = async (event) => {
-	const session = await event.locals.auth();
-
+import type { LayoutServerLoad } from './$types';
+export const load: LayoutServerLoad = async ({ locals: { safeGetSession }, cookies }) => {
+	const { session } = await safeGetSession();
 	return {
-		session
+		session,
+		cookies: cookies.getAll()
 	};
 };

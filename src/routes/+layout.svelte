@@ -4,12 +4,21 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import '../app.css';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import DarkMode from './board/DarkMode.svelte';
+	import { onMount } from 'svelte';
 
-	let { children, data } = $props();
+	let { data, children } = $props();
+	let { session, supabase } = $derived(data);
 
-	const { session } = data;
+	onMount(() => {
+		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {
+			if (newSession?.expires_at !== session?.expires_at) {
+				invalidate('supabase:auth');
+			}
+		});
+		return () => data.subscription.unsubscribe();
+	});
 </script>
 
 <div class="h-nav flex w-full flex-row items-center justify-between px-4 md:px-8">

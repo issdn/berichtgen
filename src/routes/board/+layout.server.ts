@@ -1,4 +1,3 @@
-import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { llmProviders, usersLLMProviders } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -19,14 +18,7 @@ function hideToken(
 	return str.slice(0, visibleStart) + maskedPart + str.slice(str.length - visibleEnd);
 }
 
-export const load = async ({ locals }) => {
-	const session = await locals.auth();
-	const userId = session?.user?.id;
-
-	if (userId === null || userId === undefined) {
-		redirect(303, '/');
-	}
-
+export const load = async ({ locals: { session, user } }) => {
 	const providers = await db
 		.select({
 			id: llmProviders.id,
@@ -39,7 +31,7 @@ export const load = async ({ locals }) => {
 		.leftJoin(
 			usersLLMProviders,
 			and(
-				eq(usersLLMProviders.userId, session!.user!.id!),
+				eq(usersLLMProviders.userId, user!.id!),
 				eq(usersLLMProviders.providerId, llmProviders.id)
 			)
 		);
@@ -54,6 +46,6 @@ export const load = async ({ locals }) => {
 	return {
 		session,
 		providers: providersHiddenTokens,
-		userId: session!.user!.id!
+		userId: user!.id!
 	};
 };
