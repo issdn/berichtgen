@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { ModeWatcher } from 'mode-watcher';
 	import { Button } from '$lib/components/ui/button';
 	import '../app.css';
 	import * as Popover from '$lib/components/ui/popover';
@@ -8,7 +7,7 @@
 	import { enhance } from '$app/forms';
 	import { Label } from '$lib/components/ui/label';
 	import type { Session } from '@auth/sveltekit';
-	import { Settings } from 'lucide-svelte';
+	import { HandCoins, Settings } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 
 	let { session }: { session: Session | null } = $props();
@@ -32,6 +31,8 @@
 		</div>
 	</Popover.Trigger>
 	<Popover.Content class="flex w-56 flex-col gap-y-2">
+		<Button variant="outline" onclick={() => goto('/board/kauf')}><HandCoins />Tokens kaufen</Button
+		>
 		<div class="mb-1 flex flex-row items-center gap-x-4 border-b border-dashed pb-3">
 			<Button onclick={() => goto('/board/settings')} variant="outline" class="w-full">
 				<Settings />
