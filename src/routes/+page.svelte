@@ -9,10 +9,18 @@
 <div
 	class="h-main flex w-full flex-col items-center justify-center overflow-x-clip px-8 pb-8 md:px-16 md:pb-0 lg:flex-row"
 >
-	<div class="flex h-[35vh] flex-row items-center justify-center lg:h-full lg:basis-2/5">
-		<div class="flex flex-col gap-y-2">
-			<h1 class="font-[karla] text-5xl font-bold">Zu faul für Berichte? <br /> Fühl ich.</h1>
-			<p class="text-2xl opacity-70">Dann lass sie von der KI erstellen!</p>
+	<div class="flex h-[35vh] flex-col items-center justify-center lg:h-full lg:basis-2/5">
+		<div class="flex flex-col gap-y-12">
+			<div class="flex flex-col gap-y-2">
+				<h1 class="font-[karla] text-5xl font-bold">Zu faul für Berichte? <br /> Fühl ich.</h1>
+				<p class="text-2xl opacity-70">Dann lass sie von der KI erstellen!</p>
+			</div>
+			<div class="flex flex-col text-base">
+				<p class="text-xl font-medium">
+					<b class="text-4xl font-bold text-blue-300">4€</b> / ~1.400 Seiten
+				</p>
+				<p class="text-md opacity-80">oder <b class="text-blue-300">~2€</b> mit deinem API-Key</p>
+			</div>
 		</div>
 	</div>
 	<div
