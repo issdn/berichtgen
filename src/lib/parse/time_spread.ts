@@ -1,5 +1,5 @@
 import type { ValidIncuriaDateRanges } from '$lib/components/time_spread_schematic';
-import type { Entry } from '$lib/types';
+import type { Entry, Ort } from '$lib/types';
 import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date';
 
 const LOCALE = 'de-DE';
@@ -78,7 +78,7 @@ export function spreadEntriesAcrossWeeks(
 	return newEntries;
 }
 
-function cloneObjectWithDate(entry: Entry, date: CalendarDate, location: string): Required<Entry> {
+function cloneObjectWithDate(entry: Entry, date: CalendarDate, location: Ort): Required<Entry> {
 	return {
 		...entry,
 		datum: date.toString(),

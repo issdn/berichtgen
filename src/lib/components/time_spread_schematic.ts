@@ -1,3 +1,4 @@
+import { Ort } from '$src/lib/types';
 import type { DateRange } from 'bits-ui';
 import * as z from 'zod';
 
@@ -14,7 +15,7 @@ export const dateRangeSchema = z.object({
 				.int({ message: 'Stunden müssen ganze Zahlen sein.' })
 				.optional()
 				.nullable(),
-			location: z.string()
+			location: z.enum([Ort.SCHULE, Ort.BETRIEB, Ort.UNTERWEISUNG, Ort['SCHULE/BETRIEB']])
 		})
 		.array()
 });
@@ -30,5 +31,5 @@ export type IncuriaDateRange = Pick<RemoveUndefined<DateRange>, 'end'> & Pick<Da
 export type ValidIncuriaDateRanges = {
 	daterange: IncuriaDateRange;
 	hours?: number | null;
-	location: string;
+	location: Ort;
 }[];
