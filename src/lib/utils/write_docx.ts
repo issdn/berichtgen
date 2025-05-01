@@ -182,8 +182,12 @@ function createSignaturesTable() {
 }
 
 export async function writeDocxFile(entries: ResultEntry[]) {
-	const weeklyTables = entries.map(({ text, ort, datum }) => {
-		return [createPersonTable(datum), createBerichtTable(text, 10, ort), createSignaturesTable()];
+	const weeklyTables = entries.map(({ text, ort, datum, hours }) => {
+		return [
+			createPersonTable(datum),
+			createBerichtTable(text, hours, ort),
+			createSignaturesTable()
+		];
 	});
 
 	// Create the document

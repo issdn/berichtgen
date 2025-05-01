@@ -6,7 +6,8 @@ const docx = await writeDocxFile([
 		qualifikationen: ['Qualifikation 1', 'Qualifikation 2'],
 		text: 'Dies ist ein Beispieltext für den Bericht.',
 		ort: Ort.BETRIEB,
-		datum: '2023-10-01'
+		datum: '2023-10-01',
+		hours: 40
 	}
 ]);
 

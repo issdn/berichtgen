@@ -1,5 +1,5 @@
 import type { ValidIncuriaDateRanges } from '$lib/components/time_spread_schematic';
-import type { Entry, Ort } from '$lib/types';
+import type { Entry, Ort, ResultEntry } from '$lib/types';
 import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date';
 
 const LOCALE = 'de-DE';
@@ -35,6 +35,7 @@ export function spreadEntriesAcrossWeeks(
 
 	const adjustedForHours = sorted.map((week) => ({
 		...week,
+		hours: week.hours ?? 40,
 		entriesPerWeek: Math.floor(entries.length * ((week.hours ?? 1) / hoursSum))
 	}));
 
@@ -43,10 +44,12 @@ export function spreadEntriesAcrossWeeks(
 	let mondayOfWeek = startOfWeek(minWeek.daterange.start!, LOCALE, 'mon') as CalendarDate;
 
 	for (let i = 0; i < weeks; i += 1) {
-		const { entriesPerWeek, daterange, location } = adjustedForHours[currWeekIndex];
+		const { entriesPerWeek, daterange, location, hours } = adjustedForHours[currWeekIndex];
 
 		for (let j = 0; j < entriesPerWeek; j++) {
-			newEntries.push(cloneObjectWithDate(entries[entriesTotal + j], mondayOfWeek, location));
+			newEntries.push(
+				cloneObjectWithDate(entries[entriesTotal + j], mondayOfWeek, location, hours)
+			);
 		}
 
 		entriesTotal += entriesPerWeek;
@@ -70,7 +73,8 @@ export function spreadEntriesAcrossWeeks(
 			cloneObjectWithDate(
 				entries[entries.length - 1],
 				mondayOfWeek,
-				adjustedForHours[dateRanges.length - 1].location
+				adjustedForHours[dateRanges.length - 1].location,
+				adjustedForHours[dateRanges.length - 1].hours
 			)
 		);
 	}
@@ -78,11 +82,17 @@ export function spreadEntriesAcrossWeeks(
 	return newEntries;
 }
 
-function cloneObjectWithDate(entry: Entry, date: CalendarDate, location: Ort): Required<Entry> {
+function cloneObjectWithDate(
+	entry: Entry,
+	date: CalendarDate,
+	location: Ort,
+	hours: number
+): ResultEntry {
 	return {
 		...entry,
 		datum: date.toString(),
-		ort: location
+		ort: location,
+		hours
 	};
 }
 
