@@ -1,10 +1,17 @@
 import type { DateValue } from '@internationalized/date';
 
+export enum Ort {
+	SCHULE = 'SCHULE',
+	BETRIEB = 'BETRIEB',
+	UNTERWEISUNG = 'UNTERWEISUNG',
+	'SCHULE/BETRIEB' = 'SCHULE/BETRIEB'
+}
+
 export interface Entry {
 	qualifikationen: string[];
 	text: string;
 	datum?: string;
-	ort?: string;
+	ort?: Ort;
 }
 
 export type ResultEntry = Required<Entry>;
