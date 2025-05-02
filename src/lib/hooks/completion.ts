@@ -30,7 +30,11 @@ export function getCompletions(text: string) {
 
 		if (result.status >= 400)
 			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, data.message);
-		return completionSchema.parse(data);
+		const parsed = completionSchema.safeParse(data);
+		if (!parsed.success) {
+			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, parsed.error.message);
+		}
+		return parsed.data;
 	});
 
 	const allCompletionsResult = ResultAsync.fromPromise(Promise.all(completionsPromises), (e) =>

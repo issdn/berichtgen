@@ -18,7 +18,8 @@ export async function POST({ request }) {
 	const signature = request.headers.get('stripe-signature');
 
 	if (!signature) {
-		throw error(400, 'Missing signature');
+		Sentry.captureException(new Error('No stripe signature found'));
+		return error(400, 'No stripe signature found');
 	}
 
 	// var to hold event data

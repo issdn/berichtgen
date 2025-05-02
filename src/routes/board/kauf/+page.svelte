@@ -16,6 +16,7 @@
 	import { Label } from '$src/lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
+	import { PaymentStatus } from '$src/lib/types';
 
 	const quantityBadges = [1, 2, 3, 5, 10];
 
@@ -74,8 +75,9 @@
 			toast.error(message);
 			error = message;
 		} else {
-			// payment succeeded, redirect to "thank you" page
-			goto('/board');
+			goto(`/board?payment=${PaymentStatus.SUCCESS}`, {
+				replaceState: true
+			});
 		}
 	}
 

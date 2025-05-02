@@ -1,25 +1,27 @@
 import Stripe from 'stripe';
 import { SECRET_STRIPE_KEY } from '$env/static/private';
-import { json } from '@sveltejs/kit';
+import { error, json } from '@sveltejs/kit';
 import * as Sentry from '@sentry/node';
+import { CommonServerErrorTypes } from '$src/lib/types.js';
 
 // initialize Stripe
 const stripe = new Stripe(SECRET_STRIPE_KEY);
 
 // handle POST /create-payment-intent
-export async function POST(event) {
-	const session = await event.locals.auth();
-	const userId = session?.user?.id;
-
-	const quantity = parseInt(event.request.headers.get('quantity') || '1');
-
-	if (isNaN(quantity) || quantity <= 0 || quantity > 90) {
-		return json({ error: 'Quantität soll zwischen 1 und 90 liegen.' }, { status: 400 });
-	}
+export async function POST({ locals: { user }, request }) {
+	const userId = user?.id;
 
 	if (!userId) {
-		Sentry.captureException(new Error('User not authenticated during payment intent creation'));
-		return json({ error: 'Unauthorized' }, { status: 401 });
+		return error(401, { type: CommonServerErrorTypes.UNAUTHORIZED });
+	}
+
+	const quantity = parseInt(request.headers.get('quantity') || '1');
+
+	if (isNaN(quantity) || quantity <= 0 || quantity > 90) {
+		return error(400, {
+			type: CommonServerErrorTypes.VALIDATION_ERROR,
+			message: 'Die Menge muss zwischen 1 und 90 liegen'
+		});
 	}
 
 	try {
@@ -45,6 +47,9 @@ export async function POST(event) {
 			Sentry.captureException(err);
 			errorMessage = err.message;
 		}
-		return json({ error: errorMessage }, { status: 500 });
+		return error(500, {
+			type: CommonServerErrorTypes.STRIPE_ERROR,
+			message: errorMessage
+		});
 	}
 }

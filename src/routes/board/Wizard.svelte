@@ -28,8 +28,10 @@
 
 	let dialogOpen = $state(false);
 
+	let result = $derived(wizardScheduler.result);
+
 	$effect(() => {
-		if (wizardScheduler.result !== null) {
+		if (result !== null) {
 			dialogOpen = true;
 		}
 	});
@@ -72,13 +74,11 @@
 				</Tooltip.Root>
 			</Tooltip.Provider>
 		</div>
-		{#if wizardScheduler.result !== null}
-			{#await wizardScheduler.result}
-				<Dialog.Root bind:open={dialogOpen}>
-					<Dialog.Trigger><FileCheck2 /></Dialog.Trigger>
-					<Dialog.Content {children} {childrenBehind} class="max-w-min" />
-				</Dialog.Root>
-			{/await}
+		{#if result !== null}
+			<Dialog.Root bind:open={dialogOpen}>
+				<Dialog.Trigger><FileCheck2 /></Dialog.Trigger>
+				<Dialog.Content {children} {childrenBehind} class="max-w-min" />
+			</Dialog.Root>
 		{:else}
 			<Button disabled={true}><FileCheck2 /></Button>
 		{/if}
@@ -104,9 +104,9 @@
 	</Dialog.Header>
 	<div class="flex w-full flex-col items-center py-4">
 		<div class="flex w-fit flex-col gap-y-2">
-			{#await wizardScheduler.result then result}
-				<Button href={result} download="bericht.json"><FileJson />Als JSON herunterladen</Button>
-				<Button href={result} download="bericht.docx"><FileType />Als DOCX herunterladen</Button>
+			{#await result then href}
+				<Button {href} download="bericht.json"><FileJson />Als JSON herunterladen</Button>
+				<Button {href} download="bericht.docx"><FileType />Als DOCX herunterladen</Button>
 			{/await}
 		</div>
 	</div>

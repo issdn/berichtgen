@@ -1,5 +1,6 @@
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import type { Database } from './database.types.ts'; // import generated types
+import type { IncuriaErrorType } from '$src/lib/types.js';
 declare global {
 	namespace App {
 		// interface Error {}
@@ -11,6 +12,10 @@ declare global {
 		}
 		interface PageData {
 			session: Session | null;
+		}
+		interface Error {
+			message: string;
+			type?: IncuriaErrorType | CompletionExceptionType | CommonServerErrorTypes;
 		}
 		// interface PageState {}
 		// interface Platform {}

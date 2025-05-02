@@ -3,12 +3,15 @@ import { usersLLMProviders } from '$lib/server/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
-import { CompletionExceptionType, OpenaAIErrorCode } from '$lib/types';
+import { CommonServerErrorTypes, CompletionExceptionType } from '$lib/types';
 import OpenAI from 'openai';
 import * as z from 'zod';
 import * as genai from '@google/genai';
 import { err, ok, ResultAsync } from 'neverthrow';
 import { CompletionException } from '$src/lib/errors';
+import { countTokens } from '$src/lib/utils/token_counter';
+import * as Sentry from '@sentry/node';
+import { error as errorJson } from '@sveltejs/kit';
 
 function getTokenByOwner(owner: string) {
 	switch (owner) {
@@ -26,8 +29,14 @@ function getTokenByOwner(owner: string) {
 	}
 }
 
-export const POST: RequestHandler = async ({ request, locals }) => {
-	const { user } = (await locals.auth())!;
+export const POST: RequestHandler = async ({ request, locals: { user, supabase } }) => {
+	if (!user) {
+		return errorJson(401, {
+			type: CommonServerErrorTypes.UNAUTHORIZED,
+			message: 'Nicht autorisiert'
+		});
+	}
+
 	const body = await request.json();
 
 	const schema = z.object({
@@ -39,12 +48,33 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const parsed = schema.safeParse(body);
 
 	if (!parsed.success) {
-		return new Response(JSON.stringify({ message: parsed.error.message }), {
-			status: OpenaAIErrorCode.BadRequestError as number
+		return errorJson(400, {
+			type: CommonServerErrorTypes.VALIDATION_ERROR,
+			message: parsed.error.message
 		});
 	}
 
 	const { text, provider, owner } = parsed.data;
+
+	const { data, error } = await supabase.rpc('deduct_user_tokens', {
+		user_id: user!.id,
+		amount: countTokens(new Blob([text]))
+	});
+
+	if (error) {
+		Sentry.captureException(error);
+		return errorJson(500, {
+			type: CommonServerErrorTypes.DATABASE_ERROR,
+			message: 'Internet fehler.'
+		});
+	}
+
+	if (!data) {
+		errorJson(500, {
+			type: CompletionExceptionType.NOT_ENOUGH_TOKENS,
+			message: 'Nicht genug Tokens'
+		});
+	}
 
 	const incuriaToken = getTokenByOwner(owner).mapErr((e) => e.toResponse());
 
@@ -61,37 +91,38 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const token = query[0]?.token ?? incuriaToken.value;
 
 	if (owner === 'deepseek') {
-		return await ResultAsync.fromPromise(getOpenAICompletion(text, token), (e) =>
+		const result = await ResultAsync.fromPromise(getOpenAICompletion(text, token), (e) =>
 			CompletionException.fromUnknown(e)
-		)
-			.mapErr((e) => e.toResponse())
-			.map(aiCompletionResultToResponse)
-			.match(
-				(result) => result,
-				(e) => e
-			);
+		).mapErr((e) => e.toResponse());
+		if (result.isErr()) {
+			return result.error;
+		}
+		const completion = result.value;
+		if (completion === undefined || completion === null) {
+			return errorJson(500, {
+				type: CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR,
+				message: 'Die API hat nichts zurückgegeben.'
+			});
+		}
+		return new Response(completion);
 		// owner === 'google'
 	} else {
-		return await ResultAsync.fromPromise(getGeminiCompletion(text, token), (e) =>
+		const result = await ResultAsync.fromPromise(getGeminiCompletion(text, token), (e) =>
 			CompletionException.fromUnknown(e)
-		)
-			.mapErr((e) => e.toResponse())
-			.map(aiCompletionResultToResponse)
-			.match(
-				(result) => result,
-				(e) => e
-			);
+		).mapErr((e) => e.toResponse());
+		if (result.isErr()) {
+			return result.error;
+		}
+		const completion = result.value;
+		if (completion === undefined || completion === null) {
+			return errorJson(500, {
+				type: CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR,
+				message: 'Die API hat nichts zurückgegeben.'
+			});
+		}
+		return new Response(completion);
 	}
 };
-
-function aiCompletionResultToResponse(result: string | undefined | null) {
-	if (result === undefined || result === null) {
-		return new Response(JSON.stringify({ message: 'Die API hat nichts zurückgegeben.' }), {
-			status: CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR as number
-		});
-	}
-	return new Response(result, { status: 200 });
-}
 
 async function getOpenAICompletion(text: string, token: string) {
 	const openai = new OpenAI({
@@ -137,7 +168,10 @@ async function getOpenAICompletion(text: string, token: string) {
 	return completion.choices[0].message.content;
 }
 
-async function getGeminiCompletion(text: string, token: string) {
+async function getGeminiCompletion(
+	text: string,
+	token: string
+): Promise<string | undefined | null> {
 	const ai = new genai.GoogleGenAI({ apiKey: token ?? env.GEMINI });
 
 	const completion = await ai.models.generateContent({

@@ -5,20 +5,19 @@ import {
 	OpenaAIErrorCode
 } from '$src/lib/types';
 import * as genai from '@google/genai';
+import { error } from '@sveltejs/kit';
 import OpenAI from 'openai';
 
 export class CompletionException extends Error {
 	constructor(
 		message: string,
-		public code: CompletionExceptionType
+		public type: CompletionExceptionType
 	) {
 		super(message);
 	}
 
 	public toResponse() {
-		return new Response(JSON.stringify({ message: this.message }), {
-			status: this.code as number
-		});
+		return error(500, { type: this.type, message: this.message });
 	}
 
 	static fromUnknown(error: unknown) {

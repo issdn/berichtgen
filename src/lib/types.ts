@@ -25,6 +25,13 @@ export interface IncuriaWeightedDateRange {
 	hours?: number;
 }
 
+export enum CommonServerErrorTypes {
+	DATABASE_ERROR = 'DATABASE_ERROR',
+	UNAUTHORIZED = 'UNAUTHORIZED',
+	VALIDATION_ERROR = 'VALIDATION_ERROR',
+	STRIPE_ERROR = 'STRIPE_ERROR'
+}
+
 export enum IncuriaErrorType {
 	INVALID_FILE,
 	FORMAT_NOT_SUPPORTED,
@@ -102,6 +109,7 @@ export enum GenAIErrorCode {
 
 export enum CompletionExceptionType {
 	INVALID_TOKEN = 400,
+	NOT_ENOUGH_TOKENS = 402,
 	TOKEN_EXPIRED = 403,
 	UNKNOWN_THIRD_PARTY_ERROR = 404,
 	TOO_MANY_REQUESTS = 429,
@@ -140,4 +148,9 @@ export enum QualifikationenSchule {
 	'Umsetzen, Integrieren und Prüfen von Maßnahmen zur IT-Sicherheit und zum Datenschutz' = 6,
 	'Umweltschutz' = 26,
 	'Vernetztes Zusammenarbeiten unter Nutzung digitaler Medien' = 27
+}
+
+export enum PaymentStatus {
+	SUCCESS = 'success',
+	FAILED = 'failed'
 }

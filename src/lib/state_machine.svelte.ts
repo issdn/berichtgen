@@ -107,14 +107,28 @@ export function createStateMachineForContext(
 					}
 				);
 			},
-			next: () => WizardStep.AI_COMPLETION,
+			next: () => WizardStep.WAITING,
 			error: () => WizardStep.ERROR,
+			cancel: () => WizardStep.CANCELLED
+		},
+		[WizardStep.WAITING]: {
+			_enter() {
+				if (context.cancelled) {
+					this.cancel();
+					return;
+				}
+			},
+			run: WizardStep.AI_COMPLETION,
 			cancel: () => WizardStep.CANCELLED
 		},
 		[WizardStep.AI_COMPLETION]: {
 			_enter() {
 				if (context.cancelled) {
 					this.cancel();
+					return;
+				}
+				if (context.dateRanges.length === 0) {
+					this.wait();
 					return;
 				}
 				getCompletions(context.snapshot as string).match(
@@ -128,28 +142,15 @@ export function createStateMachineForContext(
 					}
 				);
 			},
+			wait: () => WizardStep.WAITING,
 			next: () => WizardStep.TIME_SPREADING,
 			error: () => WizardStep.ERROR,
-			cancel: () => WizardStep.CANCELLED
-		},
-		[WizardStep.WAITING]: {
-			_enter() {
-				if (context.cancelled) {
-					this.cancel();
-					return;
-				}
-			},
-			run: WizardStep.TIME_SPREADING,
 			cancel: () => WizardStep.CANCELLED
 		},
 		[WizardStep.TIME_SPREADING]: {
 			_enter() {
 				if (context.cancelled) {
 					this.cancel();
-					return;
-				}
-				if (context.dateRanges.length === 0) {
-					this.wait();
 					return;
 				}
 				const throwableSpreadEntries = fromThrowable(
@@ -174,7 +175,6 @@ export function createStateMachineForContext(
 			},
 			next: () => WizardStep.DONE,
 			error: () => WizardStep.ERROR,
-			wait: () => WizardStep.WAITING,
 			cancel: () => WizardStep.CANCELLED
 		},
 		[WizardStep.DONE]: {
