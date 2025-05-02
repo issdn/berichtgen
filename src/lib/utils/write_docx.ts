@@ -222,3 +222,20 @@ export async function writeDocxFile(entries: ResultEntry[]) {
 	// Generate the .docx file
 	return await Packer.toBlob(doc);
 }
+
+export async function handleDOCXDownload(
+	entries: Promise<ResultEntry[]>,
+	download: string = 'bericht.docx'
+) {
+	const blob = await writeDocxFile(await entries);
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+
+	a.href = url;
+	a.download = download;
+	document.body.appendChild(a);
+	a.click();
+
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
+}

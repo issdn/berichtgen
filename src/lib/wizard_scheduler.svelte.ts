@@ -2,7 +2,7 @@ import type { Scheduler } from 'tesseract.js';
 import { combineJSONs } from './parse/combine';
 import { WizardFileContext } from './wizard_file_context.svelte';
 import { createStateMachineForContext } from './state_machine.svelte';
-import type { Entry } from './types';
+import type { Entry, ResultEntry } from './types';
 export class WizardScheduler {
 	batchSize = 5;
 
@@ -19,17 +19,18 @@ export class WizardScheduler {
 
 	scheduler: Scheduler | null = null;
 
-	result = $state<Promise<string> | null>(null);
+	result = $state<Promise<ResultEntry[]> | null>(null);
 
 	processInit = $state<Promise<void> | null>(null);
 
-	isRunning = $derived(this.schedule != null && this.schedule.length !== this.filesReady);
+	isRunning = $state(false);
 
 	workersInUse = 0;
 
 	workersNr = 0;
 
 	async init() {
+		this.isRunning = true;
 		if (this.scheduler === null) {
 			const { createScheduler } = await import('tesseract.js');
 			this.scheduler = createScheduler();
@@ -47,10 +48,10 @@ export class WizardScheduler {
 				if (context.finished != null) return [...prev, context.finished];
 				return prev;
 			}, [] as Required<Entry>[][]);
-			const result = combineJSONs(finishedFiles);
 			await this.scheduler?.terminate();
-			const blob = new Blob([JSON.stringify(result)], { type: 'application/json' });
-			return URL.createObjectURL(blob);
+			const combined = combineJSONs(finishedFiles);
+			this.isRunning = false;
+			return combined;
 		})();
 	}
 

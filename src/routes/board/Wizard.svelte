@@ -1,7 +1,7 @@
 <script lang="ts">
 	import WizardFile from './WizardFile.svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
+	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
 	import { FileCheck2, FileJson, FileType } from 'lucide-svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -14,6 +14,9 @@
 	import Docx from '$src/lib/svg/DOCX.svelte';
 	import Pdf from '$src/lib/svg/PDF.svelte';
 	import Png from '$src/lib/svg/PNG.svelte';
+	import FileDownloadButton from '$src/lib/components/FileDownloadButton.svelte';
+	import { handleDOCXDownload } from '$src/lib/utils/write_docx';
+	import { handleJSONDownload } from '$src/lib/utils/write_json';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -31,7 +34,7 @@
 	let result = $derived(wizardScheduler.result);
 
 	$effect(() => {
-		if (result !== null) {
+		if (result !== null && wizardScheduler.filesReady > 0) {
 			dialogOpen = true;
 		}
 	});
@@ -76,7 +79,9 @@
 		</div>
 		{#if result !== null}
 			<Dialog.Root bind:open={dialogOpen}>
-				<Dialog.Trigger><FileCheck2 /></Dialog.Trigger>
+				<Dialog.Trigger class={buttonVariants({ variant: 'default' })}
+					><FileCheck2 /></Dialog.Trigger
+				>
 				<Dialog.Content {children} {childrenBehind} class="max-w-min" />
 			</Dialog.Root>
 		{:else}
@@ -104,10 +109,12 @@
 	</Dialog.Header>
 	<div class="flex w-full flex-col items-center py-4">
 		<div class="flex w-fit flex-col gap-y-2">
-			{#await result then href}
-				<Button {href} download="bericht.json"><FileJson />Als JSON herunterladen</Button>
-				<Button {href} download="bericht.docx"><FileType />Als DOCX herunterladen</Button>
-			{/await}
+			<FileDownloadButton fn={(result) => handleJSONDownload(result)} download="bericht.json"
+				><FileJson />Als JSON herunterladen</FileDownloadButton
+			>
+			<FileDownloadButton fn={(result) => handleDOCXDownload(result)} download="bericht.docx"
+				><FileType />Als DOCX herunterladen</FileDownloadButton
+			>
 		</div>
 	</div>
 {/snippet}

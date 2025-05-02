@@ -63,7 +63,7 @@
 					</Tooltip.Root>
 				</Tooltip.Provider>
 				<Button
-					variant="outline"
+					variant="default"
 					onclick={() => {
 						context.cancelled = true;
 						machine.run();

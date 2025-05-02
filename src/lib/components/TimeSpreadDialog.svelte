@@ -11,6 +11,7 @@
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Ort } from '$src/lib/types';
 
 	let {
 		onClose,
@@ -23,7 +24,7 @@
 		return {
 			id,
 			daterange: { start: undefined, end: today('Europe/Berlin') as DateValue },
-			location: 'SCHULE'
+			location: Ort.BETRIEB
 		};
 	}
 
@@ -58,7 +59,7 @@
 		if (isOpen === false) onClose();
 	}}
 >
-	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}><Calendar /></Dialog.Trigger>
+	<Dialog.Trigger class={buttonVariants({ variant: 'default' })}><Calendar /></Dialog.Trigger>
 	<Dialog.Content class="w-full px-4">
 		<Dialog.Header class="px-2">
 			<Dialog.Title>Wähle Datumbereiche!</Dialog.Title>
@@ -67,7 +68,7 @@
 			>
 		</Dialog.Header>
 		<form method="POST" use:enhance>
-			<div class="max-h-[600px] w-full gap-y-8 overflow-y-auto">
+			<div class="max-h-[600px] w-full gap-y-8 overflow-y-auto pt-8">
 				{#each $form.values as _, index}
 					{#if index > 0}
 						<div class="relative flex h-16 flex-row items-center">
