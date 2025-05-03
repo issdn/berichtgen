@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build && bun run build:genai",
+		"build": "vite build",
 		"preview": "vite preview",
 		"build:genai": "cd node_modules/@google/genai && bun install && bun run build",
 		"prepare": "svelte-kit sync || echo ''",

@@ -12,7 +12,7 @@ export async function POST({ locals: { user }, request }) {
 	const userId = user?.id;
 
 	if (!userId) {
-		return error(401, { type: CommonServerErrorTypes.UNAUTHORIZED });
+		return error(401, { type: CommonServerErrorTypes.UNAUTHORIZED, message: 'Nicht autorisiert' });
 	}
 
 	const quantity = parseInt(request.headers.get('quantity') || '1');
