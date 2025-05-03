@@ -1,11 +1,12 @@
 import { json, redirect } from '@sveltejs/kit';
 
 export const actions = {
-	signin: async ({ locals: { supabase } }) => {
+	signin: async ({ locals: { supabase }, url }) => {
+		const baseUrl = `${url.origin}/auth/callback?next=/board`;
 		const { data, error } = await supabase.auth.signInWithOAuth({
 			provider: 'google',
 			options: {
-				redirectTo: 'http://localhost:5173/auth/callback?next=/board'
+				redirectTo: baseUrl
 			}
 		});
 		if (error) return json({ error: error.message }, { status: 500 });

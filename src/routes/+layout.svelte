@@ -7,6 +7,7 @@
 	import { goto, invalidate } from '$app/navigation';
 	import DarkMode from './board/DarkMode.svelte';
 	import { onMount } from 'svelte';
+	import Logo from '$lib/svg/Logo.svelte';
 
 	let { data, children } = $props();
 	let { session, supabase, user } = $derived(data);
@@ -22,8 +23,11 @@
 </script>
 
 <div class="h-nav flex w-full flex-row items-center justify-between px-4 md:px-8">
-	<Button onclick={() => goto('/board')} variant="link" class="font-cormorant text-3xl"
-		>Incuria</Button
+	<Button
+		onclick={() => goto('/board')}
+		variant="link"
+		class="font-cormorant text-3xl [&_svg]:h-[36px] [&_svg]:w-[136px] [&_svg]:fill-primary"
+		><Logo /></Button
 	>
 	<div class="flex flex-row gap-x-4">
 		<SettingsPopover {user}></SettingsPopover>
