@@ -8,7 +8,7 @@ export enum Ort {
 }
 
 export interface Entry {
-	qualifikationen: string[];
+	qualifikationen: QualifikationenSchule[];
 	text: string;
 	datum?: string;
 	ort?: Ort;

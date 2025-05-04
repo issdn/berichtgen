@@ -1,10 +1,10 @@
 import { createWorker, createScheduler } from 'tesseract.js';
 import { createCanvas } from 'canvas';
 import { DOCXParser } from '$lib/parse/docx_parser';
-import { WizardFileContext } from '$lib/wizard_scheduler.svelte';
 import { PDFParser } from '$lib/parse/pdf_parser';
 import { expect, test } from 'vitest';
 import * as fs from 'node:fs';
+import { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 
 test('Read text from docx kurwa', async () => {
 	const scheduler = await createScheduler();

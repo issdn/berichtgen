@@ -1,12 +1,15 @@
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
+import { Ort, QualifikationenSchule } from '$src/lib/types';
 import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';
+
+const qualifikationen = [QualifikationenSchule['Allgemeinbildende Fächer']];
 
 test('Spread single entry across multiple weeks.', () => {
 	const entries = [
 		{
 			datum: '2025-03-24',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		}
 	];
@@ -14,7 +17,7 @@ test('Spread single entry across multiple weeks.', () => {
 	const expected = [
 		{
 			datum: '2025-03-24',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		}
 	];
@@ -25,7 +28,7 @@ test('Spread single entry across multiple weeks.', () => {
 				start: parseDate('2025-03-25'),
 				end: parseDate('2025-04-01')
 			},
-			location: 'SCHULE'
+			location: Ort.BETRIEB
 		}
 	]);
 
@@ -35,19 +38,19 @@ test('Spread single entry across multiple weeks.', () => {
 test('Spread multiple entries across multiple weeks.', () => {
 	const entries = [
 		{
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		},
 		{
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
 		},
 		{
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 		},
 		{
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Risikomanagement in der Lieferkette:\nIdentifikation und Bewertung von Risiken bei der Zusammenarbeit mit Lieferanten.'
 		}
 	];
@@ -55,22 +58,22 @@ test('Spread multiple entries across multiple weeks.', () => {
 	const expected = [
 		{
 			datum: '2025-03-03',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		},
 		{
 			datum: '2025-03-10',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
 		},
 		{
 			datum: '2025-03-17',
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 		},
 		{
 			datum: '2025-03-17',
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Risikomanagement in der Lieferkette:\nIdentifikation und Bewertung von Risiken bei der Zusammenarbeit mit Lieferanten.'
 		}
 	];
@@ -81,7 +84,7 @@ test('Spread multiple entries across multiple weeks.', () => {
 				start: parseDate('2025-03-04'),
 				end: parseDate('2025-03-17')
 			},
-			location: 'SCHULE'
+			location: Ort.BETRIEB
 		}
 	]);
 
@@ -91,7 +94,7 @@ test('Spread multiple entries across multiple weeks.', () => {
 test('Spread one entry across multiple weeks.', () => {
 	const entries = [
 		{
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		}
 	];
@@ -99,7 +102,7 @@ test('Spread one entry across multiple weeks.', () => {
 	const expected = [
 		{
 			datum: '2025-03-03',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		}
 	];
@@ -110,7 +113,7 @@ test('Spread one entry across multiple weeks.', () => {
 				start: parseDate('2025-03-04'),
 				end: parseDate('2025-03-24')
 			},
-			location: 'SCHULE'
+			location: Ort.BETRIEB
 		}
 	]);
 
@@ -120,15 +123,15 @@ test('Spread one entry across multiple weeks.', () => {
 test('Spread multiple entries across one week.', () => {
 	const entries = [
 		{
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		},
 		{
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
 		},
 		{
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 		}
 	];
@@ -136,17 +139,17 @@ test('Spread multiple entries across one week.', () => {
 	const expected = [
 		{
 			datum: '2025-03-03',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		},
 		{
 			datum: '2025-03-03',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
 		},
 		{
 			datum: '2025-03-03',
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 		}
 	];
@@ -157,7 +160,7 @@ test('Spread multiple entries across one week.', () => {
 				start: parseDate('2025-03-04'),
 				end: parseDate('2025-03-05')
 			},
-			location: 'SCHULE'
+			location: Ort.BETRIEB
 		}
 	]);
 
@@ -167,15 +170,15 @@ test('Spread multiple entries across one week.', () => {
 test('Spread multiple entries across multiple week ranges.', () => {
 	const entries = [
 		{
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		},
 		{
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
 		},
 		{
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 		}
 	];
@@ -183,17 +186,17 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	const expected = [
 		{
 			datum: '2025-03-03',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		},
 		{
 			datum: '2025-04-07',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
 		},
 		{
 			datum: '2025-04-07',
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 		}
 	];
@@ -204,14 +207,14 @@ test('Spread multiple entries across multiple week ranges.', () => {
 				start: parseDate('2025-03-04'),
 				end: parseDate('2025-03-05')
 			},
-			location: 'SCHULE'
+			location: Ort.BETRIEB
 		},
 		{
 			daterange: {
 				start: parseDate('2025-04-07'),
 				end: parseDate('2025-04-08')
 			},
-			location: 'SCHULE'
+			location: Ort.BETRIEB
 		}
 	]);
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -220,23 +223,23 @@ test('Spread multiple entries across multiple week ranges.', () => {
 test('Spread multiple entries across multiple week ranges.', () => {
 	const entries = [
 		{
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		},
 		{
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
 		},
 		{
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 		},
 		{
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantencontrolling:\nMethoden und Kennzahlen zur Überwachung und Steuerung der Lieferantenleistung.'
 		},
 		{
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Global Sourcing:\nVor- und Nachteile der weltweiten Beschaffung von Gütern und Dienstleistungen.'
 		}
 	];
@@ -244,27 +247,27 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	const expected = [
 		{
 			datum: '2025-03-03',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		},
 		{
 			datum: '2025-03-03',
-			qualifikationen: ['Allgemeinbildende Fächer'],
+			qualifikationen,
 			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
 		},
 		{
 			datum: '2025-03-03',
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 		},
 		{
 			datum: '2025-04-07',
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Lieferantencontrolling:\nMethoden und Kennzahlen zur Überwachung und Steuerung der Lieferantenleistung.'
 		},
 		{
 			datum: '2025-04-07',
-			qualifikationen: ['Betriebswirtschaft'],
+			qualifikationen,
 			text: 'Global Sourcing:\nVor- und Nachteile der weltweiten Beschaffung von Gütern und Dienstleistungen.'
 		}
 	];
@@ -276,7 +279,7 @@ test('Spread multiple entries across multiple week ranges.', () => {
 				end: parseDate('2025-03-05')
 			},
 			hours: 30,
-			location: 'SCHULE'
+			location: Ort.BETRIEB
 		},
 		{
 			daterange: {
@@ -284,7 +287,7 @@ test('Spread multiple entries across multiple week ranges.', () => {
 				end: parseDate('2025-04-08')
 			},
 			hours: 20,
-			location: 'SCHULE'
+			location: Ort.BETRIEB
 		}
 	]);
 

@@ -7,6 +7,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Progress from '$lib/components/ui/progress/progress.svelte';
+	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 
 	const { context, machine }: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
 
@@ -73,6 +74,7 @@
 		{/if}
 	</div>
 	<div class="flex flex-row justify-between opacity-65">
+		<Spinner size="sm" />
 		<div class="flex flex-row items-center gap-x-1">
 			<Icon size={18} /><span class="text-sm font-medium">{label}</span>
 		</div>

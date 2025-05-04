@@ -1,56 +1,73 @@
 import { combineJSONs } from '$lib/parse/combine';
-import { expect, test } from 'bun:test';
+import { Ort, QualifikationenSchule } from '$src/lib/types';
+import { test, expect } from 'vitest';
 
 test('combine json entries by day ', () => {
 	const testEntries = [
 		[
 			{
-				qualifikationen: ['Eine Qualifikation'],
+				qualifikationen: [QualifikationenSchule['Allgemeinbildende Fächer']],
 				text: '2025-03-10',
-				datum: '2025-03-10'
+				datum: '2025-03-10',
+				hours: 1,
+				ort: Ort.BETRIEB
 			},
 			{
-				qualifikationen: ['Eine Qualifikation'],
+				qualifikationen: [QualifikationenSchule['Allgemeinbildende Fächer']],
 				text: '2025-03-17',
-				datum: '2025-03-17'
+				datum: '2025-03-17',
+				hours: 1,
+				ort: Ort.BETRIEB
 			}
 		],
 		[
 			{
-				qualifikationen: ['Eine Qualifikation'],
+				qualifikationen: [QualifikationenSchule['Allgemeinbildende Fächer']],
 				text: '2025-03-17 2',
-				datum: '2025-03-17'
+				datum: '2025-03-17',
+				hours: 1,
+				ort: Ort.BETRIEB
 			},
 			{
-				qualifikationen: ['Eine Qualifikation'],
+				qualifikationen: [QualifikationenSchule['Allgemeinbildende Fächer']],
 				text: '2025-03-24',
-				datum: '2025-03-24'
+				datum: '2025-03-24',
+				hours: 1,
+				ort: Ort.BETRIEB
 			}
 		]
 	];
 
 	const expected = [
 		{
-			qualifikationen: ['Eine Qualifikation'],
+			qualifikationen: [QualifikationenSchule['Allgemeinbildende Fächer']],
 			text: '2025-03-10',
-			datum: '2025-03-10'
+			datum: '2025-03-10',
+			hours: 1,
+			ort: Ort.BETRIEB
 		},
 		{
-			qualifikationen: ['Eine Qualifikation'],
-			text: '2025-03-17',
-			datum: '2025-03-17'
+			qualifikationen: [QualifikationenSchule['Allgemeinbildende Fächer']],
+			text: '2025-03-17\n\n2025-03-17 2',
+			datum: '2025-03-17',
+			hours: 2,
+			ort: Ort.BETRIEB
 		},
 		{
-			qualifikationen: ['Eine Qualifikation'],
-			text: '2025-03-17 2',
-			datum: '2025-03-17'
-		},
-		{
-			qualifikationen: ['Eine Qualifikation'],
+			qualifikationen: [QualifikationenSchule['Allgemeinbildende Fächer']],
 			text: '2025-03-24',
-			datum: '2025-03-24'
+			datum: '2025-03-24',
+			hours: 1,
+			ort: Ort.BETRIEB
 		}
 	];
 
-	expect(combineJSONs(testEntries)).toEqual(expected);
+	const combined = combineJSONs(testEntries);
+
+	expect(combined.length).toBe(expected.length);
+
+	combined.forEach((o, i) => {
+		const expectedEntry = expected[i];
+		expect(o).toMatchObject(expectedEntry);
+	});
 });
