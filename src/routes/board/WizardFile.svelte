@@ -74,10 +74,14 @@
 		{/if}
 	</div>
 	<div class="flex flex-row justify-between opacity-65">
-		<Spinner size="sm" />
 		<div class="flex flex-row items-center gap-x-1">
 			<Icon size={18} /><span class="text-sm font-medium">{label}</span>
 		</div>
-		<span class="text-sm font-medium">{context.value}/{context.max}</span>
+		{#if $machine === WizardStep.PROCESSING || $machine === WizardStep.AI_COMPLETION || $machine === WizardStep.TIME_SPREADING}
+			<div class="flex flex-row items-center gap-x-2">
+				<span class="text-sm font-medium">Textblöcke: {context.value}/{context.max}</span>
+				<Spinner size="sm" />
+			</div>
+		{/if}
 	</div>
 </div>

@@ -12,6 +12,7 @@ import { CompletionException } from '$src/lib/errors';
 import { countTokens } from '$src/lib/utils/token_counter';
 import * as Sentry from '@sentry/node';
 import { error as errorJson } from '@sveltejs/kit';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 function getTokenByOwner(owner: string) {
 	switch (owner) {
@@ -27,6 +28,34 @@ function getTokenByOwner(owner: string) {
 				)
 			);
 	}
+}
+
+async function deductUserTokens(
+	supabase: SupabaseClient,
+	userId: string,
+	reduced: boolean,
+	text: string
+) {
+	let amount = countTokens(new Blob([text]));
+
+	if (reduced) {
+		amount = Math.ceil(amount / 4);
+	}
+	const { data, error } = await supabase.rpc('deduct_user_tokens', {
+		user_id: userId,
+		amount
+	});
+	if (error) {
+		Sentry.captureException(error, {
+			extra: { userId, amount }
+		});
+	}
+	if (!data) {
+		return err(
+			new CompletionException('Nicht genug Tokens', CompletionExceptionType.NOT_ENOUGH_TOKENS)
+		);
+	}
+	return ok(data);
 }
 
 export const POST: RequestHandler = async ({ request, locals: { user, supabase } }) => {
@@ -56,26 +85,6 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 
 	const { text, provider, owner } = parsed.data;
 
-	const { data, error } = await supabase.rpc('deduct_user_tokens', {
-		user_id: user!.id,
-		amount: countTokens(new Blob([text]))
-	});
-
-	if (error) {
-		Sentry.captureException(error);
-		return errorJson(500, {
-			type: CommonServerErrorTypes.DATABASE_ERROR,
-			message: 'Internet fehler.'
-		});
-	}
-
-	if (!data) {
-		errorJson(500, {
-			type: CompletionExceptionType.NOT_ENOUGH_TOKENS,
-			message: 'Nicht genug Tokens'
-		});
-	}
-
 	const incuriaToken = getTokenByOwner(owner).mapErr((e) => e.toResponse());
 
 	if (incuriaToken.isErr()) {
@@ -88,40 +97,43 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 		.where(and(eq(usersLLMProviders.userId, user!.id!), eq(usersLLMProviders.providerId, provider)))
 		.limit(1);
 
-	const token = query[0]?.token ?? incuriaToken.value;
+	const userToken = query[0]?.token;
+
+	const token = userToken ?? incuriaToken.value;
+
+	const tokensDeducted = await deductUserTokens(supabase, user!.id!, userToken !== undefined, text);
+
+	if (tokensDeducted.isErr()) {
+		return tokensDeducted.error.toResponse();
+	}
+
+	let response: ResultAsync<string | undefined | null, CompletionException>;
 
 	if (owner === 'deepseek') {
-		const result = await ResultAsync.fromPromise(getOpenAICompletion(text, token), (e) =>
+		response = ResultAsync.fromPromise(getOpenAICompletion(text, token), (e) =>
 			CompletionException.fromUnknown(e)
-		).mapErr((e) => e.toResponse());
-		if (result.isErr()) {
-			return result.error;
-		}
-		const completion = result.value;
-		if (completion === undefined || completion === null) {
-			return errorJson(500, {
-				type: CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR,
-				message: 'Die API hat nichts zurückgegeben.'
-			});
-		}
-		return new Response(completion);
+		);
 		// owner === 'google'
 	} else {
-		const result = await ResultAsync.fromPromise(getGeminiCompletion(text, token), (e) =>
+		response = ResultAsync.fromPromise(getGeminiCompletion(text, token), (e) =>
 			CompletionException.fromUnknown(e)
-		).mapErr((e) => e.toResponse());
-		if (result.isErr()) {
-			return result.error;
-		}
-		const completion = result.value;
-		if (completion === undefined || completion === null) {
-			return errorJson(500, {
-				type: CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR,
-				message: 'Die API hat nichts zurückgegeben.'
-			});
-		}
-		return new Response(completion);
+		);
 	}
+
+	const result = await response.mapErr((e) => e.toResponse());
+	if (result.isErr()) {
+		return result.error;
+	}
+	const completion = result.value;
+	if (completion === undefined || completion === null) {
+		return errorJson(500, {
+			type: CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR,
+			message: 'Die API hat nichts zurückgegeben.'
+		});
+	}
+	// Allow negative on output
+	await deductUserTokens(supabase, user!.id!, userToken !== undefined, completion);
+	return new Response(completion);
 };
 
 async function getOpenAICompletion(text: string, token: string) {
@@ -143,25 +155,26 @@ async function getOpenAICompletion(text: string, token: string) {
 		],
 		model: 'deepseek-chat',
 		response_format: {
-			type: 'json_schema',
-			json_schema: {
-				name: 'incuria schema',
-				schema: {
-					lessons: {
-						type: 'array',
-						items: {
-							type: 'object',
-							properties: {
-								qualifikationen: {
-									type: 'array',
-									items: { type: 'string' }
-								},
-								text: { type: 'string' }
-							}
-						}
-					}
-				}
-			}
+			type: 'json_object'
+			// 	type: 'json_schema',
+			// 	json_schema: {
+			// 		name: 'incuria schema',
+			// 		schema: {
+			// 			lessons: {
+			// 				type: 'array',
+			// 				items: {
+			// 					type: 'object',
+			// 					properties: {
+			// 						qualifikationen: {
+			// 							type: 'array',
+			// 							items: { type: 'string' }
+			// 						},
+			// 						text: { type: 'string' }
+			// 					}
+			// 				}
+			// 			}
+			// 		}
+			// 	}
 		}
 	});
 

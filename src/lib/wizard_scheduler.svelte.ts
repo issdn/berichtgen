@@ -39,6 +39,7 @@ export class WizardScheduler {
 		}
 		this.result = null;
 		this.filesReady = 0;
+		this.filesErrors = 0;
 		for (let i = 0; i < this.batchSize; i++) {
 			this.schedule?.at(i)?.machine.run();
 		}
