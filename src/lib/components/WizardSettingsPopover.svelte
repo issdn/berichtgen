@@ -28,6 +28,20 @@
 					Bilder verarbeiten
 				</Label>
 			</div>
+			<div class="flex items-center space-x-2">
+				<Switch
+					bind:checked={incuriaStore.rewordJSON}
+					id="reword-json-label"
+					disabled={wizardScheduler.isRunning}
+				/>
+
+				<Label
+					for="reword-json-label"
+					class="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+				>
+					JSON-Dateien umformulieren
+				</Label>
+			</div>
 		</div>
 	</Popover.Content>
 </Popover.Root>

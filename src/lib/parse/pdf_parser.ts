@@ -86,7 +86,7 @@ export class PDFParser extends Parser {
 			);
 		}
 		this.freeWorkers();
-		return result;
+		return result.join('\n');
 	}
 
 	private async getPageAsImageBlob(page: pdf.PDFPageProxy) {

@@ -67,7 +67,7 @@ export class DOCXParser extends Parser {
 			);
 		}
 		this.freeWorkers();
-		return result;
+		return result.join('\n');
 	}
 
 	private async parseChunk(textOrId: string | [string]) {

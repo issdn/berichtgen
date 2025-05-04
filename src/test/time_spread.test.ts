@@ -1,9 +1,9 @@
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
-import { Ort, QualifikationenSchule } from '$src/lib/types';
+import { Ort, Qualifikationen } from '$src/lib/types';
 import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';
 
-const qualifikationen = [QualifikationenSchule['Allgemeinbildende Fächer']];
+const qualifikationen = [Qualifikationen[0]];
 
 test('Spread single entry across multiple weeks.', () => {
 	const entries = [

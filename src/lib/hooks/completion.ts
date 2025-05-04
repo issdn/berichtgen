@@ -1,17 +1,8 @@
 import { incuriaStore } from '$lib/stores/board.svelte';
 import { IncuriaErrorType, type Entry } from '$lib/types';
 import { IncuriaError } from '$src/lib/errors';
+import { completionSchema } from '$src/lib/parse/schemas';
 import { ResultAsync } from 'neverthrow';
-import * as z from 'zod';
-
-const completionSchema = z.object({
-	lessons: z
-		.object({
-			qualifikationen: z.string().array(),
-			text: z.string()
-		})
-		.array()
-});
 
 export function getCompletions(text: string) {
 	const messages = splitByMaxLength(text, 15000);

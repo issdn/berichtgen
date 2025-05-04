@@ -23,6 +23,8 @@ class IncuriaStore {
 	}
 
 	processPhotos = $state(false);
+
+	rewordJSON = $state(false);
 }
 
 export const incuriaStore = new IncuriaStore();
