@@ -31,7 +31,11 @@
 	let result = $derived(wizardScheduler.result);
 
 	$effect(() => {
-		if (result !== null && wizardScheduler.filesReady > 0) {
+		if (
+			result !== null &&
+			wizardScheduler.filesReady > 0 &&
+			wizardScheduler.filesErrors !== wizardScheduler.filesReady
+		) {
 			dialogOpen = true;
 		}
 	});

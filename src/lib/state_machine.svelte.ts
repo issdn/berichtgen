@@ -190,6 +190,7 @@ export function createStateMachineForContext(
 		},
 		[WizardStep.ERROR]: {
 			_enter() {
+				scheduler.filesErrors += 1;
 				onFileDone(scheduler);
 			}
 		},

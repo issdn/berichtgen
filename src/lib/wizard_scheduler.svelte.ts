@@ -17,6 +17,8 @@ export class WizardScheduler {
 
 	filesReady = $state(0);
 
+	filesErrors = $state(0);
+
 	scheduler: Scheduler | null = null;
 
 	result = $state<Promise<ResultEntry[]> | null>(null);
