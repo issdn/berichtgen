@@ -35,7 +35,7 @@ export function spreadEntriesAcrossWeeks(
 
 	const adjustedForHours = sorted.map((week) => ({
 		...week,
-		hours: week.hours ?? 40,
+		hours: week.hours ?? 1,
 		entriesPerWeek: Math.floor(entries.length * ((week.hours ?? 1) / hoursSum))
 	}));
 
