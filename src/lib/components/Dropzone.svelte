@@ -37,23 +37,31 @@
 	function handleDrop(e: DragEvent) {
 		preventDefaults(e);
 		isDraggingIn = false;
+		const files = e.dataTransfer?.files ?? null;
+		if (files != null) {
+			handleFiles(files);
+		}
 	}
 
 	function handleChange(e: Event) {
 		const files = (e.target as HTMLInputElement | undefined)?.files ?? null;
 		if (files != null) {
-			const filesArray = Array.from(files);
-			const { totalTokens } = countUserTokens(userTokens, filesArray);
-			const tokensAsWords = userTokens / 4;
-			const tokensAsParagraphs = userTokens / 100;
-			if (totalTokens > userTokens) {
-				error = `Du hast ${userTokens} Tokens. Das sind ${tokensAsWords} Wörter oder ${tokensAsParagraphs} Absätze. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
-				wizardScheduler.files = null;
-			} else {
-				error = null;
-				wizardScheduler.files = files;
-				wizardScheduler.processInit = wizardScheduler.init();
-			}
+			handleFiles(files);
+		}
+	}
+
+	function handleFiles(files: FileList) {
+		const filesArray = Array.from(files);
+		const { totalTokens } = countUserTokens(userTokens, filesArray);
+		const tokensAsWords = userTokens / 4;
+		const tokensAsParagraphs = userTokens / 100;
+		if (totalTokens > userTokens) {
+			error = `Du hast ${userTokens} Tokens. Das sind ${tokensAsWords} Wörter oder ${tokensAsParagraphs} Absätze. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
+			wizardScheduler.files = null;
+		} else {
+			error = null;
+			wizardScheduler.files = files;
+			wizardScheduler.processInit = wizardScheduler.init();
 		}
 	}
 </script>
