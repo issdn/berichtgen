@@ -6,7 +6,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { cn } from '$lib/utils.js';
 	import { incuriaStore } from '$lib/stores/board.svelte';
-	import { ChevronDown, CircleAlert } from 'lucide-svelte';
+	import { ChevronDown, CircleAlert, CircleCheck } from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 
@@ -67,11 +67,20 @@
 								<Tooltip.Provider>
 									{#if provider.token === null}
 										<Tooltip.Root>
-											<Tooltip.Trigger>
+											<Tooltip.Trigger class="[&_svg]:size-5">
 												<CircleAlert />
 											</Tooltip.Trigger>
 											<Tooltip.Content>
-												<p>Kein Token</p>
+												<p>Kein Token - normaler Token Verbrauch</p>
+											</Tooltip.Content>
+										</Tooltip.Root>
+									{:else}
+										<Tooltip.Root>
+											<Tooltip.Trigger class="[&_svg]:size-5">
+												<CircleCheck />
+											</Tooltip.Trigger>
+											<Tooltip.Content>
+												<p>Beim korrekten Token werden 75% Tokens weniger verbraucht</p>
 											</Tooltip.Content>
 										</Tooltip.Root>
 									{/if}
