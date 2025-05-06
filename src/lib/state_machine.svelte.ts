@@ -12,6 +12,7 @@ import type { WizardFileContext } from './wizard_file_context.svelte';
 import { IncuriaError } from '$src/lib/errors';
 import { JSONParser } from '$src/lib/parse/json_parser';
 import { TXTParser } from '$src/lib/parse/txt_parser';
+import { IMGParser } from '$src/lib/parse/img_parser';
 
 function parseByFileType(context: WizardFileContext, scheduler: Scheduler) {
 	return readFile(context.file).andThen((data) =>
@@ -33,6 +34,25 @@ function parseFile(
 	data: Uint8Array<ArrayBuffer>
 ): ResultAsync<string | ResultEntry[] | never, IncuriaError> | Err<never, IncuriaError> {
 	switch (file.type) {
+		case FileTypes.PNG:
+		case FileTypes.JPG: {
+			const imgParser = new IMGParser(context, scheduler);
+			return ResultAsync.fromPromise(imgParser.init(data), (e) =>
+				IncuriaError.fromUnknown(
+					e,
+					'Fehler beim Initialisieren des Bild Parsers',
+					IncuriaErrorType.PARSE_FAILED
+				)
+			).andThen(() =>
+				ResultAsync.fromPromise(imgParser.parse(), (e) =>
+					IncuriaError.fromUnknown(
+						e,
+						'Fehler beim Parsen des Bildes',
+						IncuriaErrorType.PARSE_FAILED
+					)
+				)
+			);
+		}
 		case FileTypes.TXT:
 		case FileTypes.CSV: {
 			const textParser = new TXTParser(context, scheduler);
@@ -214,12 +234,13 @@ export function createStateMachineForContext(
 		},
 		[WizardStep.ERROR]: {
 			_enter() {
-				scheduler.filesErrors += 1;
+				scheduler.filesUnfinished += 1;
 				onFileDone(scheduler);
 			}
 		},
 		[WizardStep.CANCELLED]: {
 			_enter() {
+				scheduler.filesUnfinished += 1;
 				onFileDone(scheduler);
 			}
 		}

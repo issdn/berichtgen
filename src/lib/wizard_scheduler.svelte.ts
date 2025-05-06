@@ -17,7 +17,7 @@ export class WizardScheduler {
 
 	filesReady = $state(0);
 
-	filesErrors = $state(0);
+	filesUnfinished = $state(0);
 
 	scheduler: Scheduler | null = null;
 
@@ -39,7 +39,7 @@ export class WizardScheduler {
 		}
 		this.result = null;
 		this.filesReady = 0;
-		this.filesErrors = 0;
+		this.filesUnfinished = 0;
 		for (let i = 0; i < this.batchSize; i++) {
 			this.schedule?.at(i)?.machine.run();
 		}

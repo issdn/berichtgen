@@ -12,7 +12,6 @@ export class TXTParser extends Parser {
 
 	async init(data: Uint8Array) {
 		this.data = new TextDecoder().decode(data);
-		this.context.max = this.data.length;
 	}
 
 	parse() {

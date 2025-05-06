@@ -1,5 +1,5 @@
-import { incuriaStore } from '$lib/stores/board.svelte';
-import { wizardScheduler, type WizardFileContext } from '$lib/wizard_scheduler.svelte';
+import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
+import type { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 import type { Scheduler } from 'tesseract.js';
 
 export class Parser {
@@ -18,7 +18,7 @@ export class Parser {
 	}
 
 	async createWorkerPool(nrImages: number) {
-		if (!incuriaStore.processPhotos) return;
+		if (!this.withImages) return;
 		const { createWorker } = await import('tesseract.js');
 		this.batchSize = this.clamp(nrImages * 0.1, 1, 25);
 		if (wizardScheduler.workersInUse + this.batchSize > wizardScheduler.workersNr) {

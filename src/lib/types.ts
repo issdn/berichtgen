@@ -160,5 +160,7 @@ export enum FileTypes {
 	PDF = 'application/pdf',
 	JSON = 'application/json',
 	TXT = 'text/plain',
-	CSV = 'text/csv'
+	CSV = 'text/csv',
+	JPG = 'image/jpeg',
+	PNG = 'image/png'
 }

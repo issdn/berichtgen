@@ -78,7 +78,7 @@
 	onchange={handleChange}
 >
 	<input
-		accept=".docx,.pdf,.json,.txt,.csv"
+		accept=".docx,.pdf,.json,.txt,.csv,.png,.jpg,.jpeg"
 		bind:this={input}
 		type="file"
 		multiple

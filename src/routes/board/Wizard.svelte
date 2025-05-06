@@ -34,7 +34,7 @@
 		if (
 			result !== null &&
 			wizardScheduler.filesReady > 0 &&
-			wizardScheduler.filesErrors !== wizardScheduler.filesReady
+			wizardScheduler.filesUnfinished !== wizardScheduler.filesReady
 		) {
 			dialogOpen = true;
 		}

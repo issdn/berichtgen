@@ -80,7 +80,7 @@
 												<CircleCheck />
 											</Tooltip.Trigger>
 											<Tooltip.Content>
-												<p>Beim korrekten Token werden 75% Tokens weniger verbraucht</p>
+												<p>Beim korrekten API-Key werden 75% Tokens weniger verbraucht</p>
 											</Tooltip.Content>
 										</Tooltip.Root>
 									{/if}

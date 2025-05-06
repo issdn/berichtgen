@@ -79,7 +79,9 @@
 		</div>
 		{#if $machine === WizardStep.PROCESSING || $machine === WizardStep.AI_COMPLETION || $machine === WizardStep.TIME_SPREADING}
 			<div class="flex flex-row items-center gap-x-2">
-				<span class="text-sm font-medium">Textblöcke: {context.value}/{context.max}</span>
+				{#if context.max !== 0}
+					<span class="text-sm font-medium">Elemente: {context.value}/{context.max}</span>
+				{/if}
 				<Spinner size="sm" />
 			</div>
 		{/if}
