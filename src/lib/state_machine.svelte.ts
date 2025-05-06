@@ -1,7 +1,7 @@
 import { DOCXParser } from '$lib/parse/docx_parser';
 import { incuriaStore } from '$lib/stores/board.svelte';
 import { PDFParser } from '$lib/parse/pdf_parser';
-import { IncuriaErrorType, WizardStep, type Entry, type ResultEntry } from '$lib/types';
+import { FileTypes, IncuriaErrorType, WizardStep, type Entry, type ResultEntry } from '$lib/types';
 import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 import fsm from 'svelte-fsm';
 import type { Scheduler } from 'tesseract.js';
@@ -11,6 +11,7 @@ import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 import type { WizardFileContext } from './wizard_file_context.svelte';
 import { IncuriaError } from '$src/lib/errors';
 import { JSONParser } from '$src/lib/parse/json_parser';
+import { TXTParser } from '$src/lib/parse/txt_parser';
 
 function parseByFileType(context: WizardFileContext, scheduler: Scheduler) {
 	return readFile(context.file).andThen((data) =>
@@ -32,7 +33,18 @@ function parseFile(
 	data: Uint8Array<ArrayBuffer>
 ): ResultAsync<string | ResultEntry[] | never, IncuriaError> | Err<never, IncuriaError> {
 	switch (file.type) {
-		case 'application/json': {
+		case FileTypes.TXT:
+		case FileTypes.CSV: {
+			const textParser = new TXTParser(context, scheduler);
+			return ResultAsync.fromPromise(textParser.init(data), (e) =>
+				IncuriaError.fromUnknown(
+					e,
+					'Fehler beim Initialisieren des JSON Parsers',
+					IncuriaErrorType.PARSE_FAILED
+				)
+			).andThen(textParser.parse);
+		}
+		case FileTypes.JSON: {
 			const jsonParser = new JSONParser(context, scheduler);
 			return ResultAsync.fromPromise(jsonParser.init(data), (e) =>
 				IncuriaError.fromUnknown(
@@ -42,7 +54,7 @@ function parseFile(
 				)
 			).andThen(() => (incuriaStore.rewordJSON ? jsonParser.parse() : jsonParser.toSchema()));
 		}
-		case 'application/pdf': {
+		case FileTypes.PDF: {
 			const pdfParser = new PDFParser(
 				context,
 				scheduler,
@@ -65,7 +77,7 @@ function parseFile(
 				)
 			);
 		}
-		case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+		case FileTypes.DOCX: {
 			const docxParser = new DOCXParser(context, scheduler, incuriaStore.processPhotos);
 			return ResultAsync.fromPromise(docxParser.init(data), (e) =>
 				IncuriaError.fromUnknown(

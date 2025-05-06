@@ -77,7 +77,13 @@
 	ondrop={handleDrop}
 	onchange={handleChange}
 >
-	<input accept=".odt,.docx,.pdf" bind:this={input} type="file" multiple style="display:none" />
+	<input
+		accept=".docx,.pdf,.json,.txt,.csv"
+		bind:this={input}
+		type="file"
+		multiple
+		style="display:none"
+	/>
 	{#if wizardScheduler.files != null && wizardScheduler.files.length > 0}
 		<FileCheck size={48} />
 		<label for="dropzone" class="pointer-events-none w-full px-8">

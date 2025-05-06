@@ -154,3 +154,11 @@ export enum PaymentStatus {
 	SUCCESS = 'success',
 	FAILED = 'failed'
 }
+
+export enum FileTypes {
+	DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+	PDF = 'application/pdf',
+	JSON = 'application/json',
+	TXT = 'text/plain',
+	CSV = 'text/csv'
+}
