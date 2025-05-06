@@ -1,11 +1,15 @@
 import { db } from '$lib/server/db';
 import { usersLLMProviders } from '$lib/server/db/schema';
-import { message, superValidate } from 'sveltekit-superforms';
+import { fail, message, superValidate } from 'sveltekit-superforms';
 import type { PageServerLoad } from './$types';
 import { providerDeleteSchema, providerSchema, validProviderSchema } from './schema';
 import { zod } from 'sveltekit-superforms/adapters';
-import { error, type Actions } from '@sveltejs/kit';
+import { error, redirect, type Actions } from '@sveltejs/kit';
 import { eq, and } from 'drizzle-orm';
+import * as Sentry from '@sentry/node';
+import { env } from '$env/dynamic/private';
+import { env as pub } from '$env/dynamic/public';
+import { createClient } from '@supabase/supabase-js';
 
 export const load: PageServerLoad = async () => {
 	const form = await superValidate(zod(providerSchema));
@@ -30,7 +34,8 @@ export const actions: Actions = {
 					set: { token: form.data.token }
 				})
 				.returning({ id: usersLLMProviders.providerId, token: usersLLMProviders.token });
-		} catch {
+		} catch (e) {
+			Sentry.captureException(e);
 			return error(406, 'Fehler beim Speichern in die Datenbank.');
 		}
 
@@ -52,15 +57,20 @@ export const actions: Actions = {
 					)
 				);
 			return message(form, `${form.data.name ?? ''} Token gelöscht!`);
-		} catch {
+		} catch (e) {
+			Sentry.captureException(e);
 			return error(406, 'Fehler beim Speichern in die Datenbank.');
 		}
 	},
-	removeAccount: async ({ locals: { user, supabase } }) => {
-		try {
-			await supabase.auth.admin.deleteUser(user!.id!);
-		} catch {
-			return error(406, 'Fehler beim Löschen des Kontos.');
+	removeAccount: async ({ locals: { user } }) => {
+		const {
+			auth: { admin }
+		} = createClient(pub.PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+		const { error: e } = await admin.deleteUser(user!.id!);
+		if (e) {
+			Sentry.captureException(e);
+			return fail(406);
 		}
+		throw redirect(303, '/');
 	}
 };

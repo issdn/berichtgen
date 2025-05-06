@@ -11,6 +11,7 @@
 	import { incuriaStore } from '$lib/stores/board.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
+	import { enhance } from '$app/forms';
 
 	let { data } = $props();
 
@@ -50,7 +51,7 @@
 		}
 	});
 
-	const { form: formData, enhance, formId, submitting } = form;
+	const { form: formData, enhance: tokenEnhance, formId, submitting } = form;
 </script>
 
 <div class="flex flex-row justify-center">
@@ -101,7 +102,12 @@
 				<Card.Description>Hier kannst du deine eigene API-Keys hinzufügen.</Card.Description>
 			</Card.Header>
 			<Card.Content>
-				<form id="provider-form" class="flex w-full flex-col gap-y-2" method="POST" use:enhance>
+				<form
+					id="provider-form"
+					class="flex w-full flex-col gap-y-2"
+					method="POST"
+					use:tokenEnhance
+				>
 					<Table.Root>
 						<Table.Header>
 							<Table.Row>
