@@ -6,7 +6,7 @@
 	import Google from '$lib/svg/Google.svelte';
 	import { enhance } from '$app/forms';
 	import { Label } from '$lib/components/ui/label';
-	import { HandCoins, Settings } from 'lucide-svelte';
+	import { CircleHelp, HandCoins, LogOut, Settings } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import type { User } from '@supabase/supabase-js';
 
@@ -47,7 +47,7 @@
 		{#if isLoggedIn}
 			<form method="POST" action={`/auth?/signout`}>
 				<input type="hidden" name="redirectTo" value="/" />
-				<Button type="submit" class="w-full">Abmelden</Button>
+				<Button type="submit" class="w-full"><LogOut />Abmelden</Button>
 			</form>
 		{:else}
 			<form method="POST" action={`/auth?/signin`} use:enhance>
@@ -56,5 +56,9 @@
 				<Button type="submit" class="w-full"><Google />Anmelden mit Google</Button>
 			</form>
 		{/if}
+		<Button variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
+		<div class="flex flex-row items-center justify-center gap-x-1 text-muted-foreground">
+			<p>v1.0.0</p>
+		</div>
 	</Popover.Content>
 </Popover.Root>
