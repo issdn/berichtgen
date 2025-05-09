@@ -63,7 +63,7 @@
 			<Button disabled={true}><FileCheck2 /></Button>
 		{/if}
 	</div>
-	<div class="flex min-h-64 flex-col gap-y-1 p-4">
+	<div class="relative flex min-h-64 flex-col gap-y-1 p-4">
 		{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 			{#await wizardScheduler.processInit then}
 				{#each wizardScheduler.schedule as { context, machine }, i}
@@ -74,6 +74,8 @@
 					{/if}
 				{/each}
 			{/await}
+		{:else}
+			<p class="center-absolute text-muted">Warten auf Eingabe...</p>
 		{/if}
 	</div>
 </div>
