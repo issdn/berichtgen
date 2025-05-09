@@ -9,7 +9,6 @@
 	import type { DateRangeSchema } from './time_spread_schematic';
 	import type { SuperForm, SuperFormData } from 'sveltekit-superforms/client';
 	import * as Form from '$lib/components/ui/form/index.js';
-	import LocationCombobox from '$lib/components/LocationCombobox.svelte';
 
 	let {
 		form,
@@ -26,28 +25,28 @@
 	});
 
 	let label = $derived.by(() => {
-		if (!$formData.values[index].daterange) return 'Datumbereich wählen';
-		const start = $formData.values[index].daterange.start
-			? df.format($formData.values[index].daterange.start.toDate('Europe/Berlin'))
+		if (!$formData.ranges[index].daterange) return 'Datumbereich wählen';
+		const start = $formData.ranges[index].daterange.start
+			? df.format($formData.ranges[index].daterange.start.toDate('Europe/Berlin'))
 			: 'TT.MM.JJ';
-		const end = $formData.values[index].daterange.end
-			? df.format($formData.values[index].daterange.end.toDate('Europe/Berlin'))
+		const end = $formData.ranges[index].daterange.end
+			? df.format($formData.ranges[index].daterange.end.toDate('Europe/Berlin'))
 			: 'TT.MM.JJ';
 		return `${start} bis ${end}`;
 	});
 </script>
 
-<div class="flex flex-col px-2">
+<div class="flex flex-col">
 	<div class="flex flex-row gap-x-4">
-		<div>
-			<p class="text-left font-normal">Stunden</p>
-			<Form.Field {form} name={`values[${index}].hours`} class="w-full">
+		<Form.Field {form} name={`ranges[${index}].hours`} class="w-full">
+			<div>
+				<p class="text-left font-normal">Stunden</p>
 				<Form.Control>
 					{#snippet children({ props })}
 						<Input
 							min={1}
 							{...props}
-							bind:value={$formData.values[index].hours}
+							bind:value={$formData.ranges[index].hours}
 							type="number"
 							placeholder="0 Stunden"
 							class="w-full"
@@ -55,48 +54,37 @@
 					{/snippet}
 				</Form.Control>
 				<Form.FieldErrors />
-			</Form.Field>
-		</div>
-		<div>
-			<p class="text-left font-normal">Ort</p>
-			<Form.Field {form} name={`values[${index}].location`} class="w-calendar">
+			</div>
+		</Form.Field>
+		<Form.Field
+			class="col-span-2 justify-start text-left font-normal"
+			{form}
+			name={`ranges[${index}].daterange`}
+		>
+			<div>
+				<p class="text-left font-normal">Datumsbereich</p>
 				<Form.Control>
 					{#snippet children({ props })}
-						<LocationCombobox bind:value={$formData.values[index].location} />
+						<Popover.Root>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({
+										variant: 'outline',
+										class: 'w-calendar'
+									})
+								)}
+							>
+								<CalendarIcon />
+								{label}
+							</Popover.Trigger>
+							<Popover.Content class="w-auto p-0">
+								<RangeCalendar bind:value={$formData.ranges[index].daterange} class="w-fit" />
+							</Popover.Content>
+						</Popover.Root>
 					{/snippet}
 				</Form.Control>
-				<Form.FieldErrors />
-			</Form.Field>
-		</div>
+			</div>
+			<Form.FieldErrors />
+		</Form.Field>
 	</div>
-	<Form.Field
-		class="col-span-2 justify-start text-left font-normal"
-		{form}
-		name={`values[${index}].daterange`}
-	>
-		<div class="flex flex-row items-center justify-between gap-x-2">
-			<p class="text-left font-normal">Datumsbereich</p>
-			<Form.Control>
-				{#snippet children({ props })}
-					<Popover.Root>
-						<Popover.Trigger
-							class={cn(
-								buttonVariants({
-									variant: 'outline',
-									class: 'w-calendar'
-								})
-							)}
-						>
-							<CalendarIcon />
-							{label}
-						</Popover.Trigger>
-						<Popover.Content class="w-auto p-0">
-							<RangeCalendar bind:value={$formData.values[index].daterange} class="w-fit" />
-						</Popover.Content>
-					</Popover.Root>
-				{/snippet}
-			</Form.Control>
-		</div>
-		<Form.FieldErrors />
-	</Form.Field>
 </div>

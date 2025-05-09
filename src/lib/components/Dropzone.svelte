@@ -59,7 +59,7 @@
 	function handleFiles(files: FileList) {
 		const filesArray = Array.from(files);
 		const anyNonJsonFiles = filesArray.find((f) => f.type !== FileTypes.JSON);
-		if (!loggedIn) {
+		if (loggedIn) {
 			const hasDiscount = incuriaStore.currentProvider?.token != null;
 			const { totalTokens } = countUserTokens(
 				hasDiscount ? userTokens! / 4 : userTokens!,

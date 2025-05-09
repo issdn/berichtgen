@@ -6,9 +6,9 @@ const LOCALE = 'de-DE';
 
 export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
-	dateRanges: ValidIncuriaDateRanges
+	{ ranges, location }: ValidIncuriaDateRanges
 ): Required<Entry>[] {
-	const hoursSum = dateRanges.reduce(
+	const hoursSum = ranges.reduce(
 		(prev, { daterange, hours }) =>
 			prev +
 			(hours ??
@@ -18,11 +18,11 @@ export function spreadEntriesAcrossWeeks(
 		0
 	);
 
-	const sorted = dateRanges.sort((a, b) => a.daterange.start!.compare(b.daterange.end));
+	const sorted = ranges.sort((a, b) => a.daterange.start!.compare(b.daterange.end));
 
 	const minWeek = sorted[0];
 
-	const weeks = dateRanges.reduce((prev, { daterange }) => {
+	const weeks = ranges.reduce((prev, { daterange }) => {
 		return (
 			prev +
 			getWeek(daterange.end as CalendarDate, LOCALE) -
@@ -44,7 +44,7 @@ export function spreadEntriesAcrossWeeks(
 	let mondayOfWeek = startOfWeek(minWeek.daterange.start!, LOCALE, 'mon') as CalendarDate;
 
 	for (let i = 0; i < weeks; i += 1) {
-		const { entriesPerWeek, daterange, location, hours } = adjustedForHours[currWeekIndex];
+		const { entriesPerWeek, daterange, hours } = adjustedForHours[currWeekIndex];
 
 		for (let j = 0; j < entriesPerWeek; j++) {
 			newEntries.push(
@@ -73,8 +73,8 @@ export function spreadEntriesAcrossWeeks(
 			cloneObjectWithDate(
 				entries[entries.length - 1],
 				mondayOfWeek,
-				adjustedForHours[dateRanges.length - 1].location,
-				adjustedForHours[dateRanges.length - 1].hours
+				location,
+				adjustedForHours[ranges.length - 1].hours
 			)
 		);
 	}

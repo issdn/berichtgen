@@ -1,9 +1,9 @@
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
-import { Ort, Qualifikationen } from '$src/lib/types';
+import { Ort, QualifikationenBetrieb } from '$src/lib/types';
 import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';
 
-const qualifikationen = [Qualifikationen[0]];
+const qualifikationen = [QualifikationenBetrieb[0]];
 
 test('Spread single entry across multiple weeks.', () => {
 	const entries = [
@@ -22,15 +22,17 @@ test('Spread single entry across multiple weeks.', () => {
 		}
 	];
 
-	const received = spreadEntriesAcrossWeeks(entries, [
-		{
-			daterange: {
-				start: parseDate('2025-03-25'),
-				end: parseDate('2025-04-01')
-			},
-			location: Ort.BETRIEB
-		}
-	]);
+	const received = spreadEntriesAcrossWeeks(entries, {
+		location: Ort.BETRIEB,
+		ranges: [
+			{
+				daterange: {
+					start: parseDate('2025-03-25'),
+					end: parseDate('2025-04-01')
+				}
+			}
+		]
+	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
@@ -78,15 +80,17 @@ test('Spread multiple entries across multiple weeks.', () => {
 		}
 	];
 
-	const received = spreadEntriesAcrossWeeks(entries, [
-		{
-			daterange: {
-				start: parseDate('2025-03-04'),
-				end: parseDate('2025-03-17')
-			},
-			location: Ort.BETRIEB
-		}
-	]);
+	const received = spreadEntriesAcrossWeeks(entries, {
+		ranges: [
+			{
+				daterange: {
+					start: parseDate('2025-03-04'),
+					end: parseDate('2025-03-17')
+				}
+			}
+		],
+		location: Ort.BETRIEB
+	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
@@ -107,15 +111,17 @@ test('Spread one entry across multiple weeks.', () => {
 		}
 	];
 
-	const received = spreadEntriesAcrossWeeks(entries, [
-		{
-			daterange: {
-				start: parseDate('2025-03-04'),
-				end: parseDate('2025-03-24')
-			},
-			location: Ort.BETRIEB
-		}
-	]);
+	const received = spreadEntriesAcrossWeeks(entries, {
+		ranges: [
+			{
+				daterange: {
+					start: parseDate('2025-03-04'),
+					end: parseDate('2025-03-24')
+				}
+			}
+		],
+		location: Ort.BETRIEB
+	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
@@ -154,15 +160,17 @@ test('Spread multiple entries across one week.', () => {
 		}
 	];
 
-	const received = spreadEntriesAcrossWeeks(entries, [
-		{
-			daterange: {
-				start: parseDate('2025-03-04'),
-				end: parseDate('2025-03-05')
-			},
-			location: Ort.BETRIEB
-		}
-	]);
+	const received = spreadEntriesAcrossWeeks(entries, {
+		ranges: [
+			{
+				daterange: {
+					start: parseDate('2025-03-04'),
+					end: parseDate('2025-03-05')
+				}
+			}
+		],
+		location: Ort.BETRIEB
+	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
@@ -201,22 +209,23 @@ test('Spread multiple entries across multiple week ranges.', () => {
 		}
 	];
 
-	const received = spreadEntriesAcrossWeeks(entries, [
-		{
-			daterange: {
-				start: parseDate('2025-03-04'),
-				end: parseDate('2025-03-05')
+	const received = spreadEntriesAcrossWeeks(entries, {
+		ranges: [
+			{
+				daterange: {
+					start: parseDate('2025-03-04'),
+					end: parseDate('2025-03-05')
+				}
 			},
-			location: Ort.BETRIEB
-		},
-		{
-			daterange: {
-				start: parseDate('2025-04-07'),
-				end: parseDate('2025-04-08')
-			},
-			location: Ort.BETRIEB
-		}
-	]);
+			{
+				daterange: {
+					start: parseDate('2025-04-07'),
+					end: parseDate('2025-04-08')
+				}
+			}
+		],
+		location: Ort.BETRIEB
+	});
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
 
@@ -272,24 +281,25 @@ test('Spread multiple entries across multiple week ranges.', () => {
 		}
 	];
 
-	const received = spreadEntriesAcrossWeeks(entries, [
-		{
-			daterange: {
-				start: parseDate('2025-03-03'),
-				end: parseDate('2025-03-05')
+	const received = spreadEntriesAcrossWeeks(entries, {
+		ranges: [
+			{
+				daterange: {
+					start: parseDate('2025-03-03'),
+					end: parseDate('2025-03-05')
+				},
+				hours: 30
 			},
-			hours: 30,
-			location: Ort.BETRIEB
-		},
-		{
-			daterange: {
-				start: parseDate('2025-04-07'),
-				end: parseDate('2025-04-08')
-			},
-			hours: 20,
-			location: Ort.BETRIEB
-		}
-	]);
+			{
+				daterange: {
+					start: parseDate('2025-04-07'),
+					end: parseDate('2025-04-08')
+				},
+				hours: 20
+			}
+		],
+		location: Ort.BETRIEB
+	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });

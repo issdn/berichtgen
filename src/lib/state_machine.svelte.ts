@@ -161,8 +161,7 @@ export function createStateMachineForContext(
 					return;
 				}
 			},
-			skip: () => WizardStep.TIME_SPREADING,
-			run: () => (incuriaStore.rewordJSON ? WizardStep.AI_COMPLETION : WizardStep.TIME_SPREADING),
+			run: () => (context.shouldSkip ? WizardStep.TIME_SPREADING : WizardStep.AI_COMPLETION),
 			cancel: () => WizardStep.CANCELLED
 		},
 		[WizardStep.AI_COMPLETION]: {
@@ -171,11 +170,11 @@ export function createStateMachineForContext(
 					this.cancel();
 					return;
 				}
-				if (context.dateRanges.length === 0) {
+				if (context.dateRanges === null) {
 					this.wait();
 					return;
 				}
-				getCompletions(context.snapshot as string).match(
+				getCompletions(context.snapshot as string, context.dateRanges.location).match(
 					(value) => {
 						context.snapshot = value;
 						this.next();
@@ -198,7 +197,7 @@ export function createStateMachineForContext(
 					return;
 				}
 				const throwableSpreadEntries = fromThrowable(
-					() => spreadEntriesAcrossWeeks(context.snapshot as Entry[], context.dateRanges),
+					() => spreadEntriesAcrossWeeks(context.snapshot as Entry[], context.dateRanges!),
 					(e) =>
 						IncuriaError.fromUnknown(
 							e,
@@ -227,7 +226,7 @@ export function createStateMachineForContext(
 					this.cancel();
 					return;
 				}
-				context.finished = context.snapshot as Required<Entry>[];
+				context.finished = context.snapshot as ResultEntry[];
 				onFileDone(scheduler);
 			},
 			cancel: () => WizardStep.CANCELLED

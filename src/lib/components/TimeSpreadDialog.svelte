@@ -12,26 +12,26 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Ort } from '$src/lib/types';
+	import * as Form from '$lib/components/ui/form/index.js';
+	import LocationCombobox from '$lib/components/LocationCombobox.svelte';
 
 	let {
 		onClose,
 		onValidChange,
 		id
-	}: { onClose: () => void; onValidChange: (data: DateRangeSchema['values']) => void; id: string } =
-		$props();
+	}: { onClose: () => void; onValidChange: (data: DateRangeSchema) => void; id: string } = $props();
 
 	function newRow(id: number) {
 		return {
 			id,
-			daterange: { start: undefined, end: today('Europe/Berlin') as DateValue },
-			location: Ort.BETRIEB
+			daterange: { start: undefined, end: today('Europe/Berlin') as DateValue }
 		};
 	}
 
 	// End date is today by default. Is there no start date, then it is invalid.
 	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
 	const { form, errors, enhance, validateForm, ...rest } = superForm(
-		defaults({ values: [newRow(0)] }, zod(dateRangeSchema)),
+		defaults({ ranges: [newRow(0)], location: Ort.SCHULE }, zod(dateRangeSchema)),
 		{
 			id,
 			SPA: true,
@@ -40,8 +40,8 @@
 			async onChange() {
 				const { valid } = await validateForm();
 				if (valid) {
-					onValidChange($form.values);
-					$form.values = [...$form.values, newRow($form.values.length)];
+					onValidChange({ ...$form });
+					$form.ranges = [...$form.ranges, newRow($form.ranges.length)];
 				}
 			}
 		}
@@ -50,7 +50,7 @@
 	validateForm({ update: true });
 
 	function removeRow(index: number) {
-		$form.values = $form.values.filter((_, i) => i !== index);
+		$form.ranges = $form.ranges.filter((_, i) => i !== index);
 	}
 </script>
 
@@ -69,11 +69,26 @@
 		</Dialog.Header>
 		<form method="POST" use:enhance>
 			<div class="max-h-[600px] w-full gap-y-8 overflow-y-auto pt-8">
-				{#each $form.values as _, index}
+				<div class="mb-6 flex w-full flex-row items-center justify-between gap-x-4">
+					<p class="w-full pl-1 text-left align-middle font-normal">Ort</p>
+					<Form.Field
+						form={{ form, errors, enhance, validateForm, ...rest }}
+						name="location"
+						class="w-calendar space-y-0"
+					>
+						<Form.Control>
+							{#snippet children({ props })}
+								<LocationCombobox bind:value={$form.location} />
+							{/snippet}
+						</Form.Control>
+						<Form.FieldErrors />
+					</Form.Field>
+				</div>
+				{#each $form.ranges as _, index}
 					{#if index > 0}
 						<div class="relative flex h-16 flex-row items-center">
 							<Separator />
-							{#if index < $form.values.length - 1}
+							{#if index < $form.ranges.length - 1}
 								<Button
 									variant="outline"
 									class="absolute right-4 top-1/2 -translate-y-1/2"

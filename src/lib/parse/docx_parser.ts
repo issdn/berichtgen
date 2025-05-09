@@ -51,7 +51,9 @@ export class DOCXParser extends Parser {
 		};
 
 		this.context.max = this.data.textsOrRelIds.length;
-		await this.createWorkerPool(this.data!.images.size);
+		if (this.withImages) {
+			await this.createWorkerPool(this.data!.images.size);
+		}
 	}
 
 	async parse() {

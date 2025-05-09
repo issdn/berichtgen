@@ -1,10 +1,10 @@
 import { incuriaStore } from '$lib/stores/board.svelte';
-import { IncuriaErrorType, type Entry } from '$lib/types';
+import { IncuriaErrorType, Ort, type Entry } from '$lib/types';
 import { IncuriaError } from '$src/lib/errors';
 import { completionSchema } from '$src/lib/parse/schemas';
 import { ResultAsync } from 'neverthrow';
 
-export function getCompletions(text: string) {
+export function getCompletions(text: string, ort: Ort) {
 	const messages = splitByMaxLength(text, 15000);
 
 	const completionsPromises = messages.map(async (t) => {
@@ -12,7 +12,8 @@ export function getCompletions(text: string) {
 			body: JSON.stringify({
 				text: t,
 				provider: incuriaStore.currentProvider.id,
-				owner: incuriaStore.currentProvider.owner
+				owner: incuriaStore.currentProvider.owner,
+				ort
 			}),
 			method: 'POST'
 		});

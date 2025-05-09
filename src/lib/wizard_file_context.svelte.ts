@@ -1,13 +1,14 @@
 import type { DateRangeSchema } from '$lib/components/time_spread_schematic';
-import type { Entry, ResultEntry } from '$lib/types';
+import { FileTypes, type Entry, type ResultEntry } from '$lib/types';
 import type { IncuriaError } from '$src/lib/errors';
+import { incuriaStore } from '$src/lib/stores/board.svelte';
 
 export class WizardFileContext {
 	snapshot: string | Entry[] | ResultEntry[] | undefined;
 
 	finished: ResultEntry[] | null = null;
 
-	dateRanges: DateRangeSchema['values'] = $state([]);
+	dateRanges: DateRangeSchema | null = $state(null);
 
 	value: number = $state(0);
 
@@ -18,6 +19,10 @@ export class WizardFileContext {
 	file: File;
 
 	cancelled: boolean = false;
+
+	get shouldSkip() {
+		return this.file.type === FileTypes.JSON && incuriaStore.rewordJSON;
+	}
 
 	onProgress() {
 		this.value += 1;

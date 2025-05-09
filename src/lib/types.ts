@@ -9,7 +9,7 @@ export enum Ort {
 }
 
 export interface Entry {
-	qualifikationen: (typeof Qualifikationen)[number][];
+	qualifikationen: QualifikationenType[];
 	text: string;
 	datum?: string;
 	ort?: Ort;
@@ -117,7 +117,7 @@ export enum CompletionExceptionType {
 	INTERNAL = 500
 }
 
-export const Qualifikationen = [
+export const QualifikationenSchule = [
 	'Allgemeinbildende Fächer',
 	'Arbeitsplätze nach Kundenwunsch ausstatten',
 	'Benutzerschnittstellen gestalten und entwickeln',
@@ -130,7 +130,10 @@ export const Qualifikationen = [
 	'Netzwerke und Dienste bereitstellen',
 	'Schutzbedarfsanalyse im eigenen Arbeitsbereich durchführen',
 	'Serviceanfragen bearbeiten',
-	'Software zur Verwaltung von Daten anpassen',
+	'Software zur Verwaltung von Daten anpassen'
+] as const;
+
+export const QualifikationenBetrieb = [
 	'Aufbau und Organisation des Ausbildungsbetriebes',
 	'Berufsbildung sowie Arbeits- und Tarifrecht',
 	'Betreiben von IT-Systemen',
@@ -150,6 +153,10 @@ export const Qualifikationen = [
 	'Umweltschutz',
 	'Vernetztes Zusammenarbeiten unter Nutzung digitaler Medien'
 ] as const;
+
+export type QualifikationenType =
+	| (typeof QualifikationenSchule)[number]
+	| (typeof QualifikationenBetrieb)[number];
 
 export enum PaymentStatus {
 	SUCCESS = 'success',

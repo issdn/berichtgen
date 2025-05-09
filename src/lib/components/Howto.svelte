@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { BookText } from 'lucide-svelte';
+	import * as Card from '$lib/components/ui/card/index.js';
 </script>
 
 <Tabs.Root value="dateien" class="flex flex-col">
@@ -14,7 +15,23 @@
 		</Tabs.List>
 	</div>
 	<div class="rounded-lg bg-muted p-4">
-		<Tabs.Content value="dateien">TODO: How to upload correct files</Tabs.Content>
+		<Tabs.Content value="dateien" class="flex flex-col gap-y-4"
+			>{@render renderHowToOwnJson()}</Tabs.Content
+		>
 		<Tabs.Content value="schnittstellen">TODO: How to use chrome extension</Tabs.Content>
 	</div>
 </Tabs.Root>
+
+{#snippet renderHowToOwnJson()}
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>Berichte kostenlos generieren</Card.Title>
+		</Card.Header>
+		<Card.Content>
+			<p>Du kannst deine Berichte kostenlos generieren in dem du die</p>
+		</Card.Content>
+		<Card.Footer>
+			<p>Card Footer</p>
+		</Card.Footer>
+	</Card.Root>
+{/snippet}

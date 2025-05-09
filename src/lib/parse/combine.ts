@@ -1,4 +1,4 @@
-import { Ort, Qualifikationen, type ResultEntry } from '$lib/types';
+import { Ort, type QualifikationenType, type ResultEntry } from '$lib/types';
 import { parseDate } from '@internationalized/date';
 
 export function combineJSONs(jsons: ResultEntry[][]) {
@@ -23,7 +23,7 @@ export function combineJSONs(jsons: ResultEntry[][]) {
 					return acc;
 				},
 				{
-					qualifikationen: [] as Qualifikationen[],
+					qualifikationen: [] as QualifikationenType[],
 					text: '',
 					datum: date,
 					hours: 0,

@@ -51,7 +51,7 @@
 							<TimeSpreadDialog
 								id={context.file.name}
 								onClose={() => {
-									if (context.dateRanges.length > 0) {
+									if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
 										machine.run();
 									}
 								}}

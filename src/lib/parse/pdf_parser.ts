@@ -59,7 +59,9 @@ export class PDFParser extends Parser {
 
 		this.context.max = blobsOrNullsAndPages.length;
 		this.data = blobsOrNullsAndPages;
-		await this.createWorkerPool(nrImages);
+		if (this.withImages) {
+			await this.createWorkerPool(nrImages);
+		}
 	}
 
 	async parse() {

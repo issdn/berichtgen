@@ -3,7 +3,13 @@ import { usersLLMProviders } from '$lib/server/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
-import { CommonServerErrorTypes, CompletionExceptionType } from '$lib/types';
+import {
+	CommonServerErrorTypes,
+	CompletionExceptionType,
+	Ort,
+	QualifikationenBetrieb,
+	QualifikationenSchule
+} from '$lib/types';
 import OpenAI from 'openai';
 import * as z from 'zod';
 import * as genai from '@google/genai';
@@ -71,7 +77,8 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 	const schema = z.object({
 		text: z.string().nonempty(),
 		provider: z.string().nonempty(),
-		owner: z.string().nonempty()
+		owner: z.string().nonempty(),
+		ort: z.enum([Ort.SCHULE, Ort.BETRIEB])
 	});
 
 	const parsed = schema.safeParse(body);
@@ -83,7 +90,7 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 		});
 	}
 
-	const { text, provider, owner } = parsed.data;
+	const { text, provider, owner, ort } = parsed.data;
 
 	const incuriaToken = getTokenByOwner(owner).mapErr((e) => e.toResponse());
 
@@ -110,12 +117,12 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 	let response: ResultAsync<string | undefined | null, CompletionException>;
 
 	if (owner === 'deepseek') {
-		response = ResultAsync.fromPromise(getOpenAICompletion(text, token), (e) =>
+		response = ResultAsync.fromPromise(getOpenAICompletion(text, token, ort), (e) =>
 			CompletionException.fromUnknown(e)
 		);
 		// owner === 'google'
 	} else {
-		response = ResultAsync.fromPromise(getGeminiCompletion(text, token), (e) =>
+		response = ResultAsync.fromPromise(getGeminiCompletion(text, token, ort), (e) =>
 			CompletionException.fromUnknown(e)
 		);
 	}
@@ -136,7 +143,7 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 	return new Response(completion);
 };
 
-async function getOpenAICompletion(text: string, token: string) {
+async function getOpenAICompletion(text: string, token: string, ort: Ort) {
 	const openai = new OpenAI({
 		baseURL: 'https://api.deepseek.com',
 		apiKey: token ?? env.DEEPSEEK
@@ -146,7 +153,7 @@ async function getOpenAICompletion(text: string, token: string) {
 		messages: [
 			{
 				role: 'system',
-				content: context_prompt
+				content: getContextPrompt(ort)
 			},
 			{
 				role: 'user',
@@ -183,14 +190,15 @@ async function getOpenAICompletion(text: string, token: string) {
 
 async function getGeminiCompletion(
 	text: string,
-	token: string
+	token: string,
+	ort: Ort
 ): Promise<string | undefined | null> {
 	const ai = new genai.GoogleGenAI({ apiKey: token ?? env.GEMINI });
 
 	const completion = await ai.models.generateContent({
 		config: {
 			responseMimeType: 'application/json',
-			systemInstruction: context_prompt,
+			systemInstruction: getContextPrompt(ort),
 			responseSchema: {
 				type: genai.Type.OBJECT,
 				properties: {
@@ -221,7 +229,11 @@ async function getGeminiCompletion(
 	return completion.text;
 }
 
-const context_prompt = `
+function getContextPrompt(ort: Ort) {
+	const qualifications =
+		ort === Ort.SCHULE ? QualifikationenSchule.values : QualifikationenBetrieb.values;
+
+	return `
 I will give you a raw text of records of lessons or a single lesson.
 Lessons are chronologically sorted but they are not distinctively marked. You have to create a JSON list with each lesson as an object with a title and a summary in format that I'll specify below.
 Each JSON Object in the array is STRICTLY a single LESSON so don't add or remove lessons. You can however group the text based on topic if you're sure that it fits.
@@ -229,21 +241,7 @@ NEVER include any dates or names or titles of people.
 Everything the "lessons" key inside the JSON has to be in German language.
 Anything inside <> is just a context for you.
 
-Here's the list of qualifications that you'll need to use: [
-    'Allgemeinbildende Fächer',
-    'Arbeitsplätze nach Kundenwunsch ausstatten',
-    'Benutzerschnittstellen gestalten und entwickeln',
-    'Clients in Netzwerke einbinden',
-    'Cyber-physische Systeme ergänzen',
-    'Das Unternehmen und die eigene Rolle im Betrieb beschreiben',
-    'Daten systemübergreifend bereitstellen',
-    'Funktionalität in Anwendungen realisieren',
-    'Kundenspezifische Anwendungsentwicklung durchführen',
-    'Netzwerke und Dienste bereitstellen',
-    'Schutzbedarfsanalyse im eigenen Arbeitsbereich durchführen',
-    'Serviceanfragen bearbeiten',
-    'Software zur Verwaltung von Daten anpassen,
-]
+Here's the list of qualifications that you'll need to use: [${qualifications}]
 
 Here's the json format (simple list of objects):
 {
@@ -293,3 +291,4 @@ EXAMPLE JSON FROM YOU:
   },
   ...]
   }`;
+}

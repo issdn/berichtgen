@@ -3,7 +3,7 @@ import type { DateRange } from 'bits-ui';
 import * as z from 'zod';
 
 export const dateRangeSchema = z.object({
-	values: z
+	ranges: z
 		.object({
 			id: z.number().int().min(0),
 			daterange: z.custom<IncuriaDateRange>(
@@ -14,10 +14,10 @@ export const dateRangeSchema = z.object({
 				.number({ message: 'Stunden müssen Zahlen sein.' })
 				.int({ message: 'Stunden müssen ganze Zahlen sein.' })
 				.optional()
-				.nullable(),
-			location: z.enum([Ort.SCHULE, Ort.BETRIEB, Ort.UNTERWEISUNG, Ort['SCHULE/BETRIEB']])
+				.nullable()
 		})
-		.array()
+		.array(),
+	location: z.enum([Ort.SCHULE, Ort.BETRIEB, Ort.UNTERWEISUNG, Ort['SCHULE/BETRIEB']])
 });
 
 export type DateRangeSchema = z.infer<typeof dateRangeSchema>;
@@ -29,7 +29,9 @@ type RemoveUndefined<T> = {
 export type IncuriaDateRange = Pick<RemoveUndefined<DateRange>, 'end'> & Pick<DateRange, 'start'>;
 
 export type ValidIncuriaDateRanges = {
-	daterange: IncuriaDateRange;
-	hours?: number | null;
+	ranges: {
+		daterange: IncuriaDateRange;
+		hours?: number | null;
+	}[];
 	location: Ort;
-}[];
+};
