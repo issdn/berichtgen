@@ -5,8 +5,14 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import Button from '$src/lib/components/ui/button/button.svelte';
 	import { goto } from '$app/navigation';
+	import { FileTypes, type UserContext } from '$src/lib/types';
+	import { incuriaStore } from '$src/lib/stores/board.svelte';
+	import { toast } from 'svelte-sonner';
+	import { getContext } from 'svelte';
 
-	let { userTokens }: { userTokens: number } = $props();
+	let { userTokens }: { userTokens: number | null } = $props();
+
+	const { loggedIn } = getContext<UserContext>('user');
 
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
@@ -52,17 +58,46 @@
 
 	function handleFiles(files: FileList) {
 		const filesArray = Array.from(files);
-		const { totalTokens } = countUserTokens(userTokens, filesArray);
-		const tokensAsWords = userTokens / 4;
-		const tokensAsParagraphs = userTokens / 100;
-		if (totalTokens > userTokens) {
-			error = `Du hast ${userTokens} Tokens. Das sind ${tokensAsWords} Wörter oder ${tokensAsParagraphs} Absätze. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
-			wizardScheduler.files = null;
+		const anyNonJsonFiles = filesArray.find((f) => f.type !== FileTypes.JSON);
+		if (!loggedIn) {
+			const hasDiscount = incuriaStore.currentProvider?.token != null;
+			const { totalTokens } = countUserTokens(
+				hasDiscount ? userTokens! / 4 : userTokens!,
+				filesArray
+			);
+			if (totalTokens > userTokens!) {
+				if (!anyNonJsonFiles) {
+					if (incuriaStore.rewordJSON === true) {
+						incuriaStore.rewordJSON = false;
+						toast.info('JSON-Dateien Umformulierung wurde automatisch deaktiviert.');
+					}
+					init(files);
+				} else {
+					error = `Du hast ${userTokens} Tokens. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
+					wizardScheduler.files = null;
+				}
+			} else {
+				init(files);
+			}
 		} else {
-			error = null;
-			wizardScheduler.files = files;
-			wizardScheduler.processInit = wizardScheduler.init();
+			if (anyNonJsonFiles) {
+				error =
+					'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.';
+				wizardScheduler.files = null;
+			} else {
+				if (incuriaStore.rewordJSON === true) {
+					incuriaStore.rewordJSON = false;
+					toast.info('JSON-Dateien Umformulierung wurde automatisch deaktiviert.');
+				}
+				init(files);
+			}
 		}
+	}
+
+	function init(files: FileList) {
+		error = null;
+		wizardScheduler.files = files;
+		wizardScheduler.processInit = wizardScheduler.init();
 	}
 </script>
 

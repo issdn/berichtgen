@@ -6,6 +6,10 @@
 	import { Settings } from 'lucide-svelte';
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
 	import { Switch } from '$lib/components/ui/switch/index.js';
+	import { getContext } from 'svelte';
+	import type { UserContext } from '$src/lib/types';
+
+	const { loggedIn } = getContext<UserContext>('user');
 </script>
 
 <Popover.Root>
@@ -14,20 +18,22 @@
 		<div class="flex flex-col gap-y-4">
 			<h4 class="font-medium leading-none">Wizard Einstellungen</h4>
 			<Separator />
-			<div class="flex items-center space-x-2">
-				<Switch
-					bind:checked={incuriaStore.processPhotos}
-					id="terms-label"
-					disabled={wizardScheduler.isRunning}
-				/>
+			{#if loggedIn}
+				<div class="flex items-center space-x-2">
+					<Switch
+						bind:checked={incuriaStore.processPhotos}
+						id="terms-label"
+						disabled={wizardScheduler.isRunning}
+					/>
 
-				<Label
-					for="terms-label"
-					class="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-				>
-					Bilder verarbeiten
-				</Label>
-			</div>
+					<Label
+						for="terms-label"
+						class="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+					>
+						Bilder verarbeiten
+					</Label>
+				</div>
+			{/if}
 			<div class="flex items-center space-x-2">
 				<Switch
 					bind:checked={incuriaStore.rewordJSON}

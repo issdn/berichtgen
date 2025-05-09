@@ -1,4 +1,5 @@
 import type { DateValue } from '@internationalized/date';
+import type { User } from '@supabase/supabase-js';
 
 export enum Ort {
 	SCHULE = 'SCHULE',
@@ -164,3 +165,8 @@ export enum FileTypes {
 	JPG = 'image/jpeg',
 	PNG = 'image/png'
 }
+
+export type UserContext = {
+	user: User | null;
+	loggedIn: boolean;
+};

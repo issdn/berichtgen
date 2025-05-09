@@ -19,6 +19,12 @@ function hideToken(
 }
 
 export const load = async ({ locals: { user } }) => {
+	if (!user) {
+		return {
+			providers: []
+		};
+	}
+
 	const providers = await db
 		.select({
 			id: llmProviders.id,
@@ -30,10 +36,7 @@ export const load = async ({ locals: { user } }) => {
 		.from(llmProviders)
 		.leftJoin(
 			usersLLMProviders,
-			and(
-				eq(usersLLMProviders.userId, user!.id!),
-				eq(usersLLMProviders.providerId, llmProviders.id)
-			)
+			and(eq(usersLLMProviders.userId, user.id), eq(usersLLMProviders.providerId, llmProviders.id))
 		);
 
 	const providersHiddenTokens = providers.map((provider) => {

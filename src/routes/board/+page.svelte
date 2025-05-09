@@ -10,9 +10,10 @@
 	import { PaymentStatus } from '$src/lib/types';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { HandCoins } from 'lucide-svelte';
+	import type { RealtimeChannel } from '@supabase/supabase-js';
 
 	let { data } = $props();
-	const { supabase, tokenCount } = data;
+	const { supabase, tokenCount, user } = data;
 	let userTokens = $state(tokenCount);
 
 	onMount(() => {
@@ -22,35 +23,41 @@
 			replaceState(cleanUrl, '');
 		}
 
-		const channel = supabase
-			.channel('token-update')
-			.on(
-				'postgres_changes',
-				{ event: 'UPDATE', table: 'userTokenCount', schema: 'public' },
-				(p) => {
-					userTokens = p.new.tokens;
-				}
-			)
-			.subscribe((_, e) => {
-				if (e) {
-					Sentry.captureException(e);
-					toast.error(
-						'Fehler beim Abonnieren des Token-Channels. Token-Count wird nicht aktualisiert.'
-					);
-				}
-			});
+		let channel: RealtimeChannel | null = null;
+
+		if (user) {
+			channel = supabase
+				.channel('token-update')
+				.on(
+					'postgres_changes',
+					{ event: 'UPDATE', table: 'userTokenCount', schema: 'public' },
+					(p) => {
+						userTokens = p.new.tokens;
+					}
+				)
+				.subscribe((_, e) => {
+					if (e) {
+						Sentry.captureException(e);
+						toast.error(
+							'Fehler beim Abonnieren des Token-Channels. Token-Count wird nicht aktualisiert.'
+						);
+					}
+				});
+		}
 
 		return () => {
-			channel.unsubscribe();
+			channel?.unsubscribe();
 		};
 	});
 </script>
 
 <div class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:flex-row">
 	<div class="flex h-full w-full flex-col gap-y-2">
-		<Badge class="w-fit gap-x-2 px-4 py-2 text-sm" variant="outline"
-			><HandCoins size={18} />{userTokens}</Badge
-		>
+		{#if userTokens !== null}
+			<Badge class="w-fit gap-x-2 px-4 py-2 text-sm" variant="outline"
+				><HandCoins size={18} />{userTokens}</Badge
+			>
+		{/if}
 		<Howto />
 	</div>
 	<div class="flex h-[calc(100%-1rem)] w-full flex-col gap-y-4">

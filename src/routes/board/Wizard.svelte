@@ -3,7 +3,7 @@
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
 	import { FileCheck2, FileJson, FileType } from 'lucide-svelte';
-	import { onMount } from 'svelte';
+	import { getContext, onMount } from 'svelte';
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 	import ProviderSelect from './ProviderSelect.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -14,6 +14,7 @@
 	import { handleDOCXDownload } from '$src/lib/utils/write_docx';
 	import { handleJSONDownload } from '$src/lib/utils/write_json';
 	import WizardSettingsPopover from '$src/lib/components/WizardSettingsPopover.svelte';
+	import type { UserContext } from '$src/lib/types';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -25,6 +26,8 @@
 			});
 		}
 	});
+
+	const { loggedIn } = getContext<UserContext>('user');
 
 	let dialogOpen = $state(false);
 
@@ -44,7 +47,9 @@
 <div class="relative h-full w-full gap-y-8 rounded-lg border-4">
 	<div class="flex flex-row flex-wrap items-center justify-between gap-x-4 bg-muted p-4">
 		<div class="flex flex-row items-center gap-x-4">
-			<ProviderSelect />
+			{#if loggedIn}
+				<ProviderSelect />
+			{/if}
 			<WizardSettingsPopover />
 		</div>
 		{#if result !== null}
