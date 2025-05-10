@@ -10,7 +10,7 @@
 </script>
 
 <div class="h-full overflow-y-auto bg-muted">
-	<div class="columns-2 gap-4 space-y-4 rounded-md p-4">
+	<div class="columns-1 gap-4 space-y-4 rounded-md p-4 xl:columns-2">
 		<Card.Root class="relative inline-block w-full">
 			<Pin class="absolute -right-1 -top-1 rotate-45 " />
 			<Card.Header>
@@ -26,7 +26,7 @@
 					<br />
 					Ein Prompt das du verwenden kannst:
 				</p>
-				<div class="flex flex-row gap-2 py-4">
+				<div class="flex flex-col gap-2 py-4 md:flex-row">
 					<Button
 						variant="link"
 						onclick={() => {
