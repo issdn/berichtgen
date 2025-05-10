@@ -6,7 +6,7 @@ import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 import fsm from 'svelte-fsm';
 import type { Scheduler } from 'tesseract.js';
 import { Err, ResultAsync, err, fromThrowable } from 'neverthrow';
-import { getCompletions } from '$lib/hooks/completion';
+import { getCompletions } from '$src/lib/completion/completion';
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 import type { WizardFileContext } from './wizard_file_context.svelte';
 import { IncuriaError } from '$src/lib/errors';

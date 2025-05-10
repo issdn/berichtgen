@@ -1,37 +1,84 @@
 <script lang="ts">
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import { BookText } from 'lucide-svelte';
+	import { Copy, ExternalLink, Pin, Settings } from 'lucide-svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { Button } from '$src/lib/components/ui/button';
+	import { getContextPrompt } from '$src/lib/completion/prompt';
+	import { Ort, type UserContext } from '$src/lib/types';
+	import { getContext } from 'svelte';
+
+	const { loggedIn } = getContext<UserContext>('user');
 </script>
 
-<Tabs.Root value="dateien" class="flex flex-col">
-	<div class="flex flex-row items-center gap-x-2 py-2">
-		<div class="flex h-10 w-12 items-center justify-center rounded-md bg-muted">
-			<BookText />
-		</div>
-		<Tabs.List>
-			<Tabs.Trigger value="dateien">Dateien</Tabs.Trigger>
-			<Tabs.Trigger value="schnittstellen">Schnittstellen</Tabs.Trigger>
-		</Tabs.List>
+<div class="h-full overflow-y-auto bg-muted">
+	<div class="columns-2 gap-4 space-y-4 rounded-md p-4">
+		<Card.Root class="relative inline-block w-full">
+			<Pin class="absolute -right-1 -top-1 rotate-45 " />
+			<Card.Header>
+				<Card.Title>💵 Berichte kostenlos generieren</Card.Title>
+			</Card.Header>
+			<Card.Content>
+				<p>
+					Du kannst deine Berichte kostenlos generieren in dem du die JSON-Dateien erstmal mit einem
+					LLM deiner Wahl generierst und dann hier droppst.
+					<br />
+					Die JSON muss eine Liste von Objekten sein. Ein Objekt muss den Bericht als text im Feld "text"
+					und eine Liste von Text-Qualifikationen im feld 'qualifikationen' haben.
+					<br />
+					Ein Prompt das du verwenden kannst:
+				</p>
+				<div class="flex flex-row gap-2 py-4">
+					<Button
+						variant="link"
+						onclick={() => {
+							navigator.clipboard.writeText(getContextPrompt(Ort.SCHULE));
+						}}><Copy /> Schule</Button
+					>
+					<Button
+						variant="link"
+						onclick={() => {
+							navigator.clipboard.writeText(getContextPrompt(Ort.BETRIEB));
+						}}><Copy /> Betrieb/Unterweisung</Button
+					>
+				</div>
+			</Card.Content>
+		</Card.Root>
+		<Card.Root class="relative inline-block w-full">
+			<Pin class="absolute -right-1 -top-1 rotate-45 " />
+			<Card.Header>
+				<Card.Title>🤔 Was denn?</Card.Title>
+			</Card.Header>
+			<Card.Content>
+				<p>
+					Du kannst den Bericht entweder als fertiges DOCX oder als JSON herunterladen.
+					<br />
+					Falls du die Berichte auf der bildung.ihk.de Plattform ausfüllen musst, kannst du die JSON
+					unserer Extension übergeben:
+				</p>
+				<Button
+					variant="link"
+					href="https://chromewebstore.google.com/detail/ihk-berichtsheft-bot/cjadnfbehnecalphcincmljbheaiokgp?hl=en-US"
+					target="_blank"
+					rel="noopener noreferrer"><ExternalLink />Extension</Button
+				>
+			</Card.Content>
+		</Card.Root>
+		<Card.Root class="relative inline-block w-full">
+			<Pin class="absolute -right-1 -top-1 rotate-45 " />
+			<Card.Header>
+				<Card.Title>💳 75% Tokens sparen</Card.Title>
+			</Card.Header>
+			<Card.Content>
+				<p>
+					Wenn du deinen eigenen API-Key verwendest, beim generieren der Berichte wird 75% weniger
+					Tokens genommen.
+					{#if !loggedIn}
+						Das kannst du aber nur angemeldet machen.
+					{/if}
+				</p>
+				{#if loggedIn}
+					<Button variant="link" href="/board/settings"><Settings />Zur Einstellungen</Button>
+				{/if}
+			</Card.Content>
+		</Card.Root>
 	</div>
-	<div class="rounded-lg bg-muted p-4">
-		<Tabs.Content value="dateien" class="flex flex-col gap-y-4"
-			>{@render renderHowToOwnJson()}</Tabs.Content
-		>
-		<Tabs.Content value="schnittstellen">TODO: How to use chrome extension</Tabs.Content>
-	</div>
-</Tabs.Root>
-
-{#snippet renderHowToOwnJson()}
-	<Card.Root>
-		<Card.Header>
-			<Card.Title>Berichte kostenlos generieren</Card.Title>
-		</Card.Header>
-		<Card.Content>
-			<p>Du kannst deine Berichte kostenlos generieren in dem du die</p>
-		</Card.Content>
-		<Card.Footer>
-			<p>Card Footer</p>
-		</Card.Footer>
-	</Card.Root>
-{/snippet}
+</div>

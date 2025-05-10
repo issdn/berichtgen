@@ -75,7 +75,7 @@
 				{/each}
 			{/await}
 		{:else}
-			<p class="center-absolute text-muted">Warten auf Eingabe...</p>
+			<p class="center-absolute text-muted">Noch nix hier...</p>
 		{/if}
 	</div>
 </div>

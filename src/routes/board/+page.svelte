@@ -60,7 +60,7 @@
 		{/if}
 		<Howto />
 	</div>
-	<div class="flex h-[calc(100%-1rem)] w-full flex-col gap-y-4">
+	<div class="flex h-full w-full flex-col gap-y-4">
 		<div class="h-full w-full">
 			<Dropzone {userTokens} />
 		</div>

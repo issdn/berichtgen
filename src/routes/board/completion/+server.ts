@@ -3,13 +3,7 @@ import { usersLLMProviders } from '$lib/server/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
-import {
-	CommonServerErrorTypes,
-	CompletionExceptionType,
-	Ort,
-	QualifikationenBetrieb,
-	QualifikationenSchule
-} from '$lib/types';
+import { CommonServerErrorTypes, CompletionExceptionType, Ort } from '$lib/types';
 import OpenAI from 'openai';
 import * as z from 'zod';
 import * as genai from '@google/genai';
@@ -19,6 +13,7 @@ import { countTokens } from '$src/lib/utils/token_counter';
 import * as Sentry from '@sentry/node';
 import { error as errorJson } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getContextPrompt } from '$src/lib/completion/prompt';
 
 function getTokenByOwner(owner: string) {
 	switch (owner) {
@@ -227,68 +222,4 @@ async function getGeminiCompletion(
 	});
 
 	return completion.text;
-}
-
-function getContextPrompt(ort: Ort) {
-	const qualifications =
-		ort === Ort.SCHULE ? QualifikationenSchule.values : QualifikationenBetrieb.values;
-
-	return `
-I will give you a raw text of records of lessons or a single lesson.
-Lessons are chronologically sorted but they are not distinctively marked. You have to create a JSON list with each lesson as an object with a title and a summary in format that I'll specify below.
-Each JSON Object in the array is STRICTLY a single LESSON so don't add or remove lessons. You can however group the text based on topic if you're sure that it fits.
-NEVER include any dates or names or titles of people.
-Everything the "lessons" key inside the JSON has to be in German language.
-Anything inside <> is just a context for you.
-
-Here's the list of qualifications that you'll need to use: [${qualifications}]
-
-Here's the json format (simple list of objects):
-{
-"lessons":[{
-    "qualifikationen": [<INSIDE THIS LIST PUT FEW OF THE QUALIFICATIONS THAT BEST FIT THE TITLE >],
-    "text": "<A ONE SENTENCE SUMMARY OF THE LESSON>"
-}, ...]
-}
-
-Here's one example of what I want:
-EXAMPLE INPUT TEXT:
-LESSON 2
-Unternehmen benötigen Arbeitskräfte, Betriebsmittel, Werkstoffe und Kapital.
-Man unterscheidet drei Beschaffungsbereiche
-Personalabteilung: Beschaffung von Arbeitskräften
-Finanzabteilung: Beschaffung von finanziellen Mitteln
-Einkaufsabteilung: Beschaffung von
-•
-•
-•
-•
-•
-•
-•
-Gütern der aperiodischen und einmaligen Bedarfs
-Betriebsmittel (Maschinen, Anlage, Werkzeuge)
-Dienstleistungen (Beratung, Outsourcing)
-Gütern des periodischen und laufenden Bedarfs
-Werkstoffen (Roh-, Hilfs- und Betriebsstoffe)
-Einzelteile
-Handelswaren
-Dem Einkauf kommt im Unternehmen eine strategische Bedeutung zu.
-Aufgaben des Einkaufs sind:
-Marktanalyse
-Lieferantenauswahl
-Festlegung der Einkaufsstrategie wie z.B. Konsignationslager, Rahmenaufträge,
-Just in time usw.
-Dipl.-Kfm. Carsten Pohlmann - Wirtschaftstheorie
-Folie 3
-
-EXAMPLE JSON FROM YOU:
-  {
-"lessons": [
-  {
-    "qualifikationen": ["Allgemeinbildende Fächer"],
-    "text": "Was ein Unternehmen braucht (Arbeitskräfte, Betriebsmittel, Werkstoffe und Kapital) und wie wird das beschaffen"
-  },
-  ...]
-  }`;
 }
