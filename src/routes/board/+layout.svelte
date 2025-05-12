@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { incuriaStore } from '$lib/stores/board.svelte.js';
-	import { onMount, setContext } from 'svelte';
+	import { type UserContext } from '$src/lib/types.js';
+	import { getContext, onMount } from 'svelte';
 
 	let { data, children } = $props();
 
-	const loggedIn = data.user !== null;
-
-	setContext('user', { user: data.user, loggedIn });
+	const { loggedIn } = getContext<UserContext>('user');
 
 	incuriaStore.providers = data.providers;
 

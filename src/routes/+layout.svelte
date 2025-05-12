@@ -6,11 +6,15 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { goto, invalidate } from '$app/navigation';
 	import DarkMode from './board/DarkMode.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, setContext } from 'svelte';
 	import Logo from '$lib/svg/Logo.svelte';
 
 	let { data, children } = $props();
-	let { session, supabase, user } = $derived(data);
+	let { session, supabase } = $derived(data);
+
+	const loggedIn = data.user !== null;
+
+	setContext('user', { user: data.user, loggedIn, supabase: data.supabase });
 
 	onMount(() => {
 		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {
@@ -30,7 +34,7 @@
 		><Logo /></Button
 	>
 	<div class="flex flex-row gap-x-4">
-		<SettingsPopover {user}></SettingsPopover>
+		<SettingsPopover />
 		<DarkMode />
 	</div>
 </div>

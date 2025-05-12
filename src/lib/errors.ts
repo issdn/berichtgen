@@ -56,7 +56,6 @@ export class IncuriaError extends Error {
 		message: string,
 		type: IncuriaErrorType = IncuriaErrorType.DEVELOPERS_FAULT
 	) {
-		console.log(e);
 		if (e instanceof Error) {
 			return new IncuriaError(type, e.message);
 		}

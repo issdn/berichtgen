@@ -25,6 +25,8 @@ class IncuriaStore {
 	processPhotos = $state(false);
 
 	rewordJSON = $state(false);
+
+	tempEmailContainer: null | string = $state(null);
 }
 
 export const incuriaStore = new IncuriaStore();

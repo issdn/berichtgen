@@ -7,3 +7,12 @@ enabled = true
 client_id = "env(AUTH_GOOGLE_ID)"
 secret = "env(AUTH_GOOGLE_SECRET)"
 redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+
+[auth.email.smtp]
+host = "***REMOVED***"        # Or your mail server
+port = ***REMOVED***
+user = "***REMOVED***"
+pass = "***REMOVED***"
+sender_name = "***REMOVED***"
+admin_email = "***REMOVED***"
+# sender = "***REMOVED***"
