@@ -27,7 +27,7 @@
 		}
 	});
 
-	const { loggedIn } = getContext<UserContext>('user');
+	let { loggedIn } = getContext<UserContext>('user')();
 
 	let dialogOpen = $state(false);
 

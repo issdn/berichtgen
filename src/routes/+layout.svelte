@@ -10,11 +10,14 @@
 	import Logo from '$lib/svg/Logo.svelte';
 
 	let { data, children } = $props();
-	let { session, supabase } = $derived(data);
+	let { user, supabase, loggedIn, session } = $derived({
+		supabase: data.supabase,
+		user: data.user,
+		loggedIn: data.user !== null,
+		session: data.session
+	});
 
-	const loggedIn = data.user !== null;
-
-	setContext('user', { user: data.user, loggedIn, supabase: data.supabase });
+	setContext('user', () => ({ user, loggedIn, supabase: supabase }));
 
 	onMount(() => {
 		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {

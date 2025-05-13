@@ -71,8 +71,6 @@ export const actions: Actions = {
 			Sentry.captureException(e);
 			return fail(406);
 		}
-		localStorage.clear();
-		sessionStorage.clear();
 		throw redirect(303, '/');
 	}
 };

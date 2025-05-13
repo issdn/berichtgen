@@ -5,7 +5,7 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Label } from '$lib/components/ui/label';
 	import { CircleHelp, HandCoins, KeyRound, LogOut, Mail, Settings } from 'lucide-svelte';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { getContext } from 'svelte';
 	import { type UserContext } from '$src/lib/types';
 	import { enhance } from '$app/forms';
@@ -19,8 +19,9 @@
 	import * as z from 'zod';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import * as Form from '$lib/components/ui/form/index.js';
+	import { page } from '$app/state';
 
-	const { user, loggedIn, supabase } = getContext<UserContext>('user');
+	let { user, loggedIn, supabase } = $derived(getContext<UserContext>('user')());
 
 	let otpDialogOpen = $state(false);
 
@@ -43,7 +44,10 @@
 							toast.success('OTP erfolgreich verifiziert');
 							incuriaStore.tempEmailContainer = '';
 							otpDialogOpen = false;
-							goto('/board');
+							goto('/board', {
+								replaceState: true,
+								invalidateAll: true
+							});
 						}
 					});
 			}
@@ -63,7 +67,7 @@
 				const { data, error } = await supabase.auth.signInWithOtp({
 					email: form.data.mail!,
 					options: {
-						emailRedirectTo: 'http://localhost:5173/board'
+						emailRedirectTo: page.url.origin + '/board'
 					}
 				});
 				loading = false;
@@ -83,16 +87,18 @@
 <Popover.Root>
 	<Popover.Trigger>
 		<div class="flex flex-row items-center gap-x-4">
-			{#if user?.user_metadata.name !== null}
-				<Label class="cursor-pointer">{user?.user_metadata.name}</Label>
+			{#if user?.user_metadata.name !== null && loggedIn}
+				<Label class="cursor-pointer">{user?.user_metadata.name ?? 'Benutzer'}</Label>
 			{/if}
 			<Avatar.Root>
 				<Avatar.Image src={user?.user_metadata.image} alt="Avatar" />
 				<Avatar.Fallback
-					>{(user?.user_metadata.name as string)
-						?.split(' ')
-						.map((s) => s[0])
-						.join('') ?? 'IC'}</Avatar.Fallback
+					>{!loggedIn
+						? 'AN'
+						: ((user?.user_metadata.name as string)
+								?.split(' ')
+								.map((s) => s[0])
+								.join('') ?? 'GEN')}</Avatar.Fallback
 				>
 			</Avatar.Root>
 		</div>

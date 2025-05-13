@@ -5,7 +5,7 @@
 
 	let { data, children } = $props();
 
-	const { loggedIn } = getContext<UserContext>('user');
+	let { loggedIn } = getContext<UserContext>('user')();
 
 	incuriaStore.providers = data.providers;
 

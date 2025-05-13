@@ -6,7 +6,7 @@
 	import { Ort, type UserContext } from '$src/lib/types';
 	import { getContext } from 'svelte';
 
-	const { loggedIn } = getContext<UserContext>('user');
+	let { loggedIn } = getContext<UserContext>('user')();
 </script>
 
 <div class="h-full overflow-y-auto bg-muted">

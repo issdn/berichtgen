@@ -173,7 +173,7 @@ export enum FileTypes {
 	PNG = 'image/png'
 }
 
-export type UserContext = {
+export type UserContext = () => {
 	user: User | null;
 	loggedIn: boolean;
 	supabase: SupabaseClient;

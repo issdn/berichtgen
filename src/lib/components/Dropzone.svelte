@@ -12,7 +12,7 @@
 
 	let { userTokens }: { userTokens: number | null } = $props();
 
-	const { loggedIn } = getContext<UserContext>('user');
+	let { loggedIn } = getContext<UserContext>('user')();
 
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
