@@ -62,13 +62,16 @@ export const actions: Actions = {
 			return error(406, 'Fehler beim Speichern in die Datenbank.');
 		}
 	},
-	removeAccount: async ({ locals: { user } }) => {
+	removeAccount: async ({ locals: { user, supabase } }) => {
+		const { error: signOutError } = await supabase.auth.signOut();
+		if (signOutError) {
+			return fail(406);
+		}
 		const {
 			auth: { admin }
 		} = createClient(pub.PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
-		const { error: e } = await admin.deleteUser(user!.id!);
-		if (e) {
-			Sentry.captureException(e);
+		const { error: deleteUserError } = await admin.deleteUser(user!.id!);
+		if (deleteUserError) {
 			return fail(406);
 		}
 		throw redirect(303, '/');
