@@ -27,6 +27,8 @@ class IncuriaStore {
 	rewordJSON = $state(false);
 
 	tempEmailContainer: null | string = $state(null);
+
+	userTokens: number | null = $state(null);
 }
 
 export const incuriaStore = new IncuriaStore();

@@ -10,8 +10,6 @@
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
 
-	let { userTokens }: { userTokens: number | null } = $props();
-
 	let { loggedIn } = getContext<UserContext>('user')();
 
 	let input = $state<HTMLInputElement>();
@@ -62,10 +60,10 @@
 		if (loggedIn) {
 			const hasDiscount = incuriaStore.currentProvider?.token != null;
 			const { totalTokens } = countUserTokens(
-				hasDiscount ? userTokens! / 4 : userTokens!,
+				hasDiscount ? incuriaStore.userTokens! / 4 : incuriaStore.userTokens!,
 				filesArray
 			);
-			if (totalTokens > userTokens!) {
+			if (totalTokens > incuriaStore.userTokens!) {
 				if (!anyNonJsonFiles) {
 					if (incuriaStore.rewordJSON === true) {
 						incuriaStore.rewordJSON = false;
@@ -73,7 +71,7 @@
 					}
 					init(files);
 				} else {
-					error = `Du hast ${userTokens} Tokens. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
+					error = `Du hast ${incuriaStore.userTokens} Tokens. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
 					wizardScheduler.files = null;
 				}
 			} else {

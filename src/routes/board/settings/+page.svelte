@@ -2,7 +2,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import { superForm } from 'sveltekit-superforms/client';
-	import { Trash2, UserRoundX } from 'lucide-svelte';
+	import { HandCoins, Trash2, UserRoundX } from 'lucide-svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ProviderAddDialog from './ProviderAddDialog.svelte';
 	import { toast } from 'svelte-sonner';
@@ -11,7 +11,7 @@
 	import { incuriaStore } from '$lib/stores/board.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
-	import { enhance } from '$app/forms';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 
 	let { data } = $props();
 
@@ -79,15 +79,28 @@
 							<AlertDialog.Content>
 								<AlertDialog.Header>
 									<AlertDialog.Title>Bist du sicher?</AlertDialog.Title>
-									<AlertDialog.Description>
-										Dieser Vorgang ist unumkehrbar. Dies wird dein Konto und deine Daten von unseren
-										Servern entfernen.
-									</AlertDialog.Description>
+									<p class="text-red-500">
+										Dieser Vorgang ist unumkehrbar. Dies wird dein Konto und deine Daten entfernen.
+									</p>
+									{#if incuriaStore.userTokens !== null && incuriaStore.userTokens > 0}
+										<p
+											class="flex flex-row items-center gap-x-1 text-red-500 [&_span]:text-red-500"
+										>
+											Deine <Badge variant="default"
+												><HandCoins
+													size={16}
+													class="text-red-500"
+												/>{incuriaStore.userTokens}</Badge
+											> Tokens werden ebenfalls gelöscht.
+										</p>
+									{/if}
 								</AlertDialog.Header>
 								<AlertDialog.Footer>
 									<AlertDialog.Cancel>Abbrechen</AlertDialog.Cancel>
-									<AlertDialog.Action form="delete-account-form" type="submit"
-										>Löschen</AlertDialog.Action
+									<AlertDialog.Action
+										class={buttonVariants({ variant: 'destructive' })}
+										form="delete-account-form"
+										type="submit">Löschen</AlertDialog.Action
 									>
 								</AlertDialog.Footer>
 							</AlertDialog.Content>

@@ -11,10 +11,12 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { HandCoins } from 'lucide-svelte';
 	import type { RealtimeChannel } from '@supabase/supabase-js';
+	import { incuriaStore } from '$src/lib/stores/board.svelte';
 
 	let { data } = $props();
 	const { supabase, tokenCount, user } = data;
-	let userTokens = $state(tokenCount);
+
+	incuriaStore.userTokens = tokenCount;
 
 	onMount(() => {
 		if (page.url.searchParams.get('payment') === PaymentStatus.SUCCESS) {
@@ -32,7 +34,7 @@
 					'postgres_changes',
 					{ event: 'UPDATE', table: 'userTokenCount', schema: 'public' },
 					(p) => {
-						userTokens = p.new.tokens;
+						incuriaStore.userTokens = p.new.tokens;
 					}
 				)
 				.subscribe((_, e) => {
@@ -53,16 +55,16 @@
 
 <div class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:flex-row">
 	<div class="flex h-full w-full flex-col gap-y-2">
-		{#if userTokens !== null}
+		{#if incuriaStore.userTokens !== null}
 			<Badge class="w-fit gap-x-2 px-4 py-2 text-sm" variant="outline"
-				><HandCoins size={18} />{userTokens}</Badge
+				><HandCoins size={18} />{incuriaStore.userTokens}</Badge
 			>
 		{/if}
 		<Howto />
 	</div>
 	<div class="flex h-full w-full flex-col gap-y-4">
 		<div class="h-full w-full">
-			<Dropzone {userTokens} />
+			<Dropzone />
 		</div>
 		<div class="h-full w-full">
 			<Wizard />
