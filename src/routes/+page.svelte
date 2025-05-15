@@ -3,7 +3,7 @@
 	import DOCX from '$lib/svg/DOCX.svelte';
 	import PDF from '$lib/svg/PDF.svelte';
 	import PNG from '$lib/svg/PNG.svelte';
-	import { FileUp } from 'lucide-svelte';
+	import { ArrowRight, FileUp } from 'lucide-svelte';
 </script>
 
 <div
@@ -13,7 +13,9 @@
 		<div class="flex flex-col gap-y-12">
 			<div class="flex flex-col gap-y-2">
 				<h1 class="font-[karla] text-5xl font-bold">Zu faul für Berichte? <br /> Fühl ich.</h1>
-				<p class="text-2xl opacity-70">Dann lass sie von der KI erstellen!</p>
+				<a href="/board" class="flex flex-row items-center text-2xl opacity-70">
+					Dann lass sie von der KI erstellen!<ArrowRight size={36} class="animate-bob-right" />
+				</a>
 			</div>
 			<div class="flex flex-col text-base">
 				<p class="text-xl font-medium">
