@@ -4,7 +4,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Label } from '$lib/components/ui/label';
-	import { CircleHelp, HandCoins, KeyRound, LogOut, Mail, Settings } from 'lucide-svelte';
+	import { CircleHelp, HandCoins, KeyRound, LogOut, Mail, Settings, Lock } from 'lucide-svelte';
 	import { goto, invalidate } from '$app/navigation';
 	import { getContext } from 'svelte';
 	import { type UserContext } from '$src/lib/types';
@@ -129,6 +129,7 @@
 			<Button onclick={() => (otpDialogOpen = true)}><KeyRound />OTP Anmeldung</Button>
 		{/if}
 		<Button variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
+		<Button variant="outline" href="/datenschutz"><Lock />Datenschutzerklärung</Button>
 		<div class="flex flex-row items-center justify-center gap-x-1 text-muted-foreground">
 			<p>v1.0.0</p>
 		</div>
