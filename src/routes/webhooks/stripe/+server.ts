@@ -3,7 +3,7 @@ import { error, json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import * as Sentry from '@sentry/node';
 import { db } from '$src/lib/server/db/index.js';
-import { usersTokens } from '$src/lib/server/db/schema.js';
+import { cart, usersTokens } from '$src/lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 // init api client
@@ -56,6 +56,7 @@ export async function POST({ request }) {
 				.update(usersTokens)
 				.set({ tokens: current[0].tokens + quantity * 1_000_000 })
 				.where(eq(usersTokens.userId, userId));
+			await db.delete(cart).where(eq(cart.userId, userId));
 		} catch (err) {
 			Sentry.captureException(err);
 			return error(500, "Couldn't find user in database");

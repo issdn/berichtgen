@@ -2,20 +2,25 @@ import Stripe from 'stripe';
 import { SECRET_STRIPE_KEY } from '$env/static/private';
 import { error, json } from '@sveltejs/kit';
 import * as Sentry from '@sentry/node';
-import { CommonServerErrorTypes } from '$src/lib/types.js';
+import { CommonServerErrorTypes, KaufOperation } from '$src/lib/types.js';
+import { db } from '$src/lib/server/db/index.js';
+import { cart } from '$src/lib/server/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 // initialize Stripe
 const stripe = new Stripe(SECRET_STRIPE_KEY);
 
 // handle POST /create-payment-intent
-export async function POST({ locals: { user }, request }) {
+export async function POST({ locals: { user }, url }) {
 	const userId = user?.id;
 
 	if (!userId) {
 		return error(401, { type: CommonServerErrorTypes.UNAUTHORIZED, message: 'Nicht autorisiert' });
 	}
 
-	const quantity = parseInt(request.headers.get('quantity') || '1');
+	const quantity = parseInt(url.searchParams.get('quantity') || '1');
+
+	const operation = url.searchParams.get('operation') as KaufOperation | null;
 
 	if (isNaN(quantity) || quantity <= 0 || quantity > 90) {
 		return error(400, {
@@ -24,13 +29,28 @@ export async function POST({ locals: { user }, request }) {
 		});
 	}
 
+	if (operation === KaufOperation.UPDATE) {
+		try {
+			const { intent } = (
+				await db.select({ intent: cart.intentId }).from(cart).where(eq(cart.userId, userId))
+			)[0];
+			const paymentIntent = await stripe.paymentIntents.retrieve(intent);
+			paymentIntent.amount = quantity * 400;
+			return json({
+				clientSecret: paymentIntent.client_secret
+			});
+		} catch {
+			/* Just create a new intent */
+		}
+	}
+
 	try {
+		const { quantity: inCartQuantity } = (
+			await db.select({ quantity: cart.quantity }).from(cart).where(eq(cart.userId, userId))
+		)[0];
 		const paymentIntent = await stripe.paymentIntents.create({
-			amount: quantity * 400,
-			metadata: {
-				userId,
-				quantity
-			},
+			amount: inCartQuantity * 400,
+			metadata: { userId, quantity: inCartQuantity },
 			// note, for some EU-only payment methods it must be EUR
 			currency: 'eur',
 			// specify what payment methods are allowed

@@ -178,3 +178,8 @@ export type UserContext = () => {
 	loggedIn: boolean;
 	supabase: SupabaseClient;
 };
+
+export enum KaufOperation {
+	UPDATE = 'update',
+	CREATE = 'create'
+}

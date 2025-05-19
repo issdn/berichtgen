@@ -8,6 +8,20 @@
       "when": 1745959875085,
       "tag": "0000_eager_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1747670272099,
+      "tag": "0001_chemical_adam_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1747674434931,
+      "tag": "0002_purple_wildside",
+      "breakpoints": true
     }
   ]
 }

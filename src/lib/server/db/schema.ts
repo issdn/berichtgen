@@ -1,6 +1,7 @@
 import { authUsers } from 'drizzle-orm/supabase';
 
-import { integer, pgTable, text, primaryKey, numeric, uuid } from 'drizzle-orm/pg-core';
+import { integer, pgTable, text, primaryKey, numeric, uuid, timestamp } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm/sql';
 
 export const llmProviders = pgTable('llmProvider', {
 	id: uuid('id').primaryKey().notNull(),
@@ -8,7 +9,7 @@ export const llmProviders = pgTable('llmProvider', {
 	url: text('url').notNull(),
 	owner: text('owner').notNull(),
 	price: numeric('price', { precision: 5, scale: 2 }).notNull()
-});
+}).enableRLS();
 
 export const usersLLMProviders = pgTable(
 	'userLLMProvider',
@@ -22,7 +23,7 @@ export const usersLLMProviders = pgTable(
 		token: text('token')
 	},
 	(t) => [primaryKey({ columns: [t.userId, t.providerId] })]
-);
+).enableRLS();
 
 export const usersTokens = pgTable(
 	'userTokenCount',
@@ -33,4 +34,17 @@ export const usersTokens = pgTable(
 		tokens: integer('tokens').notNull().default(0)
 	},
 	(t) => [primaryKey({ columns: [t.userId] })]
-);
+).enableRLS();
+
+export const cart = pgTable(
+	'cart',
+	{
+		userId: uuid('userId')
+			.notNull()
+			.references(() => authUsers.id, { onDelete: 'cascade' }),
+		intentId: text().notNull(),
+		quantity: integer('quantity').notNull().default(1),
+		createdAt: timestamp({ mode: 'date' }).default(sql`now()`)
+	},
+	(t) => [primaryKey({ columns: [t.userId] })]
+).enableRLS();

@@ -18,10 +18,14 @@
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
 	import { PaymentStatus } from '$src/lib/types';
 
+	const { data } = $props();
+
+	const { supabase, user } = data;
+
 	const quantityBadges = [1, 2, 3, 5, 10];
 
 	let stripe: Stripe | null = $state(null);
-	let clientSecret = $state(null);
+	let clientSecret: string | null = $state(null);
 	let elements: StripeElements | null = $state(null);
 	let processing: boolean = $state(false);
 	let quantity: number = $state(1);
@@ -38,14 +42,18 @@
 	async function createPaymentIntent(quantity: number = 1) {
 		loadingIntent = true;
 		try {
-			const response = await fetch(`/board/kauf/create-payment-intent?quantity=${quantity}`, {
-				method: 'POST',
-				headers: {
-					'content-type': 'application/json'
+			const response = await fetch(
+				`/board/kauf/create-payment-intent?quantity=${quantity}&intent=${localStorage.getItem('intent')}`,
+				{
+					method: 'POST',
+					headers: {
+						'content-type': 'application/json'
+					}
 				}
-			});
+			);
 			loadingIntent = false;
 			clientSecret = (await response.json()).clientSecret;
+			localStorage.setItem('intent', clientSecret!);
 		} catch (e) {
 			Sentry.captureException(e);
 			const message = e instanceof Error ? e.message : 'Ursache unbekannt';
@@ -81,9 +89,22 @@
 		}
 	}
 
+	async function updateCart(quantity: number) {
+		if (!user) return;
+		try {
+			processing = true;
+			await supabase.from('cart').update({ quantity }).eq('user_id', user.id);
+		} catch (e) {
+			Sentry.captureException(e);
+			toast.error('Fehler beim Aktualisieren des Warenkorbs');
+		} finally {
+			processing = false;
+		}
+	}
+
 	const debouncedCreatePaymentIntent = debounce((quantity: number) => {
 		if (quantity > 0) {
-			createPaymentIntent(quantity);
+			updateCart(quantity);
 		}
 	}, 500);
 </script>
