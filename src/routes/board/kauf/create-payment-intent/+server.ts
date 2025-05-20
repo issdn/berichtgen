@@ -3,15 +3,11 @@ import { SECRET_STRIPE_KEY } from '$env/static/private';
 import { error, json } from '@sveltejs/kit';
 import * as Sentry from '@sentry/node';
 import { CommonServerErrorTypes, KaufOperation } from '$src/lib/types.js';
-import { db } from '$src/lib/server/db/index.js';
-import { cart } from '$src/lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
-
 // initialize Stripe
 const stripe = new Stripe(SECRET_STRIPE_KEY);
 
 // handle POST /create-payment-intent
-export async function POST({ locals: { user }, url }) {
+export async function POST({ locals: { user, supabase }, url }) {
 	const userId = user?.id;
 
 	if (!userId) {
@@ -31,30 +27,38 @@ export async function POST({ locals: { user }, url }) {
 
 	if (operation === KaufOperation.UPDATE) {
 		try {
-			const { intent } = (
-				await db.select({ intent: cart.intentId }).from(cart).where(eq(cart.userId, userId))
-			)[0];
-			const paymentIntent = await stripe.paymentIntents.retrieve(intent);
-			paymentIntent.amount = quantity * 400;
-			return json({
-				clientSecret: paymentIntent.client_secret
-			});
+			const { data: cartData } = await supabase
+				.from('cart')
+				.select('intentId')
+				.eq('userId', userId)
+				.single();
+
+			if (cartData) {
+				const paymentIntent = await stripe.paymentIntents.retrieve(cartData.intentId);
+				paymentIntent.amount = quantity * 400;
+				return json({
+					clientSecret: paymentIntent.client_secret
+				});
+			}
 		} catch {
 			/* Just create a new intent */
 		}
 	}
 
 	try {
-		const { quantity: inCartQuantity } = (
-			await db.select({ quantity: cart.quantity }).from(cart).where(eq(cart.userId, userId))
-		)[0];
+		const { data: cartData, error: cartError } = await supabase
+			.from('cart')
+			.select('quantity')
+			.eq('userId', userId)
+			.single();
+
+		if (cartError || !cartData) throw cartError;
+
+		const inCartQuantity = cartData.quantity;
 		const paymentIntent = await stripe.paymentIntents.create({
 			amount: inCartQuantity * 400,
 			metadata: { userId, quantity: inCartQuantity },
-			// note, for some EU-only payment methods it must be EUR
 			currency: 'eur',
-			// specify what payment methods are allowed
-			// can be card, sepa_debit, ideal, etc...
 			payment_method_types: ['card']
 		});
 

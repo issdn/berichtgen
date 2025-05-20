@@ -1,6 +1,3 @@
-import { db } from '$lib/server/db';
-import { usersLLMProviders } from '$lib/server/db/schema';
-import { and, eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 import { CommonServerErrorTypes, CompletionExceptionType, Ort } from '$lib/types';
@@ -93,13 +90,14 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 		return incuriaToken.error;
 	}
 
-	const query = await db
-		.select()
-		.from(usersLLMProviders)
-		.where(and(eq(usersLLMProviders.userId, user!.id!), eq(usersLLMProviders.providerId, provider)))
-		.limit(1);
+	const { data: userProviderData } = await supabase
+		.from('userLLMProvider')
+		.select('token')
+		.eq('userId', user!.id!)
+		.eq('providerId', provider)
+		.single();
 
-	const userToken = query[0]?.token;
+	const userToken = userProviderData?.token;
 
 	const token = userToken ?? incuriaToken.value;
 

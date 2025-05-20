@@ -2,15 +2,12 @@ import Stripe from 'stripe';
 import { error, json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import * as Sentry from '@sentry/node';
-import { db } from '$src/lib/server/db/index.js';
-import { cart, usersTokens } from '$src/lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
 
 // init api client
 const stripe = new Stripe(env.SECRET_STRIPE_KEY);
 
 // endpoint to handle incoming webhooks
-export async function POST({ request }) {
+export async function POST({ request, locals: { supabase } }) {
 	// extract body
 	const body = await request.text();
 
@@ -48,15 +45,21 @@ export async function POST({ request }) {
 			return error(400, 'User ID not found in metadata');
 		}
 		try {
-			const current = await db
-				.select({ tokens: usersTokens.tokens })
-				.from(usersTokens)
-				.where(eq(usersTokens.userId, userId));
-			await db
-				.update(usersTokens)
-				.set({ tokens: current[0].tokens + quantity * 1_000_000 })
-				.where(eq(usersTokens.userId, userId));
-			await db.delete(cart).where(eq(cart.userId, userId));
+			const { error: updateError } = await supabase.rpc('add_user_tokens', {
+				user_id: userId,
+				amount: quantity * 1_000_000
+			});
+
+			if (updateError) {
+				throw updateError;
+			}
+
+			// Delete cart
+			const { error: deleteError } = await supabase.from('cart').delete().eq('userId', userId);
+
+			if (deleteError) {
+				throw deleteError;
+			}
 		} catch (err) {
 			Sentry.captureException(err);
 			return error(500, "Couldn't find user in database");
