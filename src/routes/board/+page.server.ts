@@ -6,14 +6,14 @@ export const load = async ({ locals: { user, supabase } }) => {
 	}
 
 	const { data, error } = await supabase
-		.from('usersTokens')
+		.from('userTokenCount')
 		.select('tokens')
 		.eq('userId', user.id)
 		.single();
 
 	if (error || !data) {
 		const { data: insertData } = await supabase
-			.from('usersTokens')
+			.from('userTokenCount')
 			.insert({ userId: user.id, tokens: 0 })
 			.select('tokens')
 			.single();

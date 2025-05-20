@@ -39,7 +39,7 @@ export const load = async ({ locals: { user, supabase } }) => {
 	}
 
 	const providersHiddenTokens = providers.map((provider) => {
-		const token = provider.userLLMProvider[0].token;
+		const token = provider.userLLMProvider[0]?.token;
 		return {
 			...provider,
 			token: token != null ? hideToken(token) : null

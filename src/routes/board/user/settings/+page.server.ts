@@ -27,7 +27,7 @@ export const actions: Actions = {
 			.from('userLLMProvider')
 			.upsert(
 				{
-					token: form.data.token as string | undefined | null,
+					token: form.data.token,
 					providerId: form.data.id,
 					userId: user!.id!
 				},
@@ -59,6 +59,8 @@ export const actions: Actions = {
 			Sentry.captureException(deleteError);
 			return error(406, 'Fehler beim Speichern in die Datenbank.');
 		}
+
+		return message(form, `${form.data.name ?? ''} Token gelöscht!`);
 	},
 	removeAccount: async ({ locals: { user, supabase } }) => {
 		const { error: signOutError } = await supabase.auth.signOut();

@@ -8,7 +8,7 @@ export const providerSchema = z.object({
 		.nullable(),
 	id: z.string(),
 	name: z.string(),
-	price: z.string(),
+	price: z.number(),
 	owner: z.string()
 });
 
@@ -19,7 +19,7 @@ export const validProviderSchema = z.object({
 		.nonempty({ message: 'Token kann nicht leer sein.' }),
 	id: z.string(),
 	name: z.string(),
-	price: z.string(),
+	price: z.number(),
 	owner: z.string()
 });
 

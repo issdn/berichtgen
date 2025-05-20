@@ -105,11 +105,11 @@
 	</Popover.Trigger>
 	<Popover.Content class="flex w-56 flex-col gap-y-2">
 		{#if loggedIn}
-			<Button variant="outline" onclick={() => goto('/board/kauf')}
+			<Button variant="outline" onclick={() => goto('/board/user/kauf')}
 				><HandCoins />Tokens kaufen</Button
 			>
 			<div class="mb-1 flex flex-row items-center gap-x-4 border-b border-dashed pb-3">
-				<Button onclick={() => goto('/board/settings')} variant="outline" class="w-full">
+				<Button onclick={() => goto('/board/user/settings')} variant="outline" class="w-full">
 					<Settings />
 					Einstellungen
 				</Button>

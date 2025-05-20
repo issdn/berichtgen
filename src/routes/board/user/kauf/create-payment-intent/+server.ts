@@ -66,7 +66,7 @@ export async function POST({ locals: { user, supabase }, url }) {
 			clientSecret: paymentIntent.client_secret
 		});
 	} catch (err) {
-		let errorMessage = 'Unbekannter Fehler beim Kauf';
+		let errorMessage = 'Unbekannter Fehler bei Erstellung eines Zahlungsvorgangs';
 		if (err instanceof Stripe.errors.StripeError) {
 			Sentry.captureException(err);
 			errorMessage = err.message;

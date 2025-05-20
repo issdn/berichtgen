@@ -1,10 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 
-export const GET = async (event) => {
-	const {
-		url,
-		locals: { supabase }
-	} = event;
+export const load = async ({ locals: { supabase }, url }) => {
 	const code = url.searchParams.get('code') as string;
 	const next = url.searchParams.get('next') ?? '/';
 	if (code) {
