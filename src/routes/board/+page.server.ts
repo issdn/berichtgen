@@ -1,27 +1,29 @@
-import { db } from '$src/lib/server/db/index.js';
-import { usersTokens } from '$src/lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
-
-export const load = async ({ locals: { user } }) => {
+export const load = async ({ locals: { user, supabase } }) => {
 	if (!user) {
 		return {
 			tokenCount: null
 		};
 	}
 
-	let tokenCount = await db
-		.select({ count: usersTokens.tokens })
-		.from(usersTokens)
-		.where(eq(usersTokens.userId, user.id));
+	const { data, error } = await supabase
+		.from('usersTokens')
+		.select('tokens')
+		.eq('userId', user.id)
+		.single();
 
-	if (tokenCount.length === 0) {
-		tokenCount = await db
-			.insert(usersTokens)
-			.values({ userId: user!.id, tokens: 0 })
-			.returning({ count: usersTokens.tokens });
+	if (error || !data) {
+		const { data: insertData } = await supabase
+			.from('usersTokens')
+			.insert({ userId: user.id, tokens: 0 })
+			.select('tokens')
+			.single();
+
+		return {
+			tokenCount: insertData ? insertData.tokens : 0
+		};
 	}
 
 	return {
-		tokenCount: tokenCount[0].count
+		tokenCount: data.tokens
 	};
 };

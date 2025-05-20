@@ -10,6 +10,7 @@ import * as Sentry from '@sentry/node';
 import { env } from '$env/dynamic/private';
 import { env as pub } from '$env/dynamic/public';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '$src/lib/database.types';
 
 export const load: PageServerLoad = async () => {
 	const form = await superValidate(zod(providerSchema));
@@ -69,7 +70,7 @@ export const actions: Actions = {
 		}
 		const {
 			auth: { admin }
-		} = createClient(pub.PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+		} = createClient<Database>(pub.PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 		const { error: deleteUserError } = await admin.deleteUser(user!.id!);
 		if (deleteUserError) {
 			return fail(406);

@@ -1,7 +1,3 @@
-import { db } from '$lib/server/db';
-import { llmProviders, usersLLMProviders } from '$lib/server/db/schema';
-import { eq, and } from 'drizzle-orm';
-
 function hideToken(
 	str: string,
 	visibleStart: number = 4,
@@ -18,32 +14,36 @@ function hideToken(
 	return str.slice(0, visibleStart) + maskedPart + str.slice(str.length - visibleEnd);
 }
 
-export const load = async ({ locals: { user } }) => {
+export const load = async ({ locals: { user, supabase } }) => {
 	if (!user) {
 		return {
 			providers: []
 		};
 	}
 
-	const providers = await db
-		.select({
-			id: llmProviders.id,
-			name: llmProviders.name,
-			price: llmProviders.price,
-			token: usersLLMProviders.token,
-			owner: llmProviders.owner
-		})
-		.from(llmProviders)
-		.leftJoin(
-			usersLLMProviders,
-			and(eq(usersLLMProviders.userId, user.id), eq(usersLLMProviders.providerId, llmProviders.id))
-		);
+	const { data: providers, error } = await supabase
+		.from('llmProvider')
+		.select(
+			`
+            id,
+            name,
+            price,
+            owner,
+            userLLMProvider ( token )
+        `
+		)
+		.eq('userLLMProvider.userId', user.id);
+
+	if (error || providers.length === 0) {
+		return { providers: [] };
+	}
 
 	const providersHiddenTokens = providers.map((provider) => {
-		if (provider.token != null) {
-			provider.token = hideToken(provider.token);
-		}
-		return provider;
+		const token = provider.userLLMProvider[0].token;
+		return {
+			...provider,
+			token: token != null ? hideToken(token) : null
+		};
 	});
 
 	return {
