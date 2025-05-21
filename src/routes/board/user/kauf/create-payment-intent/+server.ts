@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { SECRET_STRIPE_KEY } from '$env/static/private';
 import { error, json } from '@sveltejs/kit';
 import * as Sentry from '@sentry/node';
-import { CommonServerErrorTypes, KaufOperation } from '$src/lib/types.js';
+import { CommonServerErrorTypes } from '$src/lib/types.js';
 // initialize Stripe
 const stripe = new Stripe(SECRET_STRIPE_KEY);
 
@@ -16,8 +16,6 @@ export async function POST({ locals: { user, supabase }, url }) {
 
 	const quantity = parseInt(url.searchParams.get('quantity') || '1');
 
-	const operation = url.searchParams.get('operation') as KaufOperation | null;
-
 	if (isNaN(quantity) || quantity <= 0 || quantity > 90) {
 		return error(400, {
 			type: CommonServerErrorTypes.VALIDATION_ERROR,
@@ -25,42 +23,37 @@ export async function POST({ locals: { user, supabase }, url }) {
 		});
 	}
 
-	if (operation === KaufOperation.UPDATE) {
-		try {
-			const { data: cartData } = await supabase
-				.from('cart')
-				.select('intentId')
-				.eq('userId', userId)
-				.single();
-
-			if (cartData) {
-				const paymentIntent = await stripe.paymentIntents.retrieve(cartData.intentId);
-				paymentIntent.amount = quantity * 400;
-				return json({
-					clientSecret: paymentIntent.client_secret
-				});
-			}
-		} catch {
-			/* Just create a new intent */
-		}
-	}
-
 	try {
-		const { data: cartData, error: cartError } = await supabase
+		const { data: cartData } = await supabase
 			.from('cart')
-			.select('quantity')
+			.select('intentId')
 			.eq('userId', userId)
 			.single();
 
-		if (cartError || !cartData) throw cartError;
+		if (cartData) {
+			const paymentIntent = await stripe.paymentIntents.retrieve(cartData.intentId);
+			paymentIntent.amount = quantity * 400;
+			return json({
+				clientSecret: paymentIntent.client_secret
+			});
+		}
+	} catch {
+		/* Just create a new intent */
+	}
 
-		const inCartQuantity = cartData.quantity;
+	try {
 		const paymentIntent = await stripe.paymentIntents.create({
-			amount: inCartQuantity * 400,
-			metadata: { userId, quantity: inCartQuantity },
+			amount: quantity * 400,
+			metadata: { userId, quantity: quantity },
 			currency: 'eur',
 			payment_method_types: ['card']
 		});
+
+		const { error: cartError } = await supabase
+			.from('cart')
+			.insert({ intentId: paymentIntent.id, userId, quantity });
+
+		if (cartError) throw cartError;
 
 		return json({
 			clientSecret: paymentIntent.client_secret

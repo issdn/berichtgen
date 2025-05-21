@@ -35,19 +35,27 @@ export async function POST({ request, locals: { supabase } }) {
 	if (event.type == 'charge.succeeded') {
 		// get data object
 		const userId = event.data.object.metadata.userId;
-		const quantity = parseInt(event.data.object.metadata.quantity);
-		if (!quantity) {
-			Sentry.captureException(new Error('Quantity not found in metadata'));
-			return error(400, 'Quantity not found in metadata');
-		}
 		if (!userId) {
 			Sentry.captureException(new Error('User ID not found in metadata'));
 			return error(400, 'User ID not found in metadata');
 		}
+
+		const { data, error: cartError } = await supabase
+			.from('cart')
+			.select('quantity')
+			.eq('userId', userId)
+			.order('createdAt', { ascending: false })
+			.limit(1);
+
+		if (cartError || !data[0]) {
+			Sentry.captureException(error);
+			return error(400, 'No cart found for user');
+		}
+
 		try {
 			const { error: updateError } = await supabase.rpc('add_user_tokens', {
 				user_id: userId,
-				amount: quantity * 1_000_000
+				amount: data[0].quantity * 1_000_000
 			});
 
 			if (updateError) {

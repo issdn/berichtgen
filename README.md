@@ -1,38 +1,52 @@
-# sv
+# Supabase
+```sql
+create or replace function deduct_user_tokens(user_id uuid, amount int)
+returns boolean
+language plpgsql
+as $$
+declare
+  current_tokens int;
+begin
+  -- Lock the user's row to prevent concurrent changes
+  select tokens into current_tokens
+  from "userTokenCount"
+  where "userId" = user_id
+  for update;
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+  -- Check if enough tokens are available
+  if current_tokens < amount then
+    return false;
+  end if;
 
-## Creating a project
+  -- Deduct the tokens
+  update "userTokenCount"
+  set "tokens" = current_tokens - amount
+  where "userId" = user_id;
 
-If you're seeing this, you've probably already done this step. Congrats!
+  return true;
+end;
+$$;
 
-```bash
-# create a new project in the current directory
-npx sv create
+-- Allow updates by the owner of the row
+create policy "Allow user to update their own tokens"
+on "userTokenCount"
+for update using ("userId" = auth.uid());
 
-# create a new project in my-app
-npx sv create my-app
+create policy "Allow user to read their own token count"
+on "userTokenCount"
+for select using ("userId" = auth.uid());
+
+-- Enable RLS
+alter table "userTokenCount" enable row level security;
 ```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+### types
+```
+supabase gen types typescript --project-id odbyqfknheshvujhabpp > database.types.ts
 ```
 
-## Building
+# stripe
 
-To create a production version of your app:
-
-```bash
-npm run build
 ```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+stripe listen --forward-to localhost:5173/webhooks/stripe
+```

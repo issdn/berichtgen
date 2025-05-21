@@ -101,11 +101,11 @@ export type Database = {
     }
     Functions: {
       add_user_tokens: {
-        Args: { user_id: number; amount: number }
+        Args: { amount: number; userid: string }
         Returns: undefined
       }
       deduct_user_tokens: {
-        Args: { user_id: string; amount: number }
+        Args: { amount: number; userid: string }
         Returns: boolean
       }
     }

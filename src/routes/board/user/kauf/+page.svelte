@@ -43,7 +43,7 @@
 		loadingIntent = true;
 		try {
 			const response = await fetch(
-				`/board/kauf/create-payment-intent?quantity=${quantity}&intent=${localStorage.getItem('intent')}`,
+				`/board/user/kauf/create-payment-intent?quantity=${quantity}&intent=${localStorage.getItem('intent')}`,
 				{
 					method: 'POST',
 					headers: {

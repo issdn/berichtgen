@@ -40,12 +40,12 @@ async function deductUserTokens(
 		amount = Math.ceil(amount / 4);
 	}
 	const { data, error } = await supabase.rpc('deduct_user_tokens', {
-		user_id: userId,
+		userId,
 		amount
 	});
 	if (error) {
 		Sentry.captureException(error, {
-			extra: { userId, amount }
+			extra: { user_id: userId, amount }
 		});
 	}
 	if (!data) {
