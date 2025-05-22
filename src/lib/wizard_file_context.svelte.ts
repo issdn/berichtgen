@@ -1,6 +1,6 @@
-import type { DateRangeSchema } from '$lib/components/time_spread_schematic';
 import { FileTypes, type Entry, type ResultEntry } from '$lib/types';
 import type { IncuriaError } from '$src/lib/errors';
+import type { DateRangeSchema } from '$src/lib/schemas';
 import { incuriaStore } from '$src/lib/stores/board.svelte';
 
 export class WizardFileContext {

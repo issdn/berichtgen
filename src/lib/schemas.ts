@@ -1,5 +1,6 @@
 import { Ort, QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/types';
 import * as z from 'zod';
+import type { DateRange } from 'bits-ui';
 
 export const completionSchema = z.object({
 	lessons: z
@@ -61,3 +62,54 @@ export type ProviderSchema = typeof providerSchema;
 export type ValidProviderSchema = typeof validProviderSchema;
 
 export type ProviderSchemaType = z.infer<ProviderSchema>;
+
+// ------------------------------------------------
+
+export const dateRangeSchema = z.object({
+	ranges: z
+		.object({
+			id: z.number().int().min(0),
+			daterange: z.custom<IncuriaDateRange>(
+				({ start, end }) => start !== undefined && end !== undefined,
+				{ message: 'Mindestens eine Woche muss gewählt werden.' }
+			),
+			hours: z
+				.number({ message: 'Stunden müssen Zahlen sein.' })
+				.int({ message: 'Stunden müssen ganze Zahlen sein.' })
+				.optional()
+				.nullable()
+		})
+		.array(),
+	location: z.enum([Ort.SCHULE, Ort.BETRIEB, Ort.UNTERWEISUNG, Ort['SCHULE/BETRIEB']])
+});
+
+export type DateRangeSchema = z.infer<typeof dateRangeSchema>;
+
+type RemoveUndefined<T> = {
+	[K in keyof T]: Exclude<T[K], undefined>;
+};
+
+export type IncuriaDateRange = Pick<RemoveUndefined<DateRange>, 'end'> & Pick<DateRange, 'start'>;
+
+export type ValidIncuriaDateRanges = {
+	ranges: {
+		daterange: IncuriaDateRange;
+		hours?: number | null;
+	}[];
+	location: Ort;
+};
+
+// ------------------------------------------------
+
+export const completionApiSchema = z.object({
+	text: z.string().nonempty(),
+	provider: z.string().nonempty(),
+	owner: z.string().nonempty(),
+	ort: z.enum([Ort.SCHULE, Ort.BETRIEB])
+});
+
+// ------------------------------------------------
+
+export const emailSchema = z.object({
+	mail: z.string().email('Bitte eine gültige Email-Adresse eingeben')
+});

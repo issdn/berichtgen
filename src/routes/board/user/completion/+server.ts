@@ -2,7 +2,6 @@ import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 import { CommonServerErrorTypes, CompletionExceptionType, Ort } from '$lib/types';
 import OpenAI from 'openai';
-import * as z from 'zod';
 import * as genai from '@google/genai';
 import { err, ok, ResultAsync } from 'neverthrow';
 import { CompletionException } from '$src/lib/errors';
@@ -11,6 +10,7 @@ import * as Sentry from '@sentry/node';
 import { error as errorJson } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getContextPrompt } from '$src/lib/completion/prompt';
+import { completionApiSchema } from '$src/lib/schemas';
 
 function getTokenByOwner(owner: string) {
 	switch (owner) {
@@ -66,14 +66,7 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 
 	const body = await request.json();
 
-	const schema = z.object({
-		text: z.string().nonempty(),
-		provider: z.string().nonempty(),
-		owner: z.string().nonempty(),
-		ort: z.enum([Ort.SCHULE, Ort.BETRIEB])
-	});
-
-	const parsed = schema.safeParse(body);
+	const parsed = completionApiSchema.safeParse(body);
 
 	if (!parsed.success) {
 		return errorJson(400, {

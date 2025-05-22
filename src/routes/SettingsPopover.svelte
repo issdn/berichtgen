@@ -16,10 +16,10 @@
 	import { incuriaStore } from '$src/lib/stores/board.svelte';
 	import { toast } from 'svelte-sonner';
 	import { defaults, superForm } from 'sveltekit-superforms/client';
-	import * as z from 'zod';
 	import { zod } from 'sveltekit-superforms/adapters';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { page } from '$app/state';
+	import { emailSchema } from '$src/lib/schemas';
 
 	let { user, loggedIn, supabase } = $derived(getContext<UserContext>('user')());
 
@@ -52,10 +52,6 @@
 					});
 			}
 		}
-	});
-
-	const emailSchema = z.object({
-		mail: z.string().email('Bitte eine gültige Email-Adresse eingeben')
 	});
 
 	const form = superForm(defaults({ mail: incuriaStore.tempEmailContainer }, zod(emailSchema)), {
