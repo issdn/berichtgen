@@ -51,7 +51,7 @@
 				disabled={$submitting || ($errors.token?.length ?? 0) > 0}
 				form="provider-form"
 				type="submit"
-				formaction="/board/settings?/add"
+				formaction="/board/user/settings?/add"
 				onclick={() => {
 					$formId = provider.id;
 					onSubmit();

@@ -64,7 +64,7 @@
 				<div class="flex flex-col gap-y-2">
 					<form
 						id="delete-account-form"
-						action="/board/settings?/removeAccount"
+						action="/board/user/settings?/removeAccount"
 						class="flex w-full flex-col gap-y-2"
 						method="POST"
 					>
@@ -144,7 +144,7 @@
 											<Button
 												disabled={$submitting}
 												type="submit"
-												formaction="/board/settings?/delete"
+												formaction="/board/user/settings?/delete"
 												onclick={() => {
 													$formId = $formData.id = provider.id;
 													$formData.name = provider.name;

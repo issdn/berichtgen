@@ -8,7 +8,7 @@ export function getCompletions(text: string, ort: Ort) {
 	const messages = splitByMaxLength(text, 15000);
 
 	const completionsPromises = messages.map(async (t) => {
-		const result = await fetch('/board/completion', {
+		const result = await fetch('/board/user/completion', {
 			body: JSON.stringify({
 				text: t,
 				provider: incuriaStore.currentProvider.id,

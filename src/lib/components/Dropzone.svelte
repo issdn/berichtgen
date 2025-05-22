@@ -140,7 +140,7 @@
 		<div class="flex flex-col gap-y-2 pt-4">
 			<p>{error}</p>
 			<div class="flex w-full flex-row justify-end">
-				<Button onclick={() => goto('/board/kauf')}>Tokens kaufen</Button>
+				<Button onclick={() => goto('/board/user/kauf')}>Tokens kaufen</Button>
 			</div>
 		</div>
 	</Dialog.Content>

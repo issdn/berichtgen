@@ -76,7 +76,7 @@
 					{/if}
 				</p>
 				{#if loggedIn}
-					<Button variant="link" href="/board/settings"><Settings />Zu Einstellungen</Button>
+					<Button variant="link" href="/board/user/settings"><Settings />Zu Einstellungen</Button>
 				{/if}
 			</Card.Content>
 		</Card.Root>
