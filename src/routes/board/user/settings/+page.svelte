@@ -7,11 +7,11 @@
 	import ProviderAddDialog from './ProviderAddDialog.svelte';
 	import { toast } from 'svelte-sonner';
 	import { zod, zodClient } from 'sveltekit-superforms/adapters';
-	import { providerDeleteSchema, validProviderSchema } from './schema';
 	import { incuriaStore } from '$lib/stores/board.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { providerDeleteSchema, validProviderSchema } from '$src/lib/schemas';
 
 	let { data } = $props();
 

@@ -4,9 +4,9 @@
 	import { buttonVariants } from '$lib/components/ui/button/button.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import type { ProviderSchemaType } from './schema';
 	import type { SuperForm } from 'sveltekit-superforms/client';
 	import * as Form from '$lib/components/ui/form/index.js';
+	import type { ProviderSchemaType } from '$src/lib/schemas';
 
 	let {
 		provider,

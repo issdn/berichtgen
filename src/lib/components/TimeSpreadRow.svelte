@@ -6,9 +6,9 @@
 	import { cn } from '$lib/utils';
 	import { buttonVariants } from './ui/button';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import type { DateRangeSchema } from './time_spread_schematic';
 	import type { SuperForm, SuperFormData } from 'sveltekit-superforms/client';
 	import * as Form from '$lib/components/ui/form/index.js';
+	import type { DateRangeSchema } from '$src/lib/schemas';
 
 	let {
 		form,

@@ -1,5 +1,5 @@
-import type { ValidIncuriaDateRanges } from '$lib/components/time_spread_schematic';
 import type { Entry, Ort, ResultEntry } from '$lib/types';
+import type { ValidIncuriaDateRanges } from '$src/lib/schemas';
 import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date';
 
 const LOCALE = 'de-DE';

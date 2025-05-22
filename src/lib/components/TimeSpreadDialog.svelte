@@ -5,7 +5,6 @@
 	import { Calendar, Trash2 } from 'lucide-svelte';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
-	import { dateRangeSchema, type DateRangeSchema } from './time_spread_schematic';
 	import { buttonVariants } from './ui/button';
 	import { slide } from 'svelte/transition';
 	import { zod } from 'sveltekit-superforms/adapters';
@@ -14,6 +13,7 @@
 	import { Ort } from '$src/lib/types';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import LocationCombobox from '$lib/components/LocationCombobox.svelte';
+	import { dateRangeSchema, type DateRangeSchema } from '$src/lib/schemas';
 
 	let {
 		onClose,

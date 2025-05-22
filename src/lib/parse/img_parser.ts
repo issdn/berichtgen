@@ -15,7 +15,8 @@ export class IMGParser extends Parser {
 	}
 
 	async parse() {
-		const result = await this.scheduler!.addJob('recognize', new Blob([this.data!]));
+		const uint8 = new Uint8Array(this.data!);
+		const result = await this.scheduler!.addJob('recognize', new Blob([uint8]));
 		const {
 			data: { text }
 		} = result;

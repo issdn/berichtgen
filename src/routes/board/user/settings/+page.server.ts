@@ -1,6 +1,5 @@
 import { fail, message, superValidate } from 'sveltekit-superforms';
 import type { PageServerLoad } from './$types';
-import { providerDeleteSchema, providerSchema, validProviderSchema } from './schema';
 import { zod } from 'sveltekit-superforms/adapters';
 import { error, redirect, type Actions } from '@sveltejs/kit';
 import * as Sentry from '@sentry/node';
@@ -8,6 +7,7 @@ import { env } from '$env/dynamic/private';
 import { env as pub } from '$env/dynamic/public';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '$src/lib/database.types';
+import { providerDeleteSchema, providerSchema, validProviderSchema } from '$src/lib/schemas';
 
 export const load: PageServerLoad = async () => {
 	const form = await superValidate(zod(providerSchema));
