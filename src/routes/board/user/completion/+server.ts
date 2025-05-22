@@ -40,13 +40,16 @@ async function deductUserTokens(
 		amount = Math.ceil(amount / 4);
 	}
 	const { data, error } = await supabase.rpc('deduct_user_tokens', {
-		userId,
+		user_id: userId,
 		amount
 	});
 	if (error) {
 		Sentry.captureException(error, {
 			extra: { user_id: userId, amount }
 		});
+		return err(
+			new CompletionException('Interner Datenbank Fehler.', CompletionExceptionType.INTERNAL)
+		);
 	}
 	if (!data) {
 		return err(
