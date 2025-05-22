@@ -1,4 +1,4 @@
-import type { ProviderSchemaType } from '$routes/board/settings/schema';
+import type { ProviderSchemaType } from '$src/lib/schemas';
 
 class IncuriaStore {
 	_providers: ProviderSchemaType[] | null = $state(null);

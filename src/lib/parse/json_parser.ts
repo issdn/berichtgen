@@ -1,5 +1,5 @@
 import { IncuriaError } from '$src/lib/errors';
-import { fullResultSchema } from '$src/lib/parse/schemas';
+import { fullResultSchema } from '$src/lib/schemas';
 import { TXTParser } from '$src/lib/parse/txt_parser';
 import { IncuriaErrorType, type ResultEntry } from '$src/lib/types';
 import type { WizardFileContext } from '$src/lib/wizard_file_context.svelte';

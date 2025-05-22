@@ -1,7 +1,7 @@
 import { incuriaStore } from '$lib/stores/board.svelte';
 import { IncuriaErrorType, Ort, type Entry } from '$lib/types';
 import { IncuriaError } from '$src/lib/errors';
-import { completionSchema } from '$src/lib/parse/schemas';
+import { completionSchema } from '$src/lib/schemas';
 import { ResultAsync } from 'neverthrow';
 
 export function getCompletions(text: string, ort: Ort) {
