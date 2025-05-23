@@ -17,6 +17,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
 	import { PaymentStatus } from '$src/lib/types';
+	import Checkbox from '$src/lib/components/ui/checkbox/checkbox.svelte';
 
 	const { data } = $props();
 
@@ -31,6 +32,7 @@
 	let quantity: number = $state(1);
 	let loadingIntent: boolean = $state(false);
 	let error: string | null = $state(null);
+	let termsAccepted: boolean = $state(false);
 
 	onMount(async () => {
 		stripe = await loadStripe(PUBLIC_STRIPE_KEY, { locale: 'de' });
@@ -141,23 +143,34 @@
 					/>
 				</div>
 			</div>
-			<Card.Root class="min-h-[460px]">
+			<Card.Root class="flex min-h-[460px] flex-col">
 				<Card.Header>
 					<Card.Title>{quantity} Mio. Tokens - {quantity * 4.0}€</Card.Title>
 					<Card.Description>Inkl. Steuer</Card.Description>
 				</Card.Header>
 				<Separator class="mt-4" />
-				<Card.Content>
-					<ul>
-						<li><b>Das sind:</b></li>
-						<li>700.000 Wörter</li>
-						<li>70.000 Absätze</li>
-						<li>1.400 Seiten</li>
-					</ul>
+				<Card.Content class="box-border h-full">
+					<div class="flex h-full flex-col justify-between gap-y-2">
+						<ul>
+							<li><b>Oder ca.:</b></li>
+							<li>{quantity * 700_000} Wörter</li>
+							<li>{quantity * 70_000} Absätze</li>
+							<li>{quantity * 1_400} Seiten</li>
+							<li class="mt-2 flex flex-row items-center gap-x-2 text-muted-foreground">
+								<CircleAlert size={18} />
+								<p>Tokens werden bei der Eingabe sowie der Ausgabe abgezogen!</p>
+							</li>
+						</ul>
+						<div class="flex flex-row items-center gap-x-4">
+							<Checkbox id="terms-checkbox" bind:checked={termsAccepted} />
+							<Label class="cursor-pointer" for="terms-checkbox">
+								Ich stimme ausdrücklich zu, dass die Ausführung des Vertrags vor Ablauf der
+								Widerrufsfrist beginnt und ich mit vollständiger Bereitstellung der Tokens mein
+								Widerrufsrecht verliere.
+							</Label>
+						</div>
+					</div>
 				</Card.Content>
-				<Card.Footer>
-					<p>Terms</p>
-				</Card.Footer>
 			</Card.Root>
 		</div>
 		<div class="flex w-full max-w-[600px] flex-col justify-center">
@@ -169,7 +182,7 @@
 						<Button
 							type="submit"
 							variant="default"
-							disabled={processing || loadingIntent}
+							disabled={processing || loadingIntent || !termsAccepted}
 							class="mt-4 w-full"
 						>
 							{#if processing}
