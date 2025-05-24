@@ -1,8 +1,8 @@
 import { combineJSONs } from '$lib/parse/combine';
-import { Ort, Qualifikationen } from '$src/lib/types';
+import { Ort, QualifikationenSchule } from '$src/lib/types';
 import { test, expect } from 'vitest';
 
-const qualifikationen = [Qualifikationen[0]];
+const qualifikationen = [QualifikationenSchule[0]];
 
 test('combine json entries by day ', () => {
 	const testEntries = [

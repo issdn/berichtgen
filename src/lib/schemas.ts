@@ -1,6 +1,7 @@
 import { Ort, QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/types';
 import * as z from 'zod';
 import type { DateRange } from 'bits-ui';
+import { CalendarDate, ZonedDateTime } from '@internationalized/date';
 
 export const completionSchema = z.object({
 	lessons: z
@@ -113,3 +114,23 @@ export const completionApiSchema = z.object({
 export const emailSchema = z.object({
 	mail: z.string().email('Bitte eine gültige Email-Adresse eingeben')
 });
+
+// ------------------------------------------------
+
+export const csvConfigSchema = z
+	.object({
+		ort: z.nativeEnum(Ort, {
+			message: 'Ort muss ein gültiger Ort sein.'
+		}),
+		file: z.string().nonempty({ message: 'Dateiname muss angegeben werden.' }),
+		ranges: z
+			.object({
+				daterange: z.object({
+					start: z.instanceof(CalendarDate, { message: 'Startdatum muss angegeben werden.' }),
+					end: z.instanceof(CalendarDate, { message: 'Enddatum muss angegeben werden.' })
+				}),
+				hours: z.number().int().min(0).optional()
+			})
+			.array()
+	})
+	.array();

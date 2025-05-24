@@ -183,3 +183,11 @@ export enum KaufOperation {
 	UPDATE = 'update',
 	CREATE = 'create'
 }
+
+export type CSVConfigFile = {
+	ort: Ort;
+	file: string;
+	ranges: IncuriaWeightedDateRange[];
+};
+
+export type CSVConfig = CSVConfigFile[];

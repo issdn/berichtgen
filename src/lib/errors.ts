@@ -7,6 +7,7 @@ import {
 import * as genai from '@google/genai';
 import { error } from '@sveltejs/kit';
 import OpenAI from 'openai';
+import { ZodError } from 'zod';
 
 export class CompletionException extends Error {
 	constructor(
@@ -56,7 +57,9 @@ export class IncuriaError extends Error {
 		message: string,
 		type: IncuriaErrorType = IncuriaErrorType.DEVELOPERS_FAULT
 	) {
-		if (e instanceof Error) {
+		if (e instanceof ZodError) {
+			return new IncuriaError(type, `Validierungsfehler: ${e.errors[0].message}`);
+		} else if (e instanceof Error) {
 			return new IncuriaError(type, e.message);
 		}
 		return new IncuriaError(type, message);
