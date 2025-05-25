@@ -9,6 +9,7 @@
 	import { incuriaStore } from '$src/lib/stores/board.svelte';
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
+	import { CONFIG_FILENAME } from '$src/lib/constants';
 
 	let { loggedIn } = getContext<UserContext>('user')();
 
@@ -94,8 +95,17 @@
 
 	function init(files: FileList) {
 		error = null;
-		wizardScheduler.files = files;
+		const { files: otherFiles, configFile } = extractConfigFile(files);
+		wizardScheduler.files = otherFiles;
+		wizardScheduler.configFile = configFile;
 		wizardScheduler.processInit = wizardScheduler.init();
+	}
+
+	function extractConfigFile(files: FileList): { files: File[]; configFile: File | null } {
+		const filesArray = Array.from(files);
+		const configFile = filesArray.find((file) => file.name === CONFIG_FILENAME) || null;
+		const otherFiles = filesArray.filter((file) => file.name !== CONFIG_FILENAME);
+		return { files: otherFiles, configFile };
 	}
 </script>
 

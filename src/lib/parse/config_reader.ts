@@ -6,11 +6,16 @@ import { ResultAsync } from 'neverthrow';
 
 export function readCsvConfig(file: File) {
 	return ResultAsync.fromPromise(file.arrayBuffer(), (e) =>
-		IncuriaError.fromUnknown(e, 'Fehler beim Lesen der CSV-Konfiguration')
-	).map((buffer) => {
-		const text = new TextDecoder().decode(buffer);
-		return readCsvConfigFromText(text);
-	});
+		IncuriaError.fromUnknown(e, 'Config Datei ist nicht lesbar')
+	).andThen(
+		ResultAsync.fromThrowable(
+			async (buffer) => {
+				const text = new TextDecoder().decode(buffer);
+				return readCsvConfigFromText(text);
+			},
+			(e) => IncuriaError.fromUnknown(e, 'Fehler beim Lesen der CSV-Konfiguration')
+		)
+	);
 }
 
 // ort, file, start;end;hours

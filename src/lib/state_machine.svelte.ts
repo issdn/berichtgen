@@ -62,7 +62,7 @@ function parseFile(
 					'Fehler beim Initialisieren des JSON Parsers',
 					IncuriaErrorType.PARSE_FAILED
 				)
-			).andThen(textParser.parse);
+			).andThen(() => textParser.parse());
 		}
 		case FileTypes.JSON: {
 			const jsonParser = new JSONParser(context, scheduler);
@@ -158,6 +158,10 @@ export function createStateMachineForContext(
 			_enter() {
 				if (context.cancelled) {
 					this.cancel();
+					return;
+				}
+				if (context.dateRanges !== null) {
+					this.run();
 					return;
 				}
 			},

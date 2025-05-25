@@ -43,7 +43,7 @@
 		{:else if $machine === WizardStep.ERROR}
 			<p class="text-sm text-muted-foreground">{context.error!.message}</p>
 		{/if}
-		{#if $machine !== WizardStep.DONE && $machine !== WizardStep.ERROR && $machine !== WizardStep.CANCELLED}
+		{#if $machine === WizardStep.WAITING}
 			<div class="flex flex-row gap-x-2">
 				<Tooltip.Provider>
 					<Tooltip.Root open={$machine === WizardStep.WAITING}>

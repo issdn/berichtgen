@@ -3,10 +3,14 @@ import { combineJSONs } from './parse/combine';
 import { WizardFileContext } from './wizard_file_context.svelte';
 import { createStateMachineForContext } from './state_machine.svelte';
 import type { Entry, ResultEntry } from './types';
+import { readCsvConfig } from '$src/lib/parse/config_reader';
+import { toast } from 'svelte-sonner';
 export class WizardScheduler {
 	batchSize = 5;
 
-	files: FileList | null = $state(null);
+	files: File[] | null = $state(null);
+
+	configFile: File | null = $state(null);
 
 	schedule: ReturnType<WizardScheduler['createProcessStateMachine']>[] | null = $derived.by(() => {
 		if (this.files === null || this.files.length === 0) return null;
@@ -40,6 +44,7 @@ export class WizardScheduler {
 		this.result = null;
 		this.filesReady = 0;
 		this.filesUnfinished = 0;
+		await this.setRangesFromConfig();
 		for (let i = 0; i < this.batchSize; i++) {
 			this.schedule?.at(i)?.machine.run();
 		}
@@ -65,6 +70,42 @@ export class WizardScheduler {
 
 		const machine = createStateMachineForContext(context, scheduler);
 		return { context, machine };
+	}
+
+	async setRangesFromConfig() {
+		if (this.configFile === null) return;
+		const contextByFilename = new Map<string, WizardFileContext>();
+		this.schedule!.forEach(({ context }) => {
+			contextByFilename.set(context.file.name, context);
+		});
+		const config = await readCsvConfig(this.configFile);
+		const notFoundFiles: string[] = [];
+		config.match(
+			(config) => {
+				config.forEach(({ file, ort, ranges }) => {
+					const context = contextByFilename.get(file);
+					if (context) {
+						context.dateRanges = {
+							ranges: ranges.map((obj, i) => ({ ...obj, id: i })),
+							location: ort
+						};
+					} else {
+						notFoundFiles.push(file);
+					}
+				});
+				if (config.length < this.files!.length) {
+					toast('Nicht alle Dateien in der Konfiguration gefunden.');
+				}
+				if (notFoundFiles.length > 0) {
+					toast.error(
+						`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${notFoundFiles.join(', ')}`
+					);
+				}
+			},
+			(err) => {
+				toast.error(`Fehler beim Lesen der Konfiguration: ${err.message || 'Unbekannter Fehler'}`);
+			}
+		);
 	}
 }
 

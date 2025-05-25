@@ -1,7 +1,7 @@
 import { Ort, QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/types';
 import * as z from 'zod';
 import type { DateRange } from 'bits-ui';
-import { CalendarDate, ZonedDateTime } from '@internationalized/date';
+import { CalendarDate } from '@internationalized/date';
 
 export const completionSchema = z.object({
 	lessons: z
