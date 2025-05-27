@@ -1,5 +1,6 @@
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 import { Ort, QualifikationenBetrieb } from '$src/lib/types';
+import { testAIResponse } from '$src/test/test_inputs';
 import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';
 
@@ -302,4 +303,21 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
+});
+
+test('Spread multiple entries across multiple week ranges with hours.', () => {
+	const received = spreadEntriesAcrossWeeks(testAIResponse, {
+		ranges: [
+			{
+				daterange: {
+					start: parseDate('2023-12-01'),
+					end: parseDate('2024-01-01')
+				},
+				hours: 30
+			}
+		],
+		location: Ort.BETRIEB
+	});
+
+	expect(received.length).toBe(4);
 });
