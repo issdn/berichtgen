@@ -319,5 +319,5 @@ test('Spread multiple entries across multiple week ranges with hours.', () => {
 		location: Ort.BETRIEB
 	});
 
-	expect(received.length).toBe(4);
+	expect(received.length).toBe(testAIResponse.length);
 });

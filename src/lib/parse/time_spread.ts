@@ -11,10 +11,7 @@ export function spreadEntriesAcrossWeeks(
 	const hoursSum = ranges.reduce(
 		(prev, { daterange, hours }) =>
 			prev +
-			(hours ??
-				getWeek(daterange.end as CalendarDate, LOCALE) -
-					getWeek(daterange.start as CalendarDate, LOCALE) +
-					1),
+			(hours ?? weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate)),
 		0
 	);
 
@@ -23,12 +20,7 @@ export function spreadEntriesAcrossWeeks(
 	const minWeek = sorted[0];
 
 	const weeks = ranges.reduce((prev, { daterange }) => {
-		return (
-			prev +
-			getWeek(daterange.end as CalendarDate, LOCALE) -
-			getWeek(daterange.start as CalendarDate, LOCALE) +
-			1
-		);
+		return prev + weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate);
 	}, 0);
 
 	const newEntries: Required<Entry>[] = [];
@@ -36,7 +28,11 @@ export function spreadEntriesAcrossWeeks(
 	const adjustedForHours = sorted.map((week) => ({
 		...week,
 		hours: week.hours ?? 1,
-		entriesPerWeek: Math.floor(entries.length * ((week.hours ?? 1) / hoursSum))
+		entriesPerWeek: Math.max(Math.floor(
+			entries.length /
+				weekDiff(week.daterange.start as CalendarDate, week.daterange.end as CalendarDate) *
+				(week.hours ?? 1) / hoursSum
+		), 1)
 	}));
 
 	let currWeekIndex = 0;
@@ -59,8 +55,8 @@ export function spreadEntriesAcrossWeeks(
 
 		if (
 			!(
-				getWeek(mondayOfWeek, LOCALE) >= getWeek(daterange.start as CalendarDate, LOCALE) &&
-				getWeek(mondayOfWeek, LOCALE) <= getWeek(daterange.end as CalendarDate, LOCALE)
+				getWeek(mondayOfWeek) >= getWeek(daterange.start as CalendarDate) &&
+				getWeek(mondayOfWeek) <= getWeek(daterange.end as CalendarDate)
 			)
 		) {
 			currWeekIndex++;
@@ -68,10 +64,10 @@ export function spreadEntriesAcrossWeeks(
 		}
 	}
 
-	if (entries.length > entriesTotal) {
+	for(let i = 0; i < entries.length - entriesTotal; i++) {
 		newEntries.push(
 			cloneObjectWithDate(
-				entries[entries.length - 1],
+				entries[entriesTotal + i],
 				mondayOfWeek,
 				location,
 				adjustedForHours[ranges.length - 1].hours
@@ -96,11 +92,21 @@ function cloneObjectWithDate(
 	};
 }
 
-function getWeek(date: CalendarDate, locale: string) {
-	const weekStart = startOfWeek(date, locale);
-	const yearStart = startOfWeek(startOfYear(date), locale);
+function weekDiff(start: CalendarDate, end: CalendarDate) {
+	const startWeek = getWeek(start);
+	const endWeek = getWeek(end);
+	return endWeek - startWeek + 1;
+}
 
-	const dayOfYear =
-		date.calendar.toJulianDay(weekStart) - yearStart.calendar.toJulianDay(yearStart);
-	return dayOfYear / 7;
+function getWeek(date: CalendarDate) {
+	const weekStart = startOfWeek(date, LOCALE);
+	const yearStart = startOfWeek(startOfYear(date), LOCALE);
+
+	// Calculate the week number in the year
+	const daysSinceYearStart =
+		weekStart.calendar.toJulianDay(weekStart) - yearStart.calendar.toJulianDay(yearStart);
+	const weekOfYear = Math.floor(daysSinceYearStart / 7);
+
+	// Use year and week to get an absolute week number
+	return date.year * 52 + weekOfYear;
 }

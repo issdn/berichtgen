@@ -1,4 +1,5 @@
 import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
+import { clamp } from '$src/lib/utils/math';
 import type { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 import type { Scheduler } from 'tesseract.js';
 
@@ -20,7 +21,7 @@ export class Parser {
 	async createWorkerPool(nrImages: number) {
 		if (!this.withImages) return;
 		const { createWorker } = await import('tesseract.js');
-		this.batchSize = this.clamp(nrImages * 0.1, 1, 25);
+		this.batchSize = clamp(nrImages * 0.1, 1, 25);
 		if (wizardScheduler.workersInUse + this.batchSize > wizardScheduler.workersNr) {
 			wizardScheduler.workersNr += this.batchSize;
 		}
@@ -32,9 +33,5 @@ export class Parser {
 
 	async freeWorkers() {
 		wizardScheduler.workersInUse -= this.batchSize;
-	}
-
-	clamp(num: number, min: number, max: number) {
-		return Math.min(Math.max(num, min), max);
 	}
 }
