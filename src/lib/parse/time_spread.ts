@@ -19,11 +19,9 @@ export function spreadEntriesAcrossWeeks(
 
 	const minWeek = sorted[0];
 
-	const weeks = ranges.reduce((prev, { daterange }) => {
+	const weeks = Math.min(ranges.reduce((prev, { daterange }) => {
 		return prev + weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate);
-	}, 0);
-
-	const newEntries: Required<Entry>[] = [];
+	}, 0), entries.length);
 
 	const adjustedForHours = sorted.map((week) => ({
 		...week,
@@ -34,6 +32,8 @@ export function spreadEntriesAcrossWeeks(
 				(week.hours ?? 1) / hoursSum
 		), 1)
 	}));
+
+	const newEntries: Required<Entry>[] = [];
 
 	let currWeekIndex = 0;
 	let entriesTotal = 0;
