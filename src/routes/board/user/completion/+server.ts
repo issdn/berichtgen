@@ -174,7 +174,6 @@ async function getOpenAICompletion(text: string, token: string, ort: Ort) {
 		}
 	});
 
-	console.log(completion.choices[0].message.content);
 	return completion.choices[0].message.content;
 }
 
@@ -216,6 +215,5 @@ async function getGeminiCompletion(
 		contents: text
 	});
 
-	console.log(completion.text);
 	return completion.text;
 }

@@ -6,7 +6,6 @@ import { ResultAsync } from 'neverthrow';
 
 export function getCompletions(text: string, ort: Ort) {
 	const messages = splitByMaxLength(text, 15000);
-	console.log(berichtgenStore.currentProvider.owner)
 	const completionsPromises = messages.map(async (t) => {
 		const result = await fetch('/board/user/completion', {
 			body: JSON.stringify({
@@ -24,7 +23,10 @@ export function getCompletions(text: string, ort: Ort) {
 			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, data.message);
 		const parsed = completionSchema.safeParse(data);
 		if (!parsed.success) {
-			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, "KI hat unguiltige JSON-Antwort geliefert");
+			throw new IncuriaError(
+				IncuriaErrorType.INVALID_JSON_FROM_AI,
+				'KI hat unguiltige JSON-Antwort geliefert'
+			);
 		}
 		return parsed.data;
 	});

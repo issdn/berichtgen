@@ -72,7 +72,7 @@
 			</div>
 		{/if}
 	</div>
-	<div class="flex flex-row justify-between opacity-65">
+	<div class="flex flex-row justify-between">
 		<div class="flex flex-row items-center gap-x-1">
 			{#if $machine === WizardStep.ERROR}
 				<Tooltip.Provider delayDuration={100}>
@@ -82,7 +82,7 @@
 								<Icon size={18} /><span class="text-sm font-medium">{label}</span>
 							</Badge>
 						</Tooltip.Trigger>
-						<Tooltip.Content class="opacity-100">
+						<Tooltip.Content>
 							<p class="max-w-96 bg-background">{context.error!.message}</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
