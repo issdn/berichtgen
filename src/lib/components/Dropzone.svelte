@@ -56,6 +56,7 @@
 	}
 
 	function handleFiles(files: FileList) {
+		error = null;
 		const filesArray = Array.from(files);
 		const anyNonJsonFiles = filesArray.find((f) => f.type !== FileTypes.JSON);
 		if (loggedIn) {
@@ -94,7 +95,6 @@
 	}
 
 	function init(files: FileList) {
-		error = null;
 		const { files: otherFiles, configFile } = extractConfigFile(files);
 		wizardScheduler.files = otherFiles;
 		wizardScheduler.configFile = configFile;

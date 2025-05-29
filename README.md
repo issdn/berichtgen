@@ -44,6 +44,16 @@ ALTER TABLE "llmProvider" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "userLLMProvider" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "userTokenCount" ENABLE ROW LEVEL SECURITY;
 
+grant select, insert, update, delete on table "public".cart to service_role;
+grant select, insert, update, delete on table "public"."llmProvider" to service_role;
+grant select, insert, update, delete on table "public"."userLLMProvider" to service_role;
+grant select, insert, update, delete on table "public"."userTokenCount" to service_role;
+
+GRANT SELECT ON TABLE "public"."llmProvider" to authenticated;
+GRANT SELECT ON TABLE "public"."userLLMProvider" to authenticated;
+GRANT SELECT ON TABLE "public"."userTokenCount" to authenticated;
+GRANT UPDATE ("token") ON TABLE "public"."userLLMProvider" to authenticated;
+
 DROP POLICY IF EXISTS "Server can select cart" ON "public"."cart";
 CREATE POLICY "Server can select cart"
 ON "public"."cart"
@@ -60,8 +70,6 @@ FOR UPDATE
 TO service_role
 USING (true);
 
-GRANT SELECT ON TABLE "public"."llmProvider" to authenticated;
-
 DROP POLICY IF EXISTS "User can select llm provider" ON "public"."llmProvider";
 CREATE POLICY "User can select llm provider"
 ON "public"."llmProvider"
@@ -69,9 +77,6 @@ AS PERMISSIVE
 FOR SELECT
 TO authenticated
 using (true);
-
-GRANT SELECT ON TABLE "public"."userLLMProvider" to authenticated;
-GRANT UPDATE ("token") ON TABLE "public"."userLLMProvider" to authenticated;
 
 DROP POLICY IF EXISTS "User can update own userLLMProvider" ON "public"."userLLMProvider";
 CREATE POLICY "User can update own userLLMProvider"

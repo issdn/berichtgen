@@ -3,11 +3,12 @@ import { SECRET_STRIPE_KEY } from '$env/static/private';
 import { error, json } from '@sveltejs/kit';
 import * as Sentry from '@sentry/node';
 import { CommonServerErrorTypes } from '$src/lib/types.js';
+import { supabaseAdmin } from '$src/lib/server/admin';
 // initialize Stripe
 const stripe = new Stripe(SECRET_STRIPE_KEY);
 
 // handle POST /create-payment-intent
-export async function POST({ locals: { user, supabase }, url }) {
+export async function POST({ locals: { user }, url }) {
 	const userId = user?.id;
 
 	if (!userId) {
@@ -24,7 +25,7 @@ export async function POST({ locals: { user, supabase }, url }) {
 	}
 
 	try {
-		const { data: cartData } = await supabase
+		const { data: cartData } = await supabaseAdmin
 			.from('cart')
 			.select('intentId')
 			.eq('userId', userId)
@@ -49,7 +50,7 @@ export async function POST({ locals: { user, supabase }, url }) {
 			payment_method_types: ['card']
 		});
 
-		const { error: cartError } = await supabase
+		const { error: cartError } = await supabaseAdmin
 			.from('cart')
 			.insert({ intentId: paymentIntent.id, userId, quantity });
 

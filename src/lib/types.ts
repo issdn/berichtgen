@@ -41,7 +41,8 @@ export enum IncuriaErrorType {
 	SPREAD_FAILED,
 	DEVELOPERS_FAULT,
 	DOCX_FAULTY,
-	INVALID_JSON_FROM_AI
+	INVALID_JSON_FROM_AI,
+	STRIPE_ERROR
 }
 
 export enum WizardStep {

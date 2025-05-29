@@ -16,8 +16,9 @@
 	import { Label } from '$src/lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
-	import { PaymentStatus } from '$src/lib/types';
+	import { IncuriaErrorType, PaymentStatus } from '$src/lib/types';
 	import Checkbox from '$src/lib/components/ui/checkbox/checkbox.svelte';
+	import { IncuriaError } from '$src/lib/errors.js';
 
 	const { data } = $props();
 
@@ -44,18 +45,18 @@
 	async function createPaymentIntent(quantity: number = 1) {
 		loadingIntent = true;
 		try {
-			const response = await fetch(
-				`/board/user/kauf/create-payment-intent?quantity=${quantity}&intent=${localStorage.getItem('intent')}`,
-				{
-					method: 'POST',
-					headers: {
-						'content-type': 'application/json'
-					}
+			const response = await fetch(`/board/user/kauf/create-payment-intent?quantity=${quantity}`, {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json'
 				}
-			);
+			});
+			const body = await response.json();
+			if (!response.ok) {
+				throw new IncuriaError(IncuriaErrorType.STRIPE_ERROR, body.message);
+			}
 			loadingIntent = false;
-			clientSecret = (await response.json()).clientSecret;
-			localStorage.setItem('intent', clientSecret!);
+			clientSecret = body.clientSecret;
 		} catch (e) {
 			Sentry.captureException(e);
 			const message = e instanceof Error ? e.message : 'Ursache unbekannt';
@@ -151,19 +152,20 @@
 				<Separator class="mt-4" />
 				<Card.Content class="box-border h-full">
 					<div class="flex h-full flex-col justify-between gap-y-2">
-						<ul>
-							<li><b>Oder ca.:</b></li>
-							<li>{quantity * 700_000} Wörter</li>
-							<li>{quantity * 70_000} Absätze</li>
-							<li>{quantity * 1_400} Seiten</li>
-							<li class="mt-2 flex flex-row items-center gap-x-2 text-muted-foreground">
-								<CircleAlert size={18} />
+						<div class="flex flex-col gap-y-2">
+							<p>
+								Oder ca.: {(quantity * 700_000).toLocaleString('de-DE')} Wörter,
+								{(quantity * 70_000).toLocaleString('de-DE')} Absätze oder
+								{(quantity * 1_400).toLocaleString('de-DE')} Seiten
+							</p>
+							<div class="mt-2 flex flex-row items-center gap-x-2 text-muted-foreground">
+								<CircleAlert size={28} />
 								<p>
 									Tokens werden bei der Eingabe sowie der Ausgabe abgezogen! Das bedeutet 700 Seiten
 									Eingabe und 700 Seiten Ausgabe.
 								</p>
-							</li>
-						</ul>
+							</div>
+						</div>
 						<div class="flex flex-row items-center gap-x-4">
 							<Checkbox id="terms-checkbox" bind:checked={termsAccepted} />
 							<Label class="cursor-pointer" for="terms-checkbox">
@@ -200,7 +202,7 @@
 				<div class="center-flex">
 					<Alert.Root variant="destructive">
 						<CircleAlert class="size-4" />
-						<Alert.Title>Fehler bei der Zahlung</Alert.Title>
+						<Alert.Title>Fehler beim Zahlungsanbieter</Alert.Title>
 						<Alert.Description>{error}</Alert.Description>
 					</Alert.Root>
 				</div>
