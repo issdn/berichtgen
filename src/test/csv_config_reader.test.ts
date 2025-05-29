@@ -4,7 +4,7 @@ import { expect, test } from 'vitest';
 
 test('CSV Config Reader', async () => {
 	// ort, file, start;end;hours
-	const testCSV = 'SCHULE,example.test,2023-01-01;2023-01-07;40';
+	const testCSV = 'SCHULE,example.test,2023-01-01;2023-01-07,2023-02-01;2023-02-13;40';
 	const expected = [
 		{
 			ort: 'SCHULE',
@@ -12,8 +12,11 @@ test('CSV Config Reader', async () => {
 			ranges: [
 				{
 					daterange: { start: parseDate('2023-01-01'), end: parseDate('2023-01-07') },
+				},
+				{
+					daterange: { start: parseDate('2023-02-01'), end: parseDate('2023-02-13') },
 					hours: 40
-				}
+				},
 			]
 		}
 	];
