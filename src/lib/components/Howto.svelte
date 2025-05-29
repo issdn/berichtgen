@@ -80,5 +80,31 @@
 				{/if}
 			</Card.Content>
 		</Card.Root>
+		<Card.Root class="relative inline-block w-full">
+			<Pin class="absolute -right-1 -top-1 rotate-45 " />
+			<Card.Header>
+				<Card.Title>📄 CSV Konfig</Card.Title>
+			</Card.Header>
+			<Card.Content>
+				<p>
+					Du kannst das manuelle Datieren mit einer <i class="rounded-sm bg-muted px-2">.csv|.txt</i
+					>
+					Datei automatisieren. Die Datei muss
+					<i class="rounded-sm bg-muted px-2">berichtgen.(csv|txt)</i> heißen und sie soll mit den restlichen
+					Dateien in die Dopzone gedroppt werden.
+				</p>
+				<br />
+				<p>Format:</p>
+				<p>
+					<code class="font-mono text-sm">ORT,DATEI_NAME,[START_DATUM;END_DATUM;(STUNDEN)]</code>
+				</p>
+				<br />
+				<p>Beispiel:</p>
+				<code class="font-mono text-sm">SCHULE,wit.pdf,2024-08-26;2024-10-16</code>
+				<code class="font-mono text-sm"
+					>SCHULE,rwc.docx,2024-08-26;2024-10-16;40,2025-01-01;2025-03-01;30</code
+				>
+			</Card.Content>
+		</Card.Root>
 	</div>
 </div>

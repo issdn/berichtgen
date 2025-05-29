@@ -15,11 +15,11 @@
 		<Moon
 			class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
 		/>
-		<span class="sr-only">Toggle theme</span>
+		<span class="sr-only">Design wechseln</span>
 	</DropdownMenu.Trigger>
 	<DropdownMenu.Content align="end">
-		<DropdownMenu.Item onclick={() => setMode('light')}>Light</DropdownMenu.Item>
-		<DropdownMenu.Item onclick={() => setMode('dark')}>Dark</DropdownMenu.Item>
+		<DropdownMenu.Item onclick={() => setMode('light')}>Hell</DropdownMenu.Item>
+		<DropdownMenu.Item onclick={() => setMode('dark')}>Dunkel</DropdownMenu.Item>
 		<DropdownMenu.Item onclick={() => resetMode()}>System</DropdownMenu.Item>
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
