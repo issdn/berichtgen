@@ -158,7 +158,10 @@
 							<li>{quantity * 1_400} Seiten</li>
 							<li class="mt-2 flex flex-row items-center gap-x-2 text-muted-foreground">
 								<CircleAlert size={18} />
-								<p>Tokens werden bei der Eingabe sowie der Ausgabe abgezogen!</p>
+								<p>
+									Tokens werden bei der Eingabe sowie der Ausgabe abgezogen! Das bedeutet 700 Seiten
+									Eingabe und 700 Seiten Ausgabe.
+								</p>
 							</li>
 						</ul>
 						<div class="flex flex-row items-center gap-x-4">

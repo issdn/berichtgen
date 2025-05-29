@@ -6,7 +6,7 @@
 	import { toast } from 'svelte-sonner';
 	import * as Sentry from '@sentry/browser';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { PaymentStatus } from '$src/lib/types';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { HandCoins } from 'lucide-svelte';
@@ -56,8 +56,10 @@
 <div class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:flex-row">
 	<div class="flex h-full w-full flex-col gap-y-2">
 		{#if berichtgenStore.userTokens !== null}
-			<Badge class="w-fit gap-x-2 px-4 py-2 text-sm" variant="outline"
-				><HandCoins size={18} />{berichtgenStore.userTokens}</Badge
+			<Badge
+				onclick={() => goto('/board/user/kauf')}
+				class="w-fit cursor-pointer gap-x-2 px-4 py-2 text-sm"
+				variant="outline"><HandCoins size={18} />{berichtgenStore.userTokens}</Badge
 			>
 		{/if}
 		<Howto />
