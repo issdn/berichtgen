@@ -29,6 +29,7 @@ export const load = async ({ locals: { user, supabase } }) => {
             name,
             price,
             owner,
+			maxTokens,
             userLLMProvider ( token )
         `
 		)

@@ -44,6 +44,7 @@ ALTER TABLE "llmProvider" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "userLLMProvider" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "userTokenCount" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Server can select cart" ON "public"."cart";
 CREATE POLICY "Server can select cart"
 ON "public"."cart"
 AS PERMISSIVE
@@ -51,6 +52,7 @@ FOR UPDATE
 TO service_role
 USING (true);
 
+DROP POLICY IF EXISTS "Server can update llmProvider" ON "public"."llmProvider";
 CREATE POLICY "Server can update llmProvider"
 ON "public"."llmProvider"
 AS PERMISSIVE
@@ -58,6 +60,20 @@ FOR UPDATE
 TO service_role
 USING (true);
 
+GRANT SELECT ON TABLE "public"."llmProvider" to authenticated;
+
+DROP POLICY IF EXISTS "User can select llm provider" ON "public"."llmProvider";
+CREATE POLICY "User can select llm provider"
+ON "public"."llmProvider"
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+using (true);
+
+GRANT SELECT ON TABLE "public"."userLLMProvider" to authenticated;
+GRANT UPDATE ("token") ON TABLE "public"."userLLMProvider" to authenticated;
+
+DROP POLICY IF EXISTS "User can update own userLLMProvider" ON "public"."userLLMProvider";
 CREATE POLICY "User can update own userLLMProvider"
 ON "public"."userLLMProvider"
 AS PERMISSIVE
@@ -67,14 +83,17 @@ using (
   (select auth.uid()) = "public"."userLLMProvider"."userId"
 );
 
+DROP POLICY IF EXISTS "User can select own userTokenCount" ON "public"."userTokenCount";
 CREATE POLICY "User can select own userTokenCount"
 ON "public"."userTokenCount"
 AS PERMISSIVE
 FOR SELECT
+TO authenticated
 using (
   (select auth.uid()) = "public"."userTokenCount"."userId"
 );
 
+DROP POLICY IF EXISTS "Server can update userTokenCount" ON "public"."userTokenCount";
 CREATE POLICY "Server can update userTokenCount"
 ON "public"."userTokenCount"
 AS PERMISSIVE
@@ -82,8 +101,8 @@ FOR UPDATE
 TO service_role
 USING (true);
 
--- realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE "public"."userTokenCount";
+-- ONE TIME ONLY
+-- ALTER PUBLICATION supabase_realtime ADD TABLE "public"."userTokenCount";
 ```
 
 ### types
