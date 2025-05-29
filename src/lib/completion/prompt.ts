@@ -9,7 +9,7 @@ Du sollst eine JSON-Liste erstellen, wobei jede Einheit ein Objekt mit einem Tit
 Du darfst den Text jedoch thematisch gruppieren, wenn du dir sicher bist, dass es sinnvoll ist.
 Füge NIEMALS Daten, Namen oder Titel von Personen ein.Alles, was sich im Schlüssel "lessons" des JSON befindet, muss auf Deutsch sein.Alles in spitzen Klammern <> dient nur deinem Verständnis und darf nicht übernommen werden.
 
-Hier ist die Liste der Qualifikationen, die du verwenden sollst: [${Object.values(qualifications).join(', ')}]
+Hier ist die Liste der Qualifikationen, die du verwenden sollst (DU KANNST NUR DIESE VERWENDEN): [${Object.values(qualifications).join(', ')}]
 
 Hier ist das JSON-Format (einfache Liste von Objekten):
 {

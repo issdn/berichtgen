@@ -1,5 +1,5 @@
 import { DOCXParser } from '$lib/parse/docx_parser';
-import { incuriaStore } from '$lib/stores/board.svelte';
+import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import { PDFParser } from '$lib/parse/pdf_parser';
 import { FileTypes, IncuriaErrorType, WizardStep, type Entry, type ResultEntry } from '$lib/types';
 import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
@@ -72,7 +72,7 @@ function parseFile(
 					'Fehler beim Initialisieren des JSON Parsers',
 					IncuriaErrorType.PARSE_FAILED
 				)
-			).andThen(() => (incuriaStore.rewordJSON ? jsonParser.parse() : jsonParser.toSchema()));
+			).andThen(() => (berichtgenStore.rewordJSON ? jsonParser.parse() : jsonParser.toSchema()));
 		}
 		case FileTypes.PDF: {
 			const pdfParser = new PDFParser(
@@ -83,7 +83,7 @@ function parseFile(
 					const context = canvas.getContext('2d')!;
 					return { canvas, context };
 				},
-				incuriaStore.processPhotos
+				berichtgenStore.processPhotos
 			);
 			return ResultAsync.fromPromise(pdfParser.init(data), (e) =>
 				IncuriaError.fromUnknown(
@@ -98,7 +98,7 @@ function parseFile(
 			);
 		}
 		case FileTypes.DOCX: {
-			const docxParser = new DOCXParser(context, scheduler, incuriaStore.processPhotos);
+			const docxParser = new DOCXParser(context, scheduler, berichtgenStore.processPhotos);
 			return ResultAsync.fromPromise(docxParser.init(data), (e) =>
 				IncuriaError.fromUnknown(
 					e,

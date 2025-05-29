@@ -1,6 +1,6 @@
 import type { ProviderSchemaType } from '$src/lib/schemas';
 
-class IncuriaStore {
+class ***REMOVED***Store {
 	_providers: ProviderSchemaType[] | null = $state(null);
 
 	_currentProvider: ProviderSchemaType | null = $state(null);
@@ -31,4 +31,4 @@ class IncuriaStore {
 	userTokens: number | null = $state(null);
 }
 
-export const incuriaStore = new IncuriaStore();
+export const berichtgenStore = new ***REMOVED***Store();

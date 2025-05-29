@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { incuriaStore } from '$lib/stores/board.svelte';
+	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { wizardScheduler } from '$src/lib/wizard_scheduler.svelte';
 	import { Settings } from 'lucide-svelte';
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
@@ -21,7 +21,7 @@
 			{#if loggedIn}
 				<div class="flex items-center space-x-2">
 					<Switch
-						bind:checked={incuriaStore.processPhotos}
+						bind:checked={berichtgenStore.processPhotos}
 						id="terms-label"
 						disabled={wizardScheduler.isRunning}
 					/>
@@ -36,7 +36,7 @@
 			{/if}
 			<div class="flex items-center space-x-2">
 				<Switch
-					bind:checked={incuriaStore.rewordJSON}
+					bind:checked={berichtgenStore.rewordJSON}
 					id="reword-json-label"
 					disabled={wizardScheduler.isRunning}
 				/>

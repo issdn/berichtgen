@@ -6,7 +6,7 @@
 	import Button from '$src/lib/components/ui/button/button.svelte';
 	import { goto } from '$app/navigation';
 	import { FileTypes, type UserContext } from '$src/lib/types';
-	import { incuriaStore } from '$src/lib/stores/board.svelte';
+	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
 	import { CONFIG_FILENAME } from '$src/lib/constants';
@@ -59,20 +59,20 @@
 		const filesArray = Array.from(files);
 		const anyNonJsonFiles = filesArray.find((f) => f.type !== FileTypes.JSON);
 		if (loggedIn) {
-			const hasDiscount = incuriaStore.currentProvider?.token != null;
+			const hasDiscount = berichtgenStore.currentProvider?.token != null;
 			const { totalTokens } = countUserTokens(
-				hasDiscount ? incuriaStore.userTokens! / 4 : incuriaStore.userTokens!,
+				hasDiscount ? berichtgenStore.userTokens! / 4 : berichtgenStore.userTokens!,
 				filesArray
 			);
-			if (totalTokens > incuriaStore.userTokens!) {
+			if (totalTokens > berichtgenStore.userTokens!) {
 				if (!anyNonJsonFiles) {
-					if (incuriaStore.rewordJSON === true) {
-						incuriaStore.rewordJSON = false;
+					if (berichtgenStore.rewordJSON === true) {
+						berichtgenStore.rewordJSON = false;
 						toast.info('JSON-Dateien Umformulierung wurde automatisch deaktiviert.');
 					}
 					init(files);
 				} else {
-					error = `Du hast ${incuriaStore.userTokens} Tokens. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
+					error = `Du hast ${berichtgenStore.userTokens} Tokens. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
 					wizardScheduler.files = null;
 				}
 			} else {
@@ -84,8 +84,8 @@
 					'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.';
 				wizardScheduler.files = null;
 			} else {
-				if (incuriaStore.rewordJSON === true) {
-					incuriaStore.rewordJSON = false;
+				if (berichtgenStore.rewordJSON === true) {
+					berichtgenStore.rewordJSON = false;
 					toast.info('JSON-Dateien Umformulierung wurde automatisch deaktiviert.');
 				}
 				init(files);

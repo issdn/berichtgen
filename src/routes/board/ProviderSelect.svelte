@@ -5,7 +5,7 @@
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { cn } from '$lib/utils.js';
-	import { incuriaStore } from '$lib/stores/board.svelte';
+	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { ChevronDown, CircleAlert, CircleCheck } from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
@@ -14,7 +14,7 @@
 	let triggerRef = $state<HTMLButtonElement>(null!);
 
 	const selectedValue = $derived(
-		incuriaStore.providers.find((f) => f.id === incuriaStore.currentProvider?.id)?.name
+		berichtgenStore.providers.find((f) => f.id === berichtgenStore.currentProvider?.id)?.name
 	);
 
 	function closeAndFocusTrigger() {
@@ -47,19 +47,19 @@
 			<Command.List>
 				<Command.Empty>Kein Provider gefunden.</Command.Empty>
 				<Command.Group>
-					{#each incuriaStore.providers as provider}
+					{#each berichtgenStore.providers as provider}
 						<Command.Item
 							class="px-4 py-3"
 							value={provider.name}
 							onSelect={() => {
-								incuriaStore.currentProvider = provider;
+								berichtgenStore.currentProvider = provider;
 								closeAndFocusTrigger();
 							}}
 						>
 							<Check
 								class={cn(
 									'mr-2 size-4',
-									incuriaStore.currentProvider.id !== provider.id && 'text-transparent'
+									berichtgenStore.currentProvider.id !== provider.id && 'text-transparent'
 								)}
 							/>
 							<div class="flex w-full flex-row items-center justify-between">

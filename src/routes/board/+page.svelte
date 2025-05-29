@@ -11,12 +11,12 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { HandCoins } from 'lucide-svelte';
 	import type { RealtimeChannel } from '@supabase/supabase-js';
-	import { incuriaStore } from '$src/lib/stores/board.svelte';
+	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 
 	let { data } = $props();
 	const { supabase, tokenCount, user } = data;
 
-	incuriaStore.userTokens = tokenCount;
+	berichtgenStore.userTokens = tokenCount;
 
 	onMount(() => {
 		if (page.url.searchParams.get('payment') === PaymentStatus.SUCCESS) {
@@ -34,7 +34,7 @@
 					'postgres_changes',
 					{ event: 'UPDATE', table: 'userTokenCount', schema: 'public' },
 					(p) => {
-						incuriaStore.userTokens = p.new.tokens;
+						berichtgenStore.userTokens = p.new.tokens;
 					}
 				)
 				.subscribe((_, e) => {
@@ -55,9 +55,9 @@
 
 <div class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:flex-row">
 	<div class="flex h-full w-full flex-col gap-y-2">
-		{#if incuriaStore.userTokens !== null}
+		{#if berichtgenStore.userTokens !== null}
 			<Badge class="w-fit gap-x-2 px-4 py-2 text-sm" variant="outline"
-				><HandCoins size={18} />{incuriaStore.userTokens}</Badge
+				><HandCoins size={18} />{berichtgenStore.userTokens}</Badge
 			>
 		{/if}
 		<Howto />

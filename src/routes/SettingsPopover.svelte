@@ -13,7 +13,7 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as InputOTP from '$lib/components/ui/input-otp/index.js';
 	import { Input } from '$src/lib/components/ui/input';
-	import { incuriaStore } from '$src/lib/stores/board.svelte';
+	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { toast } from 'svelte-sonner';
 	import { defaults, superForm } from 'sveltekit-superforms/client';
 	import { zod } from 'sveltekit-superforms/adapters';
@@ -31,10 +31,10 @@
 
 	$effect(() => {
 		if (token.length >= 6) {
-			if (incuriaStore.tempEmailContainer) {
+			if (berichtgenStore.tempEmailContainer) {
 				loading = true;
 				supabase.auth
-					.verifyOtp({ type: 'email', token, email: incuriaStore.tempEmailContainer })
+					.verifyOtp({ type: 'email', token, email: berichtgenStore.tempEmailContainer })
 					.then(({ data, error }) => {
 						token = '';
 						loading = false;
@@ -42,7 +42,7 @@
 							toast.error(error.message);
 						} else {
 							toast.success('OTP erfolgreich verifiziert');
-							incuriaStore.tempEmailContainer = '';
+							berichtgenStore.tempEmailContainer = '';
 							otpDialogOpen = false;
 							goto('/board', {
 								replaceState: true,
@@ -54,7 +54,7 @@
 		}
 	});
 
-	const form = superForm(defaults({ mail: incuriaStore.tempEmailContainer }, zod(emailSchema)), {
+	const form = superForm(defaults({ mail: berichtgenStore.tempEmailContainer }, zod(emailSchema)), {
 		SPA: true,
 		validators: zod(emailSchema),
 		async onUpdate({ form }) {
@@ -70,7 +70,7 @@
 				if (error) {
 					toast.error(error.message);
 				} else {
-					incuriaStore.tempEmailContainer = form.data.mail!;
+					berichtgenStore.tempEmailContainer = form.data.mail!;
 					toast.success('Magic-Link gesendet');
 				}
 			}

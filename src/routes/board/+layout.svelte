@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { incuriaStore } from '$lib/stores/board.svelte.js';
+	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte.js';
 	import { type UserContext } from '$src/lib/types.js';
 	import { getContext, onMount } from 'svelte';
 
@@ -7,13 +7,13 @@
 
 	let { loggedIn } = getContext<UserContext>('user')();
 
-	incuriaStore.providers = data.providers;
+	berichtgenStore.providers = data.providers;
 
 	onMount(() => {
 		if (loggedIn) {
 			const providerId = localStorage.getItem('provider') ?? data.providers[0].id;
 
-			incuriaStore.currentProvider =
+			berichtgenStore.currentProvider =
 				data.providers.find((provider) => provider.id === providerId) ?? data.providers[0];
 		}
 	});

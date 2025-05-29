@@ -1,7 +1,7 @@
 import { FileTypes, type Entry, type ResultEntry } from '$lib/types';
 import type { IncuriaError } from '$src/lib/errors';
 import type { DateRangeSchema } from '$src/lib/schemas';
-import { incuriaStore } from '$src/lib/stores/board.svelte';
+import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 
 export class WizardFileContext {
 	snapshot: string | Entry[] | ResultEntry[] | undefined;
@@ -21,7 +21,7 @@ export class WizardFileContext {
 	cancelled: boolean = false;
 
 	get shouldSkip() {
-		return this.file.type === FileTypes.JSON && incuriaStore.rewordJSON;
+		return this.file.type === FileTypes.JSON && berichtgenStore.rewordJSON;
 	}
 
 	onProgress() {

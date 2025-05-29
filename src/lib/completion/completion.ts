@@ -1,4 +1,4 @@
-import { incuriaStore } from '$lib/stores/board.svelte';
+import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import { IncuriaErrorType, Ort, type Entry } from '$lib/types';
 import { IncuriaError } from '$src/lib/errors';
 import { completionSchema } from '$src/lib/schemas';
@@ -6,13 +6,13 @@ import { ResultAsync } from 'neverthrow';
 
 export function getCompletions(text: string, ort: Ort) {
 	const messages = splitByMaxLength(text, 15000);
-
+	console.log(berichtgenStore.currentProvider.owner)
 	const completionsPromises = messages.map(async (t) => {
 		const result = await fetch('/board/user/completion', {
 			body: JSON.stringify({
 				text: t,
-				provider: incuriaStore.currentProvider.id,
-				owner: incuriaStore.currentProvider.owner,
+				provider: berichtgenStore.currentProvider.id,
+				owner: berichtgenStore.currentProvider.owner,
 				ort
 			}),
 			method: 'POST'
@@ -24,7 +24,7 @@ export function getCompletions(text: string, ort: Ort) {
 			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, data.message);
 		const parsed = completionSchema.safeParse(data);
 		if (!parsed.success) {
-			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, parsed.error.message);
+			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, "KI hat unguiltige JSON-Antwort geliefert");
 		}
 		return parsed.data;
 	});

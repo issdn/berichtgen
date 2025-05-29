@@ -5,7 +5,7 @@ import type { Scheduler } from 'tesseract.js';
 import { Parser } from './parser';
 import type { WizardFileContext } from '$lib/wizard_file_context.svelte';
 import { IncuriaError } from '$src/lib/errors';
-import { incuriaStore } from '$src/lib/stores/board.svelte';
+import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 
 export type PDFFileData = {
 	blobOrNull: Blob | null;
@@ -28,7 +28,7 @@ export class PDFParser extends Parser {
 		context: WizardFileContext,
 		scheduler: Scheduler,
 		getNewCanvas: GetCanvasFunction,
-		withImages: boolean = incuriaStore.processPhotos
+		withImages: boolean = berichtgenStore.processPhotos
 	) {
 		if (context == null || getNewCanvas == null) {
 			throw new IncuriaError(

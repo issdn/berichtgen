@@ -63,7 +63,7 @@
 			<Button disabled={true}><FileCheck2 /></Button>
 		{/if}
 	</div>
-	<div class="relative flex min-h-64 flex-col gap-y-1 p-4">
+	<div class="relative flex min-h-64 flex-col gap-y-1 p-4 max-y-1/2 overflow-y-auto">
 		{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 			{#await wizardScheduler.processInit then}
 				{#each wizardScheduler.schedule as { context, machine }, i}

@@ -8,6 +8,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Progress from '$lib/components/ui/progress/progress.svelte';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 
 	const { context, machine }: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
 
@@ -22,11 +23,11 @@
 			case WizardStep.TIME_SPREADING:
 				return { icon: Calendar, label: 'Zeitliche Verteilung...' };
 			case WizardStep.DONE:
-				return { icon: Check, label: 'Fertig 📜' };
+				return { icon: Check, label: 'Fertig' };
 			case WizardStep.WAITING:
 				return { icon: Clock, label: 'Warten auf Eingabe' };
 			case WizardStep.ERROR:
-				return { icon: Bug, label: 'Fehler 😭' };
+				return { icon: Bug, label: 'Fehler' };
 			case WizardStep.CANCELLED:
 				return { icon: XIcon, label: 'Abgebrochen' };
 		}
@@ -40,8 +41,6 @@
 		<span class="basis-2/5 overflow-hidden truncate">{context.file.name}</span>
 		{#if $machine === WizardStep.PROCESSING}
 			<Progress class="basis-3/5" max={context.max} value={context.value} />
-		{:else if $machine === WizardStep.ERROR}
-			<p class="text-sm text-muted-foreground">{context.error!.message}</p>
 		{/if}
 		{#if $machine === WizardStep.WAITING}
 			<div class="flex flex-row gap-x-2">
@@ -75,7 +74,24 @@
 	</div>
 	<div class="flex flex-row justify-between opacity-65">
 		<div class="flex flex-row items-center gap-x-1">
-			<Icon size={18} /><span class="text-sm font-medium">{label}</span>
+			{#if $machine === WizardStep.ERROR}
+				<Tooltip.Provider delayDuration={100}>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<Badge variant="default" class="gap-x-2">
+								<Icon size={18} /><span class="text-sm font-medium">{label}</span>
+							</Badge>
+						</Tooltip.Trigger>
+						<Tooltip.Content class="opacity-100">
+							<p class="max-w-96 bg-background">{context.error!.message}</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				</Tooltip.Provider>
+			{:else}
+				<Badge variant="default" class="gap-x-2">
+					<Icon size={18} /><span class="text-sm font-medium">{label}</span>
+				</Badge>
+			{/if}
 		</div>
 		{#if $machine === WizardStep.PROCESSING || $machine === WizardStep.AI_COMPLETION || $machine === WizardStep.TIME_SPREADING}
 			<div class="flex flex-row items-center gap-x-2">

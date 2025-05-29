@@ -5,7 +5,7 @@ import { IncuriaErrorType } from '$lib/types';
 import type { WizardFileContext } from '$lib/wizard_file_context.svelte';
 import { Parser } from './parser';
 import { IncuriaError } from '$src/lib/errors';
-import { incuriaStore } from '$src/lib/stores/board.svelte';
+import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 
 export type DOCXFileData = {
 	images: Map<string, Uint8Array<ArrayBufferLike>>;
@@ -19,7 +19,7 @@ export class DOCXParser extends Parser {
 	constructor(
 		context: WizardFileContext,
 		scheduler: Scheduler,
-		withImages: boolean = incuriaStore.processPhotos
+		withImages: boolean = berichtgenStore.processPhotos
 	) {
 		super(context, scheduler, withImages);
 	}

@@ -7,7 +7,7 @@
 	import ProviderAddDialog from './ProviderAddDialog.svelte';
 	import { toast } from 'svelte-sonner';
 	import { zod, zodClient } from 'sveltekit-superforms/adapters';
-	import { incuriaStore } from '$lib/stores/board.svelte';
+	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -41,7 +41,7 @@
 		},
 		onUpdated({ form }) {
 			if (form.valid) {
-				incuriaStore.providers = incuriaStore.providers.map((provider) => {
+				berichtgenStore.providers = berichtgenStore.providers.map((provider) => {
 					if (provider.id === form.data.id)
 						return { ...{ ...provider, token: null }, ...form.data };
 					return provider;
@@ -82,7 +82,7 @@
 									<p class="text-red-500">
 										Dieser Vorgang ist unumkehrbar. Dies wird dein Konto und deine Daten entfernen.
 									</p>
-									{#if incuriaStore.userTokens !== null && incuriaStore.userTokens > 0}
+									{#if berichtgenStore.userTokens !== null && berichtgenStore.userTokens > 0}
 										<p
 											class="flex flex-row items-center gap-x-1 text-red-500 [&_span]:text-red-500"
 										>
@@ -90,7 +90,7 @@
 												><HandCoins
 													size={16}
 													class="text-red-500"
-												/>{incuriaStore.userTokens}</Badge
+												/>{berichtgenStore.userTokens}</Badge
 											> Tokens werden ebenfalls gelöscht.
 										</p>
 									{/if}
@@ -130,7 +130,7 @@
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
-							{#each incuriaStore.providers as provider}
+							{#each berichtgenStore.providers as provider}
 								{@const hasToken = provider.token !== null && provider.token.length > 0}
 								<Table.Row>
 									<Table.Cell>
