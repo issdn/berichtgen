@@ -5,6 +5,10 @@ class ***REMOVED***Store {
 
 	_currentProvider: ProviderSchemaType | null = $state(null);
 
+	_processPhotos = $state(false);
+
+	_rewordJSON = $state(false);
+
 	get providers() {
 		return this._providers!;
 	}
@@ -22,9 +26,23 @@ class ***REMOVED***Store {
 		this._currentProvider = value;
 	}
 
-	processPhotos = $state(false);
+	get processPhotos() {
+		return this._processPhotos;
+	}
 
-	rewordJSON = $state(false);
+	set processPhotos(value: boolean) {
+		localStorage.setItem('processPhotos', JSON.stringify(value));
+		this._processPhotos = value;
+	}
+
+	get rewordJSON() {
+		return this._rewordJSON;
+	}
+
+	set rewordJSON(value: boolean) {
+		localStorage.setItem('rewordJSON', JSON.stringify(value));
+		this._rewordJSON = value;
+	}
 
 	tempEmailContainer: null | string = $state(null);
 
