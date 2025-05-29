@@ -33,6 +33,7 @@ export type Database = {
       llmProvider: {
         Row: {
           id: string
+          maxTokens: number
           name: string
           owner: string
           price: number
@@ -40,6 +41,7 @@ export type Database = {
         }
         Insert: {
           id: string
+          maxTokens: number
           name: string
           owner: string
           price: number
@@ -47,6 +49,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          maxTokens?: number
           name?: string
           owner?: string
           price?: number
@@ -100,14 +103,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_user_tokens: {
-        Args: { amount: number; userid: string }
-        Returns: undefined
-      }
-      deduct_user_tokens: {
-        Args: { amount: number; userid: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

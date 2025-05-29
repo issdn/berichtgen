@@ -1,6 +1,17 @@
 # Supabase
 ```sql
-create or replace function deduct_user_tokens(user_id uuid, amount int)
+create or replace function add_user_tokens(user_id uuid, amount integer)
+returns void
+language plpgsql
+as $$
+begin
+  update "userTokenCount"
+  set "tokens" = tokens + amount
+  where "userId" = user_id;
+end;
+$$;
+
+create or replace function deduct_user_tokens(user_id uuid, amount integer)
 returns boolean
 language plpgsql
 as $$
@@ -27,17 +38,52 @@ begin
 end;
 $$;
 
--- Allow updates by the owner of the row
-create policy "Allow user to update their own tokens"
-on "userTokenCount"
-for update using ("userId" = auth.uid());
+-- Enable RLS on all tables
+ALTER TABLE "cart" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "llmProvider" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "userLLMProvider" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "userTokenCount" ENABLE ROW LEVEL SECURITY;
 
-create policy "Allow user to read their own token count"
-on "userTokenCount"
-for select using ("userId" = auth.uid());
+CREATE POLICY "Server can select cart"
+ON "public"."cart"
+AS PERMISSIVE
+FOR UPDATE
+TO service_role
+USING (true);
 
--- Enable RLS
-alter table "userTokenCount" enable row level security;
+CREATE POLICY "Server can update llmProvider"
+ON "public"."llmProvider"
+AS PERMISSIVE
+FOR UPDATE
+TO service_role
+USING (true);
+
+CREATE POLICY "User can update own userLLMProvider"
+ON "public"."userLLMProvider"
+AS PERMISSIVE
+FOR UPDATE
+TO authenticated
+using (
+  (select auth.uid()) = "public"."userLLMProvider"."userId"
+);
+
+CREATE POLICY "User can select own userTokenCount"
+ON "public"."userTokenCount"
+AS PERMISSIVE
+FOR SELECT
+using (
+  (select auth.uid()) = "public"."userTokenCount"."userId"
+);
+
+CREATE POLICY "Server can update userTokenCount"
+ON "public"."userTokenCount"
+AS PERMISSIVE
+FOR UPDATE
+TO service_role
+USING (true);
+
+-- realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE "public"."userTokenCount";
 ```
 
 ### types

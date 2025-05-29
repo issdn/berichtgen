@@ -5,7 +5,7 @@ import { completionSchema } from '$src/lib/schemas';
 import { ResultAsync } from 'neverthrow';
 
 export function getCompletions(text: string, ort: Ort) {
-	const messages = splitByMaxLength(text, 15000);
+	const messages = splitByMaxLength(text, berichtgenStore.currentProvider.maxLength);
 	const completionsPromises = messages.map(async (t) => {
 		const result = await fetch('/board/user/completion', {
 			body: JSON.stringify({
