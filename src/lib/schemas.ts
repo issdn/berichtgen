@@ -39,7 +39,8 @@ export const providerSchema = z.object({
 	id: z.string(),
 	name: z.string(),
 	price: z.number(),
-	owner: z.string()
+	owner: z.string(),
+	maxTokens: z.number().int()
 });
 
 export const validProviderSchema = z.object({
