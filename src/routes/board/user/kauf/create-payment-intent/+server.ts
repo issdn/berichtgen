@@ -8,8 +8,8 @@ import { supabaseAdmin } from '$src/lib/server/admin';
 const stripe = new Stripe(SECRET_STRIPE_KEY);
 
 // handle POST /create-payment-intent
-export async function POST({ locals: { user }, url }) {
-	const userId = user?.id;
+export async function POST({ locals: { safeGetSession }, url }) {
+	const userId = (await safeGetSession())?.user?.id;
 
 	if (!userId) {
 		return error(401, { type: CommonServerErrorTypes.UNAUTHORIZED, message: 'Nicht autorisiert' });

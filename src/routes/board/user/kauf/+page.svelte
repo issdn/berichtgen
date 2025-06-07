@@ -38,8 +38,15 @@
 	onMount(async () => {
 		stripe = await loadStripe(PUBLIC_STRIPE_KEY, { locale: 'de' });
 
+		const { data } = await supabase.from('cart').select('quantity').eq('userId', user!.id).single();
+
 		// create payment intent server side
-		await createPaymentIntent();
+		if (data?.quantity) {
+			quantity = data.quantity;
+			await createPaymentIntent();
+		} else {
+			await createPaymentIntent(quantity);
+		}
 	});
 
 	async function createPaymentIntent(quantity: number = 1) {
@@ -96,8 +103,15 @@
 		if (!user) return;
 		try {
 			processing = true;
-			await supabase.from('cart').update({ quantity }).eq('user_id', user.id);
+			const { error: updateError } = await supabase
+				.from('cart')
+				.update({ quantity })
+				.eq('userId', user.id);
+			if (updateError) {
+				throw updateError;
+			}
 		} catch (e) {
+			console.log(e);
 			Sentry.captureException(e);
 			toast.error('Fehler beim Aktualisieren des Warenkorbs');
 		} finally {
