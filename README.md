@@ -49,19 +49,27 @@ grant select, insert, update, delete on table "public"."llmProvider" to service_
 grant select, insert, update, delete on table "public"."userLLMProvider" to service_role;
 grant select, insert, update, delete on table "public"."userTokenCount" to service_role;
 
-GRANT SELECT, UPDATE ("quantity") ON TABLE "public".cart to authenticated;
+GRANT SELECT ("quantity") ON TABLE "public".cart to authenticated;
 GRANT SELECT ON TABLE "public"."llmProvider" to authenticated;
 GRANT SELECT ON TABLE "public"."userLLMProvider" to authenticated;
 GRANT SELECT ON TABLE "public"."userTokenCount" to authenticated;
 GRANT UPDATE ("token") ON TABLE "public"."userLLMProvider" to authenticated;
 
-DROP POLICY IF EXISTS "User can update cart" ON "public"."cart";
-CREATE POLICY "User can update cart"
+DROP POLICY IF EXISTS "Server can update cart" ON "public"."cart";
+CREATE POLICY "Server can update cart"
+ON "public"."cart"
+AS PERMISSIVE
+FOR UPDATE
+TO service_role
+USING (true);
+
+DROP POLICY IF EXISTS "User can select cart" ON "public"."cart";
+CREATE POLICY "User can select cart"
 ON "public"."cart"
 AS PERMISSIVE
 FOR UPDATE
 TO authenticated
-USING ((select auth.uid()) = "public"."cart"."userId");
+USING (auth.uid() = "public"."cart"."userId");
 
 DROP POLICY IF EXISTS "Server can select llmProvider" ON "public"."llmProvider";
 CREATE POLICY "Server can select llmProvider"
@@ -86,7 +94,7 @@ AS PERMISSIVE
 FOR UPDATE
 TO authenticated
 using (
-  (select auth.uid()) = "public"."userLLMProvider"."userId"
+  auth.uid() = "public"."userLLMProvider"."userId"
 );
 
 DROP POLICY IF EXISTS "User can select own userTokenCount" ON "public"."userTokenCount";
@@ -96,7 +104,7 @@ AS PERMISSIVE
 FOR SELECT
 TO authenticated
 using (
-  (select auth.uid()) = "public"."userTokenCount"."userId"
+  auth.uid() = "public"."userTokenCount"."userId"
 );
 
 DROP POLICY IF EXISTS "Server can update userTokenCount" ON "public"."userTokenCount";

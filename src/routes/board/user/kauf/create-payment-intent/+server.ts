@@ -27,13 +27,14 @@ export async function POST({ locals: { safeGetSession }, url }) {
 	try {
 		const { data: cartData } = await supabaseAdmin
 			.from('cart')
-			.select('intentId')
+			.update({ quantity })
 			.eq('userId', userId)
+			.select('intentId, quantity')
 			.single();
 
 		if (cartData) {
 			const paymentIntent = await stripe.paymentIntents.retrieve(cartData.intentId);
-			paymentIntent.amount = quantity * 400;
+			paymentIntent.amount = cartData.quantity * 400;
 			return json({
 				clientSecret: paymentIntent.client_secret
 			});

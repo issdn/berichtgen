@@ -99,29 +99,9 @@
 		}
 	}
 
-	async function updateCart(quantity: number) {
-		if (!user) return;
-		try {
-			processing = true;
-			const { error: updateError } = await supabase
-				.from('cart')
-				.update({ quantity })
-				.eq('userId', user.id);
-			if (updateError) {
-				throw updateError;
-			}
-		} catch (e) {
-			console.log(e);
-			Sentry.captureException(e);
-			toast.error('Fehler beim Aktualisieren des Warenkorbs');
-		} finally {
-			processing = false;
-		}
-	}
-
 	const debouncedCreatePaymentIntent = debounce((quantity: number) => {
 		if (quantity > 0) {
-			updateCart(quantity);
+			createPaymentIntent(quantity);
 		}
 	}, 500);
 </script>
