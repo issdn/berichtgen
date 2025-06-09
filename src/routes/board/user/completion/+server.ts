@@ -11,6 +11,7 @@ import { error as errorJson } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getContextPrompt } from '$src/lib/completion/prompt';
 import { completionApiSchema } from '$src/lib/schemas';
+import { supabaseAdmin } from '$src/lib/server/admin';
 
 function getTokenByOwner(owner: string) {
 	switch (owner) {
@@ -59,7 +60,7 @@ async function deductUserTokens(
 	return ok(data);
 }
 
-export const POST: RequestHandler = async ({ request, locals: { user, supabase } }) => {
+export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	if (!user) {
 		return errorJson(401, {
 			type: CommonServerErrorTypes.UNAUTHORIZED,
@@ -86,7 +87,7 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 		return incuriaToken.error;
 	}
 
-	const { data: userProviderData } = await supabase
+	const { data: userProviderData } = await supabaseAdmin
 		.from('userLLMProvider')
 		.select('token')
 		.eq('userId', user!.id!)
@@ -97,7 +98,12 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 
 	const token = userToken ?? incuriaToken.value;
 
-	const tokensDeducted = await deductUserTokens(supabase, user!.id!, userToken !== undefined, text);
+	const tokensDeducted = await deductUserTokens(
+		supabaseAdmin,
+		user!.id!,
+		userToken !== undefined,
+		text
+	);
 
 	if (tokensDeducted.isErr()) {
 		return tokensDeducted.error.toResponse();
@@ -128,7 +134,7 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 		});
 	}
 	// Allow negative on output
-	await deductUserTokens(supabase, user!.id!, userToken !== undefined, completion);
+	await deductUserTokens(supabaseAdmin, user!.id!, userToken !== undefined, completion);
 	return new Response(completion);
 };
 
