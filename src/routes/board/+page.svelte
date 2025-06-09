@@ -54,7 +54,7 @@
 </script>
 
 <div class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:flex-row">
-	<div class="flex h-full w-full flex-col gap-y-2">
+	<div class="flex h-full w-1/2 flex-col gap-y-2">
 		{#if berichtgenStore.userTokens !== null}
 			<Badge
 				onclick={() => goto('/board/user/kauf')}
@@ -64,7 +64,7 @@
 		{/if}
 		<Howto />
 	</div>
-	<div class="flex h-full w-full flex-col gap-y-4">
+	<div class="flex h-full w-1/2 flex-col gap-y-4">
 		<div class="h-full w-full">
 			<Dropzone />
 		</div>
