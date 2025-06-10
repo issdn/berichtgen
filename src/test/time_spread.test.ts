@@ -199,7 +199,7 @@ test('Spread multiple entries across multiple week ranges.', () => {
 			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 		},
 		{
-			datum: '2025-04-07',
+			datum: '2025-03-03',
 			qualifikationen,
 			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
 		},

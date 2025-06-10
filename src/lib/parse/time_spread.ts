@@ -4,14 +4,20 @@ import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date'
 
 const LOCALE = 'de-DE';
 
+/**
+ *
+ * ranges: [2 weeks, 3 weeks] -> 5 weeks in total
+ * entries: 14
+ * entriesPerWeek: 14 / 5 = 2.8 -> [3,3,3,3,2]
+ *
+ */
 export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
 	{ ranges, location }: ValidIncuriaDateRanges
 ): Required<Entry>[] {
 	const hoursSum = ranges.reduce(
 		(prev, { daterange, hours }) =>
-			prev +
-			(hours ?? weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate)),
+			prev + (hours ?? weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate)),
 		0
 	);
 
@@ -19,18 +25,23 @@ export function spreadEntriesAcrossWeeks(
 
 	const minWeek = sorted[0];
 
-	const weeks = Math.min(ranges.reduce((prev, { daterange }) => {
-		return prev + weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate);
-	}, 0), entries.length);
+	const weeks = Math.min(
+		ranges.reduce((prev, { daterange }) => {
+			return prev + weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate);
+		}, 0),
+		entries.length
+	);
 
 	const adjustedForHours = sorted.map((week) => ({
 		...week,
 		hours: week.hours ?? 1,
-		entriesPerWeek: Math.max(Math.floor(
-			entries.length /
-				weekDiff(week.daterange.start as CalendarDate, week.daterange.end as CalendarDate) *
-				(week.hours ?? 1) / hoursSum
-		), 1)
+		entriesPerWeek: Math.max(
+			((entries.length /
+				weekDiff(week.daterange.start as CalendarDate, week.daterange.end as CalendarDate)) *
+				(week.hours ?? 1)) /
+				hoursSum,
+			1
+		)
 	}));
 
 	const newEntries: Required<Entry>[] = [];
@@ -41,16 +52,23 @@ export function spreadEntriesAcrossWeeks(
 
 	for (let i = 0; i < weeks; i += 1) {
 		const { entriesPerWeek, daterange, hours } = adjustedForHours[currWeekIndex];
+		const entriesPerWeekEven = Math.floor(entriesPerWeek);
+		const entriesPerWeekRemainder = entriesPerWeek - entriesPerWeekEven;
 
-		for (let j = 0; j < entriesPerWeek; j++) {
+		for (let j = 0; j < entriesPerWeekEven; j++) {
 			newEntries.push(
 				cloneObjectWithDate(entries[entriesTotal + j], mondayOfWeek, location, hours)
 			);
 		}
 
-		entriesTotal += entriesPerWeek;
+		entriesTotal += entriesPerWeekEven;
 
-		if (i * entriesPerWeek + entriesPerWeek < weeks * entriesPerWeek)
+		if (i + 1 <= Math.round(entriesPerWeekRemainder * weeks)) {
+			newEntries.push(cloneObjectWithDate(entries[entriesTotal], mondayOfWeek, location, hours));
+			entriesTotal++;
+		}
+
+		if (i * entriesPerWeekEven + entriesPerWeekEven < weeks * entriesPerWeekEven)
 			mondayOfWeek = mondayOfWeek.add({ days: 7 });
 
 		if (
@@ -62,17 +80,6 @@ export function spreadEntriesAcrossWeeks(
 			currWeekIndex++;
 			mondayOfWeek = startOfWeek(sorted[currWeekIndex].daterange.start!, LOCALE) as CalendarDate;
 		}
-	}
-
-	for(let i = 0; i < entries.length - entriesTotal; i++) {
-		newEntries.push(
-			cloneObjectWithDate(
-				entries[entriesTotal + i],
-				mondayOfWeek,
-				location,
-				adjustedForHours[ranges.length - 1].hours
-			)
-		);
 	}
 
 	return newEntries;
