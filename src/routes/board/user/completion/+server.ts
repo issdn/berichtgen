@@ -10,8 +10,9 @@ import * as Sentry from '@sentry/node';
 import { error as errorJson } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getContextPrompt } from '$src/lib/completion/prompt';
-import { completionApiSchema } from '$src/lib/schemas';
+import { completionApiSchema, completionSchema } from '$src/lib/schemas';
 import { supabaseAdmin } from '$src/lib/server/admin';
+import zodToJsonSchema from 'zod-to-json-schema';
 
 function getTokenByOwner(owner: string) {
 	switch (owner) {
@@ -194,28 +195,7 @@ async function getGeminiCompletion(
 		config: {
 			responseMimeType: 'application/json',
 			systemInstruction: getContextPrompt(ort),
-			responseSchema: {
-				type: genai.Type.OBJECT,
-				properties: {
-					lessons: {
-						type: genai.Type.ARRAY,
-						items: {
-							type: genai.Type.OBJECT,
-							properties: {
-								text: {
-									type: genai.Type.STRING
-								},
-								qualifikationen: {
-									type: genai.Type.ARRAY,
-									items: {
-										type: genai.Type.STRING
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+			responseSchema: zodToJsonSchema(completionSchema)
 		},
 		model: 'gemini-1.5-flash',
 		contents: text

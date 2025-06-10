@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FileCheck, FileUp } from 'lucide-svelte';
+	import { FileCheck, FileUp } from '@lucide/svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import { countUserTokens } from '$src/lib/utils/token_counter';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -112,7 +112,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <button
 	id="dropzone"
-	class={`flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed text-sm text-border transition-colors duration-300 hover:border-primary hover:text-primary ${isDraggingIn ? 'border-primary text-primary' : 'text-border hover:border-primary hover:text-primary'}`}
+	class={`text-border hover:border-primary hover:text-primary flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed text-sm transition-colors duration-300 ${isDraggingIn ? 'border-primary text-primary' : 'text-border hover:border-primary hover:text-primary'}`}
 	onclick={() => input?.click()}
 	ondragenter={handleDragEnter}
 	ondragleave={handleDragLeave}
@@ -132,7 +132,7 @@
 		<label for="dropzone" class="pointer-events-none w-full px-8">
 			<ol>
 				{#each wizardScheduler.files as file}
-					<li class="overflow-hidden truncate">{file.name}</li>
+					<li class="truncate overflow-hidden">{file.name}</li>
 				{/each}
 			</ol>
 		</label>

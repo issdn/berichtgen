@@ -4,7 +4,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Label } from '$lib/components/ui/label';
-	import { CircleHelp, HandCoins, KeyRound, LogOut, Mail, Settings, Lock } from 'lucide-svelte';
+	import { CircleHelp, HandCoins, KeyRound, LogOut, Mail, Settings, Lock } from '@lucide/svelte';
 	import { goto, invalidate } from '$app/navigation';
 	import { getContext } from 'svelte';
 	import { type UserContext } from '$src/lib/types';
@@ -126,7 +126,7 @@
 		{/if}
 		<Button variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
 		<Button variant="outline" href="/datenschutz"><Lock />Datenschutzerklärung</Button>
-		<div class="flex flex-row items-center justify-center gap-x-1 text-muted-foreground">
+		<div class="text-muted-foreground flex flex-row items-center justify-center gap-x-1">
 			<p>v1.0.0</p>
 		</div>
 	</Popover.Content>
@@ -153,7 +153,7 @@
 						<Form.FieldErrors />
 					</Form.Field>
 				</form>
-				<p class="mb-4 mt-8 w-full text-center">
+				<p class="mt-8 mb-4 w-full text-center">
 					folge den Link aus deiner Email oder gebe den OTP-Code ein
 				</p>
 				<div class="flex flex-row justify-center">

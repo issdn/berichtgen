@@ -2,7 +2,7 @@
 	import TimeSpreadRow from './TimeSpreadRow.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { today, type DateValue } from '@internationalized/date';
-	import { Calendar, Trash2 } from 'lucide-svelte';
+	import { Calendar, Trash2 } from '@lucide/svelte';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zodClient } from 'sveltekit-superforms/adapters';
 	import { buttonVariants } from './ui/button';
@@ -91,7 +91,7 @@
 							{#if index < $form.ranges.length - 1}
 								<Button
 									variant="outline"
-									class="absolute right-4 top-1/2 -translate-y-1/2"
+									class="absolute top-1/2 right-4 -translate-y-1/2"
 									onclick={() => removeRow(index)}
 								>
 									<Trash2 />

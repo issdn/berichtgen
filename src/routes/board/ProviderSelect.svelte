@@ -6,7 +6,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { cn } from '$lib/utils.js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
-	import { ChevronDown, CircleAlert, CircleCheck } from 'lucide-svelte';
+	import { ChevronDown, CircleAlert, CircleCheck } from '@lucide/svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 

@@ -9,7 +9,7 @@
 	import { goto, replaceState } from '$app/navigation';
 	import { PaymentStatus } from '$src/lib/types';
 	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { HandCoins } from 'lucide-svelte';
+	import { HandCoins } from '@lucide/svelte';
 	import type { RealtimeChannel } from '@supabase/supabase-js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { wizardScheduler } from '$src/lib/wizard_scheduler.svelte';
@@ -65,8 +65,8 @@
 		{#if berichtgenStore.userTokens !== null}
 			<Badge
 				onclick={() => goto('/board/user/kauf')}
-				class="w-fit cursor-pointer gap-x-2 px-4 py-2 text-sm"
-				variant="outline"><HandCoins size={18} />{berichtgenStore.userTokens}</Badge
+				class="w-fit cursor-pointer gap-x-2 px-4 py-2 text-sm [&>svg]:size-4"
+				variant="outline"><HandCoins />{berichtgenStore.userTokens}</Badge
 			>
 		{/if}
 		<Howto />

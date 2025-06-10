@@ -2,7 +2,7 @@
 	import { DateFormatter } from '@internationalized/date';
 	import { RangeCalendar } from '$lib/components/ui/range-calendar/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
-	import { CalendarIcon } from 'lucide-svelte';
+	import { CalendarIcon } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 	import { buttonVariants } from './ui/button';
 	import { Input } from '$lib/components/ui/input/index.js';

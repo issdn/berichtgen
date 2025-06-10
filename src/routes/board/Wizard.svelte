@@ -2,7 +2,7 @@
 	import WizardFile from './WizardFile.svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
-	import { FileCheck2, FileJson, FileType } from 'lucide-svelte';
+	import { FileCheck2, FileJson, FileType } from '@lucide/svelte';
 	import { getContext, onMount } from 'svelte';
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 	import ProviderSelect from './ProviderSelect.svelte';
@@ -45,7 +45,7 @@
 </script>
 
 <div class="relative h-full w-full gap-y-8 rounded-lg border-4">
-	<div class="flex flex-row flex-wrap items-center justify-between gap-x-4 bg-muted p-4">
+	<div class="bg-muted flex flex-row flex-wrap items-center justify-between gap-x-4 p-4">
 		<div class="flex flex-row items-center gap-x-4">
 			{#if loggedIn}
 				<ProviderSelect />
@@ -63,14 +63,14 @@
 			<Button disabled={true}><FileCheck2 /></Button>
 		{/if}
 	</div>
-	<div class="relative flex min-h-64 flex-col gap-y-1 p-4 max-y-1/2 overflow-y-auto">
+	<div class="max-y-1/2 relative flex min-h-64 flex-col gap-y-1 overflow-y-auto p-4">
 		{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 			{#await wizardScheduler.processInit then}
 				{#each wizardScheduler.schedule as { context, machine }, i}
 					{#if i <= wizardScheduler.filesReady + wizardScheduler.batchSize}
 						<WizardFile {context} {machine} />
 					{:else}
-						<span class="overflow-hidden truncate">{context.file.name}</span>
+						<span class="truncate overflow-hidden">{context.file.name}</span>
 					{/if}
 				{/each}
 			{/await}

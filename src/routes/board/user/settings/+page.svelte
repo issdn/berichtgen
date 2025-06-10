@@ -2,7 +2,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import { superForm } from 'sveltekit-superforms/client';
-	import { HandCoins, Trash2, UserRoundX } from 'lucide-svelte';
+	import { HandCoins, Trash2, UserRoundX } from '@lucide/svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ProviderAddDialog from './ProviderAddDialog.svelte';
 	import { toast } from 'svelte-sonner';

@@ -12,7 +12,7 @@
 	import * as Sentry from '@sentry/browser';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import * as Alert from '$src/lib/components/ui/alert';
-	import { CircleAlert } from 'lucide-svelte';
+	import { CircleAlert } from '@lucide/svelte';
 	import { Label } from '$src/lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
@@ -127,7 +127,7 @@
 					{/each}
 				</div>
 				<div class="flex flex-row">
-					<Label class="flex w-8 flex-row items-center justify-center bg-muted text-lg">€</Label>
+					<Label class="bg-muted flex w-8 flex-row items-center justify-center text-lg">€</Label>
 					<Input
 						class="h-8 w-16"
 						bind:value={quantity}
@@ -156,7 +156,7 @@
 								{(quantity * 70_000).toLocaleString('de-DE')} Absätze oder
 								{(quantity * 1_400).toLocaleString('de-DE')} Seiten
 							</p>
-							<div class="mt-2 flex flex-row items-center gap-x-2 text-muted-foreground">
+							<div class="text-muted-foreground mt-2 flex flex-row items-center gap-x-2">
 								<CircleAlert size={28} />
 								<p>
 									Tokens werden bei der Eingabe sowie der Ausgabe abgezogen! Das bedeutet 700 Seiten

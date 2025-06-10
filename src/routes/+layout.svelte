@@ -33,7 +33,7 @@
 	<Button
 		onclick={() => goto('/board')}
 		variant="link"
-		class="font-cormorant text-3xl [&_svg]:h-[36px] [&_svg]:w-[136px] [&_svg]:fill-primary"
+		class="[&_svg]:fill-primary cursor-pointer [&_svg]:h-[36px]! [&_svg]:w-[136px]!"
 		><Logo /></Button
 	>
 	<div class="flex flex-row gap-x-4">

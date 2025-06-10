@@ -1,7 +1,7 @@
 <script>
 	import { page } from '$app/state';
 	import { Button } from '$src/lib/components/ui/button';
-	import { Home } from 'lucide-svelte';
+	import { Home } from '@lucide/svelte';
 </script>
 
 <div class="h-main flex flex-col items-center justify-center">
