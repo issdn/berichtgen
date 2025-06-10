@@ -6,6 +6,10 @@
 	import { ArrowRight, FileUp } from 'lucide-svelte';
 </script>
 
+<svelte:head>
+	<title>***REMOVED***</title>
+</svelte:head>
+
 <div
 	class="h-main flex w-full flex-col items-center justify-center overflow-x-clip px-8 pb-8 md:px-16 md:pb-0 lg:flex-row"
 >

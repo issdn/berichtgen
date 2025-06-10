@@ -12,6 +12,7 @@
 	import { HandCoins } from 'lucide-svelte';
 	import type { RealtimeChannel } from '@supabase/supabase-js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
+	import { wizardScheduler } from '$src/lib/wizard_scheduler.svelte';
 
 	let { data } = $props();
 	const { supabase, tokenCount, user } = data;
@@ -52,6 +53,12 @@
 		};
 	});
 </script>
+
+<svelte:head>
+	<title
+		>Board - {wizardScheduler.isRunning ? 'In Bearbeitung...' : 'Nix passiert.'} | ***REMOVED***</title
+	>
+</svelte:head>
 
 <div class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:flex-row">
 	<div class="flex h-full w-1/2 flex-col gap-y-2">

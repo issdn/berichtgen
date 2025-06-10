@@ -106,6 +106,10 @@
 	}, 500);
 </script>
 
+<svelte:head>
+	<title>Tokens kaufen | ***REMOVED***</title>
+</svelte:head>
+
 <div class="h-main flex w-full flex-col justify-center p-8">
 	<div class="flex w-full flex-col items-center gap-x-8 gap-y-8 lg:flex-row lg:justify-around">
 		<div class="flex h-full w-full max-w-[600px] flex-col gap-y-4">

@@ -54,6 +54,10 @@
 	const { form: formData, enhance: tokenEnhance, formId, submitting } = form;
 </script>
 
+<svelte:head>
+	<title>Einstellungen | ***REMOVED***</title>
+</svelte:head>
+
 <div class="flex flex-row justify-center">
 	<div class="flex w-full max-w-[700px] flex-col gap-y-8">
 		<Card.Root>
