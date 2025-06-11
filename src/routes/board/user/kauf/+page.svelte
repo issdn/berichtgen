@@ -117,8 +117,8 @@
 				<div class="flex flex-row flex-wrap gap-x-2">
 					{#each quantityBadges as q}
 						<Badge
-							variant="outline"
-							class="text-md flex h-7 w-12 cursor-pointer flex-row justify-center"
+							variant="secondary"
+							class="text-md flex h-8 w-12 cursor-pointer flex-row justify-center"
 							onclick={() => {
 								quantity = q;
 								createPaymentIntent(q);
@@ -127,9 +127,11 @@
 					{/each}
 				</div>
 				<div class="flex flex-row">
-					<Label class="bg-muted flex w-8 flex-row items-center justify-center text-lg">€</Label>
+					<Label class="bg-muted flex w-8 flex-row items-center justify-center rounded-l-md text-lg"
+						>€</Label
+					>
 					<Input
-						class="h-8 w-16"
+						class="h-8 w-16 rounded-l-none"
 						bind:value={quantity}
 						onchange={(e) =>
 							debouncedCreatePaymentIntent(
