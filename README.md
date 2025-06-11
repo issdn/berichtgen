@@ -1,4 +1,5 @@
 # Supabase
+# Supabase
 ```sql
 create or replace function add_user_tokens(user_id uuid, amount integer)
 returns void
@@ -44,79 +45,61 @@ ALTER TABLE "llmProvider" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "userLLMProvider" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "userTokenCount" ENABLE ROW LEVEL SECURITY;
 
-grant select, insert, update, delete on table "public".cart to service_role;
-grant select, insert, update, delete on table "public"."llmProvider" to service_role;
-grant select, insert, update, delete on table "public"."userLLMProvider" to service_role;
-grant select, insert, update, delete on table "public"."userTokenCount" to service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public".cart to service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."llmProvider" to service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."userLLMProvider" to service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."userTokenCount" to service_role;
 
 GRANT SELECT ("quantity") ON TABLE "public".cart to authenticated;
 GRANT SELECT ON TABLE "public"."llmProvider" to authenticated;
-GRANT SELECT ON TABLE "public"."userLLMProvider" to authenticated;
 GRANT SELECT ON TABLE "public"."userTokenCount" to authenticated;
-GRANT UPDATE ("token") ON TABLE "public"."userLLMProvider" to authenticated;
-
-DROP POLICY IF EXISTS "Server can update cart" ON "public"."cart";
-CREATE POLICY "Server can update cart"
-ON "public"."cart"
-AS PERMISSIVE
-FOR UPDATE
-TO service_role
-USING (true);
+GRANT UPDATE, INSERT, SELECT, DELETE ON TABLE "public"."userLLMProvider" to authenticated;
 
 DROP POLICY IF EXISTS "User can select cart" ON "public"."cart";
 CREATE POLICY "User can select cart"
 ON "public"."cart"
-AS PERMISSIVE
 FOR UPDATE
 TO authenticated
-USING (auth.uid() = "public"."cart"."userId");
-
-DROP POLICY IF EXISTS "Server can select llmProvider" ON "public"."llmProvider";
-CREATE POLICY "Server can select llmProvider"
-ON "public"."llmProvider"
-AS PERMISSIVE
-FOR SELECT
-TO service_role
-USING (true);
+USING ((select auth.uid()) = "public"."cart"."userId");
 
 DROP POLICY IF EXISTS "User can select llm provider" ON "public"."llmProvider";
 CREATE POLICY "User can select llm provider"
 ON "public"."llmProvider"
-AS PERMISSIVE
 FOR SELECT
 TO authenticated
 using (true);
 
-DROP POLICY IF EXISTS "User can update own userLLMProvider" ON "public"."userLLMProvider";
-CREATE POLICY "User can update own userLLMProvider"
+DROP POLICY IF EXISTS "User can fully modify own userLLMProvider" ON "public"."userLLMProvider";
+CREATE POLICY "User can fully modify own userLLMProvider"
 ON "public"."userLLMProvider"
-AS PERMISSIVE
-FOR UPDATE
+FOR ALL
 TO authenticated
-using (
-  auth.uid() = "public"."userLLMProvider"."userId"
-);
+USING (
+  (select auth.uid()) = "public"."userLLMProvider"."userId"
+)
 
 DROP POLICY IF EXISTS "User can select own userTokenCount" ON "public"."userTokenCount";
 CREATE POLICY "User can select own userTokenCount"
 ON "public"."userTokenCount"
-AS PERMISSIVE
 FOR SELECT
 TO authenticated
 using (
-  auth.uid() = "public"."userTokenCount"."userId"
+  (select auth.uid()) = "public"."userTokenCount"."userId"
 );
-
-DROP POLICY IF EXISTS "Server can update userTokenCount" ON "public"."userTokenCount";
-CREATE POLICY "Server can update userTokenCount"
-ON "public"."userTokenCount"
-AS PERMISSIVE
-FOR UPDATE
-TO service_role
-USING (true);
 
 -- ONE TIME ONLY
 -- ALTER PUBLICATION supabase_realtime ADD TABLE "public"."userTokenCount";
+```
+
+### types
+```
+supabase gen types typescript --project-id odbyqfknheshvujhabpp > database.types.ts
+```
+
+# stripe
+
+```
+stripe listen --forward-to localhost:5173/webhooks/stripe
 ```
 
 ### types
