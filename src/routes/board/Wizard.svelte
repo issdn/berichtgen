@@ -15,15 +15,22 @@
 	import { handleJSONDownload } from '$src/lib/utils/write_json';
 	import WizardSettingsPopover from '$src/lib/components/WizardSettingsPopover.svelte';
 	import type { UserContext } from '$src/lib/types';
+	import { toast } from 'svelte-sonner';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-			import('pdfjs-dist/build/pdf.worker.min?url').then((pdfWorkerURL) => {
-				pdf.GlobalWorkerOptions.workerSrc = new URL(
-					pdfWorkerURL.default,
-					import.meta.url
-				).toString();
-			});
+			import('pdfjs-dist/build/pdf.worker.min?url')
+				.then((pdfWorkerURL) => {
+					pdf.GlobalWorkerOptions.workerSrc = new URL(
+						pdfWorkerURL.default,
+						import.meta.url
+					).toString();
+				})
+				.catch(() =>
+					toast.error(
+						'Fehler beim Laden des PDF-Workers. Stelle sicher, dass du eine Internetverbindung hast.'
+					)
+				);
 		}
 	});
 
