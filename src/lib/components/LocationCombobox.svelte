@@ -40,15 +40,9 @@
 </script>
 
 <Popover.Root bind:open>
-	<Popover.Trigger bind:ref={triggerRef}>
+	<Popover.Trigger class="w-calendar justify-between" bind:ref={triggerRef}>
 		{#snippet child({ props })}
-			<Button
-				variant="outline"
-				class="w-calendar justify-between"
-				{...props}
-				role="combobox"
-				aria-expanded={open}
-			>
+			<Button variant="outline" {...props} role="combobox" aria-expanded={open}>
 				{value}
 				<ChevronsUpDown class="opacity-50" />
 			</Button>
