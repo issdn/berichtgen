@@ -23,7 +23,7 @@ export class CompletionException extends Error {
 
 	static fromUnknown(error: unknown) {
 		if (error instanceof genai.ApiError) {
-			const code = genAIErrorCodeToCompletionExceptionType(error.code);
+			const code = genAIErrorCodeToCompletionExceptionType(error.status);
 			const message = errorCodeToMessage(code);
 			return new CompletionException(message, code);
 		} else if (error instanceof OpenAI.APIError) {
@@ -69,7 +69,7 @@ export class IncuriaError extends Error {
 function errorCodeToMessage(code: CompletionExceptionType) {
 	switch (code) {
 		case CompletionExceptionType.INVALID_TOKEN:
-			return 'Der Token ist falsch.';
+			return 'Dein API-Key ist falsch.';
 		case CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR:
 			return 'Ein unbekannter Fehler beim LLM-Anbieter ist aufgetreten.';
 		case CompletionExceptionType.INTERNAL:
@@ -77,7 +77,7 @@ function errorCodeToMessage(code: CompletionExceptionType) {
 		case CompletionExceptionType.TOO_MANY_REQUESTS:
 			return 'Sie sind nicht autorisiert, diese Anfrage zu stellen. Bitte überprüfen Sie Ihre Berechtigungen.';
 		case CompletionExceptionType.TOKEN_EXPIRED:
-			return 'Der Token ist abgelaufen.';
+			return 'Dein API-Key ist abgelaufen.';
 		default:
 			return 'Ein unbekannter Fehler beim LLM-Anbieter ist aufgetreten.';
 	}

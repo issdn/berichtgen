@@ -40,7 +40,7 @@
 	<div class="flex flex-row gap-x-4">
 		<Form.Field {form} name={`ranges[${index}].hours`} class="w-full">
 			<div>
-				<p class="text-left font-normal">Stunden</p>
+				<p class="text-left font-normal">Stunden (pro Woche)</p>
 				<Form.Control>
 					{#snippet children({ props })}
 						<Input
