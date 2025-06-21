@@ -22,12 +22,12 @@
 				<div class="flex items-center space-x-2">
 					<Switch
 						bind:checked={berichtgenStore.processPhotos}
-						id="terms-label"
+						id="terms-switch"
 						disabled={wizardScheduler.isRunning}
 					/>
 
 					<Label
-						for="terms-label"
+						for="terms-switch"
 						class="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 					>
 						Bilder verarbeiten
@@ -37,15 +37,28 @@
 			<div class="flex items-center space-x-2">
 				<Switch
 					bind:checked={berichtgenStore.rewordJSON}
-					id="reword-json-label"
+					id="reword-json-switch"
 					disabled={wizardScheduler.isRunning}
 				/>
 
 				<Label
-					for="reword-json-label"
+					for="reword-json-switch"
 					class="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 				>
 					JSON-Dateien umformulieren
+				</Label>
+			</div>
+			<div class="flex items-center space-x-2">
+				<Switch
+					bind:checked={berichtgenStore.contantHours}
+					id="constant-hours-switch"
+					disabled={wizardScheduler.isRunning}
+				/>
+				<Label
+					for="constant-hours-switch"
+					class="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+				>
+					Feste Arbeitsstunden (40h/Woche)
 				</Label>
 			</div>
 		</div>

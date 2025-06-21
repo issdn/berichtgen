@@ -9,6 +9,8 @@ class ***REMOVED***Store {
 
 	_rewordJSON = $state(false);
 
+	_contantHours = $state(false);
+
 	get providers() {
 		return this._providers!;
 	}
@@ -42,6 +44,15 @@ class ***REMOVED***Store {
 	set rewordJSON(value: boolean) {
 		localStorage.setItem('rewordJSON', JSON.stringify(value));
 		this._rewordJSON = value;
+	}
+
+	get contantHours() {
+		return this._contantHours;
+	}
+
+	set contantHours(value: boolean) {
+		localStorage.setItem('contantHours', JSON.stringify(value));
+		this._contantHours = value;
 	}
 
 	tempEmailContainer: null | string = $state(null);

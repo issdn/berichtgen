@@ -5,6 +5,7 @@ import { createStateMachineForContext } from './state_machine.svelte';
 import type { Entry, ResultEntry } from './types';
 import { readCsvConfig } from '$src/lib/parse/config_reader';
 import { toast } from 'svelte-sonner';
+import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 export class WizardScheduler {
 	batchSize = 5;
 
@@ -57,7 +58,7 @@ export class WizardScheduler {
 				return prev;
 			}, [] as Required<Entry>[][]);
 			await this.scheduler?.terminate();
-			const combined = combineJSONs(finishedFiles);
+			const combined = combineJSONs(finishedFiles, berichtgenStore.contantHours);
 			this.isRunning = false;
 			return combined;
 		})();

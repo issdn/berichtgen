@@ -1,7 +1,7 @@
 import { Ort, type QualifikationenType, type ResultEntry } from '$lib/types';
 import { parseDate } from '@internationalized/date';
 
-export function combineJSONs(jsons: ResultEntry[][]) {
+export function combineJSONs(jsons: ResultEntry[][], constantHours: boolean = false) {
 	const byDateMap = new Map<string, ResultEntry[]>();
 	jsons.forEach((json) => {
 		json.forEach((entry) => {
@@ -31,7 +31,7 @@ export function combineJSONs(jsons: ResultEntry[][]) {
 				}
 			);
 			combinedEntry.text = combinedEntry.text.trim();
-			combinedEntry.hours = Math.round(combinedEntry.hours * 100) / 100;
+			combinedEntry.hours = constantHours ? 40 : combinedEntry.hours;
 			return combinedEntry;
 		})
 		.sort(({ datum: a }, { datum: b }) => parseDate(a).compare(parseDate(b)));

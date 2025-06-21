@@ -17,6 +17,7 @@
 		);
 		berichtgenStore.processPhotos = JSON.parse(localStorage.getItem('processPhotos') ?? 'false');
 		berichtgenStore.rewordJSON = JSON.parse(localStorage.getItem('rewordJSON') ?? 'false');
+		berichtgenStore.contantHours = JSON.parse(localStorage.getItem('contantHours') ?? 'false');
 		if (loggedIn && data.providers.length > 0) {
 			const providerId = localStorage.getItem('provider') ?? data.providers[0].id;
 			berichtgenStore.currentProvider =
