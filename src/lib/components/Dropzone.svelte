@@ -44,18 +44,18 @@
 		isDraggingIn = false;
 		const files = e.dataTransfer?.files ?? null;
 		if (files != null) {
-			handleFiles(files);
+			handleFiles(Array.from(files));
 		}
 	}
 
 	function handleChange(e: Event) {
 		const files = (e.target as HTMLInputElement | undefined)?.files ?? null;
 		if (files != null) {
-			handleFiles(files);
+			handleFiles(Array.from(files));
 		}
 	}
 
-	function handleFiles(files: FileList) {
+	function handleFiles(files: File[]) {
 		error = null;
 		const filesArray = Array.from(files);
 		const anyNonJsonFiles = filesArray.find((f) => f.type !== FileTypes.JSON);
@@ -94,20 +94,36 @@
 		}
 	}
 
-	function init(files: FileList) {
+	function init(files: File[]) {
 		const { files: otherFiles, configFile } = extractConfigFile(files);
 		wizardScheduler.files = otherFiles;
 		wizardScheduler.configFile = configFile;
 		wizardScheduler.processInit = wizardScheduler.init();
 	}
 
-	function extractConfigFile(files: FileList): { files: File[]; configFile: File | null } {
-		const filesArray = Array.from(files);
-		const configFile = filesArray.find((file) => file.name === CONFIG_FILENAME) || null;
-		const otherFiles = filesArray.filter((file) => file.name !== CONFIG_FILENAME);
+	function extractConfigFile(files: File[]): { files: File[]; configFile: File | null } {
+		const configFile = files.find((file) => file.name === CONFIG_FILENAME) || null;
+		const otherFiles = files.filter((file) => file.name !== CONFIG_FILENAME);
 		return { files: otherFiles, configFile };
 	}
+
+	function handlePaste(e: ClipboardEvent) {
+		const items = e.clipboardData?.items;
+		if (!items) return;
+		const files: File[] = [];
+		for (const item of items) {
+			if (item.kind === 'file') {
+				const file = item.getAsFile();
+				if (file) files.push(file);
+			}
+		}
+		if (files.length > 0) {
+			handleFiles(files);
+		}
+	}
 </script>
+
+<svelte:window onpaste={handlePaste} />
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <button
