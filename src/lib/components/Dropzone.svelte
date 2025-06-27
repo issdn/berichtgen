@@ -108,17 +108,19 @@
 	}
 
 	function handlePaste(e: ClipboardEvent) {
-		const items = e.clipboardData?.items;
-		if (!items) return;
-		const files: File[] = [];
-		for (const item of items) {
-			if (item.kind === 'file') {
-				const file = item.getAsFile();
-				if (file) files.push(file);
-			}
+		e.preventDefault();
+		const files = e.clipboardData?.files;
+		const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+		if (isFirefox) {
+			toast.error('Firefox unterstützt das Einfügen von Dateien aus der Zwischenablage nicht.');
+			return;
+		}
+		if (!files) {
+			toast.error('Keine Dateien in der Zwischenablage gefunden.');
+			return;
 		}
 		if (files.length > 0) {
-			handleFiles(files);
+			handleFiles(Array.from(files));
 		}
 	}
 </script>

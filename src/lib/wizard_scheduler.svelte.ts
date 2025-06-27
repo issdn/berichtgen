@@ -74,9 +74,9 @@ export class WizardScheduler {
 	}
 
 	async setRangesFromConfig() {
-		if (this.configFile === null) return;
+		if (this.configFile === null || this.schedule === null) return;
 		const contextByFilename = new Map<string, WizardFileContext>();
-		this.schedule!.forEach(({ context }) => {
+		this.schedule.forEach(({ context }) => {
 			contextByFilename.set(context.file.name, context);
 		});
 		const config = await readCsvConfig(this.configFile);
