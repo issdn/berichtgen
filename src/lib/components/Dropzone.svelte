@@ -108,18 +108,17 @@
 	}
 
 	function handlePaste(e: ClipboardEvent) {
-		e.preventDefault();
 		const files = e.clipboardData?.files;
-		const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
-		if (isFirefox) {
-			toast.error('Firefox unterstützt das Einfügen von Dateien aus der Zwischenablage nicht.');
-			return;
-		}
 		if (!files) {
 			toast.error('Keine Dateien in der Zwischenablage gefunden.');
 			return;
 		}
 		if (files.length > 0) {
+			const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+			if (isFirefox) {
+				toast.error('Firefox unterstützt das Einfügen von Dateien aus der Zwischenablage nicht.');
+				return;
+			}
 			handleFiles(Array.from(files));
 		}
 	}

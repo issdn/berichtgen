@@ -15,9 +15,11 @@
 	import { wizardScheduler } from '$src/lib/wizard_scheduler.svelte';
 
 	let { data } = $props();
-	const { supabase, tokenCount, user } = data;
+	let { supabase, tokenCount, user } = $derived(data);
 
-	berichtgenStore.userTokens = tokenCount;
+	$effect(() => {
+		berichtgenStore.userTokens = tokenCount;
+	});
 
 	onMount(() => {
 		if (page.url.searchParams.get('payment') === PaymentStatus.SUCCESS) {

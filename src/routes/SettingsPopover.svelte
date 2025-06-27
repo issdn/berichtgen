@@ -143,7 +143,7 @@
 							{#snippet children({ props })}
 								<Form.Label>Magic-Link an deine Email senden</Form.Label>
 								<div class="flex flex-row gap-x-2">
-									<Input {...props} bind:value={$formData.mail} />
+									<Input type="email" autocomplete="on" {...props} bind:value={$formData.mail} />
 									<Button disabled={loading} type="submit">
 										<Mail />
 									</Button>
