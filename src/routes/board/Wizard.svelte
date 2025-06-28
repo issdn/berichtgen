@@ -34,7 +34,9 @@
 		}
 	});
 
-	let { loggedIn } = getContext<UserContext>('user')();
+	let getUser = getContext<UserContext>('user');
+
+	let { loggedIn } = $derived(getUser());
 
 	let dialogOpen = $state(false);
 

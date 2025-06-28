@@ -6,23 +6,29 @@
 
 	let { data, children } = $props();
 
-	let { loggedIn } = getContext<UserContext>('user')();
+	let getUser = getContext<UserContext>('user');
 
-	berichtgenStore.providers = data.providers;
+	let { loggedIn } = $derived(getUser());
+
+	let providers = $derived(data.providers);
+
+	$effect.pre(() => {
+		berichtgenStore.providers = providers;
+		berichtgenStore.processPhotos = JSON.parse(localStorage.getItem('processPhotos') ?? 'false');
+		berichtgenStore.rewordJSON = JSON.parse(localStorage.getItem('rewordJSON') ?? 'false');
+		berichtgenStore.contantHours = JSON.parse(localStorage.getItem('contantHours') ?? 'false');
+		if (loggedIn && providers.length > 0) {
+			const providerId = localStorage.getItem('provider') ?? providers[0].id;
+			berichtgenStore.currentProvider =
+				providers.find((provider) => provider.id === providerId) ?? providers[0];
+		}
+	});
 
 	onMount(() => {
 		toast.info(
 			'Diese App is aktuell in der Entwicklung und kann Fehler enthalten. Anmeldung ist deaktiviert!',
-			{ dismissable: true, duration: 10000 }
+			{ dismissable: false }
 		);
-		berichtgenStore.processPhotos = JSON.parse(localStorage.getItem('processPhotos') ?? 'false');
-		berichtgenStore.rewordJSON = JSON.parse(localStorage.getItem('rewordJSON') ?? 'false');
-		berichtgenStore.contantHours = JSON.parse(localStorage.getItem('contantHours') ?? 'false');
-		if (loggedIn && data.providers.length > 0) {
-			const providerId = localStorage.getItem('provider') ?? data.providers[0].id;
-			berichtgenStore.currentProvider =
-				data.providers.find((provider) => provider.id === providerId) ?? data.providers[0];
-		}
 	});
 </script>
 
