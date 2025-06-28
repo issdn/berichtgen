@@ -9,7 +9,9 @@
 	import { getContext } from 'svelte';
 	import type { UserContext } from '$src/lib/types';
 
-	let { loggedIn } = getContext<UserContext>('user')();
+	let getUser = getContext<UserContext>('user');
+
+	let { loggedIn } = $derived(getUser());
 </script>
 
 <Popover.Root>
