@@ -12,7 +12,7 @@ class ***REMOVED***Store {
 	_contantHours = $state(false);
 
 	get providers() {
-		return this._providers!;
+		return this._providers ?? [];
 	}
 
 	set providers(value) {
