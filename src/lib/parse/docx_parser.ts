@@ -83,9 +83,10 @@ export class DOCXParser extends Parser {
 			if (rel === undefined) {
 				throw new IncuriaError(
 					IncuriaErrorType.DOCX_FAULTY,
-					'DOCX Foto könnte nicht gefunden werden.'
+					'DOCX Fotoreferenz könnte nicht gefunden werden.'
 				);
 			}
+
 			const fileData = this.data!.images.get(rel);
 			if (fileData === undefined) {
 				throw new IncuriaError(
@@ -129,18 +130,20 @@ export class DOCXParser extends Parser {
 		const images: Map<string, Uint8Array> = new Map();
 		const imgRels: Map<string, string> = new Map();
 
-		const mediaFiles = Object.keys(docx.files).filter((fileName) =>
-			fileName.startsWith('word/media/')
+		const mediaFiles = Object.keys(docx.files).filter(
+			(fileName) => fileName.startsWith('word/media/') || fileName.startsWith('media/')
 		);
 
-		const relsFiles = Object.keys(docx.files).filter((fileName) =>
-			fileName.startsWith('word/_rels/document.xml.rels')
+		const relsFiles = Object.keys(docx.files).filter(
+			(fileName) =>
+				fileName.startsWith('word/_rels/document.xml.rels') ||
+				fileName.startsWith('_rels/document.xml.rels')
 		);
 
 		await Promise.all(
 			mediaFiles.map(async (fileName) => {
 				const fileData = await docx.files[fileName].async('uint8array');
-				images.set(fileName.replace('word/', ''), fileData);
+				images.set(fileName.split('/').at(-1)!, fileData);
 			})
 		);
 
@@ -150,8 +153,11 @@ export class DOCXParser extends Parser {
 				const xml = parser.parse(fileData);
 
 				for (const rel of xml.Relationships.Relationship) {
-					if (rel['@_Target'].startsWith('media/image')) {
-						imgRels.set(rel['@_Id'], rel['@_Target']);
+					if (
+						rel['@_Target'].startsWith('media/image') ||
+						rel['@_Target'].startsWith('/media/image')
+					) {
+						imgRels.set(rel['@_Id'], rel['@_Target'].split('/').at(-1)!);
 					}
 				}
 			})
