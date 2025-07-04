@@ -91,6 +91,12 @@ using (
 -- ALTER PUBLICATION supabase_realtime ADD TABLE "public"."userTokenCount";
 ```
 
+Prune carts
+Supabase Integrations -> Cron 0 0 * * 1
+```sql
+DELETE FROM cart WHERE "createdAt" < NOW() - INTERVAL '7 days';
+```
+
 ### types
 ```
 supabase gen types typescript --project-id odbyqfknheshvujhabpp > database.types.ts
