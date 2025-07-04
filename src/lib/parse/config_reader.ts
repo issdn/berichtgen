@@ -28,7 +28,10 @@ export function readCsvConfigFromText(text: string): CSVConfig {
 	const data: CSVConfig = [];
 
 	for (let i = 0; i < lines.length; i++) {
-		const values = lines[i].split(',').map((value) => value.trim());
+		const values = lines[i]
+			.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g)!
+			.map((value) => value.trim().replace(/^"|"$/g, ''));
+
 		const ort = values.shift() as Ort;
 		const file = values.shift() as string;
 

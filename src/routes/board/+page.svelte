@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Dropzone from '$lib/components/Dropzone.svelte';
 	import Howto from '$lib/components/Howto.svelte';
 	import { onMount } from 'svelte';
 	import Wizard from './Wizard.svelte';
@@ -13,6 +12,7 @@
 	import type { RealtimeChannel } from '@supabase/supabase-js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { wizardScheduler } from '$src/lib/wizard_scheduler.svelte';
+	import WizardDropzone from '$src/lib/components/WizardDropzone.svelte';
 
 	let { data } = $props();
 	let { supabase, tokenCount, user } = $derived(data);
@@ -75,7 +75,7 @@
 	</div>
 	<div class="flex h-full flex-col gap-y-4 md:w-1/2">
 		<div class="h-full w-full">
-			<Dropzone />
+			<WizardDropzone />
 		</div>
 		<div class="h-full w-full">
 			<Wizard />

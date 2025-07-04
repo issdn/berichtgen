@@ -5,6 +5,7 @@
 	import { getContextPrompt } from '$src/lib/completion/prompt';
 	import { Ort, type UserContext } from '$src/lib/types';
 	import { getContext } from 'svelte';
+	import FilesToConfigModal from '$src/lib/tools/FilesToConfigModal.svelte';
 
 	let { loggedIn } = getContext<UserContext>('user')();
 </script>
@@ -106,6 +107,9 @@
 					<code class="font-mono text-sm"
 						>SCHULE,rwc.docx,2024-08-26;2024-10-16;40,2025-01-01;2025-03-01;30</code
 					>
+					<div class="flex flex-row pt-4">
+						<FilesToConfigModal />
+					</div>
 				</Card.Content>
 			</Card.Root>
 		</div>
