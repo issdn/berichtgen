@@ -15,7 +15,9 @@
 	$effect.pre(() => {
 		berichtgenStore.providers = providers;
 		berichtgenStore.processPhotos = JSON.parse(localStorage.getItem('processPhotos') ?? 'false');
-		berichtgenStore.rewordJSON = JSON.parse(localStorage.getItem('rewordJSON') ?? 'false');
+		berichtgenStore.rewordJSON = loggedIn
+			? JSON.parse(localStorage.getItem('rewordJSON') ?? 'false')
+			: false;
 		berichtgenStore.contantHours = JSON.parse(localStorage.getItem('contantHours') ?? 'false');
 		if (loggedIn && providers.length > 0) {
 			const providerId = localStorage.getItem('provider') ?? providers[0].id;
