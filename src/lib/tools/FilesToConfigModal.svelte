@@ -10,8 +10,9 @@
 	function handleFiles(files: File[]) {
 		let text = '';
 		for (const file of files) {
-			text += `\nSCHULE,"${file.name}",YYYY-MM-DD;YYYY-MM-DD;40`;
+			text += `SCHULE,"${file.name}",YYYY-MM-DD;YYYY-MM-DD;40\n`;
 		}
+		text.trimEnd();
 		resultFile = text;
 	}
 </script>

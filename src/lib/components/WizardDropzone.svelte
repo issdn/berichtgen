@@ -69,7 +69,7 @@
 	}
 </script>
 
-<Dropzone {handleFiles} />
+<Dropzone {handleFiles} bind:files={wizardScheduler.files} />
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content>

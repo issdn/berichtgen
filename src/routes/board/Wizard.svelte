@@ -16,6 +16,7 @@
 	import WizardSettingsPopover from '$src/lib/components/WizardSettingsPopover.svelte';
 	import type { UserContext } from '$src/lib/types';
 	import { toast } from 'svelte-sonner';
+	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -74,7 +75,9 @@
 	</div>
 	<div class="max-y-1/2 relative flex min-h-64 flex-col gap-y-1 overflow-y-auto p-4">
 		{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
-			{#await wizardScheduler.processInit then}
+			{#await wizardScheduler.processInit}
+				<div class="center-absolute"><Spinner /></div>
+			{:then}
 				{#each wizardScheduler.schedule as { context, machine }, i}
 					{#if i <= wizardScheduler.filesReady + wizardScheduler.batchSize}
 						<WizardFile {context} {machine} />

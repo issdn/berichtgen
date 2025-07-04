@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { FileCheck, FileUp } from '@lucide/svelte';
-	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import { toast } from 'svelte-sonner';
+	import { onMount } from 'svelte';
+	import { pasteStack } from '$src/lib/stores/paste_stack.svelte';
 
-	let { handleFiles }: { handleFiles: (files: File[]) => void } = $props();
+	let {
+		handleFiles,
+		files = $bindable()
+	}: { handleFiles: (files: File[]) => void; files?: File[] | null } = $props();
 
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
@@ -31,37 +35,49 @@
 	function handleDrop(e: DragEvent) {
 		preventDefaults(e);
 		isDraggingIn = false;
-		const files = e.dataTransfer?.files ?? null;
-		if (files != null) {
-			handleFiles(Array.from(files));
+		const maybeFiles = e.dataTransfer?.files ?? null;
+		if (maybeFiles != null) {
+			files = Array.from(maybeFiles);
+			handleFiles(files);
 		}
 	}
 
 	function handleChange(e: Event) {
-		const files = (e.target as HTMLInputElement | undefined)?.files ?? null;
-		if (files != null) {
-			handleFiles(Array.from(files));
+		const maybeFiles = (e.target as HTMLInputElement | undefined)?.files ?? null;
+		if (maybeFiles != null) {
+			files = Array.from(maybeFiles);
+			handleFiles(files);
 		}
 	}
 
 	function handlePaste(e: ClipboardEvent) {
-		const files = e.clipboardData?.files;
-		if (!files) {
+		const maybeFiles = e.clipboardData?.files;
+		if (!maybeFiles) {
 			toast.error('Keine Dateien in der Zwischenablage gefunden.');
 			return;
 		}
-		if (files.length > 0) {
-			const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+		if (maybeFiles.length > 0) {
+			const isFirefox =
+				navigator.userAgent.toLowerCase().includes('firefox') && maybeFiles.length > 1;
 			if (isFirefox) {
-				toast.error('Firefox unterstützt das Einfügen von Dateien aus der Zwischenablage nicht.');
+				toast.error(
+					'Firefox unterstützt das Einfügen von mehr als einer Datei aus der Zwischenablage nicht.'
+				);
 				return;
 			}
-			handleFiles(Array.from(files));
+			files = Array.from(maybeFiles);
+			handleFiles(files);
 		}
 	}
-</script>
 
-<svelte:window onpaste={handlePaste} />
+	onMount(() => {
+		pasteStack.push(handlePaste);
+
+		return () => {
+			pasteStack.pop();
+		};
+	});
+</script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <button
@@ -81,11 +97,11 @@
 		multiple
 		style="display:none"
 	/>
-	{#if wizardScheduler.files != null && wizardScheduler.files.length > 0}
+	{#if files != null && files.length > 0}
 		<FileCheck size={48} />
 		<label for="dropzone" class="pointer-events-none w-full px-8">
 			<ol>
-				{#each wizardScheduler.files as file}
+				{#each files as file}
 					<li class="truncate overflow-hidden">{file.name}</li>
 				{/each}
 			</ol>

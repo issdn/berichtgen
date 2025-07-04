@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { size = 'md' }: { size: 'sm' | 'md' | 'lg' | 'xl' | '2xl' } = $props();
+	let { size = 'md' }: { size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' } = $props();
 </script>
 
 {#if size === 'sm'}
