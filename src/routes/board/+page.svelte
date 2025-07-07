@@ -62,8 +62,10 @@
 	>
 </svelte:head>
 
-<div class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:flex-row">
-	<div class="flex h-full flex-col gap-y-2 md:w-1/2">
+<div
+	class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:grid md:grid-cols-2 md:grid-rows-2"
+>
+	<div class="flex h-full flex-col gap-y-2 md:row-span-2">
 		{#if berichtgenStore.userTokens !== null}
 			<Badge
 				onclick={() => goto('/board/user/kauf')}
@@ -73,12 +75,6 @@
 		{/if}
 		<Howto />
 	</div>
-	<div class="flex h-full flex-col gap-y-4 md:w-1/2">
-		<div class="h-full w-full">
-			<WizardDropzone />
-		</div>
-		<div class="h-full w-full">
-			<Wizard />
-		</div>
-	</div>
+	<WizardDropzone />
+	<Wizard />
 </div>

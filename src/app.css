@@ -123,7 +123,7 @@
 	}
 
 	.h-main {
-		@apply lg:h-[calc(100%-5rem)];
+		@apply md:h-[calc(100%-5rem)];
 	}
 
 	.w-calendar {

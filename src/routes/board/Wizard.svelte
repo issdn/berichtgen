@@ -54,7 +54,7 @@
 	});
 </script>
 
-<div class="relative h-full w-full gap-y-8 rounded-lg border-4">
+<div class="relative flex h-full w-full flex-col overflow-hidden rounded-lg border-4">
 	<div class="bg-muted flex flex-row flex-wrap items-center justify-between gap-x-4 p-4">
 		<div class="flex flex-row items-center gap-x-4">
 			{#if loggedIn}
@@ -73,7 +73,7 @@
 			<Button disabled={true}><FileCheck2 /></Button>
 		{/if}
 	</div>
-	<div class="max-y-1/2 relative flex min-h-64 flex-col gap-y-1 overflow-y-auto p-4">
+	<div class="relative flex h-full flex-col gap-y-1 overflow-y-auto p-4">
 		{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 			{#await wizardScheduler.processInit}
 				<div class="center-absolute"><Spinner /></div>

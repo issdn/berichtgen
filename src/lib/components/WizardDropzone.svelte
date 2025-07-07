@@ -6,7 +6,7 @@
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
-	import { CONFIG_FILENAME } from '$src/lib/constants';
+	import { CONFIG_FILENAME_REGEX } from '$src/lib/constants';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import Button from '$src/lib/components/ui/button/button.svelte';
 	import { goto } from '$app/navigation';
@@ -24,8 +24,8 @@
 	}
 
 	function extractConfigFile(files: File[]): { files: File[]; configFile: File | null } {
-		const configFile = files.find((file) => file.name === CONFIG_FILENAME) || null;
-		const otherFiles = files.filter((file) => file.name !== CONFIG_FILENAME);
+		const configFile = files.find((file) => CONFIG_FILENAME_REGEX.test(file.name)) || null;
+		const otherFiles = files.filter((file) => !CONFIG_FILENAME_REGEX.test(file.name));
 		return { files: otherFiles, configFile };
 	}
 

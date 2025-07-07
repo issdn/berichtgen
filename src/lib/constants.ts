@@ -1,1 +1,1 @@
-export const CONFIG_FILENAME = 'berichtgen.txt';
+export const CONFIG_FILENAME_REGEX = /^berichtgen(\(\d+\))?\.(txt|csv)$/;
