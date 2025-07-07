@@ -25,13 +25,12 @@
 				providers.find((provider) => provider.id === providerId) ?? providers[0];
 		}
 	});
-
-	onMount(() => {
-		toast.info(
-			'Diese App is aktuell in der Entwicklung und kann Fehler enthalten. Anmeldung ist deaktiviert!',
-			{ dismissable: false }
-		);
-	});
 </script>
+
+<div
+	class="bg-secondary fixed top-8 -left-10 z-50 -rotate-45 transform px-8 py-2 text-sm font-medium"
+>
+	🚧 In Entwicklung
+</div>
 
 {@render children()}
