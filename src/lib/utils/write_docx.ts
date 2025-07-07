@@ -20,10 +20,22 @@ function header(text: string) {
 	});
 }
 
+function splitTextByDoubleNewlines(text: string): string[] {
+	return text
+		.split(/\r?\n\n/)
+		.map((line) => line.trim())
+		.filter((line) => line.length > 0);
+}
+
 function emptyRow(text: string | null = null, hours: number | null = null) {
+	const splittedByDoubleNewline = text ? splitTextByDoubleNewlines(text) : [];
+	const textParagraphs = splittedByDoubleNewline.map(
+		(text) =>
+			new Paragraph({ text, bullet: splittedByDoubleNewline.length > 1 ? { level: 0 } : undefined })
+	);
 	return new TableRow({
 		children: [
-			new TableCell({ width: { size: '90%' }, children: text ? [new Paragraph({ text })] : [] }),
+			new TableCell({ width: { size: '90%' }, children: textParagraphs }),
 			new TableCell({
 				children: hours ? [new Paragraph({ text: hours.toString(), alignment: 'center' })] : []
 			})
@@ -190,7 +202,6 @@ export async function writeDocxFile(entries: ResultEntry[]) {
 		];
 	});
 
-	// Create the document
 	const doc = new Document({
 		styles: {
 			paragraphStyles: [
@@ -219,7 +230,6 @@ export async function writeDocxFile(entries: ResultEntry[]) {
 		}))
 	});
 
-	// Generate the .docx file
 	return await Packer.toBlob(doc);
 }
 
