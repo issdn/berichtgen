@@ -79,11 +79,7 @@
 				<div class="center-absolute"><Spinner /></div>
 			{:then}
 				{#each wizardScheduler.schedule as { context, machine }, i}
-					{#if i <= wizardScheduler.filesReady + wizardScheduler.batchSize}
-						<WizardFile {context} {machine} />
-					{:else}
-						<span class="truncate overflow-hidden">{context.file.name}</span>
-					{/if}
+					<WizardFile {context} {machine} />
 				{/each}
 			{/await}
 		{:else}

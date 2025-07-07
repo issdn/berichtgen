@@ -121,7 +121,7 @@ export function onFileDone(scheduler: WizardScheduler) {
 	if (scheduler.files !== null && scheduler.filesReady === scheduler.files.length) {
 		scheduler.finish();
 	} else {
-		scheduler.schedule?.at(scheduler.filesReady + scheduler.batchSize)?.machine.run();
+		scheduler.schedule?.at(scheduler.filesReady + scheduler.batchSize - 1)?.machine.run();
 	}
 }
 

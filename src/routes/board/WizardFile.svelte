@@ -38,10 +38,7 @@
 
 <div transition:slide class="bg-muted flex flex-col justify-center gap-y-4 rounded-md p-4">
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
-		<span class="basis-2/5 truncate overflow-hidden">{context.file.name}</span>
-		{#if $machine === WizardStep.PROCESSING}
-			<Progress class="basis-3/5" max={context.max} value={context.value} />
-		{/if}
+		<span class="truncate overflow-hidden">{context.file.name}</span>
 		{#if $machine === WizardStep.WAITING}
 			<div class="flex flex-row gap-x-2">
 				<Tooltip.Provider>
