@@ -28,7 +28,7 @@
 						<br />
 						Ein Prompt das du verwenden kannst:
 					</p>
-					<div class="flex flex-col gap-2 py-4 md:flex-row">
+					<div class="flex flex-row flex-wrap items-start gap-2 py-4">
 						<Button
 							variant="ghost"
 							onclick={() => {
