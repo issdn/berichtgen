@@ -3,33 +3,41 @@
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 	import { pasteStack } from '$src/lib/stores/paste_stack.svelte';
+	import type { WizardFiles } from '$src/lib/types';
 
 	let {
 		handleFiles,
 		files = $bindable()
-	}: { handleFiles: (files: File[]) => void; files?: File[] | null } = $props();
+	}: { handleFiles: (files: WizardFiles) => void; files?: WizardFiles | null } = $props();
 
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
 
-	async function scanFiles(item: FileSystemEntry, items: File[] = []) {
+	function getArrayDepth(arr: any[]): number {
+		if (!Array.isArray(arr)) return 0;
+		return 1 + Math.max(0, ...arr.map(getArrayDepth));
+	}
+
+	/*
+	 * Recursively scans files and directories from a FileSystemEntry.
+	 * Returns an array of files, handling nested directories.
+	 */
+	async function scanFiles(item: FileSystemEntry, items: WizardFiles = []) {
 		if (item.isDirectory) {
 			const directoryReader = (item as FileSystemDirectoryEntry).createReader();
 
-			const allEntries: File[] = [];
-			let entriesResult: File[] = [];
+			const allEntries: WizardFiles = [];
+			let entriesResult: WizardFiles = [];
 			do {
-				const readEntriesPromise = new Promise<File[]>((resolve, reject) => {
+				const readEntriesPromise = new Promise<WizardFiles>((resolve, reject) => {
 					directoryReader.readEntries(async (entries) => {
-						if (entries.length === 0) {
-							resolve([]);
-						} else {
-							resolve((await Promise.all(entries.map((entry) => scanFiles(entry, items)))).flat());
-						}
+						resolve((await Promise.all(entries.map((entry) => scanFiles(entry, items)))).flat());
 					}, reject);
 				});
 				entriesResult = await readEntriesPromise;
-				allEntries.push(...entriesResult);
+				if (entriesResult.length > 0) {
+					allEntries.push(entriesResult as unknown as File[]);
+				}
 			} while (entriesResult.length > 0);
 
 			return allEntries;
@@ -37,7 +45,7 @@
 			const readFilePromise = new Promise<File>((resolve, reject) => {
 				(item as FileSystemFileEntry).file(resolve, reject);
 			});
-			return [...items, await readFilePromise];
+			return [...items, await readFilePromise] as WizardFiles;
 		}
 		return items;
 	}
@@ -52,14 +60,17 @@
 			toast.error('Keine Dateien gefunden.');
 			return;
 		}
-		const entry = maybeItems[0].webkitGetAsEntry();
-		if (!entry) {
-			toast.error('Keine gültigen Dateien gefunden.');
-			return;
-		}
 		try {
-			const files = await scanFiles(entry);
-			handleFiles(files);
+			const dirs = await Promise.all(
+				[...maybeItems].map((item) => {
+					const entry = item.webkitGetAsEntry();
+					return scanFiles(entry!);
+				})
+			);
+			const depth = getArrayDepth(dirs);
+			const files = dirs.flat(depth > 2 ? depth - 2 : 0) as WizardFiles;
+			console.log(files);
+			// handleFiles(files);
 		} catch (error) {
 			toast.error('Fehler beim Scannen der Dateien: ' + error);
 		}

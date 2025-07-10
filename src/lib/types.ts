@@ -192,3 +192,5 @@ export type CSVConfigFile = {
 };
 
 export type CSVConfig = CSVConfigFile[];
+
+export type WizardFiles = File[][];
