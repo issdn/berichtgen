@@ -17,6 +17,7 @@
 	import Button from '$src/lib/components/ui/button/button.svelte';
 	import { goto } from '$app/navigation';
 	import { readCsvConfig } from '$src/lib/parse/config_reader';
+	import { getArrayDepth } from '$src/lib/utils/math';
 
 	let { loggedIn } = getContext<UserContext>('user')();
 
@@ -126,16 +127,12 @@
 		}
 	}
 
-	function getArrayDepth(arr: any[]): number {
-		if (!Array.isArray(arr)) return 0;
-		return 1 + Math.max(0, ...arr.map(getArrayDepth));
-	}
-
 	async function scanFiles(item: FileSystemEntry, items: WizardRawDirectories = []) {
 		if (item.isDirectory) {
 			const directoryReader = (item as FileSystemDirectoryEntry).createReader();
 			const allEntries: WizardRawDirectories = [];
 			let entriesResult: WizardRawDirectories = [];
+
 			do {
 				const readEntriesPromise = new Promise<WizardRawDirectories>((resolve, reject) => {
 					directoryReader.readEntries(async (entries) => {
@@ -153,6 +150,7 @@
 			const readFilePromise = new Promise<File>((resolve, reject) => {
 				(item as FileSystemFileEntry).file(resolve, reject);
 			});
+
 			return [...items, await readFilePromise] as WizardRawDirectories;
 		}
 		return items;

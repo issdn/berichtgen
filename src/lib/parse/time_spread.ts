@@ -62,7 +62,7 @@ export function spreadEntriesAcrossWeeks(
 		entriesTotal += entriesPerWeekEven;
 
 		if (i + 1 <= Math.round(entriesPerWeekRemainder * weeks)) {
-			newEntries.push(cloneObjectWithDate(entries[entriesTotal], mondayOfWeek, location, hours));
+			newEntries.push(cloneObjectWithDate(entries[entriesTotal], mondayOfWeek, ort, hours));
 			entriesTotal++;
 		}
 
@@ -86,13 +86,13 @@ export function spreadEntriesAcrossWeeks(
 function cloneObjectWithDate(
 	entry: Entry,
 	date: CalendarDate,
-	location: Ort,
+	ort: Ort,
 	hours: number
 ): ResultEntry {
 	return {
 		...entry,
 		datum: date.toString(),
-		ort: location,
+		ort,
 		hours
 	};
 }

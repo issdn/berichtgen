@@ -24,7 +24,7 @@ test('Spread single entry across multiple weeks.', () => {
 	];
 
 	const received = spreadEntriesAcrossWeeks(entries, {
-		location: Ort.BETRIEB,
+		ort: Ort.BETRIEB,
 		ranges: [
 			{
 				daterange: {
@@ -90,7 +90,7 @@ test('Spread multiple entries across multiple weeks.', () => {
 				}
 			}
 		],
-		location: Ort.BETRIEB
+		ort: Ort.BETRIEB
 	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -121,7 +121,7 @@ test('Spread one entry across multiple weeks.', () => {
 				}
 			}
 		],
-		location: Ort.BETRIEB
+		ort: Ort.BETRIEB
 	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -170,7 +170,7 @@ test('Spread multiple entries across one week.', () => {
 				}
 			}
 		],
-		location: Ort.BETRIEB
+		ort: Ort.BETRIEB
 	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -225,7 +225,7 @@ test('Spread multiple entries across multiple week ranges.', () => {
 				}
 			}
 		],
-		location: Ort.BETRIEB
+		ort: Ort.BETRIEB
 	});
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
@@ -299,7 +299,7 @@ test('Spread multiple entries across multiple week ranges.', () => {
 				hours: 20
 			}
 		],
-		location: Ort.BETRIEB
+		ort: Ort.BETRIEB
 	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -316,7 +316,7 @@ test('Spread multiple entries across multiple week ranges with hours.', () => {
 				hours: 30
 			}
 		],
-		location: Ort.BETRIEB
+		ort: Ort.BETRIEB
 	});
 
 	expect(received.length).toBe(testAIResponse.length);

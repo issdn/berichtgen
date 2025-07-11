@@ -78,8 +78,10 @@
 			{#await wizardScheduler.processInit}
 				<div class="center-absolute"><Spinner /></div>
 			{:then}
-				{#each wizardScheduler.schedule as { context, machine }, i}
-					<WizardFile {context} {machine} />
+				{#each wizardScheduler.schedule as directory}
+					{#each directory as file}
+						<WizardFile {...file} />
+					{/each}
 				{/each}
 			{/await}
 		{:else}
@@ -94,11 +96,13 @@
 	</Dialog.Header>
 	<div class="flex w-full flex-col items-center py-4">
 		<div class="flex w-fit flex-col gap-y-2">
-			<FileDownloadButton fn={(result) => handleJSONDownload(result)} download="bericht.json"
-				><FileJson />Als JSON herunterladen</FileDownloadButton
+			<FileDownloadButton
+				fn={() => handleJSONDownload(wizardScheduler.result!)}
+				download="bericht.json"><FileJson />Als JSON herunterladen</FileDownloadButton
 			>
-			<FileDownloadButton fn={(result) => handleDOCXDownload(result)} download="bericht.docx"
-				><FileType />Als DOCX herunterladen</FileDownloadButton
+			<FileDownloadButton
+				fn={() => handleDOCXDownload(wizardScheduler.result!)}
+				download="bericht.docx"><FileType />Als DOCX herunterladen</FileDownloadButton
 			>
 		</div>
 	</div>

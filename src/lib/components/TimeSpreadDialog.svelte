@@ -31,7 +31,7 @@
 	// End date is today by default. Is there no start date, then it is invalid.
 	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
 	const { form, errors, enhance, validateForm, ...rest } = superForm(
-		defaults({ ranges: [newRow(0)], location: Ort.SCHULE }, zod(dateRangeSchema)),
+		defaults({ ranges: [newRow(0)], ort: Ort.SCHULE }, zod(dateRangeSchema)),
 		{
 			id,
 			SPA: true,
@@ -73,12 +73,12 @@
 					<p class="w-full pl-1 text-left align-middle font-normal">Ort</p>
 					<Form.Field
 						form={{ form, errors, enhance, validateForm, ...rest }}
-						name="location"
+						name="ort"
 						class="w-calendar space-y-0"
 					>
 						<Form.Control>
 							{#snippet children({ props })}
-								<LocationCombobox bind:value={$form.location} />
+								<LocationCombobox bind:value={$form.ort} />
 							{/snippet}
 						</Form.Control>
 						<Form.FieldErrors />
