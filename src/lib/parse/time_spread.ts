@@ -13,7 +13,7 @@ const LOCALE = 'de-DE';
  */
 export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
-	{ ranges, location }: ValidIncuriaDateRanges
+	{ ranges, ort }: ValidIncuriaDateRanges
 ): Required<Entry>[] {
 	const hoursSum = ranges.reduce(
 		(prev, { daterange, hours }) =>
@@ -56,9 +56,7 @@ export function spreadEntriesAcrossWeeks(
 		const entriesPerWeekRemainder = entriesPerWeek - entriesPerWeekEven;
 
 		for (let j = 0; j < entriesPerWeekEven; j++) {
-			newEntries.push(
-				cloneObjectWithDate(entries[entriesTotal + j], mondayOfWeek, location, hours)
-			);
+			newEntries.push(cloneObjectWithDate(entries[entriesTotal + j], mondayOfWeek, ort, hours));
 		}
 
 		entriesTotal += entriesPerWeekEven;

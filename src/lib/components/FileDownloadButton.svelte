@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
-	import type { ResultEntry } from '$src/lib/types';
 	import { wizardScheduler } from '$src/lib/wizard_scheduler.svelte';
 	import type { Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -11,7 +10,7 @@
 		download,
 		children
 	}: {
-		fn: (result: Promise<ResultEntry[]>) => Promise<void>;
+		fn: () => Promise<void>;
 		download: string;
 		children: Snippet;
 	} = $props();
@@ -23,7 +22,7 @@
 	disabled={wizardScheduler.isRunning || !wizardScheduler.result}
 	onclick={() => {
 		isLoading = true;
-		fn(wizardScheduler.result!)
+		fn()
 			.catch(() => toast.error('Etwas ist falsch gelaufen 🥲'))
 			.finally(() => {
 				isLoading = false;

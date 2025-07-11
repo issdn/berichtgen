@@ -28,7 +28,8 @@ export class WizardFileContext {
 		this.value += 1;
 	}
 
-	constructor(file: File) {
+	constructor(file: File, dateRanges: DateRangeSchema | null | undefined = null) {
 		this.file = file;
+		this.dateRanges = dateRanges ?? null;
 	}
 }

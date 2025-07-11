@@ -1,5 +1,7 @@
+import type { PasteHandler } from '$src/lib/types';
+
 class GlobalPasteStack {
-	pasteStack: ((e: ClipboardEvent) => void)[] = [];
+	pasteStack: PasteHandler = [];
 
 	push(callback: (e: ClipboardEvent) => void) {
 		window.removeEventListener('paste', this.pasteStack[this.pasteStack.length - 1]);

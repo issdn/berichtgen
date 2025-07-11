@@ -1,3 +1,9 @@
+import type { DateRangeSchema } from '$src/lib/schemas';
+import {
+	createStateMachineForContext,
+	type StateMachineSignature
+} from '$src/lib/state_machine.svelte';
+import type { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 import type { DateValue } from '@internationalized/date';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 
@@ -193,4 +199,22 @@ export type CSVConfigFile = {
 
 export type CSVConfig = CSVConfigFile[];
 
-export type WizardFiles = File[][];
+export type WizardRawDirectories = File[][];
+
+export type WizardRawDirectory = WizardRawDirectories[number];
+
+export type WizardDirectory = { file: File; config?: DateRangeSchema }[];
+
+export type WizardDirectories = WizardDirectory[];
+
+export type WizardProcessStateMachine = {
+	context: WizardFileContext;
+	machine: ReturnType<StateMachineSignature>;
+};
+
+/**
+ * Dropzone component overrides global paste event handler on mount.
+ * On unmount, it restores the previous handler.
+ * For more see *WizardDropzone.svelte*
+ */
+export type PasteHandler = ((e: ClipboardEvent) => void)[];

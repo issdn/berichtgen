@@ -2,22 +2,22 @@ import type { Scheduler } from 'tesseract.js';
 import { combineJSONs } from './parse/combine';
 import { WizardFileContext } from './wizard_file_context.svelte';
 import { createStateMachineForContext } from './state_machine.svelte';
-import type { Entry, ResultEntry } from './types';
-import { readCsvConfig } from '$src/lib/parse/config_reader';
-import { toast } from 'svelte-sonner';
+import type { Entry, ResultEntry, WizardDirectories, WizardProcessStateMachine } from './types';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
+import type { DateRangeSchema } from '$src/lib/schemas';
 export class WizardScheduler {
 	batchSize = 5;
 
-	files: File[] | null = $state(null);
+	directories: WizardDirectories | null = $state(null);
 
-	configFile: File | null = $state(null);
+	schedule: WizardProcessStateMachine[][] | null = $derived.by(() => {
+		if (this.directories === null || this.directories.length === 0) return null;
+		return [...this.directories].map((directory) => directory.map(this.createProcessStateMachine));
+	});
 
-	schedule: ReturnType<WizardScheduler['createProcessStateMachine']>[] | null = $derived.by(() => {
-		if (this.files === null || this.files.length === 0) return null;
-		return [...this.files!].map((file) => {
-			return this.createProcessStateMachine(file);
-		});
+	numberOfFiles = $derived.by(() => {
+		if (this.schedule === null) return 0;
+		return this.schedule.reduce((prev, directory) => prev + directory.length, 0);
 	});
 
 	filesReady = $state(0);
@@ -36,7 +36,14 @@ export class WizardScheduler {
 
 	workersNr = 0;
 
+	get isDone() {
+		return this.directories !== null && this.filesReady === this.numberOfFiles;
+	}
+
 	async init() {
+		if (this.schedule === null) {
+			return;
+		}
 		this.isRunning = true;
 		if (this.scheduler === null) {
 			const { createScheduler } = await import('tesseract.js');
@@ -45,27 +52,34 @@ export class WizardScheduler {
 		this.result = null;
 		this.filesReady = 0;
 		this.filesUnfinished = 0;
-		await this.setRangesFromConfig();
 		for (let i = 0; i < this.batchSize; i++) {
-			this.schedule?.at(i)?.machine.run();
+			this.schedule[0].at(i)?.machine.run();
 		}
 	}
 
 	finish() {
 		this.result = (async () => {
-			const finishedFiles = this.schedule!.reduce((prev, { context }) => {
-				if (context.finished != null) return [...prev, context.finished];
-				return prev;
-			}, [] as Required<Entry>[][]);
+			const finishedDirectories = this.schedule!.map((directory) =>
+				directory.reduce((prev, { context }) => {
+					if (context.finished != null) return [...prev, context.finished];
+					return prev;
+				}, [] as Required<Entry>[][])
+			);
 			await this.scheduler?.terminate();
-			const combined = combineJSONs(finishedFiles, berichtgenStore.contantHours);
+			const combined = combineJSONs(finishedDirectories.flat(), berichtgenStore.contantHours);
 			this.isRunning = false;
 			return combined;
 		})();
 	}
 
-	createProcessStateMachine(file: File) {
-		const context = new WizardFileContext(file);
+	createProcessStateMachine({
+		file,
+		config = null
+	}: {
+		file: File;
+		config?: DateRangeSchema | null | undefined;
+	}) {
+		const context = new WizardFileContext(file, config);
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const scheduler = this;
 
@@ -73,40 +87,10 @@ export class WizardScheduler {
 		return { context, machine };
 	}
 
-	async setRangesFromConfig() {
-		if (this.configFile === null || this.schedule === null) return;
-		const contextByFilename = new Map<string, WizardFileContext>();
-		this.schedule.forEach(({ context }) => {
-			contextByFilename.set(context.file.name, context);
-		});
-		const config = await readCsvConfig(this.configFile);
-		const notFoundFiles: string[] = [];
-		config.match(
-			(config) => {
-				config.forEach(({ file, ort, ranges }) => {
-					const context = contextByFilename.get(file);
-					if (context) {
-						context.dateRanges = {
-							ranges: ranges.map((obj, i) => ({ ...obj, id: i })),
-							location: ort
-						};
-					} else {
-						notFoundFiles.push(file);
-					}
-				});
-				if (config.length < this.files!.length) {
-					toast('Nicht alle Dateien in der Konfiguration gefunden.');
-				}
-				if (notFoundFiles.length > 0) {
-					toast.error(
-						`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${notFoundFiles.join(', ')}`
-					);
-				}
-			},
-			(err) => {
-				toast.error(`Fehler beim Lesen der Konfiguration: ${err.message || 'Unbekannter Fehler'}`);
-			}
-		);
+	runNext() {
+		this.schedule!.flat()
+			.at(this.filesReady + this.batchSize - 1)
+			?.machine.run();
 	}
 }
 

@@ -118,10 +118,10 @@ function parseFile(
 
 export function onFileDone(scheduler: WizardScheduler) {
 	scheduler.filesReady += 1;
-	if (scheduler.files !== null && scheduler.filesReady === scheduler.files.length) {
+	if (scheduler.isDone) {
 		scheduler.finish();
 	} else {
-		scheduler.schedule?.at(scheduler.filesReady + scheduler.batchSize - 1)?.machine.run();
+		scheduler.runNext();
 	}
 }
 
@@ -178,7 +178,7 @@ export function createStateMachineForContext(
 					this.wait();
 					return;
 				}
-				getCompletions(context.snapshot as string, context.dateRanges.location).match(
+				getCompletions(context.snapshot as string, context.dateRanges.ort).match(
 					(value) => {
 						context.snapshot = value;
 						this.next();
@@ -249,3 +249,5 @@ export function createStateMachineForContext(
 		}
 	});
 }
+
+export type StateMachineSignature = typeof createStateMachineForContext;

@@ -82,7 +82,7 @@ export const dateRangeSchema = z.object({
 				.nullable()
 		})
 		.array(),
-	location: z.enum([Ort.SCHULE, Ort.BETRIEB, Ort.UNTERWEISUNG, Ort['SCHULE/BETRIEB']])
+	ort: z.enum([Ort.SCHULE, Ort.BETRIEB, Ort.UNTERWEISUNG, Ort['SCHULE/BETRIEB']])
 });
 
 export type DateRangeSchema = z.infer<typeof dateRangeSchema>;
@@ -98,7 +98,7 @@ export type ValidIncuriaDateRanges = {
 		daterange: IncuriaDateRange;
 		hours?: number | null;
 	}[];
-	location: Ort;
+	ort: Ort;
 };
 
 // ------------------------------------------------
