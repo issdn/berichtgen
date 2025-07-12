@@ -38,9 +38,12 @@
 	onMount(async () => {
 		stripe = await loadStripe(PUBLIC_STRIPE_KEY, { locale: 'de' });
 
-		const { data } = await supabase.from('cart').select('quantity').eq('userId', user!.id).single();
+		const { data } = await supabase
+			.from('cart')
+			.select('quantity')
+			.eq('userId', user!.id)
+			.maybeSingle();
 
-		// create payment intent server side
 		if (data?.quantity) {
 			quantity = data.quantity;
 			await createPaymentIntent();
