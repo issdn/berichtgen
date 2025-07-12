@@ -3,7 +3,7 @@ import {
 	GenAIErrorCode,
 	IncuriaErrorType,
 	OpenaAIErrorCode
-} from '$src/lib/types';
+} from '$src/lib/enums';
 import * as genai from '@google/genai';
 import { error } from '@sveltejs/kit';
 import OpenAI from 'openai';

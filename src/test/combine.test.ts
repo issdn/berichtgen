@@ -1,5 +1,6 @@
 import { combineJSONs } from '$lib/parse/combine';
-import { Ort, QualifikationenSchule } from '$src/lib/types';
+import { QualifikationenSchule } from '$src/lib/constants';
+import { Ort } from '$src/lib/enums';
 import { test, expect } from 'vitest';
 
 const qualifikationen = [QualifikationenSchule[0]];

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Binary, XIcon, Check, Coffee, WandSparkles, Calendar, Clock, Bug } from '@lucide/svelte';
-	import { WizardStep } from '$lib/types';
+	import { WizardStep } from '$lib/enums';
 	import { slide } from 'svelte/transition';
 	import TimeSpreadDialog from '$lib/components/TimeSpreadDialog.svelte';
 	import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';

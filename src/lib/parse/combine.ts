@@ -1,4 +1,5 @@
-import { Ort, type QualifikationenType, type ResultEntry } from '$lib/types';
+import { type QualifikationenType, type ResultEntry } from '$lib/types';
+import { Ort } from '$src/lib/enums';
 import { parseDate } from '@internationalized/date';
 
 export function combineJSONs(jsons: ResultEntry[][], constantHours: boolean = false) {

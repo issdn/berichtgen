@@ -1,5 +1,6 @@
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
-import { Ort, QualifikationenBetrieb } from '$src/lib/types';
+import { Ort } from '$src/lib/enums';
+import { QualifikationenBetrieb } from '$src/lib/constants';
 import { testAIResponse } from '$src/test/test_inputs';
 import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';

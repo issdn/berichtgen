@@ -1,6 +1,7 @@
+import type { Ort } from '$src/lib/enums';
 import { IncuriaError } from '$src/lib/errors';
 import { csvConfigSchema } from '$src/lib/schemas';
-import type { CSVConfig, Ort } from '$src/lib/types';
+import type { CSVConfig } from '$src/lib/types';
 import { parseDate } from '@internationalized/date';
 import { ResultAsync } from 'neverthrow';
 

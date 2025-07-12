@@ -10,7 +10,7 @@
 	import { zod } from 'sveltekit-superforms/adapters';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Ort } from '$src/lib/types';
+	import { Ort } from '$src/lib/enums';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import LocationCombobox from '$lib/components/LocationCombobox.svelte';
 	import { dateRangeSchema, type DateRangeSchema } from '$src/lib/schemas';

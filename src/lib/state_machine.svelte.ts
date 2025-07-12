@@ -1,7 +1,8 @@
 import { DOCXParser } from '$lib/parse/docx_parser';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import { PDFParser } from '$lib/parse/pdf_parser';
-import { FileTypes, IncuriaErrorType, WizardStep, type Entry, type ResultEntry } from '$lib/types';
+import type { Entry, ResultEntry } from '$lib/types';
+import { FileTypes, IncuriaErrorType, WizardStep } from '$lib/enums';
 import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 import fsm from 'svelte-fsm';
 import type { Scheduler } from 'tesseract.js';

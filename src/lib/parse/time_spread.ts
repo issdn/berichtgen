@@ -1,4 +1,5 @@
-import type { Entry, Ort, ResultEntry } from '$lib/types';
+import type { Entry, ResultEntry } from '$lib/types';
+import type { Ort } from '$src/lib/enums';
 import type { ValidIncuriaDateRanges } from '$src/lib/schemas';
 import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date';
 

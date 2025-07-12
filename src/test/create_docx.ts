@@ -1,9 +1,9 @@
-import { Ort } from '$src/lib/types';
+import { Ort } from '$src/lib/enums';
 import { writeDocxFile } from '$src/lib/utils/write_docx';
 
 const docx = await writeDocxFile([
 	{
-		qualifikationen: ['Qualifikation 1', 'Qualifikation 2'],
+		qualifikationen: ['Sonstige Qualifikation', 'Sonstige Qualifikation'],
 		text: 'Dies ist ein Beispieltext für den Bericht.',
 		ort: Ort.BETRIEB,
 		datum: '2023-10-01',

@@ -1,4 +1,5 @@
-import { FileTypes, type Entry, type ResultEntry } from '$lib/types';
+import { type Entry, type ResultEntry } from '$lib/types';
+import { FileTypes } from '$src/lib/enums';
 import type { IncuriaError } from '$src/lib/errors';
 import type { DateRangeSchema } from '$src/lib/schemas';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';

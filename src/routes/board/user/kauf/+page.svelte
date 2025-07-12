@@ -16,7 +16,7 @@
 	import { Label } from '$src/lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
-	import { IncuriaErrorType, PaymentStatus } from '$src/lib/types';
+	import { IncuriaErrorType, PaymentStatus } from '$src/lib/enums';
 	import Checkbox from '$src/lib/components/ui/checkbox/checkbox.svelte';
 	import { IncuriaError } from '$src/lib/errors.js';
 

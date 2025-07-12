@@ -6,7 +6,7 @@
 	import * as Sentry from '@sentry/browser';
 	import { page } from '$app/state';
 	import { goto, replaceState } from '$app/navigation';
-	import { PaymentStatus } from '$src/lib/types';
+	import { PaymentStatus } from '$src/lib/enums';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { HandCoins } from '@lucide/svelte';
 	import type { RealtimeChannel } from '@supabase/supabase-js';

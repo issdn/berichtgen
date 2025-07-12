@@ -3,7 +3,8 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$src/lib/components/ui/button';
 	import { getContextPrompt } from '$src/lib/completion/prompt';
-	import { Ort, type UserContext } from '$src/lib/types';
+	import type { UserContext } from '$src/lib/types';
+	import { Ort } from '$src/lib/enums';
 	import { getContext } from 'svelte';
 	import FilesToConfigModal from '$src/lib/tools/FilesToConfigModal.svelte';
 

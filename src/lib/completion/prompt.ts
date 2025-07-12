@@ -1,4 +1,5 @@
-import { Ort, QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/types';
+import { QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/constants';
+import { Ort } from '$src/lib/enums';
 
 export function getContextPrompt(ort: Ort) {
 	const qualifications = ort === Ort.SCHULE ? QualifikationenSchule : QualifikationenBetrieb;

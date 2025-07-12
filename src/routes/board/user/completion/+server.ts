@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
-import { CommonServerErrorTypes, CompletionExceptionType, Ort } from '$lib/types';
+import { CommonServerErrorTypes, CompletionExceptionType, Ort } from '$lib/enums';
 import OpenAI from 'openai';
 import * as genai from '@google/genai';
 import { err, ok, ResultAsync } from 'neverthrow';

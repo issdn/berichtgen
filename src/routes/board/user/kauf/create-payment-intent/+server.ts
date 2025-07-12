@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { SECRET_STRIPE_KEY } from '$env/static/private';
 import { error, json } from '@sveltejs/kit';
 import * as Sentry from '@sentry/node';
-import { CommonServerErrorTypes } from '$src/lib/types.js';
+import { CommonServerErrorTypes } from '$src/lib/enums';
 import { supabaseAdmin } from '$src/lib/server/admin';
 // initialize Stripe
 const stripe = new Stripe(SECRET_STRIPE_KEY);

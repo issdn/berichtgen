@@ -1,5 +1,6 @@
 import { Document, Packer, TableRow, Table, TableCell, Paragraph } from 'docx';
-import { Ort, type ResultEntry } from '$src/lib/types';
+import type { ResultEntry } from '$src/lib/types';
+import { Ort } from '$src/lib/enums';
 
 function header(text: string) {
 	return new TableRow({

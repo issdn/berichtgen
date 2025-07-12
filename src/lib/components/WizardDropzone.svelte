@@ -3,7 +3,6 @@
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import { countUserTokensDirectories } from '$src/lib/utils/token_counter';
 	import {
-		FileTypes,
 		type UserContext,
 		type WizardDirectory,
 		type WizardRawDirectories,
@@ -18,6 +17,7 @@
 	import { goto } from '$app/navigation';
 	import { readCsvConfig } from '$src/lib/parse/config_reader';
 	import { getArrayDepth } from '$src/lib/utils/math';
+	import { FileTypes } from '$src/lib/enums';
 
 	let { loggedIn } = getContext<UserContext>('user')();
 

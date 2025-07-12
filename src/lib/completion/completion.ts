@@ -1,8 +1,9 @@
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
-import { IncuriaErrorType, Ort, type Entry } from '$lib/types';
+import { type Entry } from '$lib/types';
 import { IncuriaError } from '$src/lib/errors';
 import { completionSchema } from '$src/lib/schemas';
 import { ResultAsync } from 'neverthrow';
+import { IncuriaErrorType, type Ort } from '$src/lib/enums';
 
 export function getCompletions(text: string, ort: Ort) {
 	const messages = splitByMaxLength(text, berichtgenStore.currentProvider.maxTokens);
