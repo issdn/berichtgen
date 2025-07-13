@@ -15,16 +15,19 @@
 			items,
 			ScanReturnType.DATA_TRANSFER_ITEM
 		)) as FileSystemFileEntry[][];
-
 		const texts = new Map<string, string>();
 		for (const file of directories.flat()) {
-			const parent = await new Promise<FileSystemEntry>(file.getParent);
+			const parent = file.fullPath.split('/').at(-2) ?? '';
 			texts.set(
-				parent.name,
-				(texts.get(parent.name) || '') + `SCHULE,"${file.name}",YYYY-MM-DD;YYYY-MM-DD;40\n`
+				parent,
+				(texts.get(parent) || '') + `SCHULE,"${file.name}",YYYY-MM-DD;YYYY-MM-DD;40\n`
 			);
 		}
 		resultFiles = texts;
+	}
+
+	function getFilenameLeading(key: string) {
+		return key.length === 0 ? '' : `(${key})`;
 	}
 </script>
 
@@ -47,8 +50,10 @@
 				if (resultFiles!.size === 1) {
 					blob = new Blob([...resultFiles!.values()], { type: 'text/plain' });
 				} else {
-					resultFiles.forEach((value, key) => zip.file(`berichtgen(${key}).txt`, value));
-					var zip = new JSZip();
+					const zip = new JSZip();
+					resultFiles.forEach((value, key) =>
+						zip.file(`berichtgen${getFilenameLeading(key)}.txt`, value)
+					);
 					blob = await zip.generateAsync({ type: 'blob' });
 				}
 				const url = URL.createObjectURL(blob);
