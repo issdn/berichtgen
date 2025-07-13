@@ -5,15 +5,12 @@ import { createStateMachineForContext } from './state_machine.svelte';
 import type { Entry, ResultEntry, WizardDirectories, WizardProcessStateMachine } from './types';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import type { DateRangeSchema } from '$src/lib/schemas';
+import { IncuriaError } from '$src/lib/errors';
+import { IncuriaErrorType } from '$src/lib/enums';
 export class WizardScheduler {
 	batchSize = 5;
 
-	directories: WizardDirectories | null = $state(null);
-
-	schedule: WizardProcessStateMachine[][] | null = $derived.by(() => {
-		if (this.directories === null || this.directories.length === 0) return null;
-		return [...this.directories].map((directory) => directory.map(this.createProcessStateMachine));
-	});
+	schedule: WizardProcessStateMachine[][] | null = $state(null);
 
 	numberOfFiles = $derived.by(() => {
 		if (this.schedule === null) return 0;
@@ -37,13 +34,10 @@ export class WizardScheduler {
 	workersNr = 0;
 
 	get isDone() {
-		return this.directories !== null && this.filesReady === this.numberOfFiles;
+		return this.schedule !== null && this.filesReady === this.numberOfFiles;
 	}
 
-	async init() {
-		if (this.schedule === null) {
-			return;
-		}
+	init = async () => {
 		this.isRunning = true;
 		if (this.scheduler === null) {
 			const { createScheduler } = await import('tesseract.js');
@@ -52,12 +46,15 @@ export class WizardScheduler {
 		this.result = null;
 		this.filesReady = 0;
 		this.filesUnfinished = 0;
-		for (let i = 0; i < this.batchSize; i++) {
-			this.schedule[0].at(i)?.machine.run();
-		}
-	}
+	};
 
-	finish() {
+	createSchedule = (directories: WizardDirectories) => {
+		this.schedule = [...directories].map((directory) =>
+			directory.map(this.createProcessStateMachine)
+		);
+	};
+
+	finish = () => {
 		this.result = (async () => {
 			const finishedDirectories = this.schedule!.map((directory) =>
 				directory.reduce((prev, { context }) => {
@@ -70,28 +67,38 @@ export class WizardScheduler {
 			this.isRunning = false;
 			return combined;
 		})();
-	}
+	};
 
-	createProcessStateMachine({
+	createProcessStateMachine = ({
 		file,
 		config = null
 	}: {
 		file: File;
 		config?: DateRangeSchema | null | undefined;
-	}) {
+	}) => {
 		const context = new WizardFileContext(file, config);
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const scheduler = this;
 
 		const machine = createStateMachineForContext(context, scheduler);
 		return { context, machine };
-	}
+	};
 
 	runNext() {
 		this.schedule!.flat()
 			.at(this.filesReady + this.batchSize - 1)
 			?.machine.run();
 	}
+
+	runFirstBatch = () => {
+		if (this.schedule === null)
+			throw new IncuriaError(IncuriaErrorType.DEVELOPERS_FAULT, 'No schedule created yet.');
+		for (let i = 0; i < this.batchSize; i++) {
+			const file = this.schedule[0].at(i);
+			if (file === undefined) break;
+			file.machine.run();
+		}
+	};
 }
 
 // eslint-disable-next-line prefer-const

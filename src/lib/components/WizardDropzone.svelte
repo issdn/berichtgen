@@ -16,17 +16,48 @@
 	import Button from '$src/lib/components/ui/button/button.svelte';
 	import { goto } from '$app/navigation';
 	import { readCsvConfig } from '$src/lib/parse/config_reader';
-	import { getArrayDepth } from '$src/lib/utils/math';
-	import { FileTypes } from '$src/lib/enums';
+	import { FileTypes, ScanReturnType } from '$src/lib/enums';
+	import { get2DimensionalDirectories } from '$src/lib/parse/file_scan';
 
 	let { loggedIn } = getContext<UserContext>('user')();
 
 	let error: string | null = $state(null);
 	let dialogOpen = $derived(error !== null);
 
-	async function init(directories: WizardRawDirectories) {
-		wizardScheduler.directories = await Promise.all(directories.map(resolveDirectory));
+	async function handleFiles(items: DataTransferItemList) {
+		error = null;
+		try {
+			const directories = (await get2DimensionalDirectories(
+				items,
+				ScanReturnType.FILE
+			)) as WizardRawDirectories;
+			const anyNonJsonFiles = directories.flat().find((f) => f.type !== FileTypes.JSON);
+			if (loggedIn) {
+				initIfEnoughTokens(directories, anyNonJsonFiles);
+			} else {
+				if (anyNonJsonFiles) {
+					error =
+						'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.';
+					wizardScheduler.schedule = null;
+				} else {
+					if (berichtgenStore.rewordJSON === true) {
+						berichtgenStore.rewordJSON = false;
+						toast.info('JSON-Dateien Umformulierung wurde automatisch deaktiviert.');
+					}
+					init(directories);
+				}
+			}
+		} catch (error) {
+			toast.error('Fehler beim Scannen der Dateien: ' + error);
+		}
+	}
+
+	function init(directories: WizardRawDirectories) {
 		wizardScheduler.processInit = wizardScheduler.init();
+		Promise.all(directories.map(resolveDirectory)).then((resolvedDirectories) => {
+			wizardScheduler.createSchedule(resolvedDirectories);
+			wizardScheduler.runFirstBatch();
+		});
 	}
 
 	async function resolveDirectory(files: WizardRawDirectory): Promise<WizardDirectory> {
@@ -42,7 +73,7 @@
 			return otherFiles;
 		}
 		const config = await readCsvConfig(configFile);
-		config.match(
+		return config.match(
 			(config) => {
 				const notFoundFiles: string[] = [];
 				const nameToFileMap = new Map(otherFiles.map((f) => [f.file.name, f]));
@@ -72,42 +103,9 @@
 				return otherFiles;
 			}
 		);
-		return otherFiles;
 	}
 
-	async function handleFiles(files: DataTransferItemList) {
-		error = null;
-		try {
-			const dirs = await Promise.all(
-				[...files].map((item) => {
-					const entry = item.webkitGetAsEntry();
-					return scanFiles(entry!);
-				})
-			);
-			const depth = getArrayDepth(dirs);
-			const directories = dirs.flat(depth > 2 ? depth - 2 : 0) as WizardRawDirectories;
-			const anyNonJsonFiles = directories.flat().find((f) => f.type !== FileTypes.JSON);
-			if (loggedIn) {
-				startIfEnoughTokens(directories, anyNonJsonFiles);
-			} else {
-				if (anyNonJsonFiles) {
-					error =
-						'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.';
-					wizardScheduler.directories = null;
-				} else {
-					if (berichtgenStore.rewordJSON === true) {
-						berichtgenStore.rewordJSON = false;
-						toast.info('JSON-Dateien Umformulierung wurde automatisch deaktiviert.');
-					}
-					init(directories);
-				}
-			}
-		} catch (error) {
-			toast.error('Fehler beim Scannen der Dateien: ' + error);
-		}
-	}
-
-	function startIfEnoughTokens(files: WizardRawDirectories, anyNonJsonFiles: File | undefined) {
+	function initIfEnoughTokens(files: WizardRawDirectories, anyNonJsonFiles: File | undefined) {
 		const hasDiscount = berichtgenStore.currentProvider?.token != null;
 		const totalTokens = countUserTokensDirectories(files);
 		const necessaryTokensAfterDiscount = hasDiscount ? totalTokens / 4 : totalTokens;
@@ -120,40 +118,11 @@
 				init(files);
 			} else {
 				error = `Du hast ${berichtgenStore.userTokens} Tokens. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
-				wizardScheduler.directories = null;
+				wizardScheduler.schedule = null;
 			}
 		} else {
 			init(files);
 		}
-	}
-
-	async function scanFiles(item: FileSystemEntry, items: WizardRawDirectories = []) {
-		if (item.isDirectory) {
-			const directoryReader = (item as FileSystemDirectoryEntry).createReader();
-			const allEntries: WizardRawDirectories = [];
-			let entriesResult: WizardRawDirectories = [];
-
-			do {
-				const readEntriesPromise = new Promise<WizardRawDirectories>((resolve, reject) => {
-					directoryReader.readEntries(async (entries) => {
-						resolve((await Promise.all(entries.map((entry) => scanFiles(entry, items)))).flat());
-					}, reject);
-				});
-				entriesResult = await readEntriesPromise;
-				if (entriesResult.length > 0) {
-					allEntries.push(entriesResult as unknown as File[]);
-				}
-			} while (entriesResult.length > 0);
-
-			return allEntries;
-		} else if (item.isFile) {
-			const readFilePromise = new Promise<File>((resolve, reject) => {
-				(item as FileSystemFileEntry).file(resolve, reject);
-			});
-
-			return [...items, await readFilePromise] as WizardRawDirectories;
-		}
-		return items;
 	}
 </script>
 

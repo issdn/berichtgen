@@ -3,56 +3,28 @@
 	import Dropzone from '$src/lib/components/Dropzone.svelte';
 	import { buttonVariants } from '$src/lib/components/ui/button';
 	import Button from '$src/lib/components/ui/button/button.svelte';
-	import { getArrayDepth } from '$src/lib/utils/math';
+	import { ScanReturnType } from '$src/lib/enums';
+	import { get2DimensionalDirectories } from '$src/lib/parse/file_scan';
 	import { Download, FileType } from '@lucide/svelte';
 	import JSZip from 'jszip';
 
-	let resultFiles = $state<string[] | null>(null);
+	let resultFiles = $state<Map<string, string> | null>(null);
 
-	async function scanFiles(item: FileSystemEntry, items: FileSystemFileEntry[] = []) {
-		if (item.isDirectory) {
-			const directoryReader = (item as FileSystemDirectoryEntry).createReader();
-			const allEntries: FileSystemFileEntry[] = [];
-			let entriesResult: FileSystemFileEntry[] = [];
-
-			do {
-				const readEntriesPromise = new Promise<FileSystemFileEntry[]>((resolve, reject) => {
-					directoryReader.readEntries(async (entries) => {
-						resolve((await Promise.all(entries.map((entry) => scanFiles(entry, items)))).flat());
-					}, reject);
-				});
-				entriesResult = await readEntriesPromise;
-				if (entriesResult.length > 0) {
-					allEntries.push(entriesResult as unknown as FileSystemFileEntry);
-				}
-			} while (entriesResult.length > 0);
-
-			return allEntries;
-		} else if (item.isFile) {
-			return [...items, item] as FileSystemFileEntry[];
-		}
-		return items;
-	}
-
-	async function handleFiles(files: DataTransferItemList) {
-		const twoDimDirs = await Promise.all(
-			[...files].map((file) => {
-				const entry = file.webkitGetAsEntry();
-				return scanFiles(entry!);
-			})
-		);
-		const depth = getArrayDepth(twoDimDirs);
-		const directories = twoDimDirs.flat(depth) as FileSystemFileEntry[];
+	async function handleFiles(items: DataTransferItemList) {
+		const directories = (await get2DimensionalDirectories(
+			items,
+			ScanReturnType.DATA_TRANSFER_ITEM
+		)) as FileSystemFileEntry[][];
 
 		const texts = new Map<string, string>();
-		for (const file of directories) {
+		for (const file of directories.flat()) {
 			const parent = await new Promise<FileSystemEntry>(file.getParent);
 			texts.set(
 				parent.name,
 				(texts.get(parent.name) || '') + `SCHULE,"${file.name}",YYYY-MM-DD;YYYY-MM-DD;40\n`
 			);
 		}
-		resultFiles = [...texts.values()].map((text) => text.trimEnd());
+		resultFiles = texts;
 	}
 </script>
 
@@ -72,17 +44,17 @@
 			onclick={async () => {
 				if (!resultFiles) return;
 				let blob: Blob;
-				if (resultFiles?.length === 1) {
-					blob = new Blob([resultFiles[0]], { type: 'text/plain' });
+				if (resultFiles!.size === 1) {
+					blob = new Blob([...resultFiles!.values()], { type: 'text/plain' });
 				} else {
-					resultFiles.forEach((text, i) => zip.file(`berichtgen(${i}).txt`, text));
+					resultFiles.forEach((value, key) => zip.file(`berichtgen(${key}).txt`, value));
 					var zip = new JSZip();
 					blob = await zip.generateAsync({ type: 'blob' });
 				}
 				const url = URL.createObjectURL(blob);
 				const a = document.createElement('a');
 				a.href = url;
-				if (resultFiles?.length === 1) {
+				if (resultFiles!.size === 1) {
 					a.download = 'berichtgen.txt';
 				} else {
 					a.download = 'berichtgen.zip';

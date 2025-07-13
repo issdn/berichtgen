@@ -58,6 +58,6 @@ export type WizardProcessStateMachine = {
 /**
  * Dropzone component overrides global paste event handler on mount.
  * On unmount, it restores the previous handler.
- * For more see *WizardDropzone.svelte*
+ * For more see *Dropzone.svelte*, *WizardDropzone.svelte* and *paste_stack.svelte.ts*
  */
 export type PasteHandler = ((e: ClipboardEvent) => void)[];

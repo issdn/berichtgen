@@ -1,4 +1,4 @@
-export const CONFIG_FILENAME_REGEX = /^berichtgen(\(\d+\))?\.(txt|csv)$/;
+export const CONFIG_FILENAME_REGEX = /^berichtgen(\(.*?\))?\.(txt|csv)$/;
 
 export const QualifikationenSchule = [
 	'Allgemeinbildende Fächer',

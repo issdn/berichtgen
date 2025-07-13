@@ -116,3 +116,8 @@ export enum KaufOperation {
 	UPDATE = 'update',
 	CREATE = 'create'
 }
+
+export enum ScanReturnType {
+	FILE,
+	DATA_TRANSFER_ITEM
+}
