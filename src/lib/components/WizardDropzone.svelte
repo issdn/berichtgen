@@ -12,9 +12,6 @@
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
 	import { CONFIG_FILENAME_REGEX } from '$src/lib/constants';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import Button from '$src/lib/components/ui/button/button.svelte';
-	import { goto } from '$app/navigation';
 	import { readCsvConfig } from '$src/lib/parse/config_reader';
 	import { FileTypes, ScanReturnType } from '$src/lib/enums';
 	import { get2DimensionalDirectories } from '$src/lib/parse/file_scan';
@@ -22,7 +19,6 @@
 	let { loggedIn } = getContext<UserContext>('user')();
 
 	let error: string | null = $state(null);
-	let dialogOpen = $derived(error !== null);
 
 	async function handleFiles(items: DataTransferItemList) {
 		error = null;
@@ -33,7 +29,15 @@
 			)) as WizardRawDirectories;
 			const anyNonJsonFiles = directories.flat().find((f) => f.type !== FileTypes.JSON);
 			if (loggedIn) {
-				initIfEnoughTokens(directories, anyNonJsonFiles);
+				const hasDiscount = berichtgenStore.currentProvider?.token != null;
+				const totalTokens = countUserTokensDirectories(directories);
+				const necessaryTokensAfterDiscount = hasDiscount ? totalTokens / 4 : totalTokens;
+				if (necessaryTokensAfterDiscount > berichtgenStore.userTokens!) {
+					toast.error(
+						'Die Dateien vor der Verarbeitung benötigen mehr Tokens als du hast. (Es kann aber sein, dass nach der Verarbeitung z.B. der Bilder weniger Tokens benötigt werden.)'
+					);
+				}
+				init(directories);
 			} else {
 				if (anyNonJsonFiles) {
 					error =
@@ -104,40 +108,6 @@
 			}
 		);
 	}
-
-	function initIfEnoughTokens(files: WizardRawDirectories, anyNonJsonFiles: File | undefined) {
-		const hasDiscount = berichtgenStore.currentProvider?.token != null;
-		const totalTokens = countUserTokensDirectories(files);
-		const necessaryTokensAfterDiscount = hasDiscount ? totalTokens / 4 : totalTokens;
-		if (necessaryTokensAfterDiscount > berichtgenStore.userTokens!) {
-			if (!anyNonJsonFiles) {
-				if (berichtgenStore.rewordJSON === true) {
-					berichtgenStore.rewordJSON = false;
-					toast.info('JSON-Dateien Umformulierung wurde automatisch deaktiviert.');
-				}
-				init(files);
-			} else {
-				error = `Du hast ${berichtgenStore.userTokens} Tokens. Die Dateien, die du hochgeladen hast, benötigen ${totalTokens} Tokens.`;
-				wizardScheduler.schedule = null;
-			}
-		} else {
-			init(files);
-		}
-	}
 </script>
 
 <Dropzone {handleFiles} />
-
-<Dialog.Root bind:open={dialogOpen}>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>Nicht genüg Tokens 🥲</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-y-2 pt-4">
-			<p>{error}</p>
-			<div class="flex w-full flex-row justify-end">
-				<Button onclick={() => goto('/board/user/kauf')}>Tokens kaufen</Button>
-			</div>
-		</div>
-	</Dialog.Content>
-</Dialog.Root>
