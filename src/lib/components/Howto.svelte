@@ -11,9 +11,9 @@
 	let { loggedIn } = getContext<UserContext>('user')();
 </script>
 
-<div class="bg-muted h-full w-full overflow-y-hidden py-4">
+<div class="bg-muted h-full w-full overflow-y-hidden">
 	<div class="h-full w-full overflow-y-auto">
-		<div class="columns-1 gap-4 space-y-4 rounded-md px-4 xl:columns-2">
+		<div class="columns-1 gap-4 space-y-4 rounded-md p-4 xl:columns-2">
 			<Card.Root class="relative inline-block w-full">
 				<Pin class="absolute -top-1 -right-1 rotate-45 " />
 				<Card.Header>
