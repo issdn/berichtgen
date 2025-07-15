@@ -1,7 +1,7 @@
 import type { QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/constants';
 import type { Ort } from '$src/lib/enums';
 import type { DateRangeSchema } from '$src/lib/schemas';
-import { type StateMachineSignature } from '$src/lib/state_machine.svelte';
+import { type StateMachineSignature } from '$src/lib/state_machine';
 import type { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 import type { DateValue } from '@internationalized/date';
 import type { SupabaseClient, User } from '@supabase/supabase-js';

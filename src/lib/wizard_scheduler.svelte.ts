@@ -1,7 +1,7 @@
 import type { Scheduler } from 'tesseract.js';
 import { combineJSONs } from './parse/combine';
 import { WizardFileContext } from './wizard_file_context.svelte';
-import { createStateMachineForContext } from './state_machine.svelte';
+import { createStateMachineForContext } from './state_machine';
 import type { Entry, ResultEntry, WizardDirectories, WizardProcessStateMachine } from './types';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import type { DateRangeSchema } from '$src/lib/schemas';
@@ -81,6 +81,8 @@ export class WizardScheduler {
 		const scheduler = this;
 
 		const machine = createStateMachineForContext(context, scheduler);
+		// For some insane fucking reason the run method is removed by the something if not accessed
+		machine.run;
 		return { context, machine };
 	};
 
