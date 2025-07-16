@@ -22,7 +22,7 @@ export class WizardFileContext {
 	cancelled: boolean = false;
 
 	get shouldSkip() {
-		return this.file.type === FileTypes.JSON && berichtgenStore.rewordJSON;
+		return this.file.type === FileTypes.JSON && !berichtgenStore.rewordJSON;
 	}
 
 	onProgress() {

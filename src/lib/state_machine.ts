@@ -151,7 +151,7 @@ export function createStateMachineForContext(
 					}
 				);
 			},
-			next: () => WizardStep.WAITING,
+			next: () => (context.shouldSkip ? WizardStep.DONE : WizardStep.WAITING),
 			error: () => WizardStep.ERROR,
 			cancel: () => WizardStep.CANCELLED
 		},
@@ -166,7 +166,7 @@ export function createStateMachineForContext(
 					return;
 				}
 			},
-			run: () => (context.shouldSkip ? WizardStep.TIME_SPREADING : WizardStep.AI_COMPLETION),
+			run: () => WizardStep.AI_COMPLETION,
 			cancel: () => WizardStep.CANCELLED
 		},
 		[WizardStep.AI_COMPLETION]: {
@@ -182,6 +182,8 @@ export function createStateMachineForContext(
 				getCompletions(context.snapshot as string, context.dateRanges.ort).match(
 					(value) => {
 						context.snapshot = value;
+						console.log(value);
+
 						this.next();
 					},
 					(error) => {
