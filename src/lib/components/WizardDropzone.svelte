@@ -57,11 +57,12 @@
 	}
 
 	function init(directories: WizardRawDirectories) {
-		wizardScheduler.processInit = wizardScheduler.init();
-		Promise.all(directories.map(resolveDirectory)).then((resolvedDirectories) => {
+		wizardScheduler.processInit = (async () => {
+			await wizardScheduler.init();
+			const resolvedDirectories = await Promise.all(directories.map(resolveDirectory));
 			wizardScheduler.createSchedule(resolvedDirectories);
 			wizardScheduler.runFirstBatch();
-		});
+		})();
 	}
 
 	async function resolveDirectory(files: WizardRawDirectory): Promise<WizardDirectory> {
