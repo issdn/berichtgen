@@ -1,10 +1,9 @@
 # Supabase
-# Supabase
 ```sql
 create or replace function add_user_tokens(user_id uuid, amount integer)
 returns void
 language plpgsql
-as $$
+as $$s
 begin
   update "userTokenCount"
   set "tokens" = tokens + amount
@@ -67,7 +66,7 @@ CREATE POLICY "User can select llm provider"
 ON "public"."llmProvider"
 FOR SELECT
 TO authenticated
-using (true);
+USING (true);
 
 DROP POLICY IF EXISTS "User can fully modify own userLLMProvider" ON "public"."userLLMProvider";
 CREATE POLICY "User can fully modify own userLLMProvider"
@@ -83,7 +82,7 @@ CREATE POLICY "User can select own userTokenCount"
 ON "public"."userTokenCount"
 FOR SELECT
 TO authenticated
-using (
+USING (
   (select auth.uid()) = "public"."userTokenCount"."userId"
 );
 
@@ -98,23 +97,12 @@ DELETE FROM cart WHERE "createdAt" < NOW() - INTERVAL '7 days';
 ```
 
 ### types
-```
+```ps1
 supabase gen types typescript --project-id odbyqfknheshvujhabpp > database.types.ts
 ```
 
-# stripe
+### stripe
 
-```
-stripe listen --forward-to localhost:5173/webhooks/stripe
-```
-
-### types
-```
-supabase gen types typescript --project-id odbyqfknheshvujhabpp > database.types.ts
-```
-
-# stripe
-
-```
+```ps1
 stripe listen --forward-to localhost:5173/webhooks/stripe
 ```
