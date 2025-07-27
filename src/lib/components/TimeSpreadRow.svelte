@@ -78,7 +78,11 @@
 								{label}
 							</Popover.Trigger>
 							<Popover.Content class="w-auto p-0">
-								<RangeCalendar bind:value={$formData.ranges[index].daterange} class="w-fit" />
+								<RangeCalendar
+									locale="de-DE"
+									bind:value={$formData.ranges[index].daterange}
+									class="w-fit"
+								/>
 							</Popover.Content>
 						</Popover.Root>
 					{/snippet}
