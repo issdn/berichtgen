@@ -81,7 +81,7 @@ export function spreadEntriesAcrossWeeks(
 		}
 	}
 
-	return newEntries.reverse();
+	return newEntries.toReversed();
 }
 
 function cloneObjectWithDate(

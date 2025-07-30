@@ -151,7 +151,7 @@ export function createStateMachineForContext(
 					}
 				);
 			},
-			next: () => (context.shouldSkip ? WizardStep.DONE : WizardStep.WAITING),
+			next: () => WizardStep.WAITING,
 			error: () => WizardStep.ERROR,
 			cancel: () => WizardStep.CANCELLED
 		},
@@ -166,7 +166,7 @@ export function createStateMachineForContext(
 					return;
 				}
 			},
-			run: () => WizardStep.AI_COMPLETION,
+			run: () => (context.shouldSkip ? WizardStep.TIME_SPREADING : WizardStep.AI_COMPLETION),
 			cancel: () => WizardStep.CANCELLED
 		},
 		[WizardStep.AI_COMPLETION]: {
