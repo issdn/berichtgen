@@ -1,5 +1,7 @@
 export const CONFIG_FILENAME_REGEX = /^berichtgen(\(.*?\))?\.(txt|csv)$/;
 
+export const BULLETPOINT = '\n- ';
+
 export const QualifikationenSchule = [
 	'Allgemeinbildende Fächer',
 	'Arbeitsplätze nach Kundenwunsch ausstatten',

@@ -1,4 +1,5 @@
 import { type QualifikationenType, type ResultEntry } from '$lib/types';
+import { BULLETPOINT } from '$src/lib/constants';
 import { Ort } from '$src/lib/enums';
 import { parseDate } from '@internationalized/date';
 
@@ -17,7 +18,7 @@ export function combineJSONs(jsons: ResultEntry[][], constantHours: boolean = fa
 		.map(([date, entries]) => {
 			const combinedEntry = entries.reduce(
 				(acc, entry) => {
-					acc.text += entry.text + '\n\n';
+					acc.text += BULLETPOINT + entry.text;
 					acc.hours += entry.hours;
 					acc.qualifikationen = [...new Set([...acc.qualifikationen, ...entry.qualifikationen])];
 					acc.ort = entry.ort;
@@ -28,12 +29,13 @@ export function combineJSONs(jsons: ResultEntry[][], constantHours: boolean = fa
 					text: '',
 					datum: date,
 					hours: 0,
-					ort: Ort.BETRIEB
+					ort: Ort.BETRIEB,
+					anwesenheit: 'ANWESEND'
 				}
 			);
 			combinedEntry.text = combinedEntry.text.trim();
 			combinedEntry.hours = constantHours ? 40 : combinedEntry.hours;
 			return combinedEntry;
 		})
-		.sort(({ datum: a }, { datum: b }) => parseDate(a).compare(parseDate(b)));
+		.sort(({ datum: a }, { datum: b }) => parseDate(b).compare(parseDate(a)));
 }

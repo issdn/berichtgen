@@ -12,6 +12,7 @@ export interface Entry {
 	datum?: string;
 	ort?: Ort;
 	hours?: number;
+	anwesenheit: 'ANWESEND';
 }
 
 export type ResultEntry = Required<Entry>;

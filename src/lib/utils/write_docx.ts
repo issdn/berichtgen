@@ -1,6 +1,7 @@
 import { Document, Packer, TableRow, Table, TableCell, Paragraph } from 'docx';
 import type { ResultEntry } from '$src/lib/types';
 import { Ort } from '$src/lib/enums';
+import { BULLETPOINT } from '$src/lib/constants';
 
 function header(text: string) {
 	return new TableRow({
@@ -23,7 +24,7 @@ function header(text: string) {
 
 function splitTextByDoubleNewlines(text: string): string[] {
 	return text
-		.split(/\r?\n\n/)
+		.split(BULLETPOINT)
 		.map((line) => line.trim())
 		.filter((line) => line.length > 0);
 }
