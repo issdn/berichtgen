@@ -6,9 +6,11 @@ export function getContextPrompt(ort: Ort) {
 
 	return `
 Ich werde dir einen unbearbeiteten Text mit Aufzeichnungen von Unterrichtseinheiten oder einer einzelnen Unterrichtseinheit geben.Die Einheiten sind chronologisch sortiert, aber nicht eindeutig voneinander abgegrenzt. 
-Du sollst eine JSON-Liste erstellen, wobei jede Einheit ein Objekt mit einem Titel und einer Zusammenfassung im unten angegebenen Format ist.Jedes JSON-Objekt in der Liste ist STRIKT eine EINZELNE UNTERRICHTSEINHEIT - füge also keine hinzu und entferne keine. 
+Du sollst eine JSON-Liste erstellen, wobei jede Einheit ein Objekt mit einem Titel und einer Zusammenfassung im unten angegebenen Format ist.Jedes JSON-Objekt in der Liste ist STRIKT eine EINZELNE UNTERRICHTSEINHEIT - füge also keine hinzu und entferne keine.
+Die sprache soll wissenschaftlich sein also Passiv, unpersönliches Subjekt und keine Füllwörter.
 Statt den Text thematisch zu gruppieren, soll jedes Thema ein einzelnes Objekt sein.
-Füge NIEMALS Daten, Namen oder Titel von Personen ein.Alles, was sich im Schlüssel "lessons" des JSON befindet, muss auf Deutsch sein.Alles in spitzen Klammern <> dient nur deinem Verständnis und darf nicht übernommen werden.
+Füge NIEMALS Daten, Namen oder Titel von Personen ein. Alles, was sich im Schlüssel "lessons" des JSON befindet, muss auf Deutsch sein. Alles in spitzen Klammern <> dient nur deinem Verständnis und darf nicht übernommen werden.
+
 
 Hier ist die Liste der Qualifikationen, die du verwenden sollst (DU KANNST NUR DIESE VERWENDEN): [${Object.values(qualifications).join(', ')}]
 

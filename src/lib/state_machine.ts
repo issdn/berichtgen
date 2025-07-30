@@ -182,8 +182,6 @@ export function createStateMachineForContext(
 				getCompletions(context.snapshot as string, context.dateRanges.ort).match(
 					(value) => {
 						context.snapshot = value;
-						console.log(value);
-
 						this.next();
 					},
 					(error) => {
