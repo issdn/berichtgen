@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { Binary, XIcon, Check, Coffee, WandSparkles, Calendar, Clock, Bug } from '@lucide/svelte';
 	import { WizardStep } from '$lib/enums';
-	import { slide } from 'svelte/transition';
 	import TimeSpreadDialog from '$lib/components/TimeSpreadDialog.svelte';
 	import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Progress from '$lib/components/ui/progress/progress.svelte';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 
-	const { context, machine }: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
+	const { context, machine, id }: ReturnType<WizardScheduler['createProcessStateMachine']> =
+		$props();
 
 	function statusFromStep(step: WizardStep) {
 		switch (step) {
@@ -36,29 +35,20 @@
 	let { icon: Icon, label } = $derived.by(() => statusFromStep($machine));
 </script>
 
-<div transition:slide class="bg-muted flex flex-col justify-center gap-y-4 rounded-md p-4">
+<div class="bg-muted flex flex-col gap-y-4 rounded-md p-4">
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
 		<span class="truncate overflow-hidden">{context.file.name}</span>
 		{#if $machine === WizardStep.WAITING}
 			<div class="flex flex-row gap-x-2">
-				<Tooltip.Provider>
-					<Tooltip.Root open={$machine === WizardStep.WAITING}>
-						<Tooltip.Trigger>
-							<TimeSpreadDialog
-								id={context.file.name}
-								onClose={() => {
-									if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
-										machine.run();
-									}
-								}}
-								onValidChange={(data) => (context.dateRanges = data)}
-							/>
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<p>Bitte datiere die Datei.</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				</Tooltip.Provider>
+				<TimeSpreadDialog
+					{id}
+					onClose={() => {
+						if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
+							machine.run();
+						}
+					}}
+					onValidChange={(data) => (context.dateRanges = data)}
+				/>
 				<Button
 					variant="default"
 					onclick={() => {

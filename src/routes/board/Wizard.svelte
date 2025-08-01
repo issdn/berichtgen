@@ -14,9 +14,12 @@
 	import { handleDOCXDownload } from '$src/lib/utils/write_docx';
 	import { handleJSONDownload } from '$src/lib/utils/write_json';
 	import WizardSettingsPopover from '$src/lib/components/WizardSettingsPopover.svelte';
-	import type { UserContext } from '$src/lib/types';
+	import type { UserContext, WizardProcessStateMachine } from '$src/lib/types';
 	import { toast } from 'svelte-sonner';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
+	import { dndzone, type DndEvent } from 'svelte-dnd-action';
+	import { slide } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -52,6 +55,14 @@
 			dialogOpen = true;
 		}
 	});
+
+	function handleDndConsider(e: CustomEvent<DndEvent<WizardProcessStateMachine>>) {
+		wizardScheduler.schedule = e.detail.items;
+	}
+
+	function handleDndFinalize(e: CustomEvent<DndEvent<WizardProcessStateMachine>>) {
+		wizardScheduler.schedule = e.detail.items;
+	}
 </script>
 
 <div class="relative flex h-full w-full flex-col overflow-hidden rounded-lg border-4">
@@ -73,16 +84,24 @@
 			<Button disabled={true}><FileCheck2 /></Button>
 		{/if}
 	</div>
-	<div class="relative flex h-full flex-col gap-y-1 overflow-y-auto p-4">
+	<div class="relative h-full p-4">
 		{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 			{#await wizardScheduler.processInit}
 				<div class="center-absolute"><Spinner /></div>
 			{:then}
-				{#each wizardScheduler.schedule as directory}
-					{#each directory as file}
-						<WizardFile {...file} />
+				{@const items = wizardScheduler.schedule.flat()}
+				<div
+					class="flex h-full w-full flex-col gap-y-2 overflow-x-hidden overflow-y-auto"
+					use:dndzone={{ items, flipDurationMs: 300, dropTargetStyle: {} }}
+					onconsider={handleDndConsider}
+					onfinalize={handleDndFinalize}
+				>
+					{#each items as file (file.id)}
+						<div class="w-full" animate:flip={{ duration: 300 }}>
+							<WizardFile {...file} />
+						</div>
 					{/each}
-				{/each}
+				</div>
 			{/await}
 		{:else}
 			<p class="center-absolute text-muted">Noch nix hier...</p>

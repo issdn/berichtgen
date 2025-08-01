@@ -10,11 +10,11 @@ import { IncuriaErrorType } from '$src/lib/enums';
 export class WizardScheduler {
 	batchSize = 5;
 
-	schedule: WizardProcessStateMachine[][] | null = $state(null);
+	schedule: WizardProcessStateMachine[] | null = $state(null);
 
 	numberOfFiles = $derived.by(() => {
 		if (this.schedule === null) return 0;
-		return this.schedule.reduce((prev, directory) => prev + directory.length, 0);
+		return this.schedule.length;
 	});
 
 	filesReady = $state(0);
@@ -49,22 +49,18 @@ export class WizardScheduler {
 	};
 
 	createSchedule = (directories: WizardDirectories) => {
-		this.schedule = [...directories].map((directory) =>
-			directory.map(this.createProcessStateMachine)
-		);
+		this.schedule = [...directories].flat().map(this.createProcessStateMachine);
 	};
 
 	finish = () => {
 		this.result = (async () => {
-			const finishedDirectories = this.schedule!.map((directory) =>
-				directory.reduce((prev, { context }) => {
-					if (context.finished != null) return [...prev, context.finished];
-					return prev;
-				}, [] as Required<Entry>[][])
-			);
+			const finishedDirectories = this.schedule!.reduce((prev, { context }) => {
+				if (context.finished != null) return [...prev, context.finished];
+				return prev;
+			}, [] as Required<Entry>[][]);
 			await this.scheduler?.terminate();
 			this.scheduler = null;
-			const combined = combineJSONs(finishedDirectories.flat(), berichtgenStore.contantHours);
+			const combined = combineJSONs(finishedDirectories, berichtgenStore.contantHours);
 			this.isRunning = false;
 			return combined;
 		})();
@@ -84,7 +80,7 @@ export class WizardScheduler {
 		const machine = createStateMachineForContext(context, scheduler);
 		// For some insane fucking reason the run method is removed by the something if not accessed
 		machine.run;
-		return { context, machine };
+		return { context, machine, id: crypto.randomUUID() };
 	};
 
 	runNext() {
@@ -97,7 +93,7 @@ export class WizardScheduler {
 		if (this.schedule === null)
 			throw new IncuriaError(IncuriaErrorType.DEVELOPERS_FAULT, 'No schedule created yet.');
 		for (let i = 0; i < this.batchSize; i++) {
-			const file = this.schedule[0].at(i);
+			const file = this.schedule.at(i);
 			if (file === undefined) break;
 			file.machine.run();
 		}

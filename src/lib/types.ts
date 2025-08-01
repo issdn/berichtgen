@@ -54,6 +54,7 @@ export type WizardDirectories = WizardDirectory[];
 export type WizardProcessStateMachine = {
 	context: WizardFileContext;
 	machine: ReturnType<StateMachineSignature>;
+	id: ReturnType<typeof crypto.randomUUID>;
 };
 
 /**

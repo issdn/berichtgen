@@ -59,7 +59,10 @@
 		if (isOpen === false) onClose();
 	}}
 >
-	<Dialog.Trigger class={buttonVariants({ variant: 'default' })}><Calendar /></Dialog.Trigger>
+	<Dialog.Trigger
+		><Button class="animate-breathing-shadow" variant="default"><Calendar /></Button
+		></Dialog.Trigger
+	>
 	<Dialog.Content class="w-full px-4">
 		<Dialog.Header class="px-2">
 			<Dialog.Title>Wähle Datumbereiche!</Dialog.Title>
