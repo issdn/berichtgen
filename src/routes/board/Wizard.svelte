@@ -79,28 +79,30 @@
 			<Button disabled={true}><FileCheck2 /></Button>
 		{/if}
 	</div>
-	<div class="relative h-full p-4">
-		{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
-			{#await wizardScheduler.processInit}
-				<div class="center-absolute"><Spinner /></div>
-			{:then}
-				{@const items = wizardScheduler.schedule.flat()}
-				<div
-					class="flex h-full w-full flex-col gap-y-2 overflow-x-hidden overflow-y-auto"
-					use:dndzone={{ items, flipDurationMs: 300, dropTargetStyle: {} }}
-					onconsider={handleDndConsider}
-					onfinalize={handleDndFinalize}
-				>
-					{#each items as file (file.id)}
-						<div class="w-full" animate:flip={{ duration: 300 }}>
-							<WizardFile {...file} />
-						</div>
-					{/each}
-				</div>
-			{/await}
-		{:else}
-			<p class="center-absolute text-muted">Noch nix hier...</p>
-		{/if}
+	<div class="h-full overflow-x-hidden overflow-y-auto">
+		<div class="relative p-4">
+			{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
+				{#await wizardScheduler.processInit}
+					<div class="center-absolute"><Spinner /></div>
+				{:then}
+					{@const items = wizardScheduler.schedule.flat()}
+					<div
+						class="flex h-full w-full flex-col gap-y-2"
+						use:dndzone={{ items, flipDurationMs: 300, dropTargetStyle: {} }}
+						onconsider={handleDndConsider}
+						onfinalize={handleDndFinalize}
+					>
+						{#each items as file (file.id)}
+							<div class="w-full" animate:flip={{ duration: 300 }}>
+								<WizardFile {...file} />
+							</div>
+						{/each}
+					</div>
+				{/await}
+			{:else}
+				<p class="center-absolute text-muted">Noch nix hier...</p>
+			{/if}
+		</div>
 	</div>
 </div>
 
