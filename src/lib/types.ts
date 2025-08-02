@@ -34,6 +34,11 @@ export type UserContext = () => {
 	supabase: SupabaseClient;
 };
 
+/**
+ * Example: ort, file, start;end;[hours], start;end;[hours]
+ *
+ * See: $src/lib/parse/config_reader.ts
+ */
 export type CSVConfigFile = {
 	ort: Ort;
 	file: string;

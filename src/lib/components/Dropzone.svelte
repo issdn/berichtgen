@@ -6,24 +6,30 @@
 
 	let {
 		handleFiles,
-		files = $bindable()
-	}: { handleFiles: (files: DataTransferItemList) => Promise<void>; files?: DataTransferItemList } =
-		$props();
+		filesNumber = $bindable(null)
+	}: {
+		handleFiles: (files: DataTransferItemList | FileList) => Promise<void>;
+		filesNumber?: number | null;
+	} = $props();
 
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
 
-	async function extractAndHandleFiles(dataTransfer: DataTransfer | null) {
-		if (!dataTransfer) {
-			toast.error('Browser API Fehler. Versuche mit einem anderen Browser.');
-			return;
+	async function extractAndHandleFiles(dataTransfer: DataTransfer | FileList | null) {
+		if (dataTransfer instanceof DataTransfer) {
+			if (!dataTransfer) {
+				toast.error('Browser API Fehler. Versuche mit einem anderen Browser.');
+				return;
+			}
+			const maybeItems = dataTransfer.items;
+			if (maybeItems == null) {
+				toast.error('Keine gültigen Dateien gefunden.');
+				return;
+			}
+			await handleFiles(maybeItems);
+		} else if (dataTransfer instanceof FileList) {
+			await handleFiles(dataTransfer);
 		}
-		const maybeItems = dataTransfer.items;
-		if (maybeItems == null) {
-			toast.error('Keine gültigen Dateien gefunden.');
-			return;
-		}
-		await handleFiles(maybeItems);
 	}
 
 	function preventDefaults(e: Event) {
@@ -53,7 +59,7 @@
 	}
 
 	async function handleChange(e: Event) {
-		await extractAndHandleFiles((e as InputEvent).dataTransfer);
+		await extractAndHandleFiles((e.target as HTMLInputElement).files);
 	}
 
 	async function handlePaste(e: ClipboardEvent) {
@@ -86,19 +92,11 @@
 		type="file"
 		multiple
 		style="display:none"
-		webkitdirectory
 	/>
-	{#if files && files.length > 0}
+	{#if filesNumber && filesNumber > 0}
 		<FileCheck size={48} />
-		<label for="dropzone" class="pointer-events-none w-full px-8">
-			<ol>
-				{#each files as file}
-					{@const name = file.webkitGetAsEntry()?.name}
-					{#if name}
-						<li class="truncate overflow-hidden">{name}</li>
-					{/if}
-				{/each}
-			</ol>
+		<label for="dropzone" class="pointer-events-none font-medium">
+			{filesNumber ? filesNumber : ''} Dateien ausgewählt
 		</label>
 	{:else}
 		<FileUp size={48} />

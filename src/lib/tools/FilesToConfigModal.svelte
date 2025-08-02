@@ -4,20 +4,30 @@
 	import { buttonVariants } from '$src/lib/components/ui/button';
 	import Button from '$src/lib/components/ui/button/button.svelte';
 	import { ScanReturnType } from '$src/lib/enums';
-	import { get2DimensionalDirectories } from '$src/lib/parse/file_scan';
+	import {
+		get2DimensionalDirectories,
+		getFileListWithPreserverFolderStructure
+	} from '$src/lib/parse/file_scan';
 	import { Download, FileType } from '@lucide/svelte';
 	import JSZip from 'jszip';
 
 	let resultFiles = $state<Map<string, string> | null>(null);
 
-	async function handleFiles(items: DataTransferItemList) {
-		const directories = (await get2DimensionalDirectories(
-			items,
-			ScanReturnType.DATA_TRANSFER_ITEM
-		)) as FileSystemFileEntry[][];
+	let filesNumber = $state(0);
+
+	async function handleFiles(items: DataTransferItemList | FileList) {
+		const directories =
+			items instanceof FileList
+				? getFileListWithPreserverFolderStructure(items)
+				: ((await get2DimensionalDirectories(
+						items,
+						ScanReturnType.DATA_TRANSFER_ITEM
+					)) as FileSystemFileEntry[][]);
+		filesNumber = directories.flat().length;
 		const texts = new Map<string, string>();
 		for (const file of directories.flat()) {
-			const parent = file.fullPath.split('/').at(-2) ?? '';
+			const parent =
+				(file instanceof File ? file.webkitRelativePath : file.fullPath).split('/').at(-2) ?? '';
 			texts.set(
 				parent,
 				(texts.get(parent) || '') + `SCHULE,"${file.name}",YYYY-MM-DD;YYYY-MM-DD;40\n`
@@ -40,7 +50,7 @@
 			<Dialog.Title>Config-Template generieren</Dialog.Title>
 		</Dialog.Header>
 		<div class="pt-8 pb-4">
-			<Dropzone {handleFiles} />
+			<Dropzone {handleFiles} {filesNumber} />
 		</div>
 		<Button
 			disabled={!resultFiles}

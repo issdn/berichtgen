@@ -147,14 +147,13 @@ export function createStateMachineForContext(
 			cancel: () => WizardStep.CANCELLED
 		},
 		[WizardStep.WAITING]: {
-			_enter: () => {
+			_enter() {
 				if (context.cancelled) {
-					return context.shouldSkip ? WizardStep.TIME_SPREADING : WizardStep.AI_COMPLETION;
-				}
-				if (context.dateRanges !== null) {
 					return WizardStep.CANCELLED;
 				}
-			}
+				this.next();
+			},
+			next: () => (context.shouldSkip ? WizardStep.TIME_SPREADING : WizardStep.AI_COMPLETION)
 		},
 		[WizardStep.AI_COMPLETION]: {
 			_enter() {

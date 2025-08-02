@@ -14,19 +14,28 @@
 	import { CONFIG_FILENAME_REGEX } from '$src/lib/constants';
 	import { readCsvConfig } from '$src/lib/parse/config_reader';
 	import { FileTypes, ScanReturnType } from '$src/lib/enums';
-	import { get2DimensionalDirectories } from '$src/lib/parse/file_scan';
+	import {
+		get2DimensionalDirectories,
+		getFileListWithPreserverFolderStructure
+	} from '$src/lib/parse/file_scan';
 
 	let { loggedIn } = getContext<UserContext>('user')();
 
 	let error: string | null = $state(null);
 
-	async function handleFiles(items: DataTransferItemList) {
+	let filesNumber = $state(0);
+
+	async function handleFiles(items: DataTransferItemList | FileList) {
 		error = null;
 		try {
-			const directories = (await get2DimensionalDirectories(
-				items,
-				ScanReturnType.FILE
-			)) as WizardRawDirectories;
+			const directories =
+				items instanceof FileList
+					? getFileListWithPreserverFolderStructure(items)
+					: ((await get2DimensionalDirectories(
+							items,
+							ScanReturnType.FILE
+						)) as WizardRawDirectories);
+			filesNumber = directories.flat().length;
 			const anyNonJsonFiles = directories.flat().find((f) => f.type !== FileTypes.JSON);
 			if (loggedIn) {
 				const hasDiscount = berichtgenStore.currentProvider?.token != null;
@@ -101,6 +110,7 @@
 						`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${notFoundFiles.join(', ')}`
 					);
 				}
+				console.log(otherFiles);
 				return otherFiles;
 			},
 			(err) => {
@@ -111,4 +121,4 @@
 	}
 </script>
 
-<Dropzone {handleFiles} />
+<Dropzone {handleFiles} {filesNumber} />

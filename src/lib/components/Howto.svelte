@@ -95,7 +95,8 @@
 						>
 						Datei automatisieren. Die Datei muss
 						<i class="bg-muted rounded-sm px-2">berichtgen.(csv|txt)</i> heißen und sie soll mit den
-						restlichen Dateien in die Dopzone gedroppt werden.
+						restlichen Dateien in die Dopzone gedroppt werden. Die <b>Reihenfolge</b> der Zeilen wird
+						beibehalten!
 					</p>
 					<br />
 					<p>Format:</p>

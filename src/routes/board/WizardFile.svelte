@@ -69,7 +69,7 @@
 					}}><XIcon /></Button
 				>
 			{/if}
-			{#if $machine === WizardStep.CANCELLED && !wizardScheduler.isRunning}
+			{#if $machine === WizardStep.CANCELLED}
 				<Button
 					variant="default"
 					onclick={() => {

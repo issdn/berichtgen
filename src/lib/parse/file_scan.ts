@@ -1,8 +1,23 @@
 import { IncuriaErrorType, ScanReturnType } from '$src/lib/enums';
 import { IncuriaError } from '$src/lib/errors';
-import type { WizardRawDirectories } from '$src/lib/types';
+import type { WizardRawDirectories, WizardRawDirectory } from '$src/lib/types';
 import { promisify } from '$src/lib/utils';
 import { getArrayDepth } from '$src/lib/utils/math';
+
+export function getFileListWithPreserverFolderStructure(files: FileList): WizardRawDirectories {
+	const directories = new Map<string, WizardRawDirectory>(
+		[...files].reduce((acc, file) => {
+			const pathParts = file.webkitRelativePath.split('/');
+			const directoryPath = pathParts.slice(0, -1).join('/');
+			if (!acc.has(directoryPath)) {
+				acc.set(directoryPath, []);
+			}
+			acc.get(directoryPath)?.push(file);
+			return acc;
+		}, new Map<string, WizardRawDirectory>())
+	);
+	return [...directories.values()];
+}
 
 export async function get2DimensionalDirectories(
 	items: DataTransferItemList,

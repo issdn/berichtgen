@@ -42,8 +42,8 @@ export class WizardScheduler {
 
 	enqueue = (item: WizardProcessStateMachine) => {
 		this.queue.push(item);
-		if (this.queue.length < this.batchSize) {
-			this.queue[0].machine.run();
+		if (this.queue.length <= this.batchSize) {
+			this.queue.at(-1)!.machine.run();
 		}
 	};
 
@@ -63,6 +63,7 @@ export class WizardScheduler {
 			const { createScheduler } = await import('tesseract.js');
 			this.scheduler = createScheduler();
 		}
+		this.queue = [];
 		this.result = null;
 		this.filesReady = 0;
 		this.filesUnfinished = 0;
