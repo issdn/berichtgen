@@ -61,7 +61,7 @@
 			await wizardScheduler.init();
 			const resolvedDirectories = await Promise.all(directories.map(resolveDirectory));
 			wizardScheduler.createSchedule(resolvedDirectories);
-			wizardScheduler.runFirstBatch();
+			wizardScheduler.schedule?.forEach(wizardScheduler.enqueue);
 		})();
 	}
 

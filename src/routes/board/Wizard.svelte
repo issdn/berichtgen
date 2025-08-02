@@ -18,7 +18,6 @@
 	import { toast } from 'svelte-sonner';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
-	import { slide } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 
 	onMount(() => {
@@ -47,11 +46,7 @@
 	let result = $derived(wizardScheduler.result);
 
 	$effect(() => {
-		if (
-			result !== null &&
-			wizardScheduler.filesReady > 0 &&
-			wizardScheduler.filesUnfinished !== wizardScheduler.filesReady
-		) {
+		if (result !== null && wizardScheduler.filesReady - wizardScheduler.filesUnfinished > 0) {
 			dialogOpen = true;
 		}
 	});

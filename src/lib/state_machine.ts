@@ -1,7 +1,7 @@
 import { DOCXParser } from '$lib/parse/docx_parser';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import { PDFParser } from '$lib/parse/pdf_parser';
-import type { Entry, ResultEntry } from '$lib/types';
+import type { Entry, ResultEntry, WizardProcessStateMachine } from '$lib/types';
 import { FileTypes, IncuriaErrorType, WizardStep } from '$lib/enums';
 import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 import fsm from 'svelte-fsm';
@@ -117,15 +117,6 @@ function parseFile(
 	}
 }
 
-export function onFileDone(scheduler: WizardScheduler) {
-	scheduler.filesReady += 1;
-	if (scheduler.isDone) {
-		scheduler.finish();
-	} else {
-		scheduler.runNext();
-	}
-}
-
 export function createStateMachineForContext(
 	context: WizardFileContext,
 	scheduler: WizardScheduler
@@ -156,18 +147,14 @@ export function createStateMachineForContext(
 			cancel: () => WizardStep.CANCELLED
 		},
 		[WizardStep.WAITING]: {
-			_enter() {
+			_enter: () => {
 				if (context.cancelled) {
-					this.cancel();
-					return;
+					return context.shouldSkip ? WizardStep.TIME_SPREADING : WizardStep.AI_COMPLETION;
 				}
 				if (context.dateRanges !== null) {
-					this.run();
-					return;
+					return WizardStep.CANCELLED;
 				}
-			},
-			run: () => (context.shouldSkip ? WizardStep.TIME_SPREADING : WizardStep.AI_COMPLETION),
-			cancel: () => WizardStep.CANCELLED
+			}
 		},
 		[WizardStep.AI_COMPLETION]: {
 			_enter() {
@@ -226,27 +213,32 @@ export function createStateMachineForContext(
 			cancel: () => WizardStep.CANCELLED
 		},
 		[WizardStep.DONE]: {
-			_enter() {
+			_enter: () => {
 				if (context.cancelled) {
-					this.cancel();
-					return;
+					return WizardStep.CANCELLED;
 				}
 				context.finished = context.snapshot as ResultEntry[];
-				onFileDone(scheduler);
-			},
-			cancel: () => WizardStep.CANCELLED
+				scheduler.dequeue();
+			}
 		},
 		[WizardStep.ERROR]: {
 			_enter() {
 				scheduler.filesUnfinished += 1;
-				onFileDone(scheduler);
+				scheduler.dequeue();
 			}
 		},
 		[WizardStep.CANCELLED]: {
 			_enter() {
 				scheduler.filesUnfinished += 1;
-				onFileDone(scheduler);
-			}
+				scheduler.dequeue();
+			},
+			run(machine: WizardProcessStateMachine) {
+				scheduler.filesUnfinished -= 1;
+				scheduler.filesReady -= 1;
+				this.init();
+				scheduler.enqueue(machine);
+			},
+			init: () => WizardStep.INITIALISING
 		}
 	});
 }

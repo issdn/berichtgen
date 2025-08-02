@@ -5,10 +5,9 @@ import { createStateMachineForContext } from './state_machine';
 import type { Entry, ResultEntry, WizardDirectories, WizardProcessStateMachine } from './types';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import type { DateRangeSchema } from '$src/lib/schemas';
-import { IncuriaError } from '$src/lib/errors';
-import { IncuriaErrorType } from '$src/lib/enums';
+
 export class WizardScheduler {
-	batchSize = 5;
+	queue: WizardProcessStateMachine[] = [];
 
 	schedule: WizardProcessStateMachine[] | null = $state(null);
 
@@ -36,6 +35,27 @@ export class WizardScheduler {
 	get isDone() {
 		return this.schedule !== null && this.filesReady === this.numberOfFiles;
 	}
+
+	get batchSize() {
+		return 5;
+	}
+
+	enqueue = (item: WizardProcessStateMachine) => {
+		this.queue.push(item);
+		if (this.queue.length < this.batchSize) {
+			this.queue[0].machine.run();
+		}
+	};
+
+	dequeue = (): WizardProcessStateMachine | undefined => {
+		const shifted = this.queue.shift();
+		this.filesReady += 1;
+		this.queue.at(this.batchSize)?.machine.run();
+		if (this.isDone) {
+			this.finish();
+		}
+		return shifted;
+	};
 
 	init = async () => {
 		this.isRunning = true;
@@ -81,22 +101,6 @@ export class WizardScheduler {
 		// For some insane fucking reason the run method is removed by the something if not accessed
 		machine.run;
 		return { context, machine, id: crypto.randomUUID() };
-	};
-
-	runNext() {
-		this.schedule!.flat()
-			.at(this.filesReady + this.batchSize - 1)
-			?.machine.run();
-	}
-
-	runFirstBatch = () => {
-		if (this.schedule === null)
-			throw new IncuriaError(IncuriaErrorType.DEVELOPERS_FAULT, 'No schedule created yet.');
-		for (let i = 0; i < this.batchSize; i++) {
-			const file = this.schedule.at(i);
-			if (file === undefined) break;
-			file.machine.run();
-		}
 	};
 }
 

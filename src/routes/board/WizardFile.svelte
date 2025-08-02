@@ -1,8 +1,18 @@
 <script lang="ts">
-	import { Binary, XIcon, Check, Coffee, WandSparkles, Calendar, Clock, Bug } from '@lucide/svelte';
+	import {
+		Binary,
+		XIcon,
+		Check,
+		Coffee,
+		WandSparkles,
+		Calendar,
+		Clock,
+		Bug,
+		RotateCcw
+	} from '@lucide/svelte';
 	import { WizardStep } from '$lib/enums';
 	import TimeSpreadDialog from '$lib/components/TimeSpreadDialog.svelte';
-	import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
+	import { wizardScheduler, type WizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
@@ -38,8 +48,8 @@
 <div class="bg-muted flex flex-col gap-y-4 rounded-md p-4">
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
 		<span class="truncate overflow-hidden">{context.file.name}</span>
-		{#if $machine === WizardStep.WAITING}
-			<div class="flex flex-row gap-x-2">
+		<div class="flex flex-row gap-x-2">
+			{#if $machine === WizardStep.WAITING}
 				<TimeSpreadDialog
 					{id}
 					onClose={() => {
@@ -49,15 +59,26 @@
 					}}
 					onValidChange={(data) => (context.dateRanges = data)}
 				/>
+			{/if}
+			{#if $machine === WizardStep.WAITING || $machine === WizardStep.INITIALISING}
 				<Button
-					variant="default"
+					variant="destructive"
 					onclick={() => {
 						context.cancelled = true;
 						machine.run();
 					}}><XIcon /></Button
 				>
-			</div>
-		{/if}
+			{/if}
+			{#if $machine === WizardStep.CANCELLED && !wizardScheduler.isRunning}
+				<Button
+					variant="default"
+					onclick={() => {
+						context.cancelled = false;
+						machine.run({ context, machine, id });
+					}}><RotateCcw /></Button
+				>
+			{/if}
+		</div>
 	</div>
 	<div class="flex flex-row justify-between">
 		<div class="flex flex-row items-center gap-x-1">

@@ -29,8 +29,7 @@ export function combineJSONs(jsons: ResultEntry[][], constantHours: boolean = fa
 					text: '',
 					datum: date,
 					hours: 0,
-					ort: Ort.BETRIEB,
-					anwesenheit: 'ANWESEND'
+					ort: Ort.BETRIEB
 				}
 			);
 			combinedEntry.text = combinedEntry.text.trim();
