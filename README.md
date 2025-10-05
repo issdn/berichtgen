@@ -54,6 +54,9 @@ GRANT SELECT ON TABLE "public"."llmProvider" to authenticated;
 GRANT SELECT ON TABLE "public"."userTokenCount" to authenticated;
 GRANT UPDATE, INSERT, SELECT, DELETE ON TABLE "public"."userLLMProvider" to authenticated;
 
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."template" TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."template" TO authenticated;
+
 DROP POLICY IF EXISTS "User can select cart" ON "public"."cart";
 CREATE POLICY "User can select cart"
 ON "public"."cart"
@@ -84,6 +87,15 @@ FOR SELECT
 TO authenticated
 USING (
   (select auth.uid()) = "public"."userTokenCount"."userId"
+);
+
+DROP POLICY IF EXISTS "User can access own word templates" ON "public"."template";
+CREATE POLICY "User can access own word templates"
+ON "public"."template"
+FOR ALL
+TO authenticated
+USING (
+  (select auth.uid()) = "public"."template"."userId"
 );
 
 -- ONE TIME ONLY

@@ -28,6 +28,6 @@ CREATE TABLE "cart" (
     "intentId" text NOT NULL,
     "quantity" integer DEFAULT 1 NOT NULL,
     "createdAt" timestamp DEFAULT now(),
-    CONSTRAINT "userTokenCount_userId_pk" PRIMARY KEY("userId"),
+    CONSTRAINT "cart_userId_pk" PRIMARY KEY("userId"),
     CONSTRAINT "cart_userId_users_id_fk" FOREIGN KEY ("userId") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action
 );

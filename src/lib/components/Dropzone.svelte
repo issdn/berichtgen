@@ -1,15 +1,17 @@
 <script lang="ts">
-	import { FileCheck, FileUp } from '@lucide/svelte';
+	import { Clock, FileCheck, FileUp } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 	import { pasteStack } from '$src/lib/stores/paste_stack.svelte';
 
 	let {
 		handleFiles,
-		filesNumber = $bindable(null)
+		filesNumber = $bindable(null),
+		disabled = false
 	}: {
 		handleFiles: (files: DataTransferItemList | FileList) => Promise<void>;
 		filesNumber?: number | null;
+		disabled?: boolean;
 	} = $props();
 
 	let input = $state<HTMLInputElement>();
@@ -85,6 +87,7 @@
 	ondragover={handleDragOver}
 	ondrop={handleDrop}
 	onchange={handleChange}
+	{disabled}
 >
 	<input
 		accept=".docx,.pdf,.json,.txt,.csv,.png,.jpg,.jpeg"
@@ -92,12 +95,15 @@
 		type="file"
 		multiple
 		style="display:none"
+		{disabled}
 	/>
 	{#if filesNumber && filesNumber > 0}
 		<FileCheck size={48} />
 		<label for="dropzone" class="pointer-events-none font-medium">
 			{filesNumber ? filesNumber : ''} Dateien ausgewählt
 		</label>
+	{:else if disabled}
+		<Clock size={48} />
 	{:else}
 		<FileUp size={48} />
 		<label for="dropzone" class="pointer-events-none font-medium"> Dateien hier droppen </label>

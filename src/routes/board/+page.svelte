@@ -13,6 +13,10 @@
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { wizardScheduler } from '$src/lib/wizard_scheduler.svelte';
 	import WizardDropzone from '$src/lib/components/WizardDropzone.svelte';
+	import TemplateUpload from '$src/lib/templates/TemplateUpload.svelte';
+	import { Button } from '$src/lib/components/ui/button';
+	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
+	import TemplatesDialog from '$src/lib/templates/TemplatesDialog.svelte';
 
 	let { data } = $props();
 	let { supabase, tokenCount, user } = $derived(data);
@@ -54,6 +58,8 @@
 			channel?.unsubscribe();
 		};
 	});
+
+	const queryClient = new QueryClient();
 </script>
 
 <svelte:head>
@@ -62,19 +68,24 @@
 	>
 </svelte:head>
 
-<div
-	class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:grid md:grid-cols-2 md:grid-rows-2"
->
-	<div class="flex h-full flex-col gap-y-2 md:row-span-2">
-		{#if berichtgenStore.userTokens !== null}
-			<Badge
-				onclick={() => goto('/board/user/kauf')}
-				class="w-fit cursor-pointer gap-x-2 px-4 py-2 text-sm [&>svg]:size-4"
-				variant="outline"><HandCoins />{berichtgenStore.userTokens}</Badge
-			>
-		{/if}
-		<Howto />
+<QueryClientProvider client={queryClient}>
+	<div
+		class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:grid md:grid-cols-2 md:grid-rows-2"
+	>
+		<div class="flex h-full flex-col gap-y-2 md:row-span-2">
+			<div class="w-full flex-row items-center gap-x-16">
+				{#if berichtgenStore.userTokens !== null}
+					<Button onclick={() => goto('/board/user/kauf')} variant="outline"
+						><HandCoins />{berichtgenStore.userTokens}</Button
+					>
+				{/if}
+				{#if user !== null}
+					<TemplatesDialog />
+				{/if}
+			</div>
+			<Howto />
+		</div>
+		<WizardDropzone />
+		<Wizard />
 	</div>
-	<WizardDropzone />
-	<Wizard />
-</div>
+</QueryClientProvider>

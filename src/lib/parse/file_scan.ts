@@ -114,3 +114,13 @@ async function scanSystemFileEntries(item: FileSystemEntry, items: FileSystemFil
 	}
 	return items;
 }
+
+export function extractFilesSimple(input: DataTransferItemList | FileList): File[] {
+	if (input instanceof FileList) {
+		return Array.from(input);
+	}
+
+	return Array.from(input)
+		.map((item) => (item.kind === 'file' ? item.getAsFile() : null))
+		.filter((file): file is File => !!file);
+}
