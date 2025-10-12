@@ -60,27 +60,24 @@ export type Database = {
 				Row: {
 					created_at: string;
 					id: string;
-					name: string | null;
 					storage_path: string;
-					thumbnail: string | null;
+					thumbnail_path: string | null;
 					updated_at: string;
 					user_id: string | null;
 				};
 				Insert: {
 					created_at?: string;
 					id?: string;
-					name?: string | null;
 					storage_path: string;
-					thumbnail?: string | null;
+					thumbnail_path?: string | null;
 					updated_at?: string;
 					user_id?: string | null;
 				};
 				Update: {
 					created_at?: string;
 					id?: string;
-					name?: string | null;
 					storage_path?: string;
-					thumbnail?: string | null;
+					thumbnail_path?: string | null;
 					updated_at?: string;
 					user_id?: string | null;
 				};

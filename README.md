@@ -1,8 +1,7 @@
 # Secrets
 |Key|Desc|
 |-|-|
-|x-supabase-secret|Vault value for hashing inside supabase's trigger|
-|PRIVATE_X_SUPABASE_SECRET|Hashing from server. Must be the same as x-supabase-secret|
+|thumbnail_api_secret|Vault value for hashing inside supabase's trigger. This must be set in vault and in the python thumbnail api.|
 
 # Supabase
 ```sql
@@ -159,29 +158,29 @@ language plpgsql
 security definer
 as $$
 declare
-  headers jsonb;
   secret text;
-  payload text;
   hmac_sig text;
+  new_template_id uuid;
 begin
-  secret := (select decrypted_secret from vault.decrypted_secrets where name = 'webhook_secret');
+  insert into template (storage_path, user_id)
+  values (new.name, new.owner)
+  returning id into new_template_id;
+
+  secret := (select decrypted_secret from vault.decrypted_secrets where name = 'thumbnail_api_secret');
+  if secret is null then
+    raise exception 'Missing secret: vault.decrypted_secrets.thumbnail_api_secret is null or not found';
+  end if;
   
-  payload := row_to_json(NEW)::text;
+  hmac_sig := encode(hmac(new_template_id::text::bytea, secret::bytea, 'sha256'), 'base64');
 
-  hmac_sig := encode(hmac(payload::bytea, secret::bytea, 'sha256'), 'base64');
-
-  headers := jsonb_build_object(
-    'x-supabase-signature', hmac_sig,
-    'content-type', 'application/json'
-  );
-
-  perform supabase_functions.http_request(
-    'http://192.168.0.150:5173/webhooks/thumbnails',
-    'POST',
-    headers,
-    payload,
-    '1000'
-  );
+  perform(
+    http((
+      'POST',
+      format('http://192.168.0.150:8123/v1/thumbnail?uuid=%s', new_template_id),
+      ARRAY[http_header('x-supabase-signature'::text, hmac_sig)]::http_header[],
+      'application/json',
+      '{}'
+    )::http_request));
 
   return new;
 end;
@@ -191,6 +190,7 @@ drop trigger if exists on_template_uploaded on storage.objects;
 create trigger on_template_uploaded
 after insert on storage.objects
 for each row
+when (NEW.bucket_id = 'templates')
 execute function handle_storage_insert();
 ```
 

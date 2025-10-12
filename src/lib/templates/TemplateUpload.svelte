@@ -38,15 +38,6 @@
 				contentType: file.type
 			});
 
-		// const { error } = await supabase.from('template').insert([
-		// 	{
-		// 		userId: user.id,
-		// 		name: file.name,
-		// 		file: fileBytes,
-		// 		username: user.user_metadata?.name || 'Unbekannt'
-		// 	}
-		// ]);
-
 		if (error) {
 			toast.error('Fehler beim Hochladen der Datei.', { description: error.message });
 		} else {

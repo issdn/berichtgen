@@ -18,7 +18,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Templates</Dialog.Title>
 		</Dialog.Header>
-		<div class="w-full">
+		<div class="flex w-full flex-col gap-y-4 py-4">
 			<TemplateList {supabase} />
 			<TemplateUpload user={user!} {supabase} />
 		</div>
