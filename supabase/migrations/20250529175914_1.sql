@@ -31,3 +31,15 @@ CREATE TABLE "cart" (
     CONSTRAINT "cart_userId_pk" PRIMARY KEY("userId"),
     CONSTRAINT "cart_userId_users_id_fk" FOREIGN KEY ("userId") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action
 );
+
+CREATE TABLE "template" (
+	id uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+	user_id uuid NOT NULL,
+	name text NOT NULL,
+	storage_path text NOT NULL,
+	thumbnail_path text,
+	created_at timestamptz NOT NULL DEFAULT now(),
+	updated_at timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS template_user_id_idx ON "template" (user_id);

@@ -1,2 +1,0 @@
-ALTER TABLE "template"
-ADD COLUMN "username" TEXT NOT NULL;
