@@ -1,3 +1,7 @@
+import { supabaseAdmin } from '$src/lib/server/admin';
+import * as Sentry from '@sentry/svelte';
+import type { LayoutServerLoad } from './$types';
+
 function hideToken(
 	str: string,
 	visibleStart: number = 4,
@@ -14,14 +18,16 @@ function hideToken(
 	return str.slice(0, visibleStart) + maskedPart + str.slice(str.length - visibleEnd);
 }
 
-export const load = async ({ locals: { user, supabase } }) => {
+export const load: LayoutServerLoad = async ({ locals: { user, supabase, session } }) => {
 	if (!user) {
 		return {
-			providers: []
+			providers: [],
+			tokenCount: null,
+			session
 		};
 	}
 
-	const { data: providers, error } = await supabase
+	const { data: providers, error: providersError } = await supabase
 		.from('llmProvider')
 		.select(
 			`
@@ -35,11 +41,11 @@ export const load = async ({ locals: { user, supabase } }) => {
 		)
 		.eq('userLLMProvider.userId', user.id);
 
-	if (error || providers.length === 0) {
-		return { providers: [] };
+	if (providersError) {
+		Sentry.captureException(providersError);
 	}
 
-	const providersHiddenTokens = providers.map((provider) => {
+	const providersHiddenTokens = (providers ?? []).map((provider) => {
 		const token = provider.userLLMProvider[0]?.token;
 		return {
 			...provider,
@@ -47,7 +53,34 @@ export const load = async ({ locals: { user, supabase } }) => {
 		};
 	});
 
+	let tokenCount = 0;
+
+	const { data: getTokenCount, error: tokenCountError } = await supabase
+		.from('userTokenCount')
+		.select('tokens')
+		.eq('userId', user.id)
+		.single();
+
+	tokenCount = getTokenCount?.tokens ?? 0;
+
+	if (tokenCountError || !getTokenCount) {
+		const { data: insertTokenCount, error: insertError } = await supabaseAdmin
+			.from('userTokenCount')
+			.insert({ userId: user.id, tokens: 0 })
+			.select('tokens')
+			.single();
+
+		if (insertError) {
+			Sentry.captureException(insertError);
+		}
+
+		tokenCount = insertTokenCount?.tokens ?? 0;
+	}
+
 	return {
-		providers: providersHiddenTokens
+		providers: providersHiddenTokens,
+		tokenCount,
+		session,
+		user
 	};
 };

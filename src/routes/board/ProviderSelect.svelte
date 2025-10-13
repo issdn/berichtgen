@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Check from '@lucide/svelte/icons/check';
-	import { tick } from 'svelte';
+	import { getContext, tick } from 'svelte';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -9,12 +9,15 @@
 	import { ChevronDown, CircleAlert, CircleCheck } from '@lucide/svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
+	import { type UserBoardContext } from '$src/lib/types';
 
 	let open = $state(false);
 	let triggerRef = $state<HTMLButtonElement>(null!);
 
+	let { providers } = getContext<UserBoardContext>('board')();
+
 	const selectedValue = $derived(
-		berichtgenStore.providers.find((f) => f.id === berichtgenStore.currentProvider?.id)?.name
+		providers.find((f) => f.id === berichtgenStore.currentProvider?.id)?.name
 	);
 
 	function closeAndFocusTrigger() {
@@ -47,7 +50,7 @@
 			<Command.List>
 				<Command.Empty>Kein Provider gefunden.</Command.Empty>
 				<Command.Group>
-					{#each berichtgenStore.providers as provider}
+					{#each providers as provider}
 						<Command.Item
 							class="px-4 py-3"
 							value={provider.name}

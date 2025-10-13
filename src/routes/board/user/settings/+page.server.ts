@@ -1,5 +1,4 @@
 import { fail, message, superValidate } from 'sveltekit-superforms';
-import type { PageServerLoad } from './$types';
 import { zod } from 'sveltekit-superforms/adapters';
 import { error, redirect, type Actions } from '@sveltejs/kit';
 import * as Sentry from '@sentry/node';
@@ -9,10 +8,11 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '$src/lib/database.types';
 import { providerDeleteSchema, providerSchema, validProviderSchema } from '$src/lib/schemas';
 
-export const load: PageServerLoad = async () => {
+export const load = async ({ parent }) => {
+	const { providers, tokenCount } = await parent();
 	const form = await superValidate(zod(providerSchema));
 
-	return { form };
+	return { form, providers, tokenCount };
 };
 
 export const actions: Actions = {

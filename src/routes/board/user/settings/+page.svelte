@@ -12,6 +12,8 @@
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { providerDeleteSchema, validProviderSchema } from '$src/lib/schemas';
+	import type { UserBoardContext } from '$src/lib/types';
+	import { getContext } from 'svelte';
 
 	let { data } = $props();
 
@@ -22,6 +24,7 @@
 		dataType: 'json',
 		validators: zodClient(validProviderSchema),
 		validationMethod: 'oninput',
+		invalidateAll: true,
 		onSubmit({ validators }) {
 			if (action === 'delete') validators(zod(providerDeleteSchema));
 			else validators(zod(validProviderSchema));
@@ -41,11 +44,6 @@
 		},
 		onUpdated({ form }) {
 			if (form.valid) {
-				berichtgenStore.providers = berichtgenStore.providers.map((provider) => {
-					if (provider.id === form.data.id)
-						return { ...{ ...provider, token: null }, ...form.data };
-					return provider;
-				});
 				toast.success(form.message);
 			}
 		}
@@ -86,15 +84,12 @@
 									<p class="text-red-500">
 										Dieser Vorgang ist unumkehrbar. Dies wird dein Konto und deine Daten entfernen.
 									</p>
-									{#if berichtgenStore.userTokens !== null && berichtgenStore.userTokens > 0}
+									{#if data.tokenCount !== null && data.tokenCount > 0}
 										<p
 											class="flex flex-row items-center gap-x-1 text-red-500 [&_span]:text-red-500"
 										>
 											Deine <Badge variant="default"
-												><HandCoins
-													size={16}
-													class="text-red-500"
-												/>{berichtgenStore.userTokens}</Badge
+												><HandCoins size={16} class="text-red-500" />{data.tokenCount}</Badge
 											> Tokens werden ebenfalls gelöscht.
 										</p>
 									{/if}
@@ -134,7 +129,7 @@
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
-							{#each berichtgenStore.providers as provider}
+							{#each data.providers as provider}
 								{@const hasToken = provider.token !== null && provider.token.length > 0}
 								<Table.Row>
 									<Table.Cell>

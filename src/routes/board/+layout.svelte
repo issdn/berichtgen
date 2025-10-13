@@ -1,19 +1,27 @@
 <script lang="ts">
-	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte.js';
 	import { type UserContext } from '$src/lib/types.js';
-	import { getContext, onMount } from 'svelte';
+	import { getContext, setContext } from 'svelte';
+	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import * as Sentry from '@sentry/browser';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
+	import { PaymentStatus } from '$src/lib/enums';
+	import type { RealtimeChannel } from '@supabase/supabase-js';
+	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
+	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 
 	let { data, children } = $props();
+
+	let { supabase, tokenCount, user, providers } = $derived(data);
+
+	setContext('board', () => ({ tokenCount, providers }));
 
 	let getUser = getContext<UserContext>('user');
 
 	let { loggedIn } = $derived(getUser());
 
-	let providers = $derived(data.providers);
-
 	$effect.pre(() => {
-		berichtgenStore.providers = providers;
 		berichtgenStore.processPhotos = JSON.parse(localStorage.getItem('processPhotos') ?? 'false');
 		berichtgenStore.rewordJSON = loggedIn
 			? JSON.parse(localStorage.getItem('rewordJSON') ?? 'false')
@@ -25,6 +33,42 @@
 				providers.find((provider) => provider.id === providerId) ?? providers[0];
 		}
 	});
+
+	onMount(() => {
+		if (page.url.searchParams.get('payment') === PaymentStatus.SUCCESS) {
+			toast.success('Kauf von Tokens erfolgreich!');
+			const cleanUrl = `${page.url.pathname}${page.url.hash || ''}`;
+			replaceState(cleanUrl, '');
+		}
+
+		let channel: RealtimeChannel | null = null;
+
+		if (user) {
+			channel = supabase
+				.channel('token-update')
+				.on(
+					'postgres_changes',
+					{ event: 'UPDATE', table: 'userTokenCount', schema: 'public' },
+					(p) => {
+						tokenCount = p.new.tokens;
+					}
+				)
+				.subscribe((_, e) => {
+					if (e) {
+						Sentry.captureException(e);
+						toast.error(
+							'Fehler beim Abonnieren des Token-Channels. Token-Count wird nicht aktualisiert.'
+						);
+					}
+				});
+		}
+
+		return () => {
+			channel?.unsubscribe();
+		};
+	});
+
+	const queryClient = new QueryClient();
 </script>
 
 <div
@@ -33,4 +77,6 @@
 	🚧 In Entwicklung
 </div>
 
-{@render children()}
+<QueryClientProvider client={queryClient}>
+	{@render children()}
+</QueryClientProvider>

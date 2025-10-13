@@ -1,8 +1,6 @@
 import type { ProviderSchemaType } from '$src/lib/schemas';
 
 class ***REMOVED***Store {
-	_providers: ProviderSchemaType[] | null = $state(null);
-
 	_currentProvider: ProviderSchemaType | null = $state(null);
 
 	_processPhotos = $state(false);
@@ -10,14 +8,6 @@ class ***REMOVED***Store {
 	_rewordJSON = $state(false);
 
 	_contantHours = $state(false);
-
-	get providers() {
-		return this._providers ?? [];
-	}
-
-	set providers(value) {
-		this._providers = value;
-	}
 
 	get currentProvider() {
 		return this._currentProvider!;
@@ -56,8 +46,6 @@ class ***REMOVED***Store {
 	}
 
 	tempEmailContainer: null | string = $state(null);
-
-	userTokens: number | null = $state(null);
 }
 
 export const berichtgenStore = new ***REMOVED***Store();
