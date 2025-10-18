@@ -9,6 +9,7 @@
 		parseDateTime,
 		parseZonedDateTime
 	} from '@internationalized/date';
+	import { ImageOff } from '@lucide/svelte';
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { createInfiniteQuery } from '@tanstack/svelte-query';
 	import { fade } from 'svelte/transition';
@@ -77,23 +78,29 @@
 				{#each query.data.pages as page}
 					{#each page as template}
 						<div
-							class="border-primary-muted flex flex-col justify-between gap-y-1 rounded-sm border p-1"
+							class="border-primary-muted flex h-64 flex-col justify-between gap-y-1 rounded-sm border p-1"
 						>
-							<img
-								alt="Thumbnail erster Seite"
-								src={`http://127.0.0.1:54321/storage/v1/object/public/thumbnails/${template.thumbnail_path
-									?.split('/')
-									.at(-1)}`}
-							/>
+							{#if template.thumbnail_path}
+								<img
+									alt="Thumbnail erster Seite"
+									src={`http://127.0.0.1:54321/storage/v1/object/public/thumbnails/${template.thumbnail_path
+										?.split('/')
+										.at(-1)}`}
+								/>
+							{:else}
+								<div class="flex h-full w-full flex-col items-center justify-center">
+									<ImageOff size={72} class="text-primary-foreground" />
+								</div>
+							{/if}
 							<div class="flex w-full flex-col">
 								<p class="line-clamp-1 text-sm overflow-ellipsis">
 									{template.storage_path.split('/').at(-1)}
 								</p>
 								<p class="line-clamp-1 text-sm overflow-ellipsis">
 									{#if template.updated_at !== null}
-										Bearbeitet am: {parsePostgresDate(template.updated_at)}
+										Geä. am: {parsePostgresDate(template.updated_at)}
 									{:else}
-										Erstellt am: {parsePostgresDate(template.created_at)}
+										Erst. am: {parsePostgresDate(template.created_at)}
 									{/if}
 								</p>
 							</div>
