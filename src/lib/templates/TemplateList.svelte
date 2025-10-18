@@ -1,7 +1,14 @@
 <script lang="ts">
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
+	import { LOCALE, TIMEZONE } from '$src/lib/constants';
 	import type { Database } from '$src/lib/database.types';
-	import { parseDateTime, parseZonedDateTime } from '@internationalized/date';
+	import { parsePostgresDate } from '$src/lib/utils';
+	import {
+		DateFormatter,
+		parseAbsolute,
+		parseDateTime,
+		parseZonedDateTime
+	} from '@internationalized/date';
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { createInfiniteQuery } from '@tanstack/svelte-query';
 	import { fade } from 'svelte/transition';
@@ -56,10 +63,6 @@
 			});
 		}
 	});
-
-	function parseDate(dateString: string): string {
-		return parseZonedDateTime(dateString).toString();
-	}
 </script>
 
 <div class="flex w-full flex-col items-center">
@@ -83,14 +86,16 @@
 									.at(-1)}`}
 							/>
 							<div class="flex w-full flex-col">
-								<p class="line-clamp-2 text-sm overflow-ellipsis">
+								<p class="line-clamp-1 text-sm overflow-ellipsis">
 									{template.storage_path.split('/').at(-1)}
 								</p>
-								{#if template.updated_at !== null}
-									<p>Bearbeitet am: {parseDate(template.updated_at)}</p>
-								{:else}
-									<p>Erstellt am: {parseDate(template.created_at)}</p>
-								{/if}
+								<p class="line-clamp-1 text-sm overflow-ellipsis">
+									{#if template.updated_at !== null}
+										Bearbeitet am: {parsePostgresDate(template.updated_at)}
+									{:else}
+										Erstellt am: {parsePostgresDate(template.created_at)}
+									{/if}
+								</p>
 							</div>
 						</div>
 					{/each}

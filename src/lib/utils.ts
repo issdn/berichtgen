@@ -1,3 +1,5 @@
+import { LOCALE, TIMEZONE } from '$src/lib/constants';
+import { DateFormatter, parseAbsolute } from '@internationalized/date';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -18,4 +20,10 @@ export function promisify<T, E>(
 	return new Promise((resolve, reject) => {
 		fn(resolve, reject);
 	});
+}
+
+export function parsePostgresDate(dateString: string): string {
+	return new DateFormatter(LOCALE, { dateStyle: 'medium' })
+		.format(parseAbsolute(dateString, TIMEZONE).toDate())
+		.toString();
 }

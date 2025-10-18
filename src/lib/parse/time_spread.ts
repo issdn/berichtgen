@@ -1,9 +1,8 @@
 import type { Entry, ResultEntry } from '$lib/types';
+import { LOCALE } from '$src/lib/constants';
 import type { Ort } from '$src/lib/enums';
 import type { ValidIncuriaDateRanges } from '$src/lib/schemas';
 import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date';
-
-const LOCALE = 'de-DE';
 
 /**
  *

@@ -19,6 +19,7 @@
 	import { IncuriaErrorType, PaymentStatus } from '$src/lib/enums';
 	import Checkbox from '$src/lib/components/ui/checkbox/checkbox.svelte';
 	import { IncuriaError } from '$src/lib/errors.js';
+	import { LOCALE } from '$src/lib/constants.js';
 
 	const { data } = $props();
 
@@ -157,9 +158,9 @@
 					<div class="flex h-full flex-col justify-between gap-y-2">
 						<div class="flex flex-col gap-y-2">
 							<p>
-								Oder ca.: {(quantity * 700_000).toLocaleString('de-DE')} Wörter,
-								{(quantity * 70_000).toLocaleString('de-DE')} Absätze oder
-								{(quantity * 1_400).toLocaleString('de-DE')} Seiten
+								Oder ca.: {(quantity * 700_000).toLocaleString(LOCALE)} Wörter,
+								{(quantity * 70_000).toLocaleString(LOCALE)} Absätze oder
+								{(quantity * 1_400).toLocaleString(LOCALE)} Seiten
 							</p>
 							<div class="text-muted-foreground mt-2 flex flex-row items-center gap-x-2">
 								<CircleAlert size={28} />

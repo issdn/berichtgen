@@ -9,6 +9,7 @@
 	import type { SuperForm, SuperFormData } from 'sveltekit-superforms/client';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import type { DateRangeSchema } from '$src/lib/schemas';
+	import { LOCALE } from '$src/lib/constants';
 
 	let {
 		form,
@@ -20,7 +21,7 @@
 		index: number;
 	} = $props();
 
-	const df = new DateFormatter('de-DE', {
+	const df = new DateFormatter(LOCALE, {
 		dateStyle: 'short'
 	});
 

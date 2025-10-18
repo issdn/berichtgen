@@ -1,3 +1,7 @@
+export const LOCALE = 'de-DE';
+
+export const TIMEZONE = 'Europe/Berlin';
+
 export const CONFIG_FILENAME_REGEX = /^berichtgen(\(.*?\))?\.(txt|csv)$/;
 
 export const BULLETPOINT = '\n- ';
