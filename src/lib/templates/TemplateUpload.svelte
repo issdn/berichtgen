@@ -3,7 +3,7 @@
 	import { FileTypes } from '$src/lib/enums';
 	import { extractFilesSimple } from '$src/lib/parse/file_scan';
 	import type { SupabaseClient, User } from '@supabase/supabase-js';
-	import { createMutation } from '@tanstack/svelte-query';
+	import { createMutation, getQueryClientContext } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
 
 	const { user, supabase }: { user: User; supabase: SupabaseClient } = $props();
@@ -29,6 +29,8 @@
 		}
 
 		upload.mutate(firstFile);
+
+		await getQueryClientContext().invalidateQueries({ queryKey: ['template'] });
 	}
 
 	async function uploadTemplates(file: File) {

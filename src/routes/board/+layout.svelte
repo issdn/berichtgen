@@ -10,6 +10,8 @@
 	import type { RealtimeChannel } from '@supabase/supabase-js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
+	import { browser } from '$app/environment';
+	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 
 	let { data, children } = $props();
 
@@ -68,7 +70,7 @@
 		};
 	});
 
-	const queryClient = new QueryClient();
+	const queryClient = new QueryClient({ defaultOptions: { queries: { enabled: browser } } });
 </script>
 
 <div
@@ -79,4 +81,5 @@
 
 <QueryClientProvider client={queryClient}>
 	{@render children()}
+	<SvelteQueryDevtools initialIsOpen={false} />
 </QueryClientProvider>

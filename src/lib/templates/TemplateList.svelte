@@ -1,51 +1,111 @@
 <script lang="ts">
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import type { Database } from '$src/lib/database.types';
+	import { parseDateTime, parseZonedDateTime } from '@internationalized/date';
 	import type { SupabaseClient } from '@supabase/supabase-js';
-	import { createQuery } from '@tanstack/svelte-query';
+	import { createInfiniteQuery } from '@tanstack/svelte-query';
+	import { fade } from 'svelte/transition';
 
 	const { supabase }: { supabase: SupabaseClient<Database> } = $props();
 
-	async function fetchTemplates() {
-		const { data, error } = await supabase.from('template').select('*');
+	const itemsPerPage = 9;
+
+	let virtualListContainer: HTMLDivElement | null = $state(null);
+
+	async function fetchTemplates(page: number) {
+		const { data, error } = await supabase
+			.from('template')
+			.select('*')
+			.order('created_at', { ascending: false })
+			.order('updated_at', { ascending: false })
+			.range(page * itemsPerPage, (page + 1) * itemsPerPage);
 
 		if (error) {
 			throw error;
 		}
 
-		return data ?? [];
+		return await new Promise<typeof data>((resolve) => setTimeout(() => resolve(data ?? []), 500));
 	}
 
-	const templates = createQuery(() => ({
+	const query = createInfiniteQuery(() => ({
 		queryKey: ['template'],
-		queryFn: fetchTemplates
+		queryFn: ({ pageParam }) => fetchTemplates(pageParam),
+		initialPageParam: 0,
+		getNextPageParam: (lastPage, allPages) => {
+			if (lastPage.length < itemsPerPage) {
+				return undefined;
+			}
+			return allPages.length;
+		}
 	}));
+
+	let lastScroll = 0;
+
+	$effect(() => {
+		if (virtualListContainer) {
+			virtualListContainer.addEventListener('scroll', () => {
+				const passedScrollThreshold =
+					virtualListContainer!.scrollTop + virtualListContainer!.clientHeight >=
+					virtualListContainer!.scrollHeight - 10;
+				const scrollingDown = virtualListContainer!.scrollTop > lastScroll;
+
+				lastScroll = virtualListContainer!.scrollTop;
+				if (passedScrollThreshold && !query.isFetching && scrollingDown) {
+					query.fetchNextPage();
+				}
+			});
+		}
+	});
+
+	function parseDate(dateString: string): string {
+		return parseZonedDateTime(dateString).toString();
+	}
 </script>
 
 <div class="flex w-full flex-col items-center">
-	{#if templates.isLoading}
-		<Spinner size="md" />
-	{:else if templates.isError}
-		<p>Fehler beim Laden der Templates: {templates.error.message}</p>
-	{:else if templates.data && templates.data.length === 0}
+	{#if query.data && query.data.pages.length === 0}
 		<p>Keine Templates gefunden.</p>
-	{:else if templates.data}
-		<div class="max-h-64 overflow-y-auto pr-4">
+	{:else if query.isSuccess}
+		<div
+			bind:this={virtualListContainer}
+			class="flex max-h-64 flex-col items-center overflow-y-auto pr-4"
+		>
 			<ul class="grid h-full auto-cols-fr grid-cols-2 grid-rows-1 gap-1 sm:grid-cols-3">
-				{#each templates.data as template}
-					<div class="border-primary-muted flex flex-col gap-y-1 rounded-sm border p-1">
-						<img
-							alt="Thumbnail erster Seite"
-							src={`http://127.0.0.1:54321/storage/v1/object/public/thumbnails/${template.thumbnail_path
-								?.split('/')
-								.at(-1)}`}
-						/>
-						<p class="line-clamp-2 text-sm overflow-ellipsis">
-							{template.storage_path.split('/').at(-1)}
-						</p>
-					</div>
+				{#each query.data.pages as page}
+					{#each page as template}
+						<div
+							class="border-primary-muted flex flex-col justify-between gap-y-1 rounded-sm border p-1"
+						>
+							<img
+								alt="Thumbnail erster Seite"
+								src={`http://127.0.0.1:54321/storage/v1/object/public/thumbnails/${template.thumbnail_path
+									?.split('/')
+									.at(-1)}`}
+							/>
+							<div class="flex w-full flex-col">
+								<p class="line-clamp-2 text-sm overflow-ellipsis">
+									{template.storage_path.split('/').at(-1)}
+								</p>
+								{#if template.updated_at !== null}
+									<p>Bearbeitet am: {parseDate(template.updated_at)}</p>
+								{:else}
+									<p>Erstellt am: {parseDate(template.created_at)}</p>
+								{/if}
+							</div>
+						</div>
+					{/each}
 				{/each}
 			</ul>
+			{#if query.isFetchingNextPage}
+				<div class="pt-4" transition:fade>
+					<Spinner size="md" />
+				</div>
+			{/if}
 		</div>
+	{/if}
+	{#if query.isError}
+		<p>Fehler beim Laden der Templates: {query.error.message}</p>
+	{:else}
+		<div class="h-6 py-4"></div>
 	{/if}
 </div>
