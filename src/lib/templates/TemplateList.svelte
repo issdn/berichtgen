@@ -1,18 +1,12 @@
 <script lang="ts">
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
-	import { LOCALE, TIMEZONE } from '$src/lib/constants';
 	import type { Database } from '$src/lib/database.types';
 	import { parsePostgresDate } from '$src/lib/utils';
-	import {
-		DateFormatter,
-		parseAbsolute,
-		parseDateTime,
-		parseZonedDateTime
-	} from '@internationalized/date';
-	import { ImageOff } from '@lucide/svelte';
+	import { ImageOff, SearchIcon } from '@lucide/svelte';
 	import type { SupabaseClient } from '@supabase/supabase-js';
-	import { createInfiniteQuery } from '@tanstack/svelte-query';
+	import { createInfiniteQuery, keepPreviousData } from '@tanstack/svelte-query';
 	import { fade } from 'svelte/transition';
+	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
 
 	const { supabase }: { supabase: SupabaseClient<Database> } = $props();
 
@@ -20,13 +14,21 @@
 
 	let virtualListContainer: HTMLDivElement | null = $state(null);
 
-	async function fetchTemplates(page: number) {
-		const { data, error } = await supabase
+	let search = $state('');
+
+	async function fetchTemplates(page: number, nameFilter?: string) {
+		let queryBuilder = supabase
 			.from('template')
 			.select('*')
 			.order('created_at', { ascending: false })
 			.order('updated_at', { ascending: false })
 			.range(page * itemsPerPage, (page + 1) * itemsPerPage);
+
+		if (nameFilter) {
+			queryBuilder = queryBuilder.ilike('storage_path', `%${nameFilter}%`);
+		}
+
+		const { data, error } = await queryBuilder;
 
 		if (error) {
 			throw error;
@@ -36,9 +38,10 @@
 	}
 
 	const query = createInfiniteQuery(() => ({
-		queryKey: ['template'],
-		queryFn: ({ pageParam }) => fetchTemplates(pageParam),
+		queryKey: ['template', search],
+		queryFn: ({ pageParam }) => fetchTemplates(pageParam, search),
 		initialPageParam: 0,
+		placeholderData: keepPreviousData,
 		getNextPageParam: (lastPage, allPages) => {
 			if (lastPage.length < itemsPerPage) {
 				return undefined;
@@ -66,10 +69,16 @@
 	});
 </script>
 
-<div class="flex w-full flex-col items-center">
+<div class="flex w-full flex-col items-center gap-y-4">
+	<InputGroup.Root>
+		<InputGroup.Input placeholder="Suchen..." bind:value={search} />
+		<InputGroup.Addon>
+			<SearchIcon />
+		</InputGroup.Addon>
+	</InputGroup.Root>
 	{#if query.data && query.data.pages.length === 0}
-		<p>Keine Templates gefunden.</p>
-	{:else if query.isSuccess}
+		<p>Wir haben noch keine Templates 🥺</p>
+	{:else if query.data?.pages}
 		<div
 			bind:this={virtualListContainer}
 			class="flex max-h-64 flex-col items-center overflow-y-auto pr-4"
@@ -114,10 +123,7 @@
 				</div>
 			{/if}
 		</div>
-	{/if}
-	{#if query.isError}
+	{:else if query.isError}
 		<p>Fehler beim Laden der Templates: {query.error.message}</p>
-	{:else}
-		<div class="h-6 py-4"></div>
 	{/if}
 </div>
