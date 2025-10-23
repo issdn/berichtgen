@@ -34,6 +34,9 @@
 			berichtgenStore.currentProvider =
 				providers.find((provider) => provider.id === providerId) ?? providers[0];
 		}
+		berichtgenStore.preferedTemplatePath = JSON.parse(
+			localStorage.getItem('preferedTemplatePath') ?? 'null'
+		);
 	});
 
 	onMount(() => {

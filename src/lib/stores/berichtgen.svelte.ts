@@ -9,6 +9,8 @@ class ***REMOVED***Store {
 
 	_contantHours = $state(false);
 
+	_preferedTemplatePath = $state<string | null>(null);
+
 	get currentProvider() {
 		return this._currentProvider!;
 	}
@@ -43,6 +45,15 @@ class ***REMOVED***Store {
 	set contantHours(value: boolean) {
 		localStorage.setItem('contantHours', JSON.stringify(value));
 		this._contantHours = value;
+	}
+
+	get preferedTemplatePath() {
+		return this._preferedTemplatePath;
+	}
+
+	set preferedTemplatePath(value: string | null) {
+		localStorage.setItem('preferedTemplatePath', JSON.stringify(value));
+		this._preferedTemplatePath = value;
 	}
 
 	tempEmailContainer: null | string = $state(null);
