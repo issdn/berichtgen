@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Database } from '$src/lib/database.types';
 	import { parsePostgresDate } from '$src/lib/utils';
-	import { ImageOff, SearchIcon } from '@lucide/svelte';
+	import { FileCheck2, FilePlus, ImageOff, SearchIcon } from '@lucide/svelte';
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { createInfiniteQuery, keepPreviousData } from '@tanstack/svelte-query';
 	import { fade } from 'svelte/transition';
@@ -10,6 +10,7 @@
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import ScrollArea from '$src/lib/components/ui/scroll-area/scroll-area.svelte';
 	import { Spinner } from '$src/lib/components/ui/spinner';
+	import Badge from '$src/lib/components/ui/badge/badge.svelte';
 
 	const { supabase }: { supabase: SupabaseClient<Database> } = $props();
 
@@ -90,13 +91,18 @@
 			>
 				{#each query.data.pages as page}
 					{#each page as template}
+						{@const isPreferred = berichtgenStore.preferedTemplatePath === template.storage_path}
 						<button
 							onclick={() => setPreferedTemplate(template.storage_path)}
-							class="group border-primary-muted relative flex h-64 w-36 cursor-pointer flex-col justify-between gap-y-1 rounded-sm border p-1"
+							class={`group ${isPreferred ? 'bg-muted' : ''} border-primary-muted relative flex h-64 w-36 cursor-pointer flex-col justify-between gap-y-1 rounded-sm border p-1`}
 						>
-							<div
-								class="group-hover:bg-background/95 absolute top-0 left-0 h-full w-full rounded-sm"
-							></div>
+							{#if !isPreferred}
+								<div
+									class="group-hover:bg-background/95 align-center absolute top-0 left-0 flex h-full w-full items-center justify-center rounded-sm"
+								>
+									<FilePlus size={72} class="invisible group-hover:visible" />
+								</div>
+							{/if}
 							{#if template.thumbnail_path}
 								<img
 									alt="Thumbnail erster Seite"
