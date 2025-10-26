@@ -83,15 +83,20 @@
 					query.fetchNextPage();
 				}
 			}}
-			class="flex max-h-64 flex-col items-center pr-4"
+			class="flex max-h-64 w-full flex-col items-center pr-4"
 		>
-			<ul class="grid h-full auto-cols-fr grid-cols-2 grid-rows-1 gap-1 sm:grid-cols-3">
+			<ul
+				class="grid h-full grid-cols-[repeat(auto-fit,minmax(144px,1fr))] justify-items-center gap-1"
+			>
 				{#each query.data.pages as page}
 					{#each page as template}
 						<button
 							onclick={() => setPreferedTemplate(template.storage_path)}
-							class="border-primary-muted hover: flex h-64 cursor-pointer flex-col justify-between gap-y-1 rounded-sm border p-1"
+							class="group border-primary-muted relative flex h-64 w-36 cursor-pointer flex-col justify-between gap-y-1 rounded-sm border p-1"
 						>
+							<div
+								class="group-hover:bg-background/95 absolute top-0 left-0 h-full w-full rounded-sm"
+							></div>
 							{#if template.thumbnail_path}
 								<img
 									alt="Thumbnail erster Seite"
@@ -104,11 +109,11 @@
 									<ImageOff size={72} class="text-primary-foreground" />
 								</div>
 							{/if}
-							<div class="flex w-full flex-col items-start">
-								<p class="line-clamp-1 text-sm overflow-ellipsis">
+							<div class="flex w-full flex-col">
+								<p class="w-full overflow-hidden text-left text-sm text-nowrap overflow-ellipsis">
 									{template.storage_path.split('/').at(-1)}
 								</p>
-								<p class="line-clamp-1 text-sm overflow-ellipsis">
+								<p class="w-full text-left text-sm overflow-ellipsis">
 									{#if template.updated_at !== null}
 										Geä. am: {parsePostgresDate(template.updated_at)}
 									{:else}
