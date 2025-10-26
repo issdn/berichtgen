@@ -1,16 +1,16 @@
 <script lang="ts">
 	import type { Database } from '$src/lib/database.types';
 	import { parsePostgresDate } from '$src/lib/utils';
-	import { FileCheck2, FilePlus, ImageOff, SearchIcon } from '@lucide/svelte';
+	import { FileCheck2, FilePlus, FilePlus2, ImageOff, SearchIcon, Shredder } from '@lucide/svelte';
 	import type { SupabaseClient } from '@supabase/supabase-js';
-	import { createInfiniteQuery, keepPreviousData } from '@tanstack/svelte-query';
+	import { createInfiniteQuery, createMutation, keepPreviousData } from '@tanstack/svelte-query';
 	import { fade } from 'svelte/transition';
 	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import ScrollArea from '$src/lib/components/ui/scroll-area/scroll-area.svelte';
 	import { Spinner } from '$src/lib/components/ui/spinner';
-	import Badge from '$src/lib/components/ui/badge/badge.svelte';
+	import { Button } from '$src/lib/components/ui/button';
 
 	const { supabase }: { supabase: SupabaseClient<Database> } = $props();
 
@@ -20,6 +20,13 @@
 
 	function setPreferedTemplate(path: string) {
 		berichtgenStore.preferedTemplatePath = path;
+	}
+
+	async function deleteTemplate(id: string) {
+		const { error } = await supabase.from('template').delete().eq('id', id);
+		if (error) {
+			throw error;
+		}
 	}
 
 	async function fetchTemplates(page: number, nameFilter?: string) {
@@ -53,6 +60,13 @@
 				return undefined;
 			}
 			return allPages.length;
+		}
+	}));
+
+	const deleteMutation = createMutation(() => ({
+		mutationFn: (id: string) => deleteTemplate(id),
+		onSuccess: () => {
+			query.refetch();
 		}
 	}));
 
@@ -92,15 +106,22 @@
 				{#each query.data.pages as page}
 					{#each page as template}
 						{@const isPreferred = berichtgenStore.preferedTemplatePath === template.storage_path}
-						<button
-							onclick={() => setPreferedTemplate(template.storage_path)}
-							class={`group ${isPreferred ? 'bg-muted' : ''} border-primary-muted relative flex h-64 w-36 cursor-pointer flex-col justify-between gap-y-1 rounded-sm border p-1`}
+						<div
+							class={`group ${isPreferred ? 'bg-muted' : ''} border-primary-muted relative flex h-64 w-36 flex-col justify-between gap-y-1 rounded-sm border p-1`}
 						>
 							{#if !isPreferred}
 								<div
-									class="group-hover:bg-background/95 align-center absolute top-0 left-0 flex h-full w-full items-center justify-center rounded-sm"
+									class="align-center absolute top-0 left-0 flex h-full w-full flex-row items-start justify-end gap-1 rounded-sm p-2"
 								>
-									<FilePlus size={72} class="invisible group-hover:visible" />
+									<Button variant="secondary" onclick={() => deleteMutation.mutate(template.id)}>
+										<Shredder size={24} />
+									</Button>
+									<Button
+										variant="secondary"
+										onclick={() => setPreferedTemplate(template.storage_path)}
+									>
+										<FilePlus2 size={24} />
+									</Button>
 								</div>
 							{/if}
 							{#if template.thumbnail_path}
@@ -127,7 +148,7 @@
 									{/if}
 								</p>
 							</div>
-						</button>
+						</div>
 					{/each}
 				{/each}
 			</ul>

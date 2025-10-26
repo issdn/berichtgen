@@ -9,7 +9,6 @@
 	const { user, supabase }: { user: User; supabase: SupabaseClient } = $props();
 
 	const upload = createMutation(() => ({
-		mutationKey: ['template-upload'],
 		mutationFn: (file: File) => uploadTemplates(file)
 	}));
 
