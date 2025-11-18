@@ -5,7 +5,7 @@
 	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { createInfiniteQuery, createMutation, keepPreviousData } from '@tanstack/svelte-query';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
-	import { PUBLIC_SUPABASE_URL, PUBLIC_DEBUG_URL } from '$env/static/public';
+	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { Button } from '$src/lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 
@@ -78,7 +78,7 @@
 	const name = template.storage_path.split('/').at(-1);
 
 	// Works only for public files
-	const filepath = `${PUBLIC_DEBUG_URL}/storage/v1/object/public/templates/${template.storage_path}`;
+	const filepath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/templates/${template.storage_path}`;
 
 	const thumbnailpath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${template.thumbnail_path
 		?.split('/')
