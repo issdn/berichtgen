@@ -20,6 +20,7 @@
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { page } from '$app/state';
 	import { emailSchema } from '$src/lib/schemas';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
 	let { user, loggedIn, supabase } = $derived(getContext<UserContext>('user')());
 
@@ -117,15 +118,20 @@
 				<Button type="submit" class="w-full"><LogOut />Abmelden</Button>
 			</form>
 		{:else}
+			<Label class="text-xs">Anmeldung derzeit deaktiviert</Label>
 			<form method="POST" action={`/auth?/signin`} use:enhance>
 				<input type="hidden" name="providerId" value="google" />
 				<input type="hidden" name="redirectTo" value="/board" />
-				<Button type="submit" class="w-full"><Google />Anmelden mit Google</Button>
+				<Button disabled={true} type="submit" class="w-full"><Google />Anmelden mit Google</Button>
 			</form>
-			<Button onclick={() => (otpDialogOpen = true)}><KeyRound />OTP Anmeldung</Button>
+			<Button disabled={true} onclick={() => (otpDialogOpen = true)}
+				><KeyRound />OTP Anmeldung</Button
+			>
 		{/if}
-		<Button variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
-		<Button variant="outline" href="/datenschutz"><Lock />Datenschutzerklärung</Button>
+		<Button disabled={true} variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
+		<Button disabled={true} variant="outline" href="/datenschutz"
+			><Lock />Datenschutzerklärung</Button
+		>
 		<div class="text-muted-foreground flex flex-row items-center justify-center gap-x-1">
 			<p>v1.0.0</p>
 		</div>
