@@ -1,33 +1,20 @@
 <script lang="ts">
 	import type { Database } from '$src/lib/database.types';
-	import { parsePostgresDate } from '$src/lib/utils';
-	import { FileCheck2, FilePlus, FilePlus2, ImageOff, SearchIcon, Shredder } from '@lucide/svelte';
+	import { SearchIcon } from '@lucide/svelte';
 	import type { SupabaseClient } from '@supabase/supabase-js';
-	import { createInfiniteQuery, createMutation, keepPreviousData } from '@tanstack/svelte-query';
+	import { createInfiniteQuery, keepPreviousData } from '@tanstack/svelte-query';
 	import { fade } from 'svelte/transition';
 	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
-	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import ScrollArea from '$src/lib/components/ui/scroll-area/scroll-area.svelte';
 	import { Spinner } from '$src/lib/components/ui/spinner';
-	import { Button } from '$src/lib/components/ui/button';
+	import Thumbnail from '$src/lib/templates/Thumbnail.svelte';
 
 	const { supabase }: { supabase: SupabaseClient<Database> } = $props();
 
 	const itemsPerPage = 9;
 
 	let search = $state('');
-
-	function setPreferedTemplate(path: string) {
-		berichtgenStore.preferedTemplatePath = path;
-	}
-
-	async function deleteTemplate(id: string) {
-		const { error } = await supabase.from('template').delete().eq('id', id);
-		if (error) {
-			throw error;
-		}
-	}
 
 	async function fetchTemplates(page: number, nameFilter?: string) {
 		let queryBuilder = supabase
@@ -60,13 +47,6 @@
 				return undefined;
 			}
 			return allPages.length;
-		}
-	}));
-
-	const deleteMutation = createMutation(() => ({
-		mutationFn: (id: string) => deleteTemplate(id),
-		onSuccess: () => {
-			query.refetch();
 		}
 	}));
 
@@ -106,49 +86,7 @@
 				{#each query.data.pages as page}
 					{#each page as template}
 						{@const isPreferred = berichtgenStore.preferedTemplatePath === template.storage_path}
-						<div
-							class={`group ${isPreferred ? 'bg-muted' : ''} border-primary-muted relative flex h-64 w-36 flex-col justify-between gap-y-1 rounded-sm border p-1`}
-						>
-							{#if !isPreferred}
-								<div
-									class="align-center absolute top-0 left-0 flex h-full w-full flex-row items-start justify-end gap-1 rounded-sm p-2"
-								>
-									<Button variant="secondary" onclick={() => deleteMutation.mutate(template.id)}>
-										<Shredder size={24} />
-									</Button>
-									<Button
-										variant="secondary"
-										onclick={() => setPreferedTemplate(template.storage_path)}
-									>
-										<FilePlus2 size={24} />
-									</Button>
-								</div>
-							{/if}
-							{#if template.thumbnail_path}
-								<img
-									alt="Thumbnail erster Seite"
-									src={`${PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${template.thumbnail_path
-										?.split('/')
-										.at(-1)}`}
-								/>
-							{:else}
-								<div class="flex h-full w-full flex-col items-center justify-center">
-									<ImageOff size={72} class="text-primary-foreground" />
-								</div>
-							{/if}
-							<div class="flex w-full flex-col">
-								<p class="w-full overflow-hidden text-left text-sm text-nowrap overflow-ellipsis">
-									{template.storage_path.split('/').at(-1)}
-								</p>
-								<p class="w-full text-left text-sm overflow-ellipsis">
-									{#if template.updated_at !== null}
-										Geä. am: {parsePostgresDate(template.updated_at)}
-									{:else}
-										Erst. am: {parsePostgresDate(template.created_at)}
-									{/if}
-								</p>
-							</div>
-						</div>
+						<Thumbnail {isPreferred} {template} {supabase} />
 					{/each}
 				{/each}
 			</ul>
