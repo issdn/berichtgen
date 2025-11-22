@@ -128,10 +128,8 @@
 				><KeyRound />OTP Anmeldung</Button
 			>
 		{/if}
-		<Button disabled={true} variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
-		<Button disabled={true} variant="outline" href="/datenschutz"
-			><Lock />Datenschutzerklärung</Button
-		>
+		<Button variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
+		<Button variant="outline" href="/datenschutz"><Lock />Datenschutzerklärung</Button>
 		<div class="text-muted-foreground flex flex-row items-center justify-center gap-x-1">
 			<p>v1.0.0</p>
 		</div>
