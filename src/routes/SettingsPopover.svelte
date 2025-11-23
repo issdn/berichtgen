@@ -122,7 +122,7 @@
 			<form method="POST" action={`/auth?/signin`} use:enhance>
 				<input type="hidden" name="providerId" value="google" />
 				<input type="hidden" name="redirectTo" value="/board" />
-				<Button disabled={true} type="submit" class="w-full"><Google />Anmelden mit Google</Button>
+				<Button type="submit" class="w-full"><Google />Anmelden mit Google</Button>
 			</form>
 			<Button disabled={true} onclick={() => (otpDialogOpen = true)}
 				><KeyRound />OTP Anmeldung</Button

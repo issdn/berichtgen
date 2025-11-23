@@ -153,7 +153,17 @@ export function createStateMachineForContext(
 				}
 				this.next();
 			},
-			next: () => (context.shouldSkip ? WizardStep.TIME_SPREADING : WizardStep.AI_COMPLETION)
+			next: () => {
+				if (context.shouldSkip) {
+					if (context.dateRanges === null) {
+						return WizardStep.DONE;
+					} else {
+						return WizardStep.TIME_SPREADING;
+					}
+				} else {
+					return WizardStep.AI_COMPLETION;
+				}
+			}
 		},
 		[WizardStep.AI_COMPLETION]: {
 			_enter() {

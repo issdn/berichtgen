@@ -19,6 +19,7 @@
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
+	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -39,7 +40,7 @@
 
 	let getUser = getContext<UserContext>('user');
 
-	let { loggedIn } = $derived(getUser());
+	let { loggedIn, supabase } = $derived(getUser());
 
 	let dialogOpen = $state(false);
 
@@ -117,7 +118,12 @@
 				download="bericht.json"><FileJson />Als JSON herunterladen</FileDownloadButton
 			>
 			<FileDownloadButton
-				fn={() => handleDOCXDownload(wizardScheduler.result!)}
+				fn={async () => {
+					const path = berichtgenStore.preferedTemplatePath;
+					const templateResult = await supabase.storage.from('templates').download(path!);
+					const uintarray = new Uint8Array(await templateResult.data!.arrayBuffer());
+					await handleDOCXDownload({ entries: wizardScheduler.result!, template: uintarray });
+				}}
 				download="bericht.docx"><FileType />Als DOCX herunterladen</FileDownloadButton
 			>
 		</div>
