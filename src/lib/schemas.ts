@@ -72,7 +72,7 @@ export const dateRangeSchema = z.object({
 	ranges: z
 		.object({
 			id: z.number().int().min(0),
-			daterange: z.custom<IncuriaDateRange>(
+			daterange: z.custom<***REMOVED***DateRange>(
 				({ start, end }) => start !== undefined && end !== undefined,
 				{ message: 'Mindestens eine Woche muss gewählt werden.' }
 			),
@@ -92,11 +92,12 @@ type RemoveUndefined<T> = {
 	[K in keyof T]: Exclude<T[K], undefined>;
 };
 
-export type IncuriaDateRange = Pick<RemoveUndefined<DateRange>, 'end'> & Pick<DateRange, 'start'>;
+export type ***REMOVED***DateRange = Pick<RemoveUndefined<DateRange>, 'end'> &
+	Pick<DateRange, 'start'>;
 
-export type ValidIncuriaDateRanges = {
+export type Valid***REMOVED***DateRanges = {
 	ranges: {
-		daterange: IncuriaDateRange;
+		daterange: ***REMOVED***DateRange;
 		hours?: number | null;
 	}[];
 	ort: Ort;

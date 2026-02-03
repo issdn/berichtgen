@@ -1,10 +1,10 @@
-import { IncuriaErrorType } from '$lib/enums';
+import { ***REMOVED***ErrorType } from '$lib/enums';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api.js';
 import type { Scheduler } from 'tesseract.js';
 import { Parser } from './parser';
 import type { WizardFileContext } from '$lib/wizard_file_context.svelte';
-import { IncuriaError } from '$src/lib/errors';
+import { ***REMOVED***Error } from '$src/lib/errors';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 
 export type PDFFileData = {
@@ -31,8 +31,8 @@ export class PDFParser extends Parser {
 		withImages: boolean = berichtgenStore.processPhotos
 	) {
 		if (context == null || getNewCanvas == null) {
-			throw new IncuriaError(
-				IncuriaErrorType.DEVELOPERS_FAULT,
+			throw new ***REMOVED***Error(
+				***REMOVED***ErrorType.DEVELOPERS_FAULT,
 				'To use text from image extraction you have to pass getNewCanvas.'
 			);
 		}
@@ -66,8 +66,8 @@ export class PDFParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new IncuriaError(
-				IncuriaErrorType.DEVELOPERS_FAULT,
+			throw new ***REMOVED***Error(
+				***REMOVED***ErrorType.DEVELOPERS_FAULT,
 				'FileWizard wurde nicht initialisiert.'
 			);
 		const result = [];

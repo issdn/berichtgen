@@ -1,7 +1,7 @@
 import {
 	CompletionExceptionType,
 	GenAIErrorCode,
-	IncuriaErrorType,
+	***REMOVED***ErrorType,
 	OpenaAIErrorCode
 } from '$src/lib/enums';
 import * as genai from '@google/genai';
@@ -44,10 +44,10 @@ export class CompletionException extends Error {
 	}
 }
 
-export class IncuriaError extends Error {
-	public type: IncuriaErrorType;
+export class ***REMOVED***Error extends Error {
+	public type: ***REMOVED***ErrorType;
 
-	constructor(type: IncuriaErrorType, message: string) {
+	constructor(type: ***REMOVED***ErrorType, message: string) {
 		super(message);
 		this.type = type;
 	}
@@ -55,14 +55,14 @@ export class IncuriaError extends Error {
 	static fromUnknown(
 		e: unknown,
 		message: string,
-		type: IncuriaErrorType = IncuriaErrorType.DEVELOPERS_FAULT
+		type: ***REMOVED***ErrorType = ***REMOVED***ErrorType.DEVELOPERS_FAULT
 	) {
 		if (e instanceof ZodError) {
-			return new IncuriaError(type, `Validierungsfehler: ${e.errors[0].message}`);
+			return new ***REMOVED***Error(type, `Validierungsfehler: ${e.errors[0].message}`);
 		} else if (e instanceof Error) {
-			return new IncuriaError(type, e.message);
+			return new ***REMOVED***Error(type, e.message);
 		}
-		return new IncuriaError(type, message);
+		return new ***REMOVED***Error(type, message);
 	}
 }
 

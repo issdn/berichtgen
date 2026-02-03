@@ -1,7 +1,7 @@
 import type { Entry, ResultEntry } from '$lib/types';
 import { LOCALE } from '$src/lib/constants';
 import type { Ort } from '$src/lib/enums';
-import type { ValidIncuriaDateRanges } from '$src/lib/schemas';
+import type { Valid***REMOVED***DateRanges } from '$src/lib/schemas';
 import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date';
 
 /**
@@ -13,7 +13,7 @@ import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date'
  */
 export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
-	{ ranges, ort }: ValidIncuriaDateRanges
+	{ ranges, ort }: Valid***REMOVED***DateRanges
 ): Required<Entry>[] {
 	const hoursSum = ranges.reduce(
 		(prev, { daterange, hours }) =>

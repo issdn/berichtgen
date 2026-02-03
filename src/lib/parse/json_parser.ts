@@ -1,11 +1,11 @@
-import { IncuriaError } from '$src/lib/errors';
+import { ***REMOVED***Error } from '$src/lib/errors';
 import { fullResultSchema } from '$src/lib/schemas';
 import { TXTParser } from '$src/lib/parse/txt_parser';
 import { type ResultEntry } from '$src/lib/types';
 import type { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 import { err, ok } from 'neverthrow';
 import type { Scheduler } from 'tesseract.js';
-import { IncuriaErrorType } from '$src/lib/enums';
+import { ***REMOVED***ErrorType } from '$src/lib/enums';
 
 export class JSONParser extends TXTParser {
 	constructor(context: WizardFileContext, scheduler: Scheduler) {
@@ -20,15 +20,15 @@ export class JSONParser extends TXTParser {
 				return ok(data as ResultEntry[]);
 			}
 			return err(
-				new IncuriaError(
-					IncuriaErrorType.PARSE_FAILED,
+				new ***REMOVED***Error(
+					***REMOVED***ErrorType.PARSE_FAILED,
 					`Fehler beim Parsen des JSON: ${error.issues[0].message}`
 				)
 			);
 		} catch {
 			return err(
-				new IncuriaError(
-					IncuriaErrorType.PARSE_FAILED,
+				new ***REMOVED***Error(
+					***REMOVED***ErrorType.PARSE_FAILED,
 					'Fehler beim Parsen des JSON: Ungültiges JSON-Format'
 				)
 			);

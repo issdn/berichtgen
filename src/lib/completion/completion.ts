@@ -1,9 +1,9 @@
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import { type Entry } from '$lib/types';
-import { IncuriaError } from '$src/lib/errors';
+import { ***REMOVED***Error } from '$src/lib/errors';
 import { completionSchema } from '$src/lib/schemas';
 import { ResultAsync } from 'neverthrow';
-import { IncuriaErrorType, type Ort } from '$src/lib/enums';
+import { ***REMOVED***ErrorType, type Ort } from '$src/lib/enums';
 
 export function getCompletions(text: string, ort: Ort) {
 	const messages = splitByMaxLength(text, berichtgenStore.currentProvider.maxTokens);
@@ -21,11 +21,11 @@ export function getCompletions(text: string, ort: Ort) {
 		const data = await result.json();
 
 		if (result.status >= 400)
-			throw new IncuriaError(IncuriaErrorType.INVALID_JSON_FROM_AI, data.message);
+			throw new ***REMOVED***Error(***REMOVED***ErrorType.INVALID_JSON_FROM_AI, data.message);
 		const parsed = completionSchema.safeParse(data);
 		if (!parsed.success) {
-			throw new IncuriaError(
-				IncuriaErrorType.INVALID_JSON_FROM_AI,
+			throw new ***REMOVED***Error(
+				***REMOVED***ErrorType.INVALID_JSON_FROM_AI,
 				'KI hat unguiltige JSON-Antwort geliefert'
 			);
 		}
@@ -33,10 +33,10 @@ export function getCompletions(text: string, ort: Ort) {
 	});
 
 	const allCompletionsResult = ResultAsync.fromPromise(Promise.all(completionsPromises), (e) =>
-		IncuriaError.fromUnknown(
+		***REMOVED***Error.fromUnknown(
 			e,
 			'Fehler beim Abrufen der Vervollständigung',
-			IncuriaErrorType.INVALID_JSON_FROM_AI
+			***REMOVED***ErrorType.INVALID_JSON_FROM_AI
 		)
 	);
 

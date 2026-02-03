@@ -1,6 +1,6 @@
 import { type Entry, type ResultEntry } from '$lib/types';
 import { FileTypes } from '$src/lib/enums';
-import type { IncuriaError } from '$src/lib/errors';
+import type { ***REMOVED***Error } from '$src/lib/errors';
 import type { DateRangeSchema } from '$src/lib/schemas';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 
@@ -15,7 +15,7 @@ export class WizardFileContext {
 
 	max: number = $state(0);
 
-	error?: IncuriaError;
+	error?: ***REMOVED***Error;
 
 	file: File;
 

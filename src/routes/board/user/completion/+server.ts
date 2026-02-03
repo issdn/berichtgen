@@ -82,10 +82,10 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 	const { text, provider, owner, ort } = parsed.data;
 
-	const incuriaToken = getTokenByOwner(owner).mapErr((e) => e.toResponse());
+	const berichtgenToken = getTokenByOwner(owner).mapErr((e) => e.toResponse());
 
-	if (incuriaToken.isErr()) {
-		return incuriaToken.error;
+	if (berichtgenToken.isErr()) {
+		return berichtgenToken.error;
 	}
 
 	const { data: userProviderData } = await supabaseAdmin
@@ -97,7 +97,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 	const userToken = userProviderData?.token;
 
-	const token = userToken ?? incuriaToken.value;
+	const token = userToken ?? berichtgenToken.value;
 
 	const tokensDeducted = await deductUserTokens(
 		supabaseAdmin,
@@ -161,7 +161,7 @@ async function getOpenAICompletion(text: string, token: string, ort: Ort) {
 			type: 'json_object'
 			// 	type: 'json_schema',
 			// 	json_schema: {
-			// 		name: 'incuria schema',
+			// 		name: 'berichtgen schema',
 			// 		schema: {
 			// 			lessons: {
 			// 				type: 'array',

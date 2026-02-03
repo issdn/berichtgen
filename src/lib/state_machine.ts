@@ -2,7 +2,7 @@ import { DOCXParser } from '$lib/parse/docx_parser';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import { PDFParser } from '$lib/parse/pdf_parser';
 import type { Entry, ResultEntry, WizardProcessStateMachine } from '$lib/types';
-import { FileTypes, IncuriaErrorType, WizardStep } from '$lib/enums';
+import { FileTypes, ***REMOVED***ErrorType, WizardStep } from '$lib/enums';
 import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 import fsm from 'svelte-fsm';
 import type { Scheduler } from 'tesseract.js';
@@ -10,7 +10,7 @@ import { Err, ResultAsync, err, fromThrowable } from 'neverthrow';
 import { getCompletions } from '$src/lib/completion/completion';
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 import type { WizardFileContext } from './wizard_file_context.svelte';
-import { IncuriaError } from '$src/lib/errors';
+import { ***REMOVED***Error } from '$src/lib/errors';
 import { JSONParser } from '$src/lib/parse/json_parser';
 import { TXTParser } from '$src/lib/parse/txt_parser';
 import { IMGParser } from '$src/lib/parse/img_parser';
@@ -24,7 +24,7 @@ function parseByFileType(context: WizardFileContext, scheduler: Scheduler) {
 function readFile(file: File) {
 	return ResultAsync.fromPromise(
 		(async () => new Uint8Array(await file.arrayBuffer()))(),
-		() => new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Fehler beim Lesen der Datei')
+		() => new ***REMOVED***Error(***REMOVED***ErrorType.INVALID_FILE, 'Fehler beim Lesen der Datei')
 	);
 }
 
@@ -33,23 +33,23 @@ function parseFile(
 	context: WizardFileContext,
 	scheduler: Scheduler,
 	data: Uint8Array<ArrayBuffer>
-): ResultAsync<string | ResultEntry[] | never, IncuriaError> | Err<never, IncuriaError> {
+): ResultAsync<string | ResultEntry[] | never, ***REMOVED***Error> | Err<never, ***REMOVED***Error> {
 	switch (file.type) {
 		case FileTypes.PNG:
 		case FileTypes.JPG: {
 			const imgParser = new IMGParser(context, scheduler);
 			return ResultAsync.fromPromise(imgParser.init(data), (e) =>
-				IncuriaError.fromUnknown(
+				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des Bild Parsers',
-					IncuriaErrorType.PARSE_FAILED
+					***REMOVED***ErrorType.PARSE_FAILED
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(imgParser.parse(), (e) =>
-					IncuriaError.fromUnknown(
+					***REMOVED***Error.fromUnknown(
 						e,
 						'Fehler beim Parsen des Bildes',
-						IncuriaErrorType.PARSE_FAILED
+						***REMOVED***ErrorType.PARSE_FAILED
 					)
 				)
 			);
@@ -58,20 +58,20 @@ function parseFile(
 		case FileTypes.CSV: {
 			const textParser = new TXTParser(context, scheduler);
 			return ResultAsync.fromPromise(textParser.init(data), (e) =>
-				IncuriaError.fromUnknown(
+				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des JSON Parsers',
-					IncuriaErrorType.PARSE_FAILED
+					***REMOVED***ErrorType.PARSE_FAILED
 				)
 			).andThen(() => textParser.parse());
 		}
 		case FileTypes.JSON: {
 			const jsonParser = new JSONParser(context, scheduler);
 			return ResultAsync.fromPromise(jsonParser.init(data), (e) =>
-				IncuriaError.fromUnknown(
+				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des JSON Parsers',
-					IncuriaErrorType.PARSE_FAILED
+					***REMOVED***ErrorType.PARSE_FAILED
 				)
 			).andThen(() => (berichtgenStore.rewordJSON ? jsonParser.parse() : jsonParser.toSchema()));
 		}
@@ -87,33 +87,43 @@ function parseFile(
 				berichtgenStore.processPhotos
 			);
 			return ResultAsync.fromPromise(pdfParser.init(data), (e) =>
-				IncuriaError.fromUnknown(
+				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des PDF Parsers',
-					IncuriaErrorType.PARSE_FAILED
+					***REMOVED***ErrorType.PARSE_FAILED
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(pdfParser.parse(), (e) =>
-					IncuriaError.fromUnknown(e, 'Fehler beim Parsen des PDF', IncuriaErrorType.PARSE_FAILED)
+					***REMOVED***Error.fromUnknown(
+						e,
+						'Fehler beim Parsen des PDF',
+						***REMOVED***ErrorType.PARSE_FAILED
+					)
 				)
 			);
 		}
 		case FileTypes.DOCX: {
 			const docxParser = new DOCXParser(context, scheduler, berichtgenStore.processPhotos);
 			return ResultAsync.fromPromise(docxParser.init(data), (e) =>
-				IncuriaError.fromUnknown(
+				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des DOCX Parsers',
-					IncuriaErrorType.PARSE_FAILED
+					***REMOVED***ErrorType.PARSE_FAILED
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(docxParser.parse(), (e) =>
-					IncuriaError.fromUnknown(e, 'Fehler beim Parsen des DOCX', IncuriaErrorType.PARSE_FAILED)
+					***REMOVED***Error.fromUnknown(
+						e,
+						'Fehler beim Parsen des DOCX',
+						***REMOVED***ErrorType.PARSE_FAILED
+					)
 				)
 			);
 		}
 		default:
-			return err(new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Dateityp nicht unterstützt.'));
+			return err(
+				new ***REMOVED***Error(***REMOVED***ErrorType.INVALID_FILE, 'Dateityp nicht unterstützt.')
+			);
 	}
 }
 
@@ -200,10 +210,10 @@ export function createStateMachineForContext(
 				const throwableSpreadEntries = fromThrowable(
 					() => spreadEntriesAcrossWeeks(context.snapshot as Entry[], context.dateRanges!),
 					(e) =>
-						IncuriaError.fromUnknown(
+						***REMOVED***Error.fromUnknown(
 							e,
 							'Fehler beim Umformulieren der Einträge',
-							IncuriaErrorType.SPREAD_FAILED
+							***REMOVED***ErrorType.SPREAD_FAILED
 						)
 				);
 				throwableSpreadEntries().match(

@@ -1,5 +1,5 @@
 import type { Ort } from '$src/lib/enums';
-import { IncuriaError } from '$src/lib/errors';
+import { ***REMOVED***Error } from '$src/lib/errors';
 import { csvConfigSchema } from '$src/lib/schemas';
 import type { CSVConfig } from '$src/lib/types';
 import { parseDate } from '@internationalized/date';
@@ -7,14 +7,14 @@ import { ResultAsync } from 'neverthrow';
 
 export function readCsvConfig(file: File) {
 	return ResultAsync.fromPromise(file.arrayBuffer(), (e) =>
-		IncuriaError.fromUnknown(e, 'Config Datei ist nicht lesbar')
+		***REMOVED***Error.fromUnknown(e, 'Config Datei ist nicht lesbar')
 	).andThen(
 		ResultAsync.fromThrowable(
 			async (buffer) => {
 				const text = new TextDecoder().decode(buffer);
 				return readCsvConfigFromText(text);
 			},
-			(e) => IncuriaError.fromUnknown(e, 'Fehler beim Lesen der CSV-Konfiguration')
+			(e) => ***REMOVED***Error.fromUnknown(e, 'Fehler beim Lesen der CSV-Konfiguration')
 		)
 	);
 }

@@ -1,10 +1,10 @@
 import JSZip from 'jszip';
 import { XMLParser } from 'fast-xml-parser';
 import type { ImageLike, Scheduler } from 'tesseract.js';
-import { IncuriaErrorType } from '$lib/enums';
+import { ***REMOVED***ErrorType } from '$lib/enums';
 import type { WizardFileContext } from '$lib/wizard_file_context.svelte';
 import { Parser } from './parser';
-import { IncuriaError } from '$src/lib/errors';
+import { ***REMOVED***Error } from '$src/lib/errors';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 
 export type DOCXFileData = {
@@ -58,8 +58,8 @@ export class DOCXParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new IncuriaError(
-				IncuriaErrorType.DEVELOPERS_FAULT,
+			throw new ***REMOVED***Error(
+				***REMOVED***ErrorType.DEVELOPERS_FAULT,
 				'FileWizard wurde nicht initialisiert.'
 			);
 		const result = [];
@@ -81,16 +81,16 @@ export class DOCXParser extends Parser {
 		if (Array.isArray(textOrId)) {
 			const rel = this.data!.imgRels.get(textOrId[0]);
 			if (rel === undefined) {
-				throw new IncuriaError(
-					IncuriaErrorType.DOCX_FAULTY,
+				throw new ***REMOVED***Error(
+					***REMOVED***ErrorType.DOCX_FAULTY,
 					'DOCX Fotoreferenz könnte nicht gefunden werden.'
 				);
 			}
 
 			const fileData = this.data!.images.get(rel);
 			if (fileData === undefined) {
-				throw new IncuriaError(
-					IncuriaErrorType.DOCX_FAULTY,
+				throw new ***REMOVED***Error(
+					***REMOVED***ErrorType.DOCX_FAULTY,
 					'DOCX Foto könnte nicht gefunden werden.'
 				);
 			}

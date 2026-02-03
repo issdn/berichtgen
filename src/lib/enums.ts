@@ -12,7 +12,7 @@ export enum CommonServerErrorTypes {
 	STRIPE_ERROR = 'STRIPE_ERROR'
 }
 
-export enum IncuriaErrorType {
+export enum ***REMOVED***ErrorType {
 	INVALID_FILE,
 	FORMAT_NOT_SUPPORTED,
 	COMPLETION_FAILED,

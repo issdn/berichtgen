@@ -16,7 +16,7 @@ export interface Entry {
 
 export type ResultEntry = Required<Entry>;
 
-export interface IncuriaWeightedDateRange {
+export interface ***REMOVED***WeightedDateRange {
 	daterange: {
 		start: DateValue;
 		end: DateValue;
@@ -48,7 +48,7 @@ export type UserBoardContext = () => {
 export type CSVConfigFile = {
 	ort: Ort;
 	file: string;
-	ranges: IncuriaWeightedDateRange[];
+	ranges: ***REMOVED***WeightedDateRange[];
 };
 
 export type CSVConfig = CSVConfigFile[];

@@ -1,5 +1,5 @@
-import { IncuriaErrorType, ScanReturnType } from '$src/lib/enums';
-import { IncuriaError } from '$src/lib/errors';
+import { ***REMOVED***ErrorType, ScanReturnType } from '$src/lib/enums';
+import { ***REMOVED***Error } from '$src/lib/errors';
 import type { WizardRawDirectories, WizardRawDirectory } from '$src/lib/types';
 import { promisify } from '$src/lib/utils';
 import { getArrayDepth } from '$src/lib/utils/math';
@@ -28,7 +28,10 @@ export async function get2DimensionalDirectories(
 	} else if (returnType === ScanReturnType.DATA_TRANSFER_ITEM) {
 		return _get2DimensionalDirectories(items, scanSystemFileEntries);
 	} else {
-		throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Unbekannter Scan-Typ: ' + returnType);
+		throw new ***REMOVED***Error(
+			***REMOVED***ErrorType.INVALID_FILE,
+			'Unbekannter Scan-Typ: ' + returnType
+		);
 	}
 }
 
@@ -41,7 +44,7 @@ async function _get2DimensionalDirectories<T>(
 	[...items].forEach((item) => {
 		const entry = item.webkitGetAsEntry();
 		if (entry === null)
-			throw new IncuriaError(IncuriaErrorType.INVALID_FILE, 'Fehler beim Lesen einer Datei');
+			throw new ***REMOVED***Error(***REMOVED***ErrorType.INVALID_FILE, 'Fehler beim Lesen einer Datei');
 		if (entry.isFile) {
 			topLevelFilesPromises.push(scanFunction(entry) as Promise<T>);
 		} else {
