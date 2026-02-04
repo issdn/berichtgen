@@ -9,7 +9,7 @@
 	import { Badge } from '$src/lib/components/ui/badge';
 	import { Input } from '$src/lib/components/ui/input';
 	import { debounce } from '$src/lib/debounce';
-	import * as Sentry from '@sentry/browser';
+	import * as Sentry from '@sentry/sveltekit';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import * as Alert from '$src/lib/components/ui/alert';
 	import { CircleAlert } from '@lucide/svelte';

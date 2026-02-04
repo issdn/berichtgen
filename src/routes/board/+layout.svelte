@@ -3,7 +3,7 @@
 	import { getContext, setContext } from 'svelte';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import * as Sentry from '@sentry/browser';
+	import * as Sentry from '@sentry/sveltekit';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import { PaymentStatus } from '$src/lib/enums';

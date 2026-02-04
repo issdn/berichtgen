@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '$src/lib/server/admin';
-import * as Sentry from '@sentry/svelte';
+import * as Sentry from '@sentry/sveltekit';
 import type { LayoutServerLoad } from './$types';
 
 function hideToken(

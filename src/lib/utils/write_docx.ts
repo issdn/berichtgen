@@ -15,7 +15,7 @@ export async function handleDOCXDownload({
 	const QuickJS = await getQuickJS();
 	const vm = QuickJS.newContext();
 
-	const blob = await await createReport({
+	const blob = await createReport({
 		cmdDelimiter: ['{{', '}}'],
 		template,
 		data: { berichte: await entries },

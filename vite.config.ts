@@ -13,7 +13,8 @@ export default defineConfig({
 		sentrySvelteKit({
 			sourceMapsUploadOptions: {
 				org: 'bielski',
-				project: 'javascript-sveltekit'
+				project: 'berichtgen',
+				authToken: process.env.SENTRY_AUTH_TOKEN
 			}
 		}),
 		sveltekit()
