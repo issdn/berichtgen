@@ -1,5 +1,5 @@
 import { Ort } from '$src/lib/enums';
-import * as z from 'zod';
+import * as z from 'zod/v4';
 import type { DateRange } from 'bits-ui';
 import { CalendarDate } from '@internationalized/date';
 import { QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/constants';
@@ -73,7 +73,11 @@ export const dateRangeSchema = z.object({
 		.object({
 			id: z.number().int().min(0),
 			daterange: z.custom<***REMOVED***DateRange>(
-				({ start, end }) => start !== undefined && end !== undefined,
+				(data) => {
+					if (typeof data !== 'object' || data === null) return false;
+					const { start, end } = data as { start: unknown; end: unknown };
+					return start !== undefined && end !== undefined;
+				},
 				{ message: 'Mindestens eine Woche muss gewählt werden.' }
 			),
 			hours: z

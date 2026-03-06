@@ -1,5 +1,4 @@
 <script lang="ts">
-	import SettingsPopover from './SettingsPopover.svelte';
 	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { ModeWatcher } from 'mode-watcher';
 	import '../app.css';
@@ -8,6 +7,8 @@
 	import DarkMode from './board/DarkMode.svelte';
 	import { onMount, setContext } from 'svelte';
 	import Logo from '$lib/svg/Logo.svelte';
+	import { resolve } from '$app/paths';
+	import SettingsPopover from '$src/lib/components/SettingsPopover.svelte';
 
 	let { data, children } = $props();
 	let { user, supabase, loggedIn, session } = $derived({
@@ -31,9 +32,9 @@
 
 <div class="h-nav flex w-full flex-row items-center justify-between px-4 md:px-8">
 	<Button
-		onclick={() => goto('/board')}
+		onclick={() => goto(resolve('/board'))}
 		variant="link"
-		class="[&_svg]:fill-primary cursor-pointer [&_svg]:h-[36px]! [&_svg]:w-[136px]!"
+		class="[&_svg]:fill-primary cursor-pointer [&_svg]:h-9! [&_svg]:w-34!"
 		><Logo /></Button
 	>
 	<div class="flex flex-row gap-x-4">

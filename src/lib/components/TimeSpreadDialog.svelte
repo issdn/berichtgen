@@ -4,10 +4,8 @@
 	import { today, type DateValue } from '@internationalized/date';
 	import { Calendar, Trash2 } from '@lucide/svelte';
 	import { defaults, superForm } from 'sveltekit-superforms';
-	import { zodClient } from 'sveltekit-superforms/adapters';
-	import { buttonVariants } from './ui/button';
+	import { zod4, zod4Client } from 'sveltekit-superforms/adapters';
 	import { slide } from 'svelte/transition';
-	import { zod } from 'sveltekit-superforms/adapters';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Ort } from '$src/lib/enums';
@@ -31,12 +29,12 @@
 	// End date is today by default. Is there no start date, then it is invalid.
 	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
 	const { form, errors, enhance, validateForm, ...rest } = superForm(
-		defaults({ ranges: [newRow(0)], ort: Ort.SCHULE }, zod(dateRangeSchema)),
+		defaults({ ranges: [newRow(0)], ort: Ort.SCHULE }, zod4(dateRangeSchema)),
 		{
 			id,
 			SPA: true,
 			dataType: 'json',
-			validators: zodClient(dateRangeSchema),
+			validators: zod4Client(dateRangeSchema),
 			async onChange() {
 				const { valid } = await validateForm();
 				if (valid) {
@@ -80,14 +78,14 @@
 						class="w-calendar space-y-0"
 					>
 						<Form.Control>
-							{#snippet children({ props })}
+							{#snippet children(_)}
 								<LocationCombobox bind:value={$form.ort} />
 							{/snippet}
 						</Form.Control>
 						<Form.FieldErrors />
 					</Form.Field>
 				</div>
-				{#each $form.ranges as _, index}
+				{#each $form.ranges as _, index (index)}
 					{#if index > 0}
 						<div class="relative flex h-16 flex-row items-center">
 							<Separator />

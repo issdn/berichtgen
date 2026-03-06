@@ -6,14 +6,11 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ProviderAddDialog from './ProviderAddDialog.svelte';
 	import { toast } from 'svelte-sonner';
-	import { zod, zodClient } from 'sveltekit-superforms/adapters';
-	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
+	import { zod4, zod4Client } from 'sveltekit-superforms/adapters';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { providerDeleteSchema, validProviderSchema } from '$src/lib/schemas';
-	import type { UserBoardContext } from '$src/lib/types';
-	import { getContext } from 'svelte';
 
 	let { data } = $props();
 
@@ -22,12 +19,12 @@
 	const form = superForm(data.form, {
 		clearOnSubmit: 'errors',
 		dataType: 'json',
-		validators: zodClient(validProviderSchema),
+		validators: zod4Client(validProviderSchema),
 		validationMethod: 'oninput',
 		invalidateAll: true,
 		onSubmit({ validators }) {
-			if (action === 'delete') validators(zod(providerDeleteSchema));
-			else validators(zod(validProviderSchema));
+			if (action === 'delete') validators(zod4(providerDeleteSchema));
+			else validators(zod4(validProviderSchema));
 		},
 		onError({ result }) {
 			toast.error(result.error.message);
@@ -57,7 +54,7 @@
 </svelte:head>
 
 <div class="flex flex-row justify-center">
-	<div class="flex w-full max-w-[700px] flex-col gap-y-8">
+	<div class="flex w-full max-w-175 flex-col gap-y-8">
 		<Card.Root>
 			<Card.Header>
 				<Card.Title>Konto Einstellungen</Card.Title>
@@ -129,7 +126,7 @@
 							</Table.Row>
 						</Table.Header>
 						<Table.Body>
-							{#each data.providers as provider}
+							{#each data.providers as provider(provider.id)}
 								{@const hasToken = provider.token !== null && provider.token.length > 0}
 								<Table.Row>
 									<Table.Cell>

@@ -5,7 +5,7 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Label } from '$lib/components/ui/label';
 	import { CircleHelp, HandCoins, KeyRound, LogOut, Mail, Settings, Lock } from '@lucide/svelte';
-	import { goto, invalidate } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { getContext } from 'svelte';
 	import { type UserContext } from '$src/lib/types';
 	import { enhance } from '$app/forms';
@@ -16,11 +16,11 @@
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { toast } from 'svelte-sonner';
 	import { defaults, superForm } from 'sveltekit-superforms/client';
-	import { zod } from 'sveltekit-superforms/adapters';
+	import { zod4 } from 'sveltekit-superforms/adapters';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { page } from '$app/state';
 	import { emailSchema } from '$src/lib/schemas';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import { resolve } from '$app/paths';
 
 	let { user, loggedIn, supabase } = $derived(getContext<UserContext>('user')());
 
@@ -36,7 +36,7 @@
 				loading = true;
 				supabase.auth
 					.verifyOtp({ type: 'email', token, email: berichtgenStore.tempEmailContainer })
-					.then(({ data, error }) => {
+					.then(({ error }) => {
 						token = '';
 						loading = false;
 						if (error) {
@@ -45,7 +45,7 @@
 							toast.success('OTP erfolgreich verifiziert');
 							berichtgenStore.tempEmailContainer = '';
 							otpDialogOpen = false;
-							goto('/board', {
+							goto(resolve('/board'), {
 								replaceState: true,
 								invalidateAll: true
 							});
@@ -55,13 +55,13 @@
 		}
 	});
 
-	const form = superForm(defaults({ mail: berichtgenStore.tempEmailContainer }, zod(emailSchema)), {
+	const form = superForm(defaults({ mail: berichtgenStore.tempEmailContainer }, zod4(emailSchema)), {
 		SPA: true,
-		validators: zod(emailSchema),
+		validators: zod4(emailSchema),
 		async onUpdate({ form }) {
 			if (form.valid) {
 				loading = true;
-				const { data, error } = await supabase.auth.signInWithOtp({
+				const { error } = await supabase.auth.signInWithOtp({
 					email: form.data.mail!,
 					options: {
 						emailRedirectTo: page.url.origin + '/board'
@@ -102,24 +102,24 @@
 	</Popover.Trigger>
 	<Popover.Content class="flex w-56 flex-col gap-y-2">
 		{#if loggedIn}
-			<Button variant="outline" onclick={() => goto('/board/user/kauf')}
+			<Button variant="outline" onclick={() => goto(resolve('/board/user/kauf'))}
 				><HandCoins />Tokens kaufen</Button
 			>
 			<div class="mb-1 flex flex-row items-center gap-x-4 border-b border-dashed pb-3">
-				<Button onclick={() => goto('/board/user/settings')} variant="outline" class="w-full">
+				<Button onclick={() => goto(resolve('/board/user/settings'))} variant="outline" class="w-full">
 					<Settings />
 					Einstellungen
 				</Button>
 			</div>
 		{/if}
 		{#if loggedIn}
-			<form method="POST" action={`/auth?/signout`}>
+			<form method="POST" action="/auth?/signout">
 				<input type="hidden" name="redirectTo" value="/" />
 				<Button type="submit" class="w-full"><LogOut />Abmelden</Button>
 			</form>
 		{:else}
 			<Label class="text-xs">Anmeldung derzeit deaktiviert</Label>
-			<form method="POST" action={`/auth?/signin`} use:enhance>
+			<form method="POST" action="/auth?/signin" use:enhance>
 				<input type="hidden" name="providerId" value="google" />
 				<input type="hidden" name="redirectTo" value="/board" />
 				<Button type="submit" class="w-full"><Google />Anmelden mit Google</Button>

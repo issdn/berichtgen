@@ -1,7 +1,7 @@
 import { fail, message, superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
+import { zod4 } from 'sveltekit-superforms/adapters';
 import { error, redirect, type Actions } from '@sveltejs/kit';
-import * as Sentry from '@sentry/node';
+import * as Sentry from '@sentry/sveltekit';
 import { env } from '$env/dynamic/private';
 import { env as pub } from '$env/dynamic/public';
 import { createClient } from '@supabase/supabase-js';
@@ -10,14 +10,14 @@ import { providerDeleteSchema, providerSchema, validProviderSchema } from '$src/
 
 export const load = async ({ parent }) => {
 	const { providers, tokenCount } = await parent();
-	const form = await superValidate(zod(providerSchema));
+	const form = await superValidate(zod4(providerSchema));
 
 	return { form, providers, tokenCount };
 };
 
 export const actions: Actions = {
 	add: async ({ request, locals: { user, supabase } }) => {
-		const form = await superValidate(request, zod(validProviderSchema));
+		const form = await superValidate(request, zod4(validProviderSchema));
 
 		if (!form.valid) {
 			return message(form, 'Daten sind falsch.', { status: 400 });
@@ -44,7 +44,7 @@ export const actions: Actions = {
 		return message(form, `${form.data.name} Token hinzugefügt!`);
 	},
 	delete: async ({ request, locals: { user, supabase } }) => {
-		const form = await superValidate(request, zod(providerDeleteSchema));
+		const form = await superValidate(request, zod4(providerDeleteSchema));
 
 		if (!form.valid)
 			return message(form, form.errors.id?.[0] ?? 'Daten sind falsch.', { status: 400 });
@@ -69,7 +69,7 @@ export const actions: Actions = {
 		}
 		const {
 			auth: { admin }
-		} = createClient<Database>(pub.PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+		} = createClient<Database>(pub.PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET);
 		const { error: deleteUserError } = await admin.deleteUser(user!.id!);
 		if (deleteUserError) {
 			return fail(406);

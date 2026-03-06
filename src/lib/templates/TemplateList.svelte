@@ -83,8 +83,11 @@
 			<ul
 				class="grid h-full grid-cols-[repeat(auto-fit,minmax(144px,1fr))] justify-items-center gap-1"
 			>
-				{#each query.data.pages as page}
-					{#each page as template}
+				{#if query.data.pages[0]?.length === 0}
+					<p>Keine Templates gefunden.</p>
+				{/if}
+				{#each query.data.pages as page, i (i)}
+					{#each page as template (template.id)}
 						{@const isPreferred = berichtgenStore.preferedTemplatePath === template.storage_path}
 						<Thumbnail {isPreferred} {template} {supabase} />
 					{/each}
