@@ -34,7 +34,7 @@ CREATE TABLE "cart" (
 
 CREATE TABLE "template" (
 	id uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-	user_id uuid NOT NULL,
+    user_id uuid NOT NULL,
 	storage_path text NOT NULL,
 	thumbnail_path text,
 	created_at timestamptz NOT NULL DEFAULT now(),

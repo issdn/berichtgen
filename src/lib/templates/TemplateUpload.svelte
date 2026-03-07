@@ -3,15 +3,20 @@
 	import { FileTypes } from '$src/lib/enums';
 	import { extractFilesSimple } from '$src/lib/parse/file_scan';
 	import type { SupabaseClient, User } from '@supabase/supabase-js';
-	import { createMutation, getQueryClientContext } from '@tanstack/svelte-query';
+	import { createMutation } from '@tanstack/svelte-query';
 	import { toast } from 'svelte-sonner';
 
 	const { user, supabase }: { user: User; supabase: SupabaseClient } = $props();
 
-	const context = getQueryClientContext();
-
 	const upload = createMutation(() => ({
-		mutationFn: (file: File) => uploadTemplates(file)
+		mutationFn: (file: File) => uploadTemplates(file),
+		onSuccess(data, variables, onMutateResult, context) {
+			toast.success('Datei erfolgreich hochgeladen.');
+			context.client.refetchQueries({ queryKey: ['template'] });
+		},
+		onError(error) {
+			toast.error('Fehler beim Hochladen der Datei.', { description: error.message });
+		},
 	}));
 
 	async function handleFiles(input: FileList | DataTransferItemList) {
@@ -30,8 +35,6 @@
 		}
 
 		upload.mutate(firstFile);
-
-		await context.invalidateQueries({ queryKey: ['template'] });
 	}
 
 	async function uploadTemplates(file: File) {
@@ -41,11 +44,9 @@
 				contentType: file.type
 			});
 
-		if (error) {
-			toast.error('Fehler beim Hochladen der Datei.', { description: error.message });
-		} else {
-			toast.success('Datei erfolgreich hochgeladen.');
-		}
+			if(error) {
+				throw error;
+			}
 	}
 </script>
 

@@ -3,12 +3,13 @@
 	import { parsePostgresDate } from '$src/lib/utils';
 	import { FilePlus2, ImageOff, Shredder, View } from '@lucide/svelte';
 	import type { SupabaseClient } from '@supabase/supabase-js';
-	import { createInfiniteQuery, createMutation, keepPreviousData } from '@tanstack/svelte-query';
+	import { getQueryClientContext, createInfiniteQuery, createMutation, keepPreviousData } from '@tanstack/svelte-query';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { Button } from '$src/lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-
+	import { toast } from 'svelte-sonner';
+	
 	const {
 		supabase,
 		isPreferred,
@@ -19,6 +20,8 @@
 		template: Database['public']['Tables']['template']['Row'];
 	} = $props();
 
+	const context = getQueryClientContext();
+
 	const itemsPerPage = 9;
 
 	let search = $state('');
@@ -27,21 +30,14 @@
 		berichtgenStore.preferedTemplatePath = path;
 	}
 
-	async function deleteTemplate(id: string, storagePath: string) {
+	async function deleteTemplate(storagePath: string) {
 		// First delete from storage
-		const { error: storageError } = await supabase.storage.from('templates').remove([storagePath]);
-		if (storageError) {
-			throw storageError;
-		}
-
-		// Then delete the template record
 		const { error } = await supabase.storage.from('templates').remove([storagePath]);
-			if (storageError) {
-				throw storageError;
-			}
 		if (error) {
 			throw error;
 		}
+
+		await context.refetchQueries({ queryKey: ['template'] });
 	}
 
 	async function fetchTemplates(page: number, nameFilter?: string) {
@@ -79,10 +75,14 @@
 	}));
 
 	const deleteMutation = createMutation(() => ({
-		mutationFn: ({ id, storagePath }: { id: string; storagePath: string }) => deleteTemplate(id, storagePath),
+		mutationFn: ({ storagePath }: { id: string; storagePath: string }) => deleteTemplate(storagePath),
 		onSuccess: () => {
+			toast.success('Datei erfolgreich gelöscht.');
 			query.refetch();
-		}
+		},
+		onError(error) {
+			toast.error('Fehler beim Löschen der Datei.', { description: error.message });
+		},
 	}));
 
 	const name = template.storage_path.split('/').at(-1);
