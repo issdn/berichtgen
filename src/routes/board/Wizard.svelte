@@ -39,8 +39,10 @@
 	});
 
 	let getUser = getContext<UserContext>('user');
+	let getBoard = getContext<() => { userMetadata: { fullName: string | null; ausbildungsberuf: string | null; abteilung: string | null } | null }>('board');
 
 	let { loggedIn, supabase } = $derived(getUser());
+	let { userMetadata } = $derived(getBoard());
 
 	let dialogOpen = $state(false);
 
@@ -126,7 +128,11 @@
 						return;
 					}
 					const uintarray = new Uint8Array(await templateResult.data!.arrayBuffer());
-					await handleDOCXDownload({ entries: wizardScheduler.result!, template: uintarray });
+					await handleDOCXDownload({ 
+						entries: wizardScheduler.result!, 
+						template: uintarray,
+						userMetadata: userMetadata ?? undefined
+					});
 				}}
 				download="bericht.docx"><FileType />Als DOCX herunterladen</FileDownloadButton
 			>

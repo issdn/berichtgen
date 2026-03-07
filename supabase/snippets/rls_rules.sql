@@ -95,3 +95,17 @@ USING (
   bucket_id = 'templates'
   AND auth.uid() = owner
 );
+
+-- userMetadata
+ALTER TABLE "userMetadata" ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."userMetadata" TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."userMetadata" TO authenticated;
+
+DROP POLICY IF EXISTS "User can access own metadata" ON "public"."userMetadata";
+CREATE POLICY "User can access own metadata"
+ON "public"."userMetadata"
+FOR ALL
+TO authenticated
+USING (
+  (select auth.uid()) = "public"."userMetadata"."userId"
+);

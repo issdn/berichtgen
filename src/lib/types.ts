@@ -73,3 +73,13 @@ export type WizardProcessStateMachine = {
  * For more see *Dropzone.svelte*, *WizardDropzone.svelte* and *paste_stack.svelte.ts*
  */
 export type PasteHandler = ((e: ClipboardEvent) => void)[];
+
+/**
+ * User metadata that can be used in the DOCX template. All fields are optional and can be null.
+ * It can be set in the settings.
+ */
+export type UserMetadata = {
+	fullName?: string | null;
+	ausbildungsberuf?: string | null;
+	abteilung?: string | null;
+};

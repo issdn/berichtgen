@@ -12,12 +12,13 @@
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import { browser } from '$app/environment';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
+	import { resolve } from '$app/paths';
 
 	let { data, children } = $props();
 
-	let { supabase, tokenCount, user, providers } = $derived(data);
+	let { supabase, tokenCount, user, providers, userMetadata } = $derived(data);
 
-	setContext('board', () => ({ tokenCount, providers }));
+	setContext('board', () => ({ tokenCount, providers, userMetadata }));
 
 	let getUser = getContext<UserContext>('user');
 
@@ -43,7 +44,7 @@
 		if (page.url.searchParams.get('payment') === PaymentStatus.SUCCESS) {
 			toast.success('Kauf von Tokens erfolgreich!');
 			const cleanUrl = `${page.url.pathname}${page.url.hash || ''}`;
-			replaceState(cleanUrl, '');
+			replaceState(resolve(cleanUrl as `/webhooks/stripe`), '');
 		}
 
 		let channel: RealtimeChannel | null = null;
@@ -75,12 +76,6 @@
 
 	const queryClient = new QueryClient({ defaultOptions: { queries: { enabled: browser } } });
 </script>
-
-<div
-	class="bg-secondary fixed top-8 -left-10 z-50 -rotate-45 transform px-8 py-2 text-sm font-medium"
->
-	🚧 In Entwicklung
-</div>
 
 <QueryClientProvider client={queryClient}>
 	{@render children()}

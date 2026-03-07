@@ -6,13 +6,44 @@ import { env } from '$env/dynamic/private';
 import { env as pub } from '$env/dynamic/public';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '$src/lib/database.types';
-import { providerDeleteSchema, providerSchema, validProviderSchema } from '$src/lib/schemas';
+import {
+	providerDeleteSchema,
+	providerSchema,
+	userMetadataSchema,
+	validProviderSchema
+} from '$src/lib/schemas';
 
-export const load = async ({ parent }) => {
+export const load = async ({ parent, locals: { user, supabase } }) => {
 	const { providers, tokenCount } = await parent();
-	const form = await superValidate(zod4(providerSchema));
+	const providerForm = await superValidate(zod4(providerSchema));
+	const userMetadataForm = await superValidate(zod4(userMetadataSchema));
 
-	return { form, providers, tokenCount };
+	// Load user metadata
+	const { data: userMetadata, error: metadataError } = await supabase
+		.from('userMetadata')
+		.select('*')
+		.eq('userId', user!.id)
+		.single();
+
+	if (metadataError && metadataError.code !== 'PGRST116') {
+		Sentry.captureException(metadataError);
+	}
+
+	if (userMetadata) {
+		userMetadataForm.data = {
+			fullName: userMetadata.fullName ?? '',
+			ausbildungsberuf: userMetadata.ausbildungsberuf ?? '',
+			abteilung: userMetadata.abteilung ?? ''
+		};
+	}
+
+	return {
+		providerForm,
+		userMetadataForm,
+		providers,
+		tokenCount,
+		userMetadata
+	};
 };
 
 export const actions: Actions = {
@@ -75,5 +106,30 @@ export const actions: Actions = {
 			return fail(406);
 		}
 		throw redirect(303, '/');
+	},
+	updateMetadata: async ({ request, locals: { user, supabase } }) => {
+		const form = await superValidate(request, zod4(userMetadataSchema));
+
+		if (!form.valid) {
+			return message(form, 'Daten sind ungültig.', { status: 400 });
+		}
+
+		const { error: upsertError } = await supabase.from('userMetadata').upsert(
+			{
+				userId: user!.id,
+				fullName: form.data.fullName || null,
+				ausbildungsberuf: form.data.ausbildungsberuf || null,
+				abteilung: form.data.abteilung || null
+			},
+			{ onConflict: 'userId' }
+		);
+
+		if (upsertError) {
+			Sentry.captureException(upsertError);
+			return message(form, 'Fehler beim Speichern der Daten.', { status: 500 });
+		}
+
+		// Return the form with the saved data
+		return message(form, 'Profildaten erfolgreich gespeichert!');
 	}
 };

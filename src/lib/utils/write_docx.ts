@@ -1,5 +1,5 @@
 import { FileTypes } from '$src/lib/enums';
-import type { Entry, ResultEntry } from '$src/lib/types';
+import type { Entry, ResultEntry, UserMetadata } from '$src/lib/types';
 import { getQuickJS, QuickJSContext } from 'quickjs-emscripten';
 import { createReport } from 'docx-templates';
 import { downloadBlob } from './dom';
@@ -7,17 +7,19 @@ import { downloadBlob } from './dom';
 export async function handleDOCXDownload({
 	template,
 	entries,
+	userMetadata,
 	filename = 'bericht.docx'
 }: {
 	template: Uint8Array<ArrayBufferLike>;
 	entries: Promise<ResultEntry[]>;
+	userMetadata?: UserMetadata;
 	filename?: string;
 }) {
 	const QuickJS = await getQuickJS();
 	const vm = QuickJS.newContext();
 	const injected = new Map<string, string>();
 
-	const blob = await generateReport(template, entries, injected, vm);
+	const blob = await generateReport(template, entries, userMetadata, injected, vm);
 
 	downloadBlob(
 		new Blob([Uint8Array.from(blob)], {
@@ -29,6 +31,7 @@ export async function handleDOCXDownload({
 async function generateReport(
 	template: Uint8Array<ArrayBufferLike>,
 	entries: Promise<Required<Entry>[]>,
+	userMetadata: UserMetadata | undefined,
 	injected: Map<string, string>,
 	vm: QuickJSContext
 ) {
@@ -36,7 +39,14 @@ async function generateReport(
 		cmdDelimiter: ['{{', '}}'],
 		template,
 		noSandbox: true,
-		data: { berichte: await entries },
+		data: {
+			berichte: await entries,
+			user: {
+				fullName: userMetadata?.fullName ?? '',
+				ausbildungsberuf: userMetadata?.ausbildungsberuf ?? '',
+				abteilung: userMetadata?.abteilung ?? ''
+			}
+		},
 		runJs: ({ sandbox }) => {
 			try {
 				for (const [key, value] of Object.entries(sandbox)) {

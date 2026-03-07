@@ -124,6 +124,41 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			userMetadata: {
+				Row: {
+					userId: string;
+					fullName: string | null;
+					ausbildungsberuf: string | null;
+					abteilung: string | null;
+					createdAt: string | null;
+					updatedAt: string | null;
+				};
+				Insert: {
+					userId: string;
+					fullName?: string | null;
+					ausbildungsberuf?: string | null;
+					abteilung?: string | null;
+					createdAt?: string | null;
+					updatedAt?: string | null;
+				};
+				Update: {
+					userId?: string;
+					fullName?: string | null;
+					ausbildungsberuf?: string | null;
+					abteilung?: string | null;
+					createdAt?: string | null;
+					updatedAt?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'userMetadata_userId_users_id_fk';
+						columns: ['userId'];
+						isOneToOne: true;
+						referencedRelation: 'users';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 		};
 		Views: {
 			[_ in never]: never;

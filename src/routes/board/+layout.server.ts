@@ -77,10 +77,22 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase, session
 		tokenCount = insertTokenCount?.tokens ?? 0;
 	}
 
+	// Load user metadata
+	const { data: userMetadata, error: metadataError } = await supabase
+		.from('userMetadata')
+		.select('*')
+		.eq('userId', user.id)
+		.single();
+
+	if (metadataError && metadataError.code !== 'PGRST116') {
+		Sentry.captureException(metadataError);
+	}
+
 	return {
 		providers: providersHiddenTokens,
 		tokenCount,
 		session,
-		user
+		user,
+		userMetadata
 	};
 };
