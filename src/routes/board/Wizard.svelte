@@ -121,6 +121,10 @@
 				fn={async () => {
 					const path = berichtgenStore.preferedTemplatePath;
 					const templateResult = await supabase.storage.from('templates').download(path!);
+					if(!templateResult.data) {
+						toast.error('Vorlage existiert nicht. Bitte wähle eine andere Vorlage aus.');
+						return;
+					}
 					const uintarray = new Uint8Array(await templateResult.data!.arrayBuffer());
 					await handleDOCXDownload({ entries: wizardScheduler.result!, template: uintarray });
 				}}

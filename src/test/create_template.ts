@@ -1,6 +1,6 @@
 import createReport from 'docx-templates';
 
-const template = await Bun.file('src/test/default.docx').bytes();
+const template = await Bun.file('src/test/template.docx').bytes();
 
 // Provide test data to the template. Adjust as needed.
 const data = {
@@ -18,7 +18,13 @@ const data = {
 			datum: '2025-06-30',
 			hours: 40,
 			ort: 'SCHULE'
-		}
+		},
+		    {
+        "ort": "SCHULE",
+        "text": "Schoener Text",
+        "qualifikationen": [],
+        "datum": "2026-01-01"
+    }
 	]
 };
 

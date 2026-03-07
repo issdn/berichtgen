@@ -22,7 +22,7 @@ export const fullResultSchema = z
 			.default([]),
 		text: z.string({ message: 'Text muss ein Text enthalten!' }),
 		hours: z.number({ message: 'Hours/Stunden muss eine ganze Zahl sein.' }).int().optional(),
-		ort: z.nativeEnum(Ort, { message: 'Das Objekt muss einen Ort enthalten!' }).optional(),
+		ort: z.enum(Ort, { message: 'Das Objekt muss einen Ort enthalten!' }).optional(),
 		datum: z.string({ message: 'Dass Object muss ein Datum enthalten!' })
 	})
 	.array();

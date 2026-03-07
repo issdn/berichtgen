@@ -1,27 +1,20 @@
-create or replace function handle_template_delete_remove_metadata()
+create or replace function handle_storage_delete_remove_template_metadata()
 returns trigger
 language plpgsql
 security definer
 as $$
-declare
-  object_path text;
 begin
-  object_path := OLD.storage_path;
-  if object_path is null then
-    return OLD;
-  end if;
-
-  -- Remove the metadata row for the object in bucket 'templates'
-  delete from storage.objects
-  where bucket_id = 'templates'
-    and name = object_path;
+  -- Remove the template metadata row where storage_path matches the deleted object's name
+  delete from public.template
+  where storage_path = OLD.name;
 
   return OLD;
 end;
 $$;
 
-drop trigger if exists on_template_delete_metadata on public.template;
-create trigger on_template_delete_metadata
-after delete on public.template
+drop trigger if exists on_storage_delete_template_metadata on storage.objects;
+create trigger on_storage_delete_template_metadata
+after delete on storage.objects
 for each row
-execute function handle_template_delete_remove_metadata();
+when (OLD.bucket_id = 'templates')
+execute function handle_storage_delete_remove_template_metadata();

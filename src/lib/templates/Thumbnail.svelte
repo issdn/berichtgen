@@ -27,8 +27,18 @@
 		berichtgenStore.preferedTemplatePath = path;
 	}
 
-	async function deleteTemplate(id: string) {
-		const { error } = await supabase.from('template').delete().eq('id', id);
+	async function deleteTemplate(id: string, storagePath: string) {
+		// First delete from storage
+		const { error: storageError } = await supabase.storage.from('templates').remove([storagePath]);
+		if (storageError) {
+			throw storageError;
+		}
+
+		// Then delete the template record
+		const { error } = await supabase.storage.from('templates').remove([storagePath]);
+			if (storageError) {
+				throw storageError;
+			}
 		if (error) {
 			throw error;
 		}
@@ -69,7 +79,7 @@
 	}));
 
 	const deleteMutation = createMutation(() => ({
-		mutationFn: (id: string) => deleteTemplate(id),
+		mutationFn: ({ id, storagePath }: { id: string; storagePath: string }) => deleteTemplate(id, storagePath),
 		onSuccess: () => {
 			query.refetch();
 		}
@@ -93,7 +103,7 @@
 	>
 		<Dialog.Root>
 			<Dialog.Trigger>
-				<Button variant="secondary" onclick={() => deleteMutation.mutate(template.id)}>
+				<Button variant="secondary" onclick={() => deleteMutation.mutate({ id: template.id, storagePath: template.storage_path })}>
 					<View size={24} />
 				</Button>
 			</Dialog.Trigger>
@@ -110,7 +120,7 @@
 		</Dialog.Root>
 
 		{#if !isPreferred}
-			<Button variant="secondary" onclick={() => deleteMutation.mutate(template.id)}>
+			<Button variant="secondary" onclick={() => deleteMutation.mutate({ id: template.id, storagePath: template.storage_path })}>
 				<Shredder size={24} />
 			</Button>
 			<Button variant="secondary" onclick={() => setPreferedTemplate(template.storage_path)}>

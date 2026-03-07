@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import '../app.css';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Label } from '$lib/components/ui/label';

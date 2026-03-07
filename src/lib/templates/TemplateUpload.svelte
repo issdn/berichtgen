@@ -8,6 +8,8 @@
 
 	const { user, supabase }: { user: User; supabase: SupabaseClient } = $props();
 
+	const context = getQueryClientContext();
+
 	const upload = createMutation(() => ({
 		mutationFn: (file: File) => uploadTemplates(file)
 	}));
@@ -29,7 +31,7 @@
 
 		upload.mutate(firstFile);
 
-		await getQueryClientContext().invalidateQueries({ queryKey: ['template'] });
+		await context.invalidateQueries({ queryKey: ['template'] });
 	}
 
 	async function uploadTemplates(file: File) {

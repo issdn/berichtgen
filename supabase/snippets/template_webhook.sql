@@ -58,7 +58,7 @@ end;
 $$;
 
 drop trigger if exists on_template_http on public.template;
-create trigger on_template_http
-after insert on public.template
-for each row
-execute function handle_template_insert();
+-- create trigger on_template_http
+-- after insert on public.template
+-- for each row
+-- execute function handle_template_insert();

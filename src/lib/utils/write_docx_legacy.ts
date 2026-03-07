@@ -2,6 +2,7 @@ import { Document, Packer, TableRow, Table, TableCell, Paragraph } from 'docx';
 import type { ResultEntry } from '$src/lib/types';
 import { Ort } from '$src/lib/enums';
 import { BULLETPOINT } from '$src/lib/constants';
+import { downloadBlob } from './dom';
 
 function header(text: string) {
 	return new TableRow({
@@ -240,14 +241,5 @@ export async function handleDOCXDownload(
 	download: string = 'bericht.docx'
 ) {
 	const blob = await writeDocxFile(await entries);
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement('a');
-
-	a.href = url;
-	a.download = download;
-	document.body.appendChild(a);
-	a.click();
-
-	document.body.removeChild(a);
-	URL.revokeObjectURL(url);
+	downloadBlob(blob, download);
 }
