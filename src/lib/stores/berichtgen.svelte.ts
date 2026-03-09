@@ -1,8 +1,4 @@
-import type { ProviderSchemaType } from '$src/lib/schemas';
-
 class ***REMOVED***Store {
-	_currentProvider: ProviderSchemaType | null = $state(null);
-
 	_processPhotos = $state(false);
 
 	_rewordJSON = $state(false);
@@ -10,15 +6,6 @@ class ***REMOVED***Store {
 	_contantHours = $state(false);
 
 	_preferedTemplatePath = $state<string | null>(null);
-
-	get currentProvider() {
-		return this._currentProvider!;
-	}
-
-	set currentProvider(value) {
-		localStorage.setItem('provider', value.id);
-		this._currentProvider = value;
-	}
 
 	get processPhotos() {
 		return this._processPhotos;

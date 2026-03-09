@@ -5,7 +5,6 @@
 	import { FileCheck2, FileJson, FileType } from '@lucide/svelte';
 	import { getContext, onMount } from 'svelte';
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
-	import ProviderSelect from './ProviderSelect.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import Docx from '$src/lib/svg/DOCX.svelte';
 	import Pdf from '$src/lib/svg/PDF.svelte';
@@ -41,7 +40,7 @@
 	let getUser = getContext<UserContext>('user');
 	let getBoard = getContext<() => { userMetadata: { fullName: string | null; ausbildungsberuf: string | null; abteilung: string | null } | null }>('board');
 
-	let { loggedIn, supabase } = $derived(getUser());
+	let { supabase } = $derived(getUser());
 	let { userMetadata } = $derived(getBoard());
 
 	let dialogOpen = $state(false);
@@ -66,9 +65,6 @@
 <div class="relative flex h-full w-full flex-col overflow-hidden rounded-lg border-4">
 	<div class="bg-muted flex flex-row flex-wrap items-center justify-between gap-x-4 p-4">
 		<div class="flex flex-row items-center gap-x-4">
-			{#if loggedIn}
-				<ProviderSelect />
-			{/if}
 			<WizardSettingsPopover />
 		</div>
 		{#if result !== null}

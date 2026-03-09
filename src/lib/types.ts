@@ -1,6 +1,6 @@
 import type { QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/constants';
 import type { Ort } from '$src/lib/enums';
-import type { DateRangeSchema, ProviderSchemaType } from '$src/lib/schemas';
+import type { DateRangeSchema } from '$src/lib/schemas';
 import { type StateMachineSignature } from '$src/lib/state_machine';
 import type { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 import type { DateValue } from '@internationalized/date';
@@ -34,10 +34,14 @@ export type UserContext = () => {
 	supabase: SupabaseClient;
 };
 
-// Availible only when user is logged in and only on board routes
+// Available only when user is logged in and only on board routes
 export type UserBoardContext = () => {
-	providers: ProviderSchemaType[];
 	tokenCount: number;
+	userMetadata: {
+		fullName: string | null;
+		ausbildungsberuf: string | null;
+		abteilung: string | null;
+	} | null;
 };
 
 /**

@@ -2,56 +2,13 @@ import { supabaseAdmin } from '$src/lib/server/admin';
 import * as Sentry from '@sentry/sveltekit';
 import type { LayoutServerLoad } from './$types';
 
-function hideToken(
-	str: string,
-	visibleStart: number = 4,
-	visibleEnd: number = 2,
-	maskChar: string = '*'
-): string {
-	if (str.length <= visibleStart + visibleEnd) {
-		return str;
-	}
-
-	const maskedLength = str.length - visibleStart - visibleEnd;
-	const maskedPart = maskChar.repeat(maskedLength);
-
-	return str.slice(0, visibleStart) + maskedPart + str.slice(str.length - visibleEnd);
-}
-
 export const load: LayoutServerLoad = async ({ locals: { user, supabase, session } }) => {
 	if (!user) {
 		return {
-			providers: [],
 			tokenCount: null,
 			session
 		};
 	}
-
-	const { data: providers, error: providersError } = await supabase
-		.from('llmProvider')
-		.select(
-			`
-            id,
-            name,
-            price,
-            owner,
-			maxTokens,
-            userLLMProvider ( token )
-        `
-		)
-		.eq('userLLMProvider.userId', user.id);
-
-	if (providersError) {
-		Sentry.captureException(providersError);
-	}
-
-	const providersHiddenTokens = (providers ?? []).map((provider) => {
-		const token = provider.userLLMProvider[0]?.token;
-		return {
-			...provider,
-			token: token != null ? hideToken(token) : null
-		};
-	});
 
 	let tokenCount = 0;
 
@@ -89,7 +46,6 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase, session
 	}
 
 	return {
-		providers: providersHiddenTokens,
 		tokenCount,
 		session,
 		user,

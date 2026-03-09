@@ -31,43 +31,6 @@ export type fullResultSchema = z.infer<typeof fullResultSchema>;
 
 // -------------------------------------------------
 
-export const providerSchema = z.object({
-	token: z
-		.string()
-		.max(256, { message: 'Max 256 Zeichen' })
-		.nonempty({ message: 'Token kann nicht leer sein.' })
-		.nullable(),
-	id: z.string(),
-	name: z.string(),
-	price: z.number(),
-	owner: z.string(),
-	maxTokens: z.number().int()
-});
-
-export const validProviderSchema = z.object({
-	token: z
-		.string()
-		.max(256, { message: 'Max 256 Zeichen' })
-		.nonempty({ message: 'Token kann nicht leer sein.' }),
-	id: z.string(),
-	name: z.string(),
-	price: z.number(),
-	owner: z.string()
-});
-
-export const providerDeleteSchema = z.object({
-	id: z.string().nonempty(),
-	name: z.string().optional()
-});
-
-export type ProviderSchema = typeof providerSchema;
-
-export type ValidProviderSchema = typeof validProviderSchema;
-
-export type ProviderSchemaType = z.infer<ProviderSchema>;
-
-// ------------------------------------------------
-
 export const dateRangeSchema = z.object({
 	ranges: z
 		.object({
@@ -111,8 +74,6 @@ export type Valid***REMOVED***DateRanges = {
 
 export const completionApiSchema = z.object({
 	text: z.string().nonempty(),
-	provider: z.string().nonempty(),
-	owner: z.string().nonempty(),
 	ort: z.enum([Ort.SCHULE, Ort.BETRIEB])
 });
 

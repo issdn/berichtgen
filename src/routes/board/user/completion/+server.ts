@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { CommonServerErrorTypes, CompletionExceptionType, Ort } from '$lib/enums';
 import OpenAI from 'openai';
 import * as genai from '@google/genai';
-import { err, ok, ResultAsync } from 'neverthrow';
+import { err, ok, type Result, ResultAsync } from 'neverthrow';
 import { CompletionException } from '$src/lib/errors';
 import { countTokens } from '$src/lib/utils/token_counter';
 import * as Sentry from '@sentry/node';
@@ -14,33 +14,30 @@ import { completionApiSchema, completionSchema } from '$src/lib/schemas';
 import { supabaseAdmin } from '$src/lib/server/admin';
 import zodToJsonSchema from 'zod-to-json-schema';
 
-function getTokenByOwner(owner: string) {
-	switch (owner) {
-		case 'deepseek':
-			return ok(env.DEEPSEEK);
-		case 'google':
-			return ok(env.GEMINI);
-		default:
-			return err(
-				new CompletionException(
-					'Dieses Modell ist nicht verfügbar',
-					CompletionExceptionType.INVALID_TOKEN
-				)
-			);
+// Hardcoded provider configuration - uses DeepSeek by default
+// Change this to 'google' to use Gemini instead
+const PROVIDER_OWNER = 'deepseek';
+
+function getToken(): Result<string, CompletionException> {
+	const token = env.DEEPSEEK;
+	if (!token) {
+		return err(
+			new CompletionException(
+				'Dieses Modell ist nicht verfügbar',
+				CompletionExceptionType.INVALID_TOKEN
+			)
+		);
 	}
+	return ok(token);
 }
 
 async function deductUserTokens(
 	supabase: SupabaseClient,
 	userId: string,
-	reduced: boolean,
 	text: string
 ) {
-	let amount = countTokens(new Blob([text]));
+	const amount = countTokens(new Blob([text]));
 
-	if (reduced) {
-		amount = Math.ceil(amount / 4);
-	}
 	const { data, error } = await supabase.rpc('deduct_user_tokens', {
 		user_id: userId,
 		amount
@@ -80,29 +77,19 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 		});
 	}
 
-	const { text, provider, owner, ort } = parsed.data;
+	const { text, ort } = parsed.data;
 
-	const berichtgenToken = getTokenByOwner(owner).mapErr((e) => e.toResponse());
+	const tokenResult = getToken().mapErr((e) => e.toResponse());
 
-	if (berichtgenToken.isErr()) {
-		return berichtgenToken.error;
+	if (tokenResult.isErr()) {
+		return tokenResult.error;
 	}
 
-	const { data: userProviderData } = await supabaseAdmin
-		.from('userLLMProvider')
-		.select('token')
-		.eq('userId', user!.id!)
-		.eq('providerId', provider)
-		.single();
-
-	const userToken = userProviderData?.token;
-
-	const token = userToken ?? berichtgenToken.value;
+	const token = tokenResult.value;
 
 	const tokensDeducted = await deductUserTokens(
 		supabaseAdmin,
 		user!.id!,
-		userToken !== undefined,
 		text
 	);
 
@@ -110,18 +97,9 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 		return tokensDeducted.error.toResponse();
 	}
 
-	let response: ResultAsync<string | undefined | null, CompletionException>;
-
-	if (owner === 'deepseek') {
-		response = ResultAsync.fromPromise(getOpenAICompletion(text, token, ort), (e) =>
-			CompletionException.fromUnknown(e)
-		);
-		// owner === 'google'
-	} else {
-		response = ResultAsync.fromPromise(getGeminiCompletion(text, token, ort), (e) =>
-			CompletionException.fromUnknown(e)
-		);
-	}
+	const response = ResultAsync.fromPromise(getOpenAICompletion(text, token, ort), (e) =>
+		CompletionException.fromUnknown(e)
+	);
 
 	const result = await response.mapErr((e) => e.toResponse());
 	if (result.isErr()) {
@@ -134,15 +112,15 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 			message: 'Die API hat nichts zurückgegeben.'
 		});
 	}
-	// Allow negative on output
-	await deductUserTokens(supabaseAdmin, user!.id!, userToken !== undefined, completion);
+	// Deduct tokens for output
+	await deductUserTokens(supabaseAdmin, user!.id!, completion);
 	return new Response(completion);
 };
 
 async function getOpenAICompletion(text: string, token: string, ort: Ort) {
 	const openai = new OpenAI({
 		baseURL: 'https://api.deepseek.com',
-		apiKey: token ?? env.DEEPSEEK
+		apiKey: token
 	});
 
 	const completion = await openai.chat.completions.create({
@@ -159,47 +137,8 @@ async function getOpenAICompletion(text: string, token: string, ort: Ort) {
 		model: 'deepseek-chat',
 		response_format: {
 			type: 'json_object'
-			// 	type: 'json_schema',
-			// 	json_schema: {
-			// 		name: 'berichtgen schema',
-			// 		schema: {
-			// 			lessons: {
-			// 				type: 'array',
-			// 				items: {
-			// 					type: 'object',
-			// 					properties: {
-			// 						qualifikationen: {
-			// 							type: 'array',
-			// 							items: { type: 'string' }
-			// 						},
-			// 						text: { type: 'string' }
-			// 					}
-			// 				}
-			// 			}
-			// 		}
-			// 	}
 		}
 	});
 
 	return completion.choices[0].message.content;
-}
-
-async function getGeminiCompletion(
-	text: string,
-	token: string,
-	ort: Ort
-): Promise<string | undefined | null> {
-	const ai = new genai.GoogleGenAI({ apiKey: token ?? env.GEMINI });
-
-	const completion = await ai.models.generateContent({
-		config: {
-			responseMimeType: 'application/json',
-			systemInstruction: getContextPrompt(ort),
-			responseSchema: zodToJsonSchema(completionSchema)
-		},
-		model: 'gemini-1.5-flash',
-		contents: text
-	});
-
-	return completion.text;
 }

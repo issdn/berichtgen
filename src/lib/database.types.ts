@@ -29,33 +29,6 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			llmProvider: {
-				Row: {
-					id: string;
-					maxTokens: number;
-					name: string;
-					owner: string;
-					price: number;
-					url: string;
-				};
-				Insert: {
-					id: string;
-					maxTokens: number;
-					name: string;
-					owner: string;
-					price: number;
-					url: string;
-				};
-				Update: {
-					id?: string;
-					maxTokens?: number;
-					name?: string;
-					owner?: string;
-					price?: number;
-					url?: string;
-				};
-				Relationships: [];
-			};
 			template: {
 				Row: {
 					created_at: string;
@@ -82,32 +55,6 @@ export type Database = {
 					user_id?: string | null;
 				};
 				Relationships: [];
-			};
-			userLLMProvider: {
-				Row: {
-					providerId: string;
-					token: string | null;
-					userId: string;
-				};
-				Insert: {
-					providerId: string;
-					token?: string | null;
-					userId: string;
-				};
-				Update: {
-					providerId?: string;
-					token?: string | null;
-					userId?: string;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'userLLMProvider_providerId_llmProvider_id_fk';
-						columns: ['providerId'];
-						isOneToOne: false;
-						referencedRelation: 'llmProvider';
-						referencedColumns: ['id'];
-					}
-				];
 			};
 			userTokenCount: {
 				Row: {

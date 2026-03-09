@@ -16,9 +16,9 @@
 
 	let { data, children } = $props();
 
-	let { supabase, tokenCount, user, providers, userMetadata } = $derived(data);
+	let { supabase, tokenCount, user, userMetadata } = $derived(data);
 
-	setContext('board', () => ({ tokenCount, providers, userMetadata }));
+	setContext('board', () => ({ tokenCount, userMetadata }));
 
 	let getUser = getContext<UserContext>('user');
 
@@ -30,11 +30,6 @@
 			? JSON.parse(localStorage.getItem('rewordJSON') ?? 'false')
 			: false;
 		berichtgenStore.contantHours = JSON.parse(localStorage.getItem('contantHours') ?? 'false');
-		if (loggedIn && providers.length > 0) {
-			const providerId = localStorage.getItem('provider') ?? providers[0].id;
-			berichtgenStore.currentProvider =
-				providers.find((provider) => provider.id === providerId) ?? providers[0];
-		}
 		berichtgenStore.preferedTemplatePath = JSON.parse(
 			localStorage.getItem('preferedTemplatePath') ?? 'null'
 		);

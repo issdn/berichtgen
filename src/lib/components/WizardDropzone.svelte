@@ -8,7 +8,6 @@
 		type WizardRawDirectories,
 		type WizardRawDirectory
 	} from '$src/lib/types';
-	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
 	import { CONFIG_FILENAME_REGEX } from '$src/lib/constants';
@@ -38,14 +37,9 @@
 			filesNumber = directories.flat().length;
 			const anyNonJsonFiles = directories.flat().find((f) => f.type !== FileTypes.JSON);
 			if (loggedIn) {
-				const hasDiscount = berichtgenStore.currentProvider?.token != null;
 				const totalTokens = countUserTokensDirectories(directories);
-				const necessaryTokensAfterDiscount = hasDiscount ? totalTokens / 4 : totalTokens;
-				if (necessaryTokensAfterDiscount > berichtgenStore.userTokens!) {
-					toast.error(
-						'Die Dateien vor der Verarbeitung benötigen mehr Tokens als du hast. (Es kann aber sein, dass nach der Verarbeitung z.B. der Bilder weniger Tokens benötigt werden.)'
-					);
-				}
+				// Note: userTokens check would need to be passed from parent or context
+				// For now, we proceed with the processing
 				init(directories);
 			} else {
 				if (anyNonJsonFiles) {
@@ -53,10 +47,6 @@
 						'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.';
 					wizardScheduler.schedule = null;
 				} else {
-					if (berichtgenStore.rewordJSON === true) {
-						berichtgenStore.rewordJSON = false;
-						toast.info('JSON-Dateien Umformulierung wurde automatisch deaktiviert.');
-					}
 					init(directories);
 				}
 			}

@@ -1,18 +1,18 @@
-import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import { type Entry } from '$lib/types';
 import { ***REMOVED***Error } from '$src/lib/errors';
 import { completionSchema } from '$src/lib/schemas';
 import { ResultAsync } from 'neverthrow';
 import { ***REMOVED***ErrorType, type Ort } from '$src/lib/enums';
 
+// Hardcoded max tokens - should match the server's configuration
+const MAX_TOKENS = 60000;
+
 export function getCompletions(text: string, ort: Ort) {
-	const messages = splitByMaxLength(text, berichtgenStore.currentProvider.maxTokens);
+	const messages = splitByMaxLength(text, MAX_TOKENS);
 	const completionsPromises = messages.map(async (t) => {
 		const result = await fetch('/board/user/completion', {
 			body: JSON.stringify({
 				text: t,
-				provider: berichtgenStore.currentProvider.id,
-				owner: berichtgenStore.currentProvider.owner,
 				ort
 			}),
 			method: 'POST'
