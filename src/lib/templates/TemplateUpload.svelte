@@ -2,11 +2,12 @@
 	import Dropzone from '$src/lib/components/Dropzone.svelte';
 	import { FileTypes } from '$src/lib/enums';
 	import { extractFilesSimple } from '$src/lib/parse/file_scan';
-	import type { SupabaseClient, User } from '@supabase/supabase-js';
 	import { createMutation } from '@tanstack/svelte-query';
+	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import type { UserContext } from '../types';
 
-	const { user, supabase }: { user: User; supabase: SupabaseClient } = $props();
+	let { user, supabase } = getContext<UserContext>('user')();
 
 	const upload = createMutation(() => ({
 		mutationFn: (file: File) => uploadTemplates(file),
@@ -40,7 +41,7 @@
 	async function uploadTemplates(file: File) {
 		const { error } = await supabase.storage
 			.from('templates')
-			.upload(`${user.id}/${file.name}`, file, {
+			.upload(`${user!.id}/${file.name}`, file, {
 				contentType: file.type
 			});
 

@@ -4,7 +4,7 @@ export type Database = {
 	// Allows to automatically instantiate createClient with right options
 	// instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
 	__InternalSupabase: {
-		PostgrestVersion: '13.0.5';
+		PostgrestVersion: '14.1';
 	};
 	public: {
 		Tables: {
@@ -35,24 +35,45 @@ export type Database = {
 					id: string;
 					storage_path: string;
 					thumbnail_path: string | null;
-					updated_at: string;
-					user_id: string | null;
+					updated_at: string | null;
+					user_id: string;
 				};
 				Insert: {
 					created_at?: string;
 					id?: string;
 					storage_path: string;
 					thumbnail_path?: string | null;
-					updated_at?: string;
-					user_id?: string | null;
+					updated_at?: string | null;
+					user_id: string;
 				};
 				Update: {
 					created_at?: string;
 					id?: string;
 					storage_path?: string;
 					thumbnail_path?: string | null;
-					updated_at?: string;
-					user_id?: string | null;
+					updated_at?: string | null;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
+			userMetadata: {
+				Row: {
+					abteilung: string | null;
+					ausbildungsberuf: string | null;
+					fullName: string | null;
+					userId: string;
+				};
+				Insert: {
+					abteilung?: string | null;
+					ausbildungsberuf?: string | null;
+					fullName?: string | null;
+					userId: string;
+				};
+				Update: {
+					abteilung?: string | null;
+					ausbildungsberuf?: string | null;
+					fullName?: string | null;
+					userId?: string;
 				};
 				Relationships: [];
 			};
@@ -70,41 +91,6 @@ export type Database = {
 					userId?: string;
 				};
 				Relationships: [];
-			};
-			userMetadata: {
-				Row: {
-					userId: string;
-					fullName: string | null;
-					ausbildungsberuf: string | null;
-					abteilung: string | null;
-					createdAt: string | null;
-					updatedAt: string | null;
-				};
-				Insert: {
-					userId: string;
-					fullName?: string | null;
-					ausbildungsberuf?: string | null;
-					abteilung?: string | null;
-					createdAt?: string | null;
-					updatedAt?: string | null;
-				};
-				Update: {
-					userId?: string;
-					fullName?: string | null;
-					ausbildungsberuf?: string | null;
-					abteilung?: string | null;
-					createdAt?: string | null;
-					updatedAt?: string | null;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'userMetadata_userId_users_id_fk';
-						columns: ['userId'];
-						isOneToOne: true;
-						referencedRelation: 'users';
-						referencedColumns: ['id'];
-					}
-				];
 			};
 		};
 		Views: {

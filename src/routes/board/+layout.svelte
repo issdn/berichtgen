@@ -9,6 +9,7 @@
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import { browser } from '$app/environment';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
+	import { checkPreferredTemplate } from '$src/lib/utils/template_utils.js';
 
 	let { data, children } = $props();
 
@@ -32,6 +33,8 @@
 	});
 
 	onMount(() => {
+		checkPreferredTemplate(supabase);
+		
 		let channel: RealtimeChannel | null = null;
 
 		if (user) {
@@ -39,7 +42,7 @@
 				.channel('token-update')
 				.on(
 					'postgres_changes',
-					{ event: 'UPDATE', table: 'userTokenCount', schema: 'public' },
+					{ event: 'UPDATE', table: 'userTokenCount', schema: 'public', filter: `userId=eq.${user.id}` },
 					(p) => {
 						tokenCount = p.new.tokens;
 						if (tokenCount != null && p.new.tokens > tokenCount!) {

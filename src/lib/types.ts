@@ -4,7 +4,7 @@ import type { DateRangeSchema } from '$src/lib/schemas';
 import { type StateMachineSignature } from '$src/lib/state_machine';
 import type { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 import type { DateValue } from '@internationalized/date';
-import type { SupabaseClient, User } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 
 export interface Entry {
 	qualifikationen: QualifikationenType[];
@@ -31,7 +31,7 @@ export type QualifikationenType =
 export type UserContext = () => {
 	user: User | null;
 	loggedIn: boolean;
-	supabase: SupabaseClient;
+	supabase: App.Locals['supabase'];
 };
 
 // Available only when user is logged in and only on board routes

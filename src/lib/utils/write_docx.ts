@@ -28,6 +28,7 @@ export async function handleDOCXDownload({
 		filename
 	);
 }
+
 async function generateReport(
 	template: Uint8Array<ArrayBufferLike>,
 	entries: Promise<Required<Entry>[]>,

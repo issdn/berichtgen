@@ -12,3 +12,4 @@ In this project, we follow these conventions for writing code and documentation:
 - Use consistent naming conventions for variables, functions, and classes.
 - Try to architect code using SOLID principles.
 - Never leave any TODOs.
+- file names are in snake_case

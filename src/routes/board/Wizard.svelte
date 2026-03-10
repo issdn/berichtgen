@@ -2,7 +2,7 @@
 	import WizardFile from './WizardFile.svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
-	import { FileCheck2, FileJson, FileType } from '@lucide/svelte';
+	import { FileCheck2, FileClock, FileJson, FileType } from '@lucide/svelte';
 	import { getContext, onMount } from 'svelte';
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -19,6 +19,7 @@
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
+	import { checkPreferredTemplate } from '$src/lib/utils/template_utils';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -79,7 +80,7 @@
 		{/if}
 	</div>
 	<div class="h-full overflow-x-hidden overflow-y-auto">
-		<div class="relative p-4">
+		<div class="relative p-4 h-full">
 			{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 				{#await wizardScheduler.processInit}
 					<div class="center-absolute"><Spinner /></div>
@@ -99,7 +100,7 @@
 					</div>
 				{/await}
 			{:else}
-				<p class="center-absolute text-muted">Noch nix hier...</p>
+				<FileClock class="center-absolute text-muted size-12"/>
 			{/if}
 		</div>
 	</div>
@@ -117,7 +118,11 @@
 			>
 			<FileDownloadButton
 				fn={async () => {
+					const exists = await checkPreferredTemplate(supabase);
+					if (!exists) return;
+
 					const path = berichtgenStore.preferedTemplatePath;
+					
 					const templateResult = await supabase.storage.from('templates').download(path!);
 					if(!templateResult.data) {
 						toast.error('Vorlage existiert nicht. Bitte wähle eine andere Vorlage aus.');

@@ -2,33 +2,31 @@
 	import type { Database } from '$src/lib/database.types';
 	import { parsePostgresDate } from '$src/lib/utils';
 	import { FilePlus2, ImageOff, Shredder, View } from '@lucide/svelte';
-	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { getQueryClientContext, createInfiniteQuery, createMutation, keepPreviousData } from '@tanstack/svelte-query';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { Button } from '$src/lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
+	import { getContext } from 'svelte';
+	import type { UserContext } from '../types';
 	
 	const {
-		supabase,
+		
 		isPreferred,
 		template
 	}: {
-		supabase: SupabaseClient<Database>;
 		isPreferred: boolean;
 		template: Database['public']['Tables']['template']['Row'];
 	} = $props();
+
+	let { supabase } = getContext<UserContext>('user')();
 
 	const context = getQueryClientContext();
 
 	const itemsPerPage = 9;
 
 	let search = $state('');
-
-	function setPreferedTemplate(path: string) {
-		berichtgenStore.preferedTemplatePath = path;
-	}
 
 	async function deleteTemplate(storagePath: string) {
 		// First delete from storage
@@ -85,14 +83,13 @@
 		},
 	}));
 
-	const name = template.storage_path.split('/').at(-1);
-
-	// Works only for public files
-	const filepath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/templates/${template.storage_path}`;
-
-	const thumbnailpath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${template.thumbnail_path
-		?.split('/')
-		.at(-1)}`;
+	const {name, filepath, thumbnailpath} = $derived.by(() => {
+		const name = template.storage_path.split('/').at(-1);
+		// Works only for public files
+		const filepath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/templates/${template.storage_path}`;
+		const thumbnailpath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${template.thumbnail_path?.split('/').at(-1)}`;
+		return { name, filepath, thumbnailpath };
+	});
 </script>
 
 <button
@@ -103,7 +100,7 @@
 	>
 		<Dialog.Root>
 			<Dialog.Trigger>
-				<Button variant="secondary" onclick={() => deleteMutation.mutate({ id: template.id, storagePath: template.storage_path })}>
+				<Button variant="secondary">
 					<View size={24} />
 				</Button>
 			</Dialog.Trigger>
@@ -123,7 +120,7 @@
 			<Button variant="secondary" onclick={() => deleteMutation.mutate({ id: template.id, storagePath: template.storage_path })}>
 				<Shredder size={24} />
 			</Button>
-			<Button variant="secondary" onclick={() => setPreferedTemplate(template.storage_path)}>
+			<Button variant="secondary" onclick={() => berichtgenStore.preferedTemplatePath = template.storage_path}>
 				<FilePlus2 size={24} />
 			</Button>
 		{/if}

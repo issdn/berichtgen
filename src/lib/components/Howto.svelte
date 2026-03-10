@@ -1,11 +1,9 @@
 <script lang="ts">
-	import { Copy, ExternalLink, Pin } from '@lucide/svelte';
+	import { Copy, Pin } from '@lucide/svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$src/lib/components/ui/button';
 	import { getContextPrompt } from '$src/lib/completion/prompt';
-	import type { UserContext } from '$src/lib/types';
 	import { Ort } from '$src/lib/enums';
-	import { getContext } from 'svelte';
 	import FilesToConfigModal from '$src/lib/tools/FilesToConfigModal.svelte';
 </script>
 
@@ -41,26 +39,6 @@
 							}}><Copy /> Betrieb/Unterweisung</Button
 						>
 					</div>
-				</Card.Content>
-			</Card.Root>
-			<Card.Root class="relative inline-block w-full">
-				<Pin class="absolute -top-1 -right-1 rotate-45 " />
-				<Card.Header>
-					<Card.Title>🤔 Was denn?</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					<p>
-						Du kannst den Bericht entweder als fertiges DOCX oder als JSON herunterladen.
-						<br />
-						Falls du die Berichte auf der bildung.ihk.de Plattform ausfüllen musst, kannst du die JSON
-						unserer Extension übergeben:
-					</p>
-					<Button
-						variant="link"
-						href="https://chromewebstore.google.com/detail/ihk-berichtsheft-bot/cjadnfbehnecalphcincmljbheaiokgp?hl=en-US"
-						target="_blank"
-						rel="noopener noreferrer"><ExternalLink />Extension</Button
-					>
 				</Card.Content>
 			</Card.Root>
 			<Card.Root class="relative inline-block w-full">

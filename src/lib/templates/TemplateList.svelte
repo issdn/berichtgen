@@ -1,7 +1,5 @@
 <script lang="ts">
-	import type { Database } from '$src/lib/database.types';
 	import { SearchIcon } from '@lucide/svelte';
-	import type { SupabaseClient } from '@supabase/supabase-js';
 	import { createInfiniteQuery, keepPreviousData } from '@tanstack/svelte-query';
 	import { fade } from 'svelte/transition';
 	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
@@ -9,8 +7,10 @@
 	import ScrollArea from '$src/lib/components/ui/scroll-area/scroll-area.svelte';
 	import { Spinner } from '$src/lib/components/ui/spinner';
 	import Thumbnail from '$src/lib/templates/Thumbnail.svelte';
+	import { getContext } from 'svelte';
+	import type { UserContext } from '../types';
 
-	const { supabase }: { supabase: SupabaseClient<Database> } = $props();
+	let { supabase } = getContext<UserContext>('user')();
 
 	const itemsPerPage = 9;
 
@@ -89,7 +89,7 @@
 				{#each query.data.pages as page, i (i)}
 					{#each page as template (template.id)}
 						{@const isPreferred = berichtgenStore.preferedTemplatePath === template.storage_path}
-						<Thumbnail {isPreferred} {template} {supabase} />
+						<Thumbnail {isPreferred} {template} />
 					{/each}
 				{/each}
 			</ul>
