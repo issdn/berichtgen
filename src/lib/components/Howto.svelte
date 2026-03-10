@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Copy, ExternalLink, Pin, Settings } from '@lucide/svelte';
+	import { Copy, ExternalLink, Pin } from '@lucide/svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$src/lib/components/ui/button';
 	import { getContextPrompt } from '$src/lib/completion/prompt';
@@ -7,8 +7,6 @@
 	import { Ort } from '$src/lib/enums';
 	import { getContext } from 'svelte';
 	import FilesToConfigModal from '$src/lib/tools/FilesToConfigModal.svelte';
-
-	let { loggedIn } = getContext<UserContext>('user')();
 </script>
 
 <div class="bg-muted h-full w-full overflow-y-hidden">
@@ -63,24 +61,6 @@
 						target="_blank"
 						rel="noopener noreferrer"><ExternalLink />Extension</Button
 					>
-				</Card.Content>
-			</Card.Root>
-			<Card.Root class="relative inline-block w-full">
-				<Pin class="absolute -top-1 -right-1 rotate-45 " />
-				<Card.Header>
-					<Card.Title>💳 75% Tokens sparen</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					<p>
-						Wenn du deinen eigenen API-Key verwendest, beim generieren der Berichte wird 75% weniger
-						Tokens genommen.
-						{#if !loggedIn}
-							Das kannst du aber nur angemeldet machen.
-						{/if}
-					</p>
-					{#if loggedIn}
-						<Button variant="link" href="/board/user/settings"><Settings />Zu Einstellungen</Button>
-					{/if}
 				</Card.Content>
 			</Card.Root>
 			<Card.Root class="relative inline-block w-full">
