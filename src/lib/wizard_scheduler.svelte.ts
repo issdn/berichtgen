@@ -81,7 +81,7 @@ export class WizardScheduler {
 			}, [] as Required<Entry>[][]);
 			await this.scheduler?.terminate();
 			this.scheduler = null;
-			const combined = combineJSONs(finishedDirectories, berichtgenStore.contantHours);
+			const combined = combineJSONs(finishedDirectories, berichtgenStore.constantHours);
 			this.isRunning = false;
 			return combined;
 		})();

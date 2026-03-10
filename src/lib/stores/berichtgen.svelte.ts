@@ -3,7 +3,7 @@ class ***REMOVED***Store {
 
 	_rewordJSON = $state(false);
 
-	_contantHours = $state(false);
+	_constantHours = $state(false);
 
 	_preferedTemplatePath = $state<string | null>(null);
 
@@ -25,13 +25,13 @@ class ***REMOVED***Store {
 		this._rewordJSON = value;
 	}
 
-	get contantHours() {
-		return this._contantHours;
+	get constantHours() {
+		return this._constantHours;
 	}
 
-	set contantHours(value: boolean) {
-		localStorage.setItem('contantHours', JSON.stringify(value));
-		this._contantHours = value;
+	set constantHours(value: boolean) {
+		localStorage.setItem('constantHours', JSON.stringify(value));
+		this._constantHours = value;
 	}
 
 	get preferedTemplatePath() {

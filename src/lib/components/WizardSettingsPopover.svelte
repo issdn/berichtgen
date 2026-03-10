@@ -35,7 +35,7 @@
 					/>
 				{/if}
 				<LabeledSwitch
-					bind:checked={berichtgenStore.contantHours}
+					bind:checked={berichtgenStore.constantHours}
 					id="constant-hours-switch"
 					label="Feste Arbeitsstunden"
 					description="Pro Woche werden 40 Stunden angenommen."

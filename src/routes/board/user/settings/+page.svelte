@@ -34,7 +34,7 @@
 </script>
 
 <svelte:head>
-	<title>Einstellungen | ***REMOVED***</title>
+	<title>Einstellungen</title>
 </svelte:head>
 
 <div class="flex flex-row justify-center h-full">

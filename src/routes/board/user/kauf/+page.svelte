@@ -16,14 +16,15 @@
 	import { Label } from '$src/lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
-	import { ***REMOVED***ErrorType, PaymentStatus } from '$src/lib/enums';
+	import { ***REMOVED***ErrorType } from '$src/lib/enums';
 	import Checkbox from '$src/lib/components/ui/checkbox/checkbox.svelte';
 	import { ***REMOVED***Error } from '$src/lib/errors.js';
 	import { LOCALE } from '$src/lib/constants.js';
+	import { resolve } from '$app/paths';
 
 	const { data } = $props();
 
-	const { supabase, user } = data;
+	const { supabase, user } = $derived(data);
 
 	const quantityBadges = [1, 2, 3, 5, 10];
 
@@ -97,7 +98,7 @@
 			toast.error(message);
 			error = message;
 		} else {
-			goto(`/board?payment=${PaymentStatus.SUCCESS}`, {
+			goto(resolve(`/board`), {
 				replaceState: true
 			});
 		}
@@ -111,15 +112,15 @@
 </script>
 
 <svelte:head>
-	<title>Tokens kaufen | ***REMOVED***</title>
+	<title>Tokens kaufen</title>
 </svelte:head>
 
 <div class="h-main flex w-full flex-col justify-center p-8">
 	<div class="flex w-full flex-col items-center gap-x-8 gap-y-8 lg:flex-row lg:justify-around">
-		<div class="flex h-full w-full max-w-[600px] flex-col gap-y-4">
+		<div class="flex h-full w-full max-w-150 flex-col gap-y-4">
 			<div class="flex w-full flex-row items-center justify-end gap-x-2">
 				<div class="flex flex-row flex-wrap gap-x-2">
-					{#each quantityBadges as q}
+					{#each quantityBadges as q, i (i)}
 						<Badge
 							variant="secondary"
 							class="text-md flex h-8 w-12 cursor-pointer flex-row justify-center"
@@ -148,7 +149,7 @@
 					/>
 				</div>
 			</div>
-			<Card.Root class="flex min-h-[460px] flex-col">
+			<Card.Root class="flex min-h-115 flex-col">
 				<Card.Header>
 					<Card.Title>{quantity} Mio. Tokens - {quantity * 4.0}€</Card.Title>
 					<Card.Description>Inkl. Steuer</Card.Description>
@@ -182,7 +183,7 @@
 				</Card.Content>
 			</Card.Root>
 		</div>
-		<div class="flex w-full max-w-[600px] flex-col justify-center">
+		<div class="flex w-full max-w-150 flex-col justify-center">
 			{#if clientSecret}
 				<Elements locale="de" {stripe} {clientSecret} theme="night" labels="floating" bind:elements>
 					<form on:submit|preventDefault={submit}>
