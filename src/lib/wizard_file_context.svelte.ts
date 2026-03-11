@@ -9,6 +9,8 @@ export class WizardFileContext {
 
 	finished: ResultEntry[] | null = null;
 
+	tokensUsed: number | undefined = undefined;
+
 	dateRanges: DateRangeSchema | null = $state(null);
 
 	value: number = $state(0);

@@ -12,14 +12,18 @@
 	} from '@lucide/svelte';
 	import { WizardStep } from '$lib/enums';
 	import TimeSpreadDialog from '$lib/components/TimeSpreadDialog.svelte';
-	import { wizardScheduler, type WizardScheduler } from '$lib/wizard_scheduler.svelte';
+	import { type WizardScheduler } from '$lib/wizard_scheduler.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import type { UserBoardContext } from '$src/lib/types';
+	import { getContext, onDestroy } from 'svelte';
 
 	const { context, machine, id }: ReturnType<WizardScheduler['createProcessStateMachine']> =
 		$props();
+
+		let { setTokenCount } = getContext<UserBoardContext>('board')();
 
 	function statusFromStep(step: WizardStep) {
 		switch (step) {
@@ -43,6 +47,12 @@
 	}
 
 	let { icon: Icon, label } = $derived.by(() => statusFromStep($machine));
+
+	onDestroy(() => {
+		if (context.tokensUsed !== undefined) {
+			setTokenCount(context.tokensUsed);
+		}
+	});
 </script>
 
 <div class="bg-muted flex flex-col gap-y-4 rounded-md p-4">

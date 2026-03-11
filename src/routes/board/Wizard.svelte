@@ -13,7 +13,7 @@
 	import { handleDOCXDownload } from '$src/lib/utils/write_docx';
 	import { handleJSONDownload } from '$src/lib/utils/write_json';
 	import WizardSettingsPopover from '$src/lib/components/WizardSettingsPopover.svelte';
-	import type { UserContext, WizardProcessStateMachine } from '$src/lib/types';
+	import type { UserBoardContext, UserContext, WizardProcessStateMachine } from '$src/lib/types';
 	import { toast } from 'svelte-sonner';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
@@ -38,11 +38,9 @@
 		}
 	});
 
-	let getUser = getContext<UserContext>('user');
-	let getBoard = getContext<() => { userMetadata: { fullName: string | null; ausbildungsberuf: string | null; abteilung: string | null } | null }>('board');
-
-	let { supabase } = $derived(getUser());
-	let { userMetadata } = $derived(getBoard());
+	let { supabase } = $derived(getContext<UserContext>('user')());
+		
+	let { userMetadata } = $derived(getContext<UserBoardContext>('board')());
 
 	let dialogOpen = $state(false);
 

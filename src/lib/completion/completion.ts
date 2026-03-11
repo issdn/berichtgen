@@ -1,14 +1,15 @@
-import { type Entry } from '$lib/types';
+import { type CompletionResult, type Entry } from '$lib/types';
 import { ***REMOVED***Error } from '$src/lib/errors';
 import { completionSchema } from '$src/lib/schemas';
 import { ResultAsync } from 'neverthrow';
-import { ***REMOVED***ErrorType, type Ort } from '$src/lib/enums';
+import { type Ort } from '$src/lib/enums';
 
 // Hardcoded max tokens - should match the server's configuration
 const MAX_TOKENS = 60000;
 
 export function getCompletions(text: string, ort: Ort) {
 	const messages = splitByMaxLength(text, MAX_TOKENS);
+
 	const completionsPromises = messages.map(async (t) => {
 		const result = await fetch('/board/user/completion', {
 			body: JSON.stringify({
@@ -21,28 +22,36 @@ export function getCompletions(text: string, ort: Ort) {
 		const data = await result.json();
 
 		if (result.status >= 400)
-			throw new ***REMOVED***Error(***REMOVED***ErrorType.INVALID_JSON_FROM_AI, data.message);
-		const parsed = completionSchema.safeParse(data);
+			throw new ***REMOVED***Error('INVALID_JSON_FROM_AI', data.message);
+
+		const parsed = completionSchema.safeParse(data.completion);
 		if (!parsed.success) {
 			throw new ***REMOVED***Error(
-				***REMOVED***ErrorType.INVALID_JSON_FROM_AI,
+				'INVALID_JSON_FROM_AI',
 				'KI hat unguiltige JSON-Antwort geliefert'
 			);
 		}
-		return parsed.data;
+
+		return { completion: parsed.data, tokensUsed: data.tokensUsed as number };
 	});
 
 	const allCompletionsResult = ResultAsync.fromPromise(Promise.all(completionsPromises), (e) =>
 		***REMOVED***Error.fromUnknown(
 			e,
 			'Fehler beim Abrufen der Vervollständigung',
-			***REMOVED***ErrorType.INVALID_JSON_FROM_AI
+			'INVALID_JSON_FROM_AI'
 		)
 	);
 
-	return allCompletionsResult.map((completions) =>
-		completions.reduce((prev, next) => [...prev, ...next.lessons], [] as Entry[])
-	);
+	return allCompletionsResult.map((results): CompletionResult => {
+		const entries = results.reduce(
+			(prev, next) => [...prev, ...next.completion.lessons],
+			[] as Entry[]
+		);
+		// Use the last token count (all should be the same after each deduction)
+		const tokensUsed = results.at(-1)?.tokensUsed ?? 0;
+		return { entries, tokensUsed };
+	});
 }
 
 function splitByMaxLength(text: string, maxLength: number) {

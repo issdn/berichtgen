@@ -2,7 +2,7 @@ import { DOCXParser } from '$lib/parse/docx_parser';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import { PDFParser } from '$lib/parse/pdf_parser';
 import type { Entry, ResultEntry, WizardProcessStateMachine } from '$lib/types';
-import { FileTypes, ***REMOVED***ErrorType, WizardStep } from '$lib/enums';
+import { FileTypes, WizardStep } from '$lib/enums';
 import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 import fsm from 'svelte-fsm';
 import type { Scheduler } from 'tesseract.js';
@@ -24,7 +24,7 @@ function parseByFileType(context: WizardFileContext, scheduler: Scheduler) {
 function readFile(file: File) {
 	return ResultAsync.fromPromise(
 		(async () => new Uint8Array(await file.arrayBuffer()))(),
-		() => new ***REMOVED***Error(***REMOVED***ErrorType.INVALID_FILE, 'Fehler beim Lesen der Datei')
+		() => new ***REMOVED***Error('INVALID_FILE', 'Fehler beim Lesen der Datei')
 	);
 }
 
@@ -42,14 +42,14 @@ function parseFile(
 				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des Bild Parsers',
-					***REMOVED***ErrorType.PARSE_FAILED
+					'PARSE_FAILED'
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(imgParser.parse(), (e) =>
 					***REMOVED***Error.fromUnknown(
 						e,
 						'Fehler beim Parsen des Bildes',
-						***REMOVED***ErrorType.PARSE_FAILED
+						'PARSE_FAILED'
 					)
 				)
 			);
@@ -61,7 +61,7 @@ function parseFile(
 				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des JSON Parsers',
-					***REMOVED***ErrorType.PARSE_FAILED
+					'PARSE_FAILED'
 				)
 			).andThen(() => textParser.parse());
 		}
@@ -71,7 +71,7 @@ function parseFile(
 				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des JSON Parsers',
-					***REMOVED***ErrorType.PARSE_FAILED
+					'PARSE_FAILED'
 				)
 			).andThen(() => (berichtgenStore.rewordJSON ? jsonParser.parse() : jsonParser.toSchema()));
 		}
@@ -90,14 +90,14 @@ function parseFile(
 				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des PDF Parsers',
-					***REMOVED***ErrorType.PARSE_FAILED
+					'PARSE_FAILED'
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(pdfParser.parse(), (e) =>
 					***REMOVED***Error.fromUnknown(
 						e,
 						'Fehler beim Parsen des PDF',
-						***REMOVED***ErrorType.PARSE_FAILED
+						'PARSE_FAILED'
 					)
 				)
 			);
@@ -108,21 +108,21 @@ function parseFile(
 				***REMOVED***Error.fromUnknown(
 					e,
 					'Fehler beim Initialisieren des DOCX Parsers',
-					***REMOVED***ErrorType.PARSE_FAILED
+					'PARSE_FAILED'
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(docxParser.parse(), (e) =>
 					***REMOVED***Error.fromUnknown(
 						e,
 						'Fehler beim Parsen des DOCX',
-						***REMOVED***ErrorType.PARSE_FAILED
+						'PARSE_FAILED'
 					)
 				)
 			);
 		}
 		default:
 			return err(
-				new ***REMOVED***Error(***REMOVED***ErrorType.INVALID_FILE, 'Dateityp nicht unterstützt.')
+				new ***REMOVED***Error('INVALID_FILE', 'Dateityp nicht unterstützt.')
 			);
 	}
 }
@@ -186,8 +186,9 @@ export function createStateMachineForContext(
 					return;
 				}
 				getCompletions(context.snapshot as string, context.dateRanges.ort).match(
-					(value) => {
-						context.snapshot = value;
+					({ entries, tokensUsed }) => {
+						context.snapshot = entries;
+						context.tokensUsed = tokensUsed;
 						this.next();
 					},
 					(error) => {
@@ -213,7 +214,7 @@ export function createStateMachineForContext(
 						***REMOVED***Error.fromUnknown(
 							e,
 							'Fehler beim Umformulieren der Einträge',
-							***REMOVED***ErrorType.SPREAD_FAILED
+							'SPREAD_FAILED'
 						)
 				);
 				throwableSpreadEntries().match(

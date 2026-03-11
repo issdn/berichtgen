@@ -5,7 +5,7 @@ import { type ResultEntry } from '$src/lib/types';
 import type { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 import { err, ok } from 'neverthrow';
 import type { Scheduler } from 'tesseract.js';
-import { ***REMOVED***ErrorType } from '$src/lib/enums';
+
 
 export class JSONParser extends TXTParser {
 	constructor(context: WizardFileContext, scheduler: Scheduler) {
@@ -21,14 +21,14 @@ export class JSONParser extends TXTParser {
 			}
 			return err(
 				new ***REMOVED***Error(
-					***REMOVED***ErrorType.PARSE_FAILED,
+					'PARSE_FAILED',
 					`Fehler beim Parsen des JSON: ${error.issues[0].message}`
 				)
 			);
 		} catch {
 			return err(
 				new ***REMOVED***Error(
-					***REMOVED***ErrorType.PARSE_FAILED,
+					'PARSE_FAILED',
 					'Fehler beim Parsen des JSON: Ungültiges JSON-Format'
 				)
 			);

@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import { XMLParser } from 'fast-xml-parser';
 import type { ImageLike, Scheduler } from 'tesseract.js';
-import { ***REMOVED***ErrorType } from '$lib/enums';
+
 import type { WizardFileContext } from '$lib/wizard_file_context.svelte';
 import { Parser } from './parser';
 import { ***REMOVED***Error } from '$src/lib/errors';
@@ -59,7 +59,7 @@ export class DOCXParser extends Parser {
 	async parse() {
 		if (this.data === null)
 			throw new ***REMOVED***Error(
-				***REMOVED***ErrorType.DEVELOPERS_FAULT,
+				'DEVELOPERS_FAULT',
 				'FileWizard wurde nicht initialisiert.'
 			);
 		const result = [];
@@ -82,7 +82,7 @@ export class DOCXParser extends Parser {
 			const rel = this.data!.imgRels.get(textOrId[0]);
 			if (rel === undefined) {
 				throw new ***REMOVED***Error(
-					***REMOVED***ErrorType.DOCX_FAULTY,
+					'DOCX_FAULTY',
 					'DOCX Fotoreferenz könnte nicht gefunden werden.'
 				);
 			}
@@ -90,7 +90,7 @@ export class DOCXParser extends Parser {
 			const fileData = this.data!.images.get(rel);
 			if (fileData === undefined) {
 				throw new ***REMOVED***Error(
-					***REMOVED***ErrorType.DOCX_FAULTY,
+					'DOCX_FAULTY',
 					'DOCX Foto könnte nicht gefunden werden.'
 				);
 			}

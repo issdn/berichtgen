@@ -1,13 +1,19 @@
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
-import { CommonServerErrorTypes, CompletionExceptionType, Ort } from '$lib/enums';
+import { Ort } from '$lib/enums';
+import {
+	ECommonServerError,
+	ECompletionException,
+	EGenAIError,
+	errorByHttpCode,
+	throwSvelteError
+} from '$lib/errors';
 // import OpenAI from 'openai';
 import * as genai from '@google/genai';
 import { err, ok, ResultAsync } from 'neverthrow';
-import { CompletionException } from '$src/lib/errors';
 import { countTokens } from '$src/lib/utils/token_counter';
 import * as Sentry from '@sentry/sveltekit';
-import { error as errorJson } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getContextPrompt } from '$src/lib/completion/prompt';
 import { completionApiSchema, completionSchema } from '$src/lib/schemas';
@@ -23,35 +29,28 @@ async function deductUserTokens(supabase: SupabaseClient, userId: string, text: 
 		user_id: userId,
 		amount
 	});
+
 	if (error) {
 		Sentry.captureException(error, {
 			extra: { user_id: userId, amount }
 		});
-		return err(
-			new CompletionException('Interner Datenbank Fehler.', CompletionExceptionType.INTERNAL)
-		);
+		return err(ECompletionException.INTERNAL);
 	}
+
 	if (!data) {
-		return err(
-			new CompletionException('Nicht genug Tokens', CompletionExceptionType.NOT_ENOUGH_TOKENS)
-		);
+		return err(ECompletionException.NOT_ENOUGH_TOKENS);
 	}
-	return ok(data);
+
+	return ok(amount);
 }
 
 export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	if (!user) {
-		return errorJson(401, {
-			type: CommonServerErrorTypes.UNAUTHORIZED,
-			message: 'Nicht autorisiert'
-		});
+		return throwSvelteError(ECommonServerError.UNAUTHORIZED);
 	}
 
 	if (!apiKey) {
-		return errorJson(500, {
-			type: CompletionExceptionType.INVALID_TOKEN,
-			message: 'API key not configured'
-		});
+		return throwSvelteError(ECompletionException.INTERNAL);
 	}
 
 	const body = await request.json();
@@ -59,10 +58,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	const parsed = completionApiSchema.safeParse(body);
 
 	if (!parsed.success) {
-		return errorJson(400, {
-			type: CommonServerErrorTypes.VALIDATION_ERROR,
-			message: parsed.error.message
-		});
+		return throwSvelteError(ECommonServerError.VALIDATION_ERROR);
 	}
 
 	const { text, ort } = parsed.data;
@@ -70,27 +66,33 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	const tokensDeducted = await deductUserTokens(supabaseAdmin, user!.id!, text);
 
 	if (tokensDeducted.isErr()) {
-		return tokensDeducted.error.toResponse();
+		return throwSvelteError(tokensDeducted.error);
 	}
 
-	const response = ResultAsync.fromPromise(getGeminiCompletion(text, apiKey, ort), (e) =>
-		CompletionException.fromUnknown(e)
+	const result = await ResultAsync.fromPromise(getGeminiCompletion(text, apiKey, ort), (e) =>
+		e instanceof genai.ApiError
+			? (errorByHttpCode(EGenAIError, e.status) ?? ECompletionException.UNKNOWN_THIRD_PARTY_ERROR)
+			: ECompletionException.UNKNOWN_THIRD_PARTY_ERROR
 	);
 
-	const result = await response.mapErr((e) => e.toResponse());
 	if (result.isErr()) {
-		return result.error;
+		return throwSvelteError(result.error);
 	}
+
 	const completion = result.value;
 	if (completion === undefined || completion === null) {
-		return errorJson(500, {
-			type: CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR,
-			message: 'Die API hat nichts zurückgegeben.'
-		});
+		return throwSvelteError(ECompletionException.UNKNOWN_THIRD_PARTY_ERROR);
 	}
 	// Deduct tokens for output
-	await deductUserTokens(supabaseAdmin, user!.id!, completion);
-	return new Response(completion);
+	const outputDeduction = await deductUserTokens(supabaseAdmin, user!.id!, completion);
+	if (outputDeduction.isErr()) {
+		return throwSvelteError(outputDeduction.error);
+	}
+
+	return json({
+		completion,
+		tokensUsed: outputDeduction.value
+	});
 };
 
 async function getGeminiCompletion(

@@ -1,53 +1,42 @@
-import {
-	CompletionExceptionType,
-	GenAIErrorCode,
-	***REMOVED***ErrorType,
-	OpenaAIErrorCode
-} from '$src/lib/enums';
-import * as genai from '@google/genai';
-import { error } from '@sveltejs/kit';
-import OpenAI from 'openai';
 import { ZodError } from 'zod';
+import { error } from '@sveltejs/kit';
 
-export class CompletionException extends Error {
-	constructor(
-		message: string,
-		public type: CompletionExceptionType
-	) {
-		super(message);
-	}
+type OmitErrorField<T extends EnumError, F extends keyof T[keyof T]> = {
+	[K in keyof T]: Omit<T[K], F>;
+};
 
-	public toResponse() {
-		return error(500, { type: this.type, message: this.message });
-	}
+type EnumError = { [key: string]: { code: string; httpCode: number; message: string } };
 
-	static fromUnknown(error: unknown) {
-		if (error instanceof genai.ApiError) {
-			const code = genAIErrorCodeToCompletionExceptionType(error.status);
-			const message = errorCodeToMessage(code);
-			return new CompletionException(message, code);
-		} else if (error instanceof OpenAI.APIError) {
-			const code = openAIErrorCodeToCompletionExceptionType(error.status ?? 0);
-			const message = errorCodeToMessage(code);
-			return new CompletionException(message, code);
-		} else if (error instanceof Error) {
-			return new CompletionException(
-				errorCodeToMessage(CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR),
-				CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR
-			);
-		} else {
-			return new CompletionException(
-				'Ein unbekannter Fehler ist aufgetreten.',
-				CompletionExceptionType.INTERNAL
-			);
-		}
-	}
+export function throwSvelteError(e: APIError[keyof APIError]) {
+	return error(e.httpCode, { message: e.message, code: e.code });
 }
 
-export class ***REMOVED***Error extends Error {
-	public type: ***REMOVED***ErrorType;
+export type ErrorBody<T extends EnumError> = T[keyof T];
 
-	constructor(type: ***REMOVED***ErrorType, message: string) {
+function buildError<T extends OmitErrorField<EnumError, 'code'>>(error: T) {
+	return Object.freeze(
+		Object.fromEntries(Object.entries(error).map(([key, val]) => [key, { ...val, code: key }]))
+	) as unknown as { [K in keyof T]: { message: string; code: K; httpCode: T[K]['httpCode'] } };
+}
+
+export function errorByHttpCode<T extends EnumError>(
+	error: T,
+	httpCode: number
+): T[keyof T] | null {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const entry = Object.entries(error).find(([_, val]) => val.httpCode === httpCode);
+	return entry ? (entry[1] as T[keyof T]) : null;
+}
+
+export type APIError = typeof ECommonServerError &
+	typeof ECompletionException &
+	typeof E***REMOVED***Error &
+	typeof EGenAIError;
+
+export class ***REMOVED***Error extends Error {
+	public type: keyof typeof E***REMOVED***Error;
+
+	constructor(type: keyof typeof E***REMOVED***Error, message: string) {
 		super(message);
 		this.type = type;
 	}
@@ -55,10 +44,10 @@ export class ***REMOVED***Error extends Error {
 	static fromUnknown(
 		e: unknown,
 		message: string,
-		type: ***REMOVED***ErrorType = ***REMOVED***ErrorType.DEVELOPERS_FAULT
+		type: keyof typeof E***REMOVED***Error = 'DEVELOPERS_FAULT'
 	) {
 		if (e instanceof ZodError) {
-			return new ***REMOVED***Error(type, `Validierungsfehler: ${e.errors[0].message}`);
+			return new ***REMOVED***Error(type, e.message);
 		} else if (e instanceof Error) {
 			return new ***REMOVED***Error(type, e.message);
 		}
@@ -66,45 +55,79 @@ export class ***REMOVED***Error extends Error {
 	}
 }
 
-function errorCodeToMessage(code: CompletionExceptionType) {
-	switch (code) {
-		case CompletionExceptionType.INVALID_TOKEN:
-			return 'Dein API-Key ist falsch.';
-		case CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR:
-			return 'Ein unbekannter Fehler beim LLM-Anbieter ist aufgetreten.';
-		case CompletionExceptionType.INTERNAL:
-			return 'Ein interner Serverfehler beim LLM-Anbieter ist aufgetreten.';
-		case CompletionExceptionType.TOO_MANY_REQUESTS:
-			return 'Sie sind nicht autorisiert, diese Anfrage zu stellen. Bitte überprüfen Sie Ihre Berechtigungen.';
-		case CompletionExceptionType.TOKEN_EXPIRED:
-			return 'Dein API-Key ist abgelaufen.';
-		default:
-			return 'Ein unbekannter Fehler beim LLM-Anbieter ist aufgetreten.';
-	}
-}
+export const ECommonServerError = buildError({
+	DATABASE_ERROR: { httpCode: 500, message: 'Datenbankfehler.' },
+	UNAUTHORIZED: { httpCode: 401, message: 'Nicht autorisiert.' },
+	VALIDATION_ERROR: { httpCode: 400, message: 'Validierungsfehler.' },
+	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' }
+} as const);
 
-function openAIErrorCodeToCompletionExceptionType(code: number) {
-	switch (code) {
-		case OpenaAIErrorCode.BadRequestError:
-			return CompletionExceptionType.INVALID_TOKEN;
-		case OpenaAIErrorCode.PermissionDeniedError:
-			return CompletionExceptionType.INVALID_TOKEN;
-		case OpenaAIErrorCode.RateLimitError:
-			return CompletionExceptionType.TOO_MANY_REQUESTS;
-		default:
-			return CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR;
-	}
-}
+export const E***REMOVED***Error = buildError({
+	INVALID_FILE: { httpCode: 400, message: 'Ungültige Datei.' },
+	FORMAT_NOT_SUPPORTED: { httpCode: 400, message: 'Format nicht unterstützt.' },
+	COMPLETION_FAILED: { httpCode: 500, message: 'Vervollständigung fehlgeschlagen.' },
+	PARSE_FAILED: { httpCode: 400, message: 'Parsing fehlgeschlagen.' },
+	SPREAD_FAILED: { httpCode: 500, message: 'Zeitverteilung fehlgeschlagen.' },
+	DEVELOPERS_FAULT: { httpCode: 500, message: 'Fehler des Entwicklers.' },
+	DOCX_FAULTY: { httpCode: 400, message: 'DOCX-Datei fehlerhaft.' },
+	INVALID_JSON_FROM_AI: { httpCode: 500, message: 'Ungültige JSON-Antwort von der KI.' },
+	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' }
+} as const);
 
-function genAIErrorCodeToCompletionExceptionType(code: number) {
-	switch (code) {
-		case GenAIErrorCode.INVALID_ARGUMENT:
-			return CompletionExceptionType.INVALID_TOKEN;
-		case GenAIErrorCode.PERMISSION_DENIED:
-			return CompletionExceptionType.TOKEN_EXPIRED;
-		case GenAIErrorCode.RESOURCE_EXHAUSTED:
-			return CompletionExceptionType.TOO_MANY_REQUESTS;
-		default:
-			return CompletionExceptionType.UNKNOWN_THIRD_PARTY_ERROR;
-	}
-}
+export const EOpenAIError = buildError({
+	BAD_REQUEST: { httpCode: 400, message: 'Ungültige Anfrage.' },
+	AUTHENTICATION: { httpCode: 401, message: 'Authentifizierungsfehler.' },
+	PERMISSION_DENIED: { httpCode: 403, message: 'Zugriff verweigert.' },
+	NOT_FOUND: { httpCode: 404, message: 'Nicht gefunden.' },
+	UNPROCESSABLE_ENTITY: { httpCode: 422, message: 'Unverarbeitbare Entität.' },
+	RATE_LIMIT: { httpCode: 429, message: 'Zu viele Anfragen.' },
+	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' }
+} as const);
+
+export const EGenAIError = buildError({
+	// The request body is malformed. There is a typo, or a missing required field in your request.
+	INVALID_ARGUMENT: { httpCode: 400, message: 'Ungültiges Argument.' },
+
+	// Your API key doesn't have the required permissions.
+	PERMISSION_DENIED: { httpCode: 403, message: 'Zugriff verweigert.' },
+
+	// The requested resource wasn't found.
+	NOT_FOUND: { httpCode: 404, message: 'Nicht gefunden.' },
+
+	// You've exceeded the rate limit.
+	RESOURCE_EXHAUSTED: { httpCode: 429, message: 'Ratenlimit überschritten.' },
+
+	// An unexpected error occurred on Google's side.
+	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' },
+
+	// The service may be temporarily overloaded or down.
+	UNAVAILABLE: { httpCode: 503, message: 'Dienst nicht verfügbar.' },
+
+	// The service is unable to finish processing within the deadline.
+	DEADLINE_EXCEEDED: { httpCode: 504, message: 'Zeitlimit überschritten.' }
+} as const);
+
+export const ECompletionException = buildError({
+	NOT_ENOUGH_TOKENS: { httpCode: 402, message: 'Nicht genug Tokens.' },
+	UNKNOWN_THIRD_PARTY_ERROR: {
+		httpCode: 404,
+		message: 'Ein unbekannter Fehler beim LLM-Anbieter ist aufgetreten.'
+	},
+	TOO_MANY_REQUESTS: { httpCode: 429, message: 'Zu viele Anfragen.' },
+	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' }
+} as const);
+
+// function openAIErrorCodeToCompletionExceptionType(
+// 	code: number
+// ): keyof typeof CompletionExceptionType {
+// 	switch (code) {
+// 		case EOpenAIError.BAD_REQUEST.code:
+// 			return 'INVALID_TOKEN';
+// 		case EOpenAIError.PERMISSION_DENIED.code:
+// 			return 'INVALID_TOKEN';
+// 		case EOpenAIError.RATE_LIMIT.code:
+// 			return 'TOO_MANY_REQUESTS';
+// 		default:
+// 			return 'UNKNOWN_THIRD_PARTY_ERROR';
+// 	}
+// }

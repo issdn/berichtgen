@@ -1,21 +1,20 @@
 <script lang="ts">
 	import { type UserContext } from '$src/lib/types.js';
 	import { getContext, setContext } from 'svelte';
-	import { onMount } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import * as Sentry from '@sentry/sveltekit';
-	import type { RealtimeChannel } from '@supabase/supabase-js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import { browser } from '$app/environment';
 	import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
-	import { checkPreferredTemplate } from '$src/lib/utils/template_utils.js';
 
 	let { data, children } = $props();
 
-	let { supabase, tokenCount, user, userMetadata } = $derived(data);
+	let { tokenCount, userMetadata } = $derived(data);
 
-	setContext('board', () => ({ tokenCount, userMetadata }));
+	function setTokenCount(count: number) {
+		tokenCount = count;
+	}
+
+	setContext('board', () => ({ tokenCount, setTokenCount, userMetadata }));
 
 	let getUser = getContext<UserContext>('user');
 
@@ -30,39 +29,6 @@
 		berichtgenStore.preferedTemplatePath = JSON.parse(
 			localStorage.getItem('preferedTemplatePath') ?? 'null'
 		);
-	});
-
-	onMount(() => {
-		checkPreferredTemplate(supabase);
-		
-		let channel: RealtimeChannel | null = null;
-
-		if (user) {
-			channel = supabase
-				.channel('token-update')
-				.on(
-					'postgres_changes',
-					{ event: 'UPDATE', table: 'userTokenCount', schema: 'public', filter: `userId=eq.${user.id}` },
-					(p) => {
-						tokenCount = p.new.tokens;
-						if (tokenCount != null && p.new.tokens > tokenCount!) {
-							toast.success(`Neue Tokens hinzugefügt!`);
-						}
-					}
-				)
-				.subscribe((_, e) => {
-					if (e) {
-						Sentry.captureException(e);
-						toast.error(
-							'Fehler beim Abonnieren des Token-Channels. Token-Count wird nicht aktualisiert.'
-						);
-					}
-				});
-		}
-
-		return () => {
-			channel?.unsubscribe();
-		};
 	});
 
 	const queryClient = new QueryClient({ defaultOptions: { queries: { enabled: browser } } });

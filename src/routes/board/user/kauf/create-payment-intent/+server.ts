@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { SECRET_STRIPE_KEY } from '$env/static/private';
 import { error, json } from '@sveltejs/kit';
 import * as Sentry from '@sentry/node';
-import { CommonServerErrorTypes } from '$src/lib/enums';
+import { CommonServerError } from '$src/lib/errors';
 import { supabaseAdmin } from '$src/lib/server/admin';
 // initialize Stripe
 const stripe = new Stripe(SECRET_STRIPE_KEY);
@@ -12,14 +12,14 @@ export async function POST({ locals: { safeGetSession }, url }) {
 	const userId = (await safeGetSession())?.user?.id;
 
 	if (!userId) {
-		return error(401, { type: CommonServerErrorTypes.UNAUTHORIZED, message: 'Nicht autorisiert' });
+		return error(401, { type: CommonServerError.UNAUTHORIZED.code, message: CommonServerError.UNAUTHORIZED.message });
 	}
 
 	const quantity = parseInt(url.searchParams.get('quantity') || '1');
 
 	if (isNaN(quantity) || quantity <= 0 || quantity > 90) {
 		return error(400, {
-			type: CommonServerErrorTypes.VALIDATION_ERROR,
+			type: CommonServerError.VALIDATION_ERROR.code,
 			message: 'Die Menge muss zwischen 1 und 90 liegen'
 		});
 	}
@@ -67,7 +67,7 @@ export async function POST({ locals: { safeGetSession }, url }) {
 			errorMessage = err.message;
 		}
 		return error(500, {
-			type: CommonServerErrorTypes.STRIPE_ERROR,
+			type: CommonServerError.STRIPE_ERROR.code,
 			message: errorMessage
 		});
 	}

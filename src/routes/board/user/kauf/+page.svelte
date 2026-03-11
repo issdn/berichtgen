@@ -16,7 +16,7 @@
 	import { Label } from '$src/lib/components/ui/label';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Separator from '$src/lib/components/ui/separator/separator.svelte';
-	import { ***REMOVED***ErrorType } from '$src/lib/enums';
+	import { ***REMOVED***Error } from '$src/lib/errors';
 	import Checkbox from '$src/lib/components/ui/checkbox/checkbox.svelte';
 	import { ***REMOVED***Error } from '$src/lib/errors.js';
 	import { LOCALE } from '$src/lib/constants.js';
@@ -65,7 +65,7 @@
 			});
 			const body = await response.json();
 			if (!response.ok) {
-				throw new ***REMOVED***Error(***REMOVED***ErrorType.STRIPE_ERROR, body.message);
+				throw new ***REMOVED***Error('STRIPE_ERROR', body.message);
 			}
 			loadingIntent = false;
 			clientSecret = body.clientSecret;
@@ -99,7 +99,8 @@
 			error = message;
 		} else {
 			goto(resolve(`/board`), {
-				replaceState: true
+				replaceState: true,
+				invalidateAll: true,
 			});
 		}
 	}

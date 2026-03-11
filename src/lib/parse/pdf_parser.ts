@@ -1,4 +1,4 @@
-import { ***REMOVED***ErrorType } from '$lib/enums';
+
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api.js';
 import type { Scheduler } from 'tesseract.js';
@@ -32,7 +32,7 @@ export class PDFParser extends Parser {
 	) {
 		if (context == null || getNewCanvas == null) {
 			throw new ***REMOVED***Error(
-				***REMOVED***ErrorType.DEVELOPERS_FAULT,
+				'DEVELOPERS_FAULT',
 				'To use text from image extraction you have to pass getNewCanvas.'
 			);
 		}
@@ -67,7 +67,7 @@ export class PDFParser extends Parser {
 	async parse() {
 		if (this.data === null)
 			throw new ***REMOVED***Error(
-				***REMOVED***ErrorType.DEVELOPERS_FAULT,
+				'DEVELOPERS_FAULT',
 				'FileWizard wurde nicht initialisiert.'
 			);
 		const result = [];
