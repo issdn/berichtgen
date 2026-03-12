@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "svelte": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@sveltejs/mcp"
+      ],
+      "env": {}
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "stripe": {
+      "type": "http",
+      "url": "https://mcp.stripe.com"
+    },
+    "claude-context": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@zilliz/claude-context-mcp@latest"
+      ],
+      "env": {
+        "OPENAI_API_KEY": "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",
+        "MILVUS_TOKEN": "79065170d227dd3116a859c539fbfbcb5e6f8df0c810891de7763793436980fdbcb1995e0ebb1e6734d75c837430040e9608a217"
+      }
+    }
+  }
+}
