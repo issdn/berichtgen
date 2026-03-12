@@ -80,6 +80,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <button
 	id="dropzone"
+	data-testid="dropzone"
 	class={`text-border hover:border-primary hover:text-primary flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed text-sm transition-colors duration-300 ${isDraggingIn ? 'border-primary text-primary' : 'text-border hover:border-primary hover:text-primary'}`}
 	onclick={() => input?.click()}
 	ondragenter={handleDragEnter}
@@ -90,6 +91,7 @@
 	{disabled}
 >
 	<input
+		data-testid="dropzone-input"
 		accept=".docx,.pdf,.json,.txt,.csv,.png,.jpg,.jpeg"
 		bind:this={input}
 		type="file"

@@ -57,7 +57,7 @@
 		if (isOpen === false) onClose();
 	}}
 >
-	<Dialog.Trigger
+	<Dialog.Trigger data-testid="time-spread-trigger"
 		><Button class="animate-breathing-shadow" variant="default"><Calendar /></Button
 		></Dialog.Trigger
 	>

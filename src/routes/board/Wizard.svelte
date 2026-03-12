@@ -61,27 +61,27 @@
 	}
 </script>
 
-<div class="relative flex h-full w-full flex-col overflow-hidden rounded-lg border-4">
-	<div class="bg-muted flex flex-row flex-wrap items-center justify-between gap-x-4 p-4">
+<div data-testid="wizard-container" class="relative flex h-full w-full flex-col overflow-hidden rounded-lg border-4">
+	<div data-testid="wizard-header" class="bg-muted flex flex-row flex-wrap items-center justify-between gap-x-4 p-4">
 		<div class="flex flex-row items-center gap-x-4">
 			<WizardSettingsPopover />
 		</div>
 		{#if result !== null}
 			<Dialog.Root bind:open={dialogOpen}>
-				<Dialog.Trigger class={buttonVariants({ variant: 'default' })}
+				<Dialog.Trigger data-testid="wizard-completion-button" class={buttonVariants({ variant: 'default' })}
 					><FileCheck2 /></Dialog.Trigger
 				>
 				<Dialog.Content {children} {childrenBehind} class="max-w-min" />
 			</Dialog.Root>
 		{:else}
-			<Button disabled={true}><FileCheck2 /></Button>
+			<Button data-testid="wizard-completion-button" disabled={true}><FileCheck2 /></Button>
 		{/if}
 	</div>
-	<div class="h-full overflow-x-hidden overflow-y-auto">
+	<div data-testid="wizard-content" class="h-full overflow-x-hidden overflow-y-auto">
 		<div class="relative p-4 h-full">
 			{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 				{#await wizardScheduler.processInit}
-					<div class="center-absolute"><Spinner /></div>
+					<div data-testid="wizard-loading" class="center-absolute"><Spinner /></div>
 				{:then}
 					{@const items = wizardScheduler.schedule.flat()}
 					<div
@@ -98,7 +98,7 @@
 					</div>
 				{/await}
 			{:else}
-				<FileClock class="center-absolute text-muted size-12"/>
+				<FileClock data-testid="wizard-empty-state" class="center-absolute text-muted size-12"/>
 			{/if}
 		</div>
 	</div>

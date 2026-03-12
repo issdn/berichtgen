@@ -19,6 +19,7 @@
 </script>
 
 <Button
+	data-testid="file-download-button"
 	disabled={wizardScheduler.isRunning || !wizardScheduler.result}
 	onclick={() => {
 		isLoading = true;

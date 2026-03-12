@@ -15,3 +15,4 @@ In this project, we follow these conventions for writing code and documentation:
 - file names are in snake_case
 - Instead of returning Response objects, use the `json` helper from SvelteKit to return JSON responses. Also use the `error` helper and others.
 - Error and info messages must be in German and should be full sentences.
+- When testing ONLY use `getByTestId` and if put `data-testid` on elements that miss it.

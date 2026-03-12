@@ -55,9 +55,9 @@
 	});
 </script>
 
-<div class="bg-muted flex flex-col gap-y-4 rounded-md p-4">
+<div data-testid="wizard-file" class="bg-muted flex flex-col gap-y-4 rounded-md p-4">
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
-		<span class="truncate overflow-hidden">{context.file.name}</span>
+		<span data-testid="wizard-file-name" class="truncate overflow-hidden">{context.file.name}</span>
 		<div class="flex flex-row gap-x-2">
 			{#if $machine === WizardStep.WAITING}
 				<TimeSpreadDialog
@@ -106,7 +106,7 @@
 					</Tooltip.Root>
 				</Tooltip.Provider>
 			{:else}
-				<Badge variant="default" class="gap-x-2">
+				<Badge data-testid="wizard-file-status" variant="default" class="gap-x-2">
 					<Icon size={18} /><span class="text-sm font-medium">{label}</span>
 				</Badge>
 			{/if}
