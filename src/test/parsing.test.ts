@@ -6,7 +6,15 @@ import { expect, test } from 'vitest';
 import * as fs from 'node:fs';
 import { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
 
-test('Read text from docx kurwa', async () => {
+const hasDocxFixture = fs.existsSync('./src/test/text_img.docx');
+const hasPdfFixture = fs.existsSync('./src/test/text_img.pdf');
+
+// Fixture src/test/text_img.docx required — skip if missing
+const testDocx = hasDocxFixture ? test : test.skip;
+// Fixture src/test/text_img.pdf required — skip if missing
+const testPdf = hasPdfFixture ? test : test.skip;
+
+testDocx('reads plain text and OCR image text from a DOCX file', async () => {
 	const scheduler = await createScheduler();
 	scheduler.addWorker(await createWorker('eng'));
 	const file = await fs.readFileSync('./src/test/text_img.docx');
@@ -18,7 +26,7 @@ test('Read text from docx kurwa', async () => {
 	expect(response.join('\n')).toBe(['NORMAL TEXT', 'IMAGE TEXT\n'].join('\n'));
 });
 
-test('Read text from pdf kurwa', async () => {
+testPdf('reads OCR image text from a PDF file', async () => {
 	const scheduler = await createScheduler();
 	scheduler.addWorker(await createWorker('eng'));
 	const file = await fs.readFileSync('./src/test/text_img.pdf');

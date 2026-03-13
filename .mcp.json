@@ -18,6 +18,13 @@
     "stripe": {
       "type": "http",
       "url": "https://mcp.stripe.com"
+    },
+    "ESLint": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@eslint/mcp@latest"
+      ]
     }
   }
 }

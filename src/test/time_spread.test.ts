@@ -231,7 +231,7 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
 
-test('Spread multiple entries across multiple week ranges.', () => {
+test('spreads more entries than available weeks across multiple ranges with hours', () => {
 	const entries = [
 		{
 			qualifikationen,
