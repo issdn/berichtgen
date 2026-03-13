@@ -1,143 +1,177 @@
 /**
- * E2E Test for the Wizard Component
+ * E2E Tests for Wizard UI and File Processing Pipeline
  *
- * Uses data-testid attributes for reliable element selection.
+ * Tests the real pipeline: file drop → state machine transitions → DONE state.
+ * Uses setInputFiles() on the hidden file input to trigger the actual handler
+ * rather than mocking state directly.
+ *
+ * JSON files are the simplest test case: they bypass AI completion and
+ * TimeSpreadDialog entirely (shouldSkip = true), going directly to DONE.
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const VALID_JSON_ENTRY = [
+	{
+		qualifikationen: ['Programmieren von Softwarelösungen'],
+		text: 'Entwicklung von React Komponenten.',
+		datum: '2024-01-15',
+		ort: 'BETRIEB',
+		hours: 8
+	}
+];
 
-/**
- * Setup API mocks
- */
-async function setupMocks(page: Page) {
-	await page.route('/board/user/completion', async (route) => {
-		await route.fulfill({
-			status: 200,
-			contentType: 'application/json',
-			body: JSON.stringify({
-				completion: {
-					lessons: [
-						{
-							qualifikationen: ['Programmieren von Softwarelösungen'],
-							text: 'Entwicklung von React Komponenten und Optimierung der Codebasis.'
-						},
-						{
-							qualifikationen: ['Daten systemübergreifend bereitstellen'],
-							text: 'Erstellung und Optimierung von Datenbankabfragen sowie Dokumentation der API Endpunkte.'
-						}
-					]
-				},
-				tokensUsed: 150
-			})
-		});
+async function dropJsonFile(page: Page, content: object = VALID_JSON_ENTRY, filename = 'test.json') {
+	await page.getByTestId('dropzone-input').setInputFiles({
+		name: filename,
+		mimeType: 'application/json',
+		buffer: Buffer.from(JSON.stringify(content))
 	});
 }
 
-test('Wizard workflow: verify UI components and download functionality', async ({ page }) => {
-	// Setup mocks
-	await setupMocks(page);
+test.describe('Initial UI State', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/board');
+	});
 
-	// Navigate to board
-	await page.goto('/board');
+	test('dropzone is visible with correct placeholder text', async ({ page }) => {
+		await expect(page.getByTestId('dropzone')).toBeVisible();
+		await expect(page.getByTestId('dropzone')).toContainText('Dateien hier droppen');
+	});
 
-	// Step 1: Verify initial UI state using data-testid
-	const dropzone = page.getByTestId('dropzone');
-	await expect(dropzone).toBeVisible();
-	await expect(dropzone).toContainText('Dateien hier droppen');
+	test('empty state is shown when no files are loaded', async ({ page }) => {
+		await expect(page.getByTestId('wizard-empty-state')).toBeVisible();
+	});
 
-	// Verify empty state using data-testid
-	await expect(page.getByTestId('wizard-empty-state')).toBeVisible();
+	test('completion button is disabled before any results are ready', async ({ page }) => {
+		await expect(page.getByTestId('wizard-completion-button')).toBeDisabled();
+	});
 
-	// Step 2: Verify file input accepts correct types using data-testid
-	const fileInput = page.getByTestId('dropzone-input');
-	const acceptAttr = await fileInput.getAttribute('accept');
-	expect(acceptAttr).toContain('.json');
-	expect(acceptAttr).toContain('.txt');
-	expect(acceptAttr).toContain('.pdf');
-	expect(acceptAttr).toContain('.docx');
+	test('wizard container structure renders correctly', async ({ page }) => {
+		await expect(page.getByTestId('wizard-container')).toBeVisible();
+		await expect(page.getByTestId('wizard-header')).toBeVisible();
+		await expect(page.getByTestId('wizard-content')).toBeVisible();
+	});
 
-	// Step 3: Simulate the completed workflow state
-	await page.evaluate(() => {
-		const mockResult = [
+	test('file input accepts the expected file types', async ({ page }) => {
+		const accept = await page.getByTestId('dropzone-input').getAttribute('accept');
+		expect(accept).toContain('.json');
+		expect(accept).toContain('.txt');
+		expect(accept).toContain('.pdf');
+		expect(accept).toContain('.docx');
+	});
+});
+
+test.describe('JSON File Processing (Happy Path)', () => {
+	test('file card appears after dropping a JSON file', async ({ page }) => {
+		await page.goto('/board');
+		await dropJsonFile(page, VALID_JSON_ENTRY, 'bericht.json');
+
+		await expect(page.getByTestId('wizard-file')).toBeVisible({ timeout: 5000 });
+		await expect(page.getByTestId('wizard-file-name')).toContainText('bericht.json');
+	});
+
+	test('empty state is hidden once a file is being processed', async ({ page }) => {
+		await page.goto('/board');
+		await dropJsonFile(page);
+
+		await expect(page.getByTestId('wizard-file')).toBeVisible({ timeout: 5000 });
+		await expect(page.getByTestId('wizard-empty-state')).not.toBeVisible();
+	});
+
+	test('JSON file reaches DONE state without any user interaction', async ({ page }) => {
+		await page.goto('/board');
+		await dropJsonFile(page);
+
+		// JSON files with shouldSkip=true bypass WAITING and AI_COMPLETION entirely
+		await expect(page.getByTestId('wizard-file-status')).toContainText('Fertig', {
+			timeout: 15000
+		});
+	});
+
+	test('completion button becomes enabled after a JSON file finishes', async ({ page }) => {
+		await page.goto('/board');
+		await dropJsonFile(page);
+
+		await expect(page.getByTestId('wizard-file-status')).toContainText('Fertig', {
+			timeout: 15000
+		});
+		await expect(page.getByTestId('wizard-completion-button')).not.toBeDisabled();
+	});
+});
+
+test.describe('Completion Dialog', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/board');
+		await dropJsonFile(page);
+		await expect(page.getByTestId('wizard-file-status')).toContainText('Fertig', {
+			timeout: 15000
+		});
+	});
+
+	test('clicking the completion button opens the download dialog', async ({ page }) => {
+		await page.getByTestId('wizard-completion-button').click();
+		await expect(page.getByText('Deine Dateien sind fertig!')).toBeVisible();
+	});
+
+	test('dialog shows JSON download option', async ({ page }) => {
+		await page.getByTestId('wizard-completion-button').click();
+		await expect(page.getByText('Als JSON herunterladen')).toBeVisible();
+	});
+
+	test('dialog shows DOCX download option', async ({ page }) => {
+		await page.getByTestId('wizard-completion-button').click();
+		await expect(page.getByText('Als DOCX herunterladen')).toBeVisible();
+	});
+});
+
+test.describe('Multiple File Processing', () => {
+	test('processes multiple JSON files concurrently and enables completion button when all finish', async ({
+		page
+	}) => {
+		await page.goto('/board');
+
+		await page.getByTestId('dropzone-input').setInputFiles([
 			{
-				qualifikationen: ['Programmieren von Softwarelösungen'],
-				text: 'Entwicklung von React Komponenten und Optimierung der Codebasis.',
-				datum: '2024-03-11',
-				ort: 'BETRIEB',
-				hours: 8
+				name: 'week1.json',
+				mimeType: 'application/json',
+				buffer: Buffer.from(JSON.stringify(VALID_JSON_ENTRY))
 			},
 			{
-				qualifikationen: ['Daten systemübergreifend bereitstellen'],
-				text: 'Erstellung und Optimierung von Datenbankabfragen sowie Dokumentation der API Endpunkte.',
-				datum: '2024-03-12',
-				ort: 'BETRIEB',
-				hours: 8
+				name: 'week2.json',
+				mimeType: 'application/json',
+				buffer: Buffer.from(JSON.stringify(VALID_JSON_ENTRY))
 			}
-		];
+		]);
 
-		localStorage.setItem('__test_mock_result__', JSON.stringify(mockResult));
-		window.dispatchEvent(new CustomEvent('__test_result_ready__', { detail: mockResult }));
-	});
+		await expect(page.getByTestId('wizard-file')).toHaveCount(2, { timeout: 5000 });
 
-	// Step 4: Test API mock is working
-	const apiResponse = await page.evaluate(async () => {
-		const res = await fetch('/board/user/completion', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ text: 'test', ort: 'BETRIEB' })
+		// Both files must reach DONE before the completion button is enabled
+		await expect(page.getByTestId('wizard-file-status').nth(0)).toContainText('Fertig', {
+			timeout: 15000
 		});
-		return res.json();
+		await expect(page.getByTestId('wizard-file-status').nth(1)).toContainText('Fertig', {
+			timeout: 15000
+		});
+		await expect(page.getByTestId('wizard-completion-button')).not.toBeDisabled();
 	});
+});
 
-	// Verify API mock returns correct structure
-	expect(apiResponse).toHaveProperty('completion');
-	expect(apiResponse.completion).toHaveProperty('lessons');
-	expect(apiResponse.completion.lessons).toHaveLength(2);
-	expect(apiResponse).toHaveProperty('tokensUsed');
+test.describe('Auth Guard — Non-JSON Files', () => {
+	test('dropping a non-JSON file without being logged in does not create a file card', async ({
+		page
+	}) => {
+		await page.goto('/board');
 
-	// Step 5: Test download functionality
-	const mockResult = [
-		{
-			qualifikationen: ['Programmieren von Softwarelösungen'],
-			text: 'Entwicklung von React Komponenten.',
-			datum: '2024-03-11',
-			ort: 'BETRIEB',
-			hours: 8
-		}
-	];
+		await page.getByTestId('dropzone-input').setInputFiles({
+			name: 'notes.txt',
+			mimeType: 'text/plain',
+			buffer: Buffer.from('Montag: React Komponenten entwickelt.')
+		});
 
-	const downloadPath = join(__dirname, '..', 'test-results', 'downloads', 'wizard-test.json');
-	fs.mkdirSync(dirname(downloadPath), { recursive: true });
-
-	await page.evaluate((data) => {
-		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = 'bericht.json';
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
-	}, mockResult);
-
-	await page.waitForTimeout(1000);
-
-	// Verify the data structure
-	expect(mockResult).toBeInstanceOf(Array);
-	expect(mockResult[0]).toHaveProperty('qualifikationen');
-	expect(mockResult[0]).toHaveProperty('text');
-	expect(mockResult[0]).toHaveProperty('datum');
-	expect(mockResult[0]).toHaveProperty('ort');
-	expect(mockResult[0]).toHaveProperty('hours');
-
-	// Verify content
-	const texts = mockResult.map((e) => e.text);
-	expect(texts.some((t) => t.includes('React'))).toBe(true);
+		// WizardDropzone rejects non-JSON files for unauthenticated users:
+		// schedule stays null → empty state remains, no file cards appear
+		await expect(page.getByTestId('wizard-empty-state')).toBeVisible();
+		await expect(page.getByTestId('wizard-file')).not.toBeVisible();
+	});
 });
