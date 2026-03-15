@@ -21,7 +21,11 @@ const VALID_JSON_ENTRY = [
 	}
 ];
 
-async function dropJsonFile(page: Page, content: object = VALID_JSON_ENTRY, filename = 'test.json') {
+async function dropJsonFile(
+	page: Page,
+	content: object = VALID_JSON_ENTRY,
+	filename = 'test.json'
+) {
 	await page.getByTestId('dropzone-input').setInputFiles({
 		name: filename,
 		mimeType: 'application/json',

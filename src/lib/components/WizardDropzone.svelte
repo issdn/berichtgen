@@ -20,12 +20,13 @@
 
 	let { loggedIn } = getContext<UserContext>('user')();
 
-	let error: string | null = $state(null);
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	let _error: string | null = $state(null);
 
 	let filesNumber = $state(0);
 
 	async function handleFiles(items: DataTransferItemList | FileList) {
-		error = null;
+		_error = null;
 		try {
 			const directories =
 				items instanceof FileList
@@ -37,13 +38,14 @@
 			filesNumber = directories.flat().length;
 			const anyNonJsonFiles = directories.flat().find((f) => f.type !== FileTypes.JSON);
 			if (loggedIn) {
-				const totalTokens = countUserTokensDirectories(directories);
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const _totalTokens = countUserTokensDirectories(directories);
 				// Note: userTokens check would need to be passed from parent or context
 				// For now, we proceed with the processing
 				init(directories);
 			} else {
 				if (anyNonJsonFiles) {
-					error =
+					_error =
 						'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.';
 					wizardScheduler.schedule = null;
 				} else {

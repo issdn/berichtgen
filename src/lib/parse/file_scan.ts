@@ -28,10 +28,7 @@ export async function get2DimensionalDirectories(
 	} else if (returnType === ScanReturnType.DATA_TRANSFER_ITEM) {
 		return _get2DimensionalDirectories(items, scanSystemFileEntries);
 	} else {
-		throw new ***REMOVED***Error(
-			'INVALID_FILE',
-			'Unbekannter Scan-Typ: ' + returnType
-		);
+		throw new ***REMOVED***Error('INVALID_FILE', 'Unbekannter Scan-Typ: ' + returnType);
 	}
 }
 
@@ -43,8 +40,7 @@ async function _get2DimensionalDirectories<T>(
 	const topLevelFilesPromises: Promise<T>[] = [];
 	[...items].forEach((item) => {
 		const entry = item.webkitGetAsEntry();
-		if (entry === null)
-			throw new ***REMOVED***Error('INVALID_FILE', 'Fehler beim Lesen einer Datei');
+		if (entry === null) throw new ***REMOVED***Error('INVALID_FILE', 'Fehler beim Lesen einer Datei');
 		if (entry.isFile) {
 			topLevelFilesPromises.push(scanFunction(entry) as Promise<T>);
 		} else {

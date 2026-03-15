@@ -33,6 +33,7 @@ export type Database = {
 				Row: {
 					created_at: string;
 					id: string;
+					safe_marked_at: string | null;
 					storage_path: string;
 					thumbnail_path: string | null;
 					updated_at: string | null;
@@ -41,6 +42,7 @@ export type Database = {
 				Insert: {
 					created_at?: string;
 					id?: string;
+					safe_marked_at?: string | null;
 					storage_path: string;
 					thumbnail_path?: string | null;
 					updated_at?: string | null;
@@ -49,12 +51,55 @@ export type Database = {
 				Update: {
 					created_at?: string;
 					id?: string;
+					safe_marked_at?: string | null;
 					storage_path?: string;
 					thumbnail_path?: string | null;
 					updated_at?: string | null;
 					user_id?: string;
 				};
 				Relationships: [];
+			};
+			template_report: {
+				Row: {
+					created_at: string;
+					id: string;
+					message: string | null;
+					reporter_id: string;
+					status: string;
+					template_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					message?: string | null;
+					reporter_id: string;
+					status?: string;
+					template_id: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					message?: string | null;
+					reporter_id?: string;
+					status?: string;
+					template_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'template_report_template_id_fkey';
+						columns: ['template_id'];
+						isOneToOne: false;
+						referencedRelation: 'template';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'template_report_reporter_id_fkey';
+						columns: ['reporter_id'];
+						isOneToOne: false;
+						referencedRelation: 'users';
+						referencedColumns: ['id'];
+					}
+				];
 			};
 			userMetadata: {
 				Row: {

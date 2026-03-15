@@ -1,16 +1,16 @@
 [
-  {
-    "qualifikationen": ["Programmieren von Softwarelösungen"],
-    "text": "Entwicklung von React Komponenten und Optimierung der bestehenden Codebasis.",
-    "datum": "2024-01-15",
-    "ort": "BETRIEB",
-    "hours": 8
-  },
-  {
-    "qualifikationen": ["Daten systemübergreifend bereitstellen"],
-    "text": "Erstellung und Optimierung von Datenbankabfragen sowie Dokumentation der API Endpunkte.",
-    "datum": "2024-01-16",
-    "ort": "BETRIEB",
-    "hours": 8
-  }
+	{
+		"qualifikationen": ["Programmieren von Softwarelösungen"],
+		"text": "Entwicklung von React Komponenten und Optimierung der bestehenden Codebasis.",
+		"datum": "2024-01-15",
+		"ort": "BETRIEB",
+		"hours": 8
+	},
+	{
+		"qualifikationen": ["Daten systemübergreifend bereitstellen"],
+		"text": "Erstellung und Optimierung von Datenbankabfragen sowie Dokumentation der API Endpunkte.",
+		"datum": "2024-01-16",
+		"ort": "BETRIEB",
+		"hours": 8
+	}
 ]

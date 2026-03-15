@@ -10,8 +10,9 @@
 	} from '$src/lib/parse/file_scan';
 	import { Download, FileType } from '@lucide/svelte';
 	import JSZip from 'jszip';
+	import { SvelteMap } from 'svelte/reactivity';
 
-	let resultFiles = $state<Map<string, string> | null>(null);
+	let resultFiles = $state<SvelteMap<string, string> | null>(null);
 
 	let filesNumber = $state(0);
 
@@ -24,7 +25,7 @@
 						ScanReturnType.DATA_TRANSFER_ITEM
 					)) as FileSystemFileEntry[][]);
 		filesNumber = directories.flat().length;
-		const texts = new Map<string, string>();
+		const texts = new SvelteMap<string, string>();
 		for (const file of directories.flat()) {
 			const parent =
 				(file instanceof File ? file.webkitRelativePath : file.fullPath).split('/').at(-2) ?? '';

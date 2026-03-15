@@ -78,13 +78,12 @@
 						class="w-calendar space-y-0"
 					>
 						<Form.Control>
-							{#snippet children(_)}
-								<LocationCombobox bind:value={$form.ort} />
-							{/snippet}
+							<LocationCombobox bind:value={$form.ort} />
 						</Form.Control>
 						<Form.FieldErrors />
 					</Form.Field>
 				</div>
+				<!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
 				{#each $form.ranges as _, index (index)}
 					{#if index > 0}
 						<div class="relative flex h-16 flex-row items-center">

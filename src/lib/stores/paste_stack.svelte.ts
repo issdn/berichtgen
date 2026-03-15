@@ -24,4 +24,4 @@ class GlobalPasteStack {
 	}
 }
 
-export let pasteStack = new GlobalPasteStack();
+export const pasteStack = new GlobalPasteStack();

@@ -12,7 +12,10 @@ export async function POST({ locals: { safeGetSession }, url }) {
 	const userId = (await safeGetSession())?.user?.id;
 
 	if (!userId) {
-		return error(401, { type: CommonServerError.UNAUTHORIZED.code, message: CommonServerError.UNAUTHORIZED.message });
+		return error(401, {
+			type: CommonServerError.UNAUTHORIZED.code,
+			message: CommonServerError.UNAUTHORIZED.message
+		});
 	}
 
 	const quantity = parseInt(url.searchParams.get('quantity') || '1');

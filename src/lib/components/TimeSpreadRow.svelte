@@ -43,10 +43,10 @@
 			<div>
 				<p class="text-left font-normal">Stunden (pro Woche)</p>
 				<Form.Control>
-					{#snippet children({ props })}
+					{#snippet children({ props: inputProps })}
 						<Input
 							min={1}
-							{...props}
+							{...inputProps}
 							bind:value={$formData.ranges[index].hours}
 							type="number"
 							placeholder="0 Stunden"
@@ -65,28 +65,26 @@
 			<div>
 				<p class="text-left font-normal">Datumsbereich</p>
 				<Form.Control>
-					{#snippet children({ props })}
-						<Popover.Root>
-							<Popover.Trigger
-								class={cn(
-									buttonVariants({
-										variant: 'outline',
-										class: 'w-calendar'
-									})
-								)}
-							>
-								<CalendarIcon />
-								{label}
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0">
-								<RangeCalendar
-									locale="de-DE"
-									bind:value={$formData.ranges[index].daterange}
-									class="w-fit"
-								/>
-							</Popover.Content>
-						</Popover.Root>
-					{/snippet}
+					<Popover.Root>
+						<Popover.Trigger
+							class={cn(
+								buttonVariants({
+									variant: 'outline',
+									class: 'w-calendar'
+								})
+							)}
+						>
+							<CalendarIcon />
+							{label}
+						</Popover.Trigger>
+						<Popover.Content class="w-auto p-0">
+							<RangeCalendar
+								locale="de-DE"
+								bind:value={$formData.ranges[index].daterange}
+								class="w-fit"
+							/>
+						</Popover.Content>
+					</Popover.Root>
 				</Form.Control>
 			</div>
 			<Form.FieldErrors />

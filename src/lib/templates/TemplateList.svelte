@@ -19,7 +19,7 @@
 	async function fetchTemplates(page: number, nameFilter?: string) {
 		let queryBuilder = supabase
 			.from('template')
-			.select('*')
+			.select('*, template_report(id, status)')
 			.order('created_at', { ascending: false })
 			.order('updated_at', { ascending: false })
 			.range(page * itemsPerPage, (page + 1) * itemsPerPage);
@@ -89,7 +89,8 @@
 				{#each query.data.pages as page, i (i)}
 					{#each page as template (template.id)}
 						{@const isPreferred = berichtgenStore.preferedTemplatePath === template.storage_path}
-						<Thumbnail {isPreferred} {template} />
+						{@const hasPendingReport = template.template_report?.some((r) => r.status === 'pending') ?? false}
+						<Thumbnail {isPreferred} {template} {hasPendingReport} />
 					{/each}
 				{/each}
 			</ul>

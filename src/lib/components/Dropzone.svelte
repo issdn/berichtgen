@@ -77,7 +77,6 @@
 	});
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
 <button
 	id="dropzone"
 	data-testid="dropzone"

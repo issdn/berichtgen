@@ -46,11 +46,7 @@ function parseFile(
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(imgParser.parse(), (e) =>
-					***REMOVED***Error.fromUnknown(
-						e,
-						'Fehler beim Parsen des Bildes',
-						'PARSE_FAILED'
-					)
+					***REMOVED***Error.fromUnknown(e, 'Fehler beim Parsen des Bildes', 'PARSE_FAILED')
 				)
 			);
 		}
@@ -87,18 +83,10 @@ function parseFile(
 				berichtgenStore.processPhotos
 			);
 			return ResultAsync.fromPromise(pdfParser.init(data), (e) =>
-				***REMOVED***Error.fromUnknown(
-					e,
-					'Fehler beim Initialisieren des PDF Parsers',
-					'PARSE_FAILED'
-				)
+				***REMOVED***Error.fromUnknown(e, 'Fehler beim Initialisieren des PDF Parsers', 'PARSE_FAILED')
 			).andThen(() =>
 				ResultAsync.fromPromise(pdfParser.parse(), (e) =>
-					***REMOVED***Error.fromUnknown(
-						e,
-						'Fehler beim Parsen des PDF',
-						'PARSE_FAILED'
-					)
+					***REMOVED***Error.fromUnknown(e, 'Fehler beim Parsen des PDF', 'PARSE_FAILED')
 				)
 			);
 		}
@@ -112,18 +100,12 @@ function parseFile(
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(docxParser.parse(), (e) =>
-					***REMOVED***Error.fromUnknown(
-						e,
-						'Fehler beim Parsen des DOCX',
-						'PARSE_FAILED'
-					)
+					***REMOVED***Error.fromUnknown(e, 'Fehler beim Parsen des DOCX', 'PARSE_FAILED')
 				)
 			);
 		}
 		default:
-			return err(
-				new ***REMOVED***Error('INVALID_FILE', 'Dateityp nicht unterstützt.')
-			);
+			return err(new ***REMOVED***Error('INVALID_FILE', 'Dateityp nicht unterstützt.'));
 	}
 }
 

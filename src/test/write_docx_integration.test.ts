@@ -41,7 +41,13 @@ describe('generateReportBytes integration', () => {
 
 		let result: Uint8Array;
 		try {
-			result = await generateReportBytes(template, Promise.resolve(entries), userMetadata, injected, vm);
+			result = await generateReportBytes(
+				template,
+				Promise.resolve(entries),
+				userMetadata,
+				injected,
+				vm
+			);
 		} finally {
 			vm.dispose();
 		}
@@ -63,7 +69,13 @@ describe('generateReportBytes integration', () => {
 
 		let result: Uint8Array;
 		try {
-			result = await generateReportBytes(template, Promise.resolve(entries), userMetadata, injected, vm);
+			result = await generateReportBytes(
+				template,
+				Promise.resolve(entries),
+				userMetadata,
+				injected,
+				vm
+			);
 		} finally {
 			vm.dispose();
 		}
@@ -83,7 +95,13 @@ describe('generateReportBytes integration', () => {
 
 		let result: Uint8Array;
 		try {
-			result = await generateReportBytes(template, Promise.resolve(entries), userMetadata, injected, vm);
+			result = await generateReportBytes(
+				template,
+				Promise.resolve(entries),
+				userMetadata,
+				injected,
+				vm
+			);
 		} finally {
 			vm.dispose();
 		}

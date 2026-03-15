@@ -100,6 +100,7 @@ export class WizardScheduler {
 
 		const machine = createStateMachineForContext(context, scheduler);
 		// For some insane fucking reason the run method is removed by the something if not accessed
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		machine.run;
 		return { context, machine, id: crypto.randomUUID() };
 	};

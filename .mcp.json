@@ -1,30 +1,31 @@
 {
-  "mcpServers": {
-    "svelte": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@sveltejs/mcp"
-      ],
-      "env": {}
-    },
-    "supabase": {
-      "type": "http",
-      "url": "https://mcp.supabase.com/mcp"
-    },
-    "stripe": {
-      "type": "http",
-      "url": "https://mcp.stripe.com"
-    },
-    "ESLint": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "@eslint/mcp@latest"
-      ]
-    }
-  }
+	"mcpServers": {
+		"svelte": {
+			"type": "stdio",
+			"command": "cmd",
+			"args": ["/c", "npx", "-y", "@sveltejs/mcp"],
+			"env": {}
+		},
+		"supabase": {
+			"type": "http",
+			"url": "https://mcp.supabase.com/mcp"
+		},
+		"stripe": {
+			"type": "http",
+			"url": "https://mcp.stripe.com"
+		},
+		"ESLint": {
+			"type": "stdio",
+			"command": "cmd",
+			"args": ["/c", "npx", "@eslint/mcp@latest"]
+		},
+		"codebase-memory-mcp": {
+			"type": "stdio",
+			"command": "C:\\Users\\isdnb\\AppData\\Local\\codebase-memory-mcp\\codebase-memory-mcp.exe"
+		},
+		"ddg-search": {
+			"command": "uvx",
+			"args": ["duckduckgo-mcp-server"]
+		}
+	}
 }

@@ -5,7 +5,9 @@ import { createReport } from 'docx-templates';
 
 import { downloadBlob } from './dom';
 
-export type SandBox = Parameters<NonNullable<Parameters<typeof createReport>[0]['runJs']>>[0]['sandbox'];
+export type SandBox = Parameters<
+	NonNullable<Parameters<typeof createReport>[0]['runJs']>
+>[0]['sandbox'];
 
 /** Maximum milliseconds a single template JS expression may run before being interrupted. */
 const JS_EXECUTION_TIMEOUT_MS = 5_000;

@@ -31,7 +31,8 @@ export function errorByHttpCode<T extends EnumError>(
 export type APIError = typeof ECommonServerError &
 	typeof ECompletionException &
 	typeof E***REMOVED***Error &
-	typeof EGenAIError;
+	typeof EGenAIError &
+	typeof ETemplateReportError;
 
 export class ***REMOVED***Error extends Error {
 	public type: keyof typeof E***REMOVED***Error;
@@ -105,6 +106,13 @@ export const EGenAIError = buildError({
 
 	// The service is unable to finish processing within the deadline.
 	DEADLINE_EXCEEDED: { httpCode: 504, message: 'Zeitlimit überschritten.' }
+} as const);
+
+export const ETemplateReportError = buildError({
+	TEMPLATE_NOT_FOUND: { httpCode: 404, message: 'Template nicht gefunden.' },
+	ALREADY_REPORTED: { httpCode: 409, message: 'Du hast dieses Template bereits gemeldet.' },
+	CANNOT_REPORT_OWN: { httpCode: 403, message: 'Du kannst dein eigenes Template nicht melden.' },
+	TEMPLATE_SAFE: { httpCode: 403, message: 'Dieses Template wurde als sicher markiert.' }
 } as const);
 
 export const ECompletionException = buildError({

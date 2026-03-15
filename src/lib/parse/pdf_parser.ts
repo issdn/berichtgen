@@ -1,4 +1,3 @@
-
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api.js';
 import type { Scheduler } from 'tesseract.js';
@@ -66,10 +65,7 @@ export class PDFParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new ***REMOVED***Error(
-				'DEVELOPERS_FAULT',
-				'FileWizard wurde nicht initialisiert.'
-			);
+			throw new ***REMOVED***Error('DEVELOPERS_FAULT', 'FileWizard wurde nicht initialisiert.');
 		const result = [];
 		for (let i = 0; i < this.data.length; i += this.batchSize) {
 			if (this.context.cancelled) break;

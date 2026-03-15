@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright configuration for e2e tests
- * 
+ *
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
@@ -33,15 +33,15 @@ export default defineConfig({
 		trace: 'on-first-retry',
 
 		// Screenshot on failure
-		screenshot: 'only-on-failure',
+		screenshot: 'only-on-failure'
 	},
 
 	// Configure projects for major browsers
 	projects: [
 		{
 			name: 'chromium',
-			use: { ...devices['Desktop Chrome'] },
-		},
+			use: { ...devices['Desktop Chrome'] }
+		}
 	],
 
 	// Run local dev server before starting the tests
@@ -49,6 +49,6 @@ export default defineConfig({
 		command: 'npm run dev -- --port 5173',
 		url: 'http://localhost:5173',
 		reuseExistingServer: !process.env.CI,
-		timeout: 120000,
-	},
+		timeout: 120000
+	}
 });

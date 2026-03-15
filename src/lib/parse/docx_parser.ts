@@ -58,10 +58,7 @@ export class DOCXParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new ***REMOVED***Error(
-				'DEVELOPERS_FAULT',
-				'FileWizard wurde nicht initialisiert.'
-			);
+			throw new ***REMOVED***Error('DEVELOPERS_FAULT', 'FileWizard wurde nicht initialisiert.');
 		const result = [];
 		for (let i = 0; i < this.data.textsOrRelIds.length; i += this.batchSize) {
 			if (this.context.cancelled) break;
@@ -81,18 +78,12 @@ export class DOCXParser extends Parser {
 		if (Array.isArray(textOrId)) {
 			const rel = this.data!.imgRels.get(textOrId[0]);
 			if (rel === undefined) {
-				throw new ***REMOVED***Error(
-					'DOCX_FAULTY',
-					'DOCX Fotoreferenz könnte nicht gefunden werden.'
-				);
+				throw new ***REMOVED***Error('DOCX_FAULTY', 'DOCX Fotoreferenz könnte nicht gefunden werden.');
 			}
 
 			const fileData = this.data!.images.get(rel);
 			if (fileData === undefined) {
-				throw new ***REMOVED***Error(
-					'DOCX_FAULTY',
-					'DOCX Foto könnte nicht gefunden werden.'
-				);
+				throw new ***REMOVED***Error('DOCX_FAULTY', 'DOCX Foto könnte nicht gefunden werden.');
 			}
 
 			if (this.withImages) {
