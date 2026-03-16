@@ -1,24 +1,37 @@
 <script lang="ts">
 	import type { Database } from '$src/lib/database.types';
-	import { parsePostgresDate } from '$src/lib/utils';
-	import { FilePlus2, Flag, ImageOff, Shredder, View } from '@lucide/svelte';
-	import { getQueryClientContext, createInfiniteQuery, createMutation, keepPreviousData } from '@tanstack/svelte-query';
+	import {
+		Flag,
+		ImageOff,
+		Shredder,
+		TriangleAlert,
+		View
+	} from '@lucide/svelte';
+	import {
+		getQueryClientContext,
+		createMutation
+	} from '@tanstack/svelte-query';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { Button } from '$src/lib/components/ui/button';
+	import * as Avatar from '$src/lib/components/ui/avatar';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
 	import type { UserContext } from '../types';
-	
+	import Badge from '../components/ui/badge/badge.svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+
 	const {
 		isPreferred,
 		template,
-		hasPendingReport = false
+		hasPendingReport = false,
+		profile
 	}: {
 		isPreferred: boolean;
 		template: Database['public']['Tables']['template']['Row'];
 		hasPendingReport?: boolean;
+		profile: Database['public']['Tables']['profile']['Row'];
 	} = $props();
 
 	let { supabase, user } = getContext<UserContext>('user')();
@@ -28,71 +41,39 @@
 	let reportMessage = $state('');
 	let reportDialogOpen = $state(false);
 
-	const itemsPerPage = 9;
-
-	let search = $state('');
-
 	async function deleteTemplate(storagePath: string) {
-		// First delete from storage
-		const { error } = await supabase.storage.from('templates').remove([storagePath]);
-		if (error) {
-			throw error;
-		}
-
+		const { error } = await supabase.storage
+			.from('templates')
+			.remove([storagePath]);
+		if (error) throw error;
 		await context.refetchQueries({ queryKey: ['template'] });
 	}
 
-	async function fetchTemplates(page: number, nameFilter?: string) {
-		let queryBuilder = supabase
-			.from('template')
-			.select('*')
-			.order('created_at', { ascending: false })
-			.order('updated_at', { ascending: false })
-			.range(page * itemsPerPage, (page + 1) * itemsPerPage);
-
-		if (nameFilter) {
-			queryBuilder = queryBuilder.ilike('storage_path', `%${nameFilter}%`);
-		}
-
-		const { data, error } = await queryBuilder;
-
-		if (error) {
-			throw error;
-		}
-
-		return await new Promise<typeof data>((resolve) => setTimeout(() => resolve(data ?? []), 500));
-	}
-
-	const query = createInfiniteQuery(() => ({
-		queryKey: ['template', search],
-		queryFn: ({ pageParam }) => fetchTemplates(pageParam, search),
-		initialPageParam: 0,
-		placeholderData: keepPreviousData,
-		getNextPageParam: (lastPage, allPages) => {
-			if (lastPage.length < itemsPerPage) {
-				return undefined;
-			}
-			return allPages.length;
-		}
-	}));
-
 	const deleteMutation = createMutation(() => ({
-		mutationFn: ({ storagePath }: { id: string; storagePath: string }) => deleteTemplate(storagePath),
-		onSuccess: () => {
-			toast.success('Datei erfolgreich gelöscht.');
-			query.refetch();
-		},
-		onError(error) {
-			toast.error('Fehler beim Löschen der Datei.', { description: error.message });
-		},
+		mutationFn: ({ storagePath }: { id: string; storagePath: string }) =>
+			deleteTemplate(storagePath),
+		onSuccess: () => toast.success('Datei erfolgreich gelöscht.'),
+		onError: (error) =>
+			toast.error('Fehler beim Löschen der Datei.', {
+				description: error.message
+			})
 	}));
 
 	const reportMutation = createMutation(() => ({
-		mutationFn: async ({ templateId, message }: { templateId: string; message?: string }) => {
+		mutationFn: async ({
+			templateId,
+			message
+		}: {
+			templateId: string;
+			message?: string;
+		}) => {
 			const res = await fetch('/board/user/templates/report', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ template_id: templateId, message: message || undefined })
+				body: JSON.stringify({
+					template_id: templateId,
+					message: message || undefined
+				})
 			});
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
@@ -105,39 +86,112 @@
 			reportMessage = '';
 			context.refetchQueries({ queryKey: ['template'] });
 		},
-		onError(err) {
-			toast.error('Fehler beim Melden.', { description: err.message });
-		}
+		onError: (err) =>
+			toast.error('Fehler beim Melden.', { description: err.message })
 	}));
 
 	const isSafe = $derived(template.safe_marked_at !== null);
+
 	const isOwnTemplate = $derived(user?.id === template.user_id);
 
-	const {name, filepath, thumbnailpath} = $derived.by(() => {
-		const name = template.storage_path.split('/').at(-1);
-		// Works only for public files
+	const { name, filepath, thumbnailpath } = $derived.by(() => {
+		const name = template.storage_path
+			.split('/')
+			.at(-1)
+			?.split('.')
+			.slice(0, -1)
+			.join('.');
 		const filepath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/templates/${template.storage_path}`;
 		const thumbnailpath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${template.thumbnail_path?.split('/').at(-1)}`;
 		return { name, filepath, thumbnailpath };
 	});
+
+	const uploaderInitials = $derived(
+		profile?.full_name
+			? profile.full_name
+					.split(' ')
+					.map((w: string) => w[0])
+					.slice(0, 2)
+					.join('')
+					.toUpperCase()
+			: '?'
+	);
 </script>
 
-<button
-	class={`group ${isPreferred ? 'bg-muted' : ''} border-primary-muted relative flex h-64 w-36 cursor-pointer flex-col justify-between gap-y-1 rounded-sm border p-1`}
->
-	{#if hasPendingReport}
-		<div class="absolute top-1 right-1 z-10 rounded bg-orange-500 px-1 py-0.5 text-xs text-white">
-			Gemeldet
-		</div>
-	{/if}
+<div class="group relative">
+	<!-- Thumbnail card — clicking selects it as preferred -->
+	<button
+		class="bg-muted relative flex h-50.75 w-36 cursor-pointer overflow-hidden rounded-sm p-0.5"
+		onclick={() =>
+			(berichtgenStore.preferedTemplatePath = template.storage_path)}
+		title="Template auswählen"
+	>
+		{#if template.thumbnail_path}
+			<img alt={name} src={thumbnailpath} class="h-full w-full object-cover" />
+		{:else}
+			<div
+				class={` ${isPreferred ? 'bg-muted' : 'bg-background'} focus:bg-muted hover:bg-muted flex h-full w-full items-center justify-center`}
+			>
+				<ImageOff size={72} class="text-muted-foreground" />
+			</div>
+		{/if}
 
+		<!-- Pending report badge -->
+		{#if hasPendingReport}
+			<Tooltip.Provider>
+				<Tooltip.Root>
+					<Tooltip.Trigger
+						><Badge
+							variant="destructive"
+							class="absolute top-1.5 right-1.5 [&>svg]:size-4"
+						>
+							<TriangleAlert class="mr-1" />
+							Gemeldet
+						</Badge></Tooltip.Trigger
+					>
+					<Tooltip.Content>
+						<p>
+							Dieses Template wurde gemeldet und wird überprüft. Nutzung auf
+							eigenes Risiko.
+						</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+			</Tooltip.Provider>
+		{/if}
+
+		<div
+			class="absolute bottom-1.5 left-1.5 flex w-full items-center gap-x-1.5"
+		>
+			<Avatar.Root class="size-8 shrink-0 shadow-sm">
+				<Avatar.Image
+					src={profile?.avatar_url}
+					alt={profile?.full_name ?? ''}
+				/>
+				<Avatar.Fallback class="bg-primary text-secondary text-xs"
+					>{uploaderInitials}</Avatar.Fallback
+				>
+			</Avatar.Root>
+			<div class="flex w-full flex-col items-start gap-y-0.5">
+				<p class="w-full max-w-30 truncate text-left text-xs" title={name}>
+					{name}
+				</p>
+				<p
+					class="text-muted-foreground w-full max-w-30 truncate text-left text-xs"
+				>
+					{profile.full_name ?? 'Anonym'}
+				</p>
+			</div>
+		</div>
+	</button>
+
+	<!-- Right column: solid background panel, full thumbnail height -->
 	<div
-		class="align-center absolute top-2 left-0 flex h-full w-full flex-row items-start justify-center gap-1 rounded-sm"
+		class="absolute top-0 left-full z-20 ml-1 flex h-50.75 flex-col items-start gap-1 rounded-sm opacity-0 shadow-md transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
 	>
 		<Dialog.Root>
 			<Dialog.Trigger>
-				<Button variant="secondary">
-					<View size={24} />
+				<Button variant="default" size="icon" title="Vorschau">
+					<View size={18} />
 				</Button>
 			</Dialog.Trigger>
 			<Dialog.Content class="h-[calc(100%-6rem)] sm:max-w-[calc(100%-6rem)]">
@@ -152,32 +206,39 @@
 			</Dialog.Content>
 		</Dialog.Root>
 
-		{#if !isPreferred}
-			<Button variant="secondary" onclick={() => deleteMutation.mutate({ id: template.id, storagePath: template.storage_path })}>
-				<Shredder size={24} />
-			</Button>
-			<Button variant="secondary" onclick={() => berichtgenStore.preferedTemplatePath = template.storage_path}>
-				<FilePlus2 size={24} />
+		{#if isOwnTemplate}
+			<Button
+				variant="default"
+				size="icon"
+				title="Template löschen"
+				onclick={() =>
+					deleteMutation.mutate({
+						id: template.id,
+						storagePath: template.storage_path
+					})}
+			>
+				<Shredder size={18} />
 			</Button>
 		{/if}
 
 		{#if !isOwnTemplate && !isSafe}
 			<Dialog.Root bind:open={reportDialogOpen}>
 				<Dialog.Trigger>
-					<Button variant="secondary" title="Template melden">
-						<Flag size={24} />
+					<Button variant="default" size="icon" title="Template melden">
+						<Flag size={18} />
 					</Button>
 				</Dialog.Trigger>
 				<Dialog.Content class="sm:max-w-md">
 					<Dialog.Header>
 						<Dialog.Title>Template melden</Dialog.Title>
 						<Dialog.Description>
-							Melde dieses Template als potenziell schädlich. Die Meldung wird von einem Admin geprüft.
+							Melde dieses Template als potenziell schädlich. Die Meldung wird
+							von einem Admin geprüft.
 						</Dialog.Description>
 					</Dialog.Header>
 					<div class="flex flex-col gap-2 py-2">
 						<textarea
-							class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+							class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							placeholder="Optionale Nachricht (max. 1000 Zeichen)..."
 							maxlength={1000}
 							bind:value={reportMessage}
@@ -187,7 +248,11 @@
 						<Button
 							variant="destructive"
 							disabled={reportMutation.isPending}
-							onclick={() => reportMutation.mutate({ templateId: template.id, message: reportMessage })}
+							onclick={() =>
+								reportMutation.mutate({
+									templateId: template.id,
+									message: reportMessage
+								})}
 						>
 							{#if reportMutation.isPending}
 								Wird gemeldet...
@@ -200,23 +265,4 @@
 			</Dialog.Root>
 		{/if}
 	</div>
-	{#if template.thumbnail_path}
-		<img alt={name} src={thumbnailpath} />
-	{:else}
-		<div class="flex h-full w-full flex-col items-center justify-center">
-			<ImageOff size={72} class="text-primary-foreground" />
-		</div>
-	{/if}
-	<div class="flex w-full flex-col">
-		<p class="w-full overflow-hidden text-left text-sm text-nowrap overflow-ellipsis">
-			{template.storage_path.split('/').at(-1)}
-		</p>
-		<p class="w-full text-left text-sm overflow-ellipsis">
-			{#if template.updated_at !== null}
-				Geä. am: {parsePostgresDate(template.updated_at)}
-			{:else}
-				Erst. am: {parsePostgresDate(template.created_at)}
-			{/if}
-		</p>
-	</div>
-</button>
+</div>

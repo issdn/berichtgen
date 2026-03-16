@@ -1,4 +1,5 @@
-import { error, redirect } from '@sveltejs/kit';
+import { OAuthError, throwSvelteError } from '$src/lib/errors.js';
+import { redirect } from '@sveltejs/kit';
 
 export const load = async ({ locals: { supabase }, url }) => {
 	const code = url.searchParams.get('code') as string;
@@ -9,7 +10,10 @@ export const load = async ({ locals: { supabase }, url }) => {
 		if (!e) {
 			throw redirect(303, `/${next.slice(1)}`);
 		}
-		throw error(503, `OAuth-Login Fehler mit code: ${e?.code ?? 'unbekannt'}`);
+		throwSvelteError({
+			...OAuthError.OAUTH_LOGIN_FAILED,
+			message: `OAuth-Login Fehler mit code: ${e?.code ?? 'unbekannt'}`
+		});
 	}
-	throw error(503, 'Unbekannter Fehler: kein Code erhalten');
+	throwSvelteError(OAuthError.NO_CODE);
 };

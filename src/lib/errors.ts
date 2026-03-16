@@ -5,7 +5,9 @@ type OmitErrorField<T extends EnumError, F extends keyof T[keyof T]> = {
 	[K in keyof T]: Omit<T[K], F>;
 };
 
-type EnumError = { [key: string]: { code: string; httpCode: number; message: string } };
+type EnumError = {
+	[key: string]: { code: string; httpCode: number; message: string };
+};
 
 export function throwSvelteError(e: APIError[keyof APIError]) {
 	return error(e.httpCode, { message: e.message, code: e.code });
@@ -15,8 +17,12 @@ export type ErrorBody<T extends EnumError> = T[keyof T];
 
 function buildError<T extends OmitErrorField<EnumError, 'code'>>(error: T) {
 	return Object.freeze(
-		Object.fromEntries(Object.entries(error).map(([key, val]) => [key, { ...val, code: key }]))
-	) as unknown as { [K in keyof T]: { message: string; code: K; httpCode: T[K]['httpCode'] } };
+		Object.fromEntries(
+			Object.entries(error).map(([key, val]) => [key, { ...val, code: key }])
+		)
+	) as unknown as {
+		[K in keyof T]: { message: string; code: K; httpCode: T[K]['httpCode'] };
+	};
 }
 
 export function errorByHttpCode<T extends EnumError>(
@@ -24,7 +30,9 @@ export function errorByHttpCode<T extends EnumError>(
 	httpCode: number
 ): T[keyof T] | null {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const entry = Object.entries(error).find(([_, val]) => val.httpCode === httpCode);
+	const entry = Object.entries(error).find(
+		([_, val]) => val.httpCode === httpCode
+	);
 	return entry ? (entry[1] as T[keyof T]) : null;
 }
 
@@ -32,7 +40,8 @@ export type APIError = typeof ECommonServerError &
 	typeof ECompletionException &
 	typeof E***REMOVED***Error &
 	typeof EGenAIError &
-	typeof ETemplateReportError;
+	typeof ETemplateReportError &
+	typeof OAuthError;
 
 export class ***REMOVED***Error extends Error {
 	public type: keyof typeof E***REMOVED***Error;
@@ -66,12 +75,18 @@ export const ECommonServerError = buildError({
 export const E***REMOVED***Error = buildError({
 	INVALID_FILE: { httpCode: 400, message: 'Ungültige Datei.' },
 	FORMAT_NOT_SUPPORTED: { httpCode: 400, message: 'Format nicht unterstützt.' },
-	COMPLETION_FAILED: { httpCode: 500, message: 'Vervollständigung fehlgeschlagen.' },
+	COMPLETION_FAILED: {
+		httpCode: 500,
+		message: 'Vervollständigung fehlgeschlagen.'
+	},
 	PARSE_FAILED: { httpCode: 400, message: 'Parsing fehlgeschlagen.' },
 	SPREAD_FAILED: { httpCode: 500, message: 'Zeitverteilung fehlgeschlagen.' },
 	DEVELOPERS_FAULT: { httpCode: 500, message: 'Fehler des Entwicklers.' },
 	DOCX_FAULTY: { httpCode: 400, message: 'DOCX-Datei fehlerhaft.' },
-	INVALID_JSON_FROM_AI: { httpCode: 500, message: 'Ungültige JSON-Antwort von der KI.' },
+	INVALID_JSON_FROM_AI: {
+		httpCode: 500,
+		message: 'Ungültige JSON-Antwort von der KI.'
+	},
 	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' }
 } as const);
 
@@ -110,9 +125,18 @@ export const EGenAIError = buildError({
 
 export const ETemplateReportError = buildError({
 	TEMPLATE_NOT_FOUND: { httpCode: 404, message: 'Template nicht gefunden.' },
-	ALREADY_REPORTED: { httpCode: 409, message: 'Du hast dieses Template bereits gemeldet.' },
-	CANNOT_REPORT_OWN: { httpCode: 403, message: 'Du kannst dein eigenes Template nicht melden.' },
-	TEMPLATE_SAFE: { httpCode: 403, message: 'Dieses Template wurde als sicher markiert.' }
+	ALREADY_REPORTED: {
+		httpCode: 409,
+		message: 'Du hast dieses Template bereits gemeldet.'
+	},
+	CANNOT_REPORT_OWN: {
+		httpCode: 403,
+		message: 'Du kannst dein eigenes Template nicht melden.'
+	},
+	TEMPLATE_SAFE: {
+		httpCode: 403,
+		message: 'Dieses Template wurde als sicher markiert.'
+	}
 } as const);
 
 export const ECompletionException = buildError({
@@ -123,6 +147,11 @@ export const ECompletionException = buildError({
 	},
 	TOO_MANY_REQUESTS: { httpCode: 429, message: 'Zu viele Anfragen.' },
 	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' }
+} as const);
+
+export const OAuthError = buildError({
+	NO_CODE: { httpCode: 500, message: 'Kein Code erhalten.' },
+	OAUTH_LOGIN_FAILED: { httpCode: 503, message: 'OAuth-Login Fehler.' }
 } as const);
 
 // function openAIErrorCodeToCompletionExceptionType(

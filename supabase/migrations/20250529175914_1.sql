@@ -2,25 +2,27 @@
 -- Tables
 -- ============================================================
 
+CREATE TABLE profile (
+    id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    full_name text,
+    avatar_url text
+);
+
 CREATE TABLE user_token_count (
-    user_id uuid NOT NULL,
-    tokens integer DEFAULT 0 NOT NULL,
-    CONSTRAINT user_token_count_user_id_pk PRIMARY KEY(user_id),
-    CONSTRAINT user_token_count_user_id_users_id_fk FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE cascade ON UPDATE no action
+    user_id uuid PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    tokens integer DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE cart (
-    user_id uuid  NOT NULL,
+    user_id uuid PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     intent_id text NOT NULL,
     quantity integer DEFAULT 1 NOT NULL,
-    created_at timestamp DEFAULT now(),
-    CONSTRAINT cart_user_id_pk PRIMARY KEY(user_id),
-    CONSTRAINT cart_user_id_users_id_fk FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE cascade ON UPDATE no action
+    created_at timestamp DEFAULT now()
 );
 
 CREATE TABLE template (
-    id uuid PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    user_id uuid NOT NULL,
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     storage_path text NOT NULL,
     thumbnail_path text,
     safe_marked_at timestamptz,
@@ -31,23 +33,19 @@ CREATE TABLE template (
 CREATE INDEX IF NOT EXISTS template_user_id_idx ON template (user_id);
 
 CREATE TABLE user_metadata (
-    user_id uuid PRIMARY KEY NOT NULL,
-    full_name text,
+    user_id uuid PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    full_name text NOT NULL,
     ausbildungsberuf text,
-    abteilung text,
-    CONSTRAINT user_metadata_user_id_users_id_fk FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE cascade ON UPDATE no action
+    abteilung text
 );
 
-CREATE INDEX IF NOT EXISTS user_metadata_user_id_idx ON user_metadata (user_id);
-
 CREATE TABLE template_report (
-    id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-    template_id uuid        NOT NULL REFERENCES template(id) ON DELETE CASCADE,
-    reporter_id uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    message     text,
-    status      text        NOT NULL DEFAULT 'pending'
-                              CHECK (status IN ('pending', 'false_flag')),
-    created_at  timestamptz NOT NULL DEFAULT now()
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    template_id uuid NOT NULL REFERENCES template(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    reporter_user_id uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE ,
+    message text,
+    status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'false_flag')),
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX template_report_template_id_idx ON template_report (template_id);
@@ -57,12 +55,14 @@ CREATE INDEX template_report_template_id_idx ON template_report (template_id);
 -- ============================================================
 
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
+SELECT 
     'templates',
     'templates',
     true,
     10485760,
     ARRAY['application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+WHERE NOT EXISTS (
+    SELECT 1 FROM storage.buckets WHERE id = 'templates'
 );
 
 INSERT INTO storage.buckets (id, name, public)
@@ -73,14 +73,14 @@ ON CONFLICT (id) DO NOTHING;
 -- Functions
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION add_user_tokens(user_id uuid, amount integer)
+CREATE OR REPLACE FUNCTION add_user_tokens(p_user_id uuid, amount integer)
 RETURNS void
 LANGUAGE plpgsql
 AS $$
 BEGIN
     UPDATE user_token_count
     SET tokens = tokens + amount
-    WHERE user_id = user_id;
+    WHERE user_id = p_user_id;
 END;
 $$;
 
@@ -191,9 +191,41 @@ EXCEPTION WHEN invalid_text_representation THEN
 END;
 $$;
 
+-- Keeps profile in sync with auth.users metadata
+CREATE OR REPLACE FUNCTION public.sync_profile_from_auth()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO profile (id, full_name, avatar_url)
+        VALUES (
+            NEW.id,
+            COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
+            COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture')
+        )
+        ON CONFLICT (id) DO NOTHING;
+        RETURN NEW;
+    ELSIF TG_OP = 'UPDATE' THEN
+        UPDATE profile SET
+            full_name = COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
+            avatar_url = COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture')
+        WHERE id = NEW.id;
+        RETURN NEW;
+    END IF;
+    RETURN NULL;
+END;
+$$;
+
 -- ============================================================
 -- Triggers
 -- ============================================================
+
+CREATE TRIGGER on_auth_user_change_sync_profile
+    AFTER INSERT OR UPDATE ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.sync_profile_from_auth();
 
 CREATE TRIGGER on_template_file_deletion_delete_metadata
     AFTER DELETE ON storage.objects
@@ -219,10 +251,18 @@ CREATE TRIGGER on_new_file_insert_create_metadata
 -- RLS, grants, policies
 -- ============================================================
 
+ALTER TABLE profile ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cart ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_token_count ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_metadata ENABLE ROW LEVEL SECURITY;
 ALTER TABLE template_report ENABLE ROW LEVEL SECURITY;
+
+GRANT SELECT ON profile TO authenticated;
+GRANT ALL ON profile TO service_role;
+
+CREATE POLICY "Authenticated users can view all profiles"
+    ON profile FOR SELECT TO authenticated
+    USING (true);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cart TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.user_token_count TO service_role;
@@ -240,18 +280,31 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.template_report TO service_
 
 -- cart
 CREATE POLICY "User can select cart"
-    ON public.cart FOR UPDATE TO authenticated
-    USING ((SELECT auth.uid()) = public.cart.user_id);
+    ON public.cart FOR ALL TO authenticated
+    USING (user_id = auth.uid());
 
 -- user_token_count
 CREATE POLICY "User can select own user_token_count"
     ON public.user_token_count FOR SELECT TO authenticated
-    USING ((SELECT auth.uid()) = public.user_token_count.user_id);
+    USING (user_id = auth.uid());
 
 -- template
-CREATE POLICY "User can access own word templates"
+CREATE POLICY "Authenticated users can view all templates"
+    ON public.template FOR SELECT TO authenticated
+    USING (true);
+
+CREATE POLICY "Users can manage own templates"
     ON public.template FOR ALL TO authenticated
-    USING ((SELECT auth.uid()) = public.template.user_id);
+    USING (user_id = auth.uid());
+
+-- user_metadata
+CREATE POLICY "Authenticated users can view all user metadata"
+    ON public.user_metadata FOR SELECT TO authenticated
+    USING (true);
+
+CREATE POLICY "Users can manage own user_metadata"
+    ON public.user_metadata FOR ALL TO authenticated
+    USING (user_id = auth.uid());
 
 -- template_report
 CREATE POLICY "Authenticated users can view reports"
@@ -261,7 +314,7 @@ CREATE POLICY "Authenticated users can view reports"
 CREATE POLICY "Users can report non-safe templates they dont own"
     ON template_report FOR INSERT TO authenticated
     WITH CHECK (
-        reporter_id = auth.uid()
+        reporter_user_id = auth.uid()
         AND EXISTS (
             SELECT 1 FROM template
             WHERE id = template_id

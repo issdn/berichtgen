@@ -2,7 +2,11 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { z } from 'zod';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { supabaseAdmin } from '$src/lib/server/admin';
-import { ECommonServerError, ETemplateReportError, throwSvelteError } from '$src/lib/errors';
+import {
+	ECommonServerError,
+	ETemplateReportError,
+	throwSvelteError
+} from '$src/lib/errors';
 import * as Sentry from '@sentry/sveltekit';
 
 const reportSchema = z.object({
@@ -10,11 +14,10 @@ const reportSchema = z.object({
 	message: z.string().max(1000).optional()
 });
 
-export const POST: RequestHandler = async ({ request, locals: { user, supabase } }) => {
-	if (!user) {
-		return throwSvelteError(ECommonServerError.UNAUTHORIZED);
-	}
-
+export const POST: RequestHandler = async ({
+	request,
+	locals: { user, supabase }
+}) => {
 	const body = await request.json();
 	const parsed = reportSchema.safeParse(body);
 
@@ -35,7 +38,7 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 		return throwSvelteError(ETemplateReportError.TEMPLATE_NOT_FOUND);
 	}
 
-	if (template.user_id === user.id) {
+	if (template.user_id === user!.id) {
 		return throwSvelteError(ETemplateReportError.CANNOT_REPORT_OWN);
 	}
 
@@ -48,7 +51,7 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 		.from('template_report')
 		.select('id')
 		.eq('template_id', template_id)
-		.eq('reporter_id', user.id)
+		.eq('reporter_user_id', user!.id)
 		.eq('status', 'pending')
 		.maybeSingle();
 
@@ -59,7 +62,7 @@ export const POST: RequestHandler = async ({ request, locals: { user, supabase }
 	// Insert the report
 	const { error: insertError } = await supabase.from('template_report').insert({
 		template_id,
-		reporter_id: user.id,
+		reporter_user_id: user!.id,
 		message: message ?? null
 	});
 

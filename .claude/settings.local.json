@@ -1,38 +1,43 @@
 {
-	"permissions": {
-		"allow": [
-			"mcp__claude-context__get_indexing_status",
-			"Bash(ls -la /c/Users/isdnb/Documents/code/berichtgen/*.config.* 2>/dev/null | grep -E \"\\(vitest|test\\)\" || echo \"No test config files\")",
-			"Bash(npm list:*)",
-			"Bash(cd \"C:\\\\Users\\\\isdnb\\\\Documents\\\\code\\\\berichtgen\" && npx vitest run src/test/write_docx_security.test.ts --reporter=verbose 2>&1)",
-			"Bash(cd \"C:\\\\Users\\\\isdnb\\\\Documents\\\\code\\\\berichtgen\" && npx tsc --noEmit 2>&1 | grep \"write_docx\")",
-			"Bash(cd \"C:\\\\Users\\\\isdnb\\\\Documents\\\\code\\\\berichtgen\" && npx vitest run src/test/write_docx_security.test.ts --reporter=verbose 2>&1 | tail -20)",
-			"mcp__plugin_context-mode_context-mode__ctx_batch_execute",
-			"Bash(cd \"C:/Users/isdnb/Documents/code/berichtgen\" && npx vitest run --reporter=verbose 2>&1 | tail -60)",
-			"Bash(cd \"C:/Users/isdnb/Documents/code/berichtgen\" && npx vitest run --reporter=verbose 2>&1 | grep -E \"FAIL|PASS|✓|×|Error|failed|passed\" | head -40)",
-			"Bash(cd \"C:/Users/isdnb/Documents/code/berichtgen\" && npx vitest run src/test/write_docx_integration.test.ts src/test/write_docx_security.test.ts src/test/time_spread.test.ts src/test/csv_config_reader.test.ts --reporter=verbose 2>&1 | grep -E \"✓|×|FAIL|PASS|Tests|Test Files\")",
-			"mcp__plugin_context-mode_context-mode__ctx_fetch_and_index",
-			"mcp__plugin_context-mode_context-mode__ctx_search",
-			"mcp__codebase-memory-mcp__index_repository",
-			"mcp__codebase-memory-mcp__get_architecture",
-			"Bash(find:*)",
-			"Bash(cd:*)",
-			"mcp__plugin_context-mode_context-mode__ctx_execute"
-		]
-	},
-	"enableAllProjectMcpServers": true,
-	"enabledMcpjsonServers": ["svelte"],
-	"hooks": {
-		"PostToolUse": [
-			{
-				"matcher": "Write|Edit|MultiEdit",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/react-app/quality-check.js"
-					}
-				]
-			}
-		]
-	}
+  "permissions": {
+    "allow": [
+      "mcp__claude-context__get_indexing_status",
+      "Bash(ls -la /c/Users/isdnb/Documents/code/berichtgen/*.config.* 2>/dev/null | grep -E \"\\(vitest|test\\)\" || echo \"No test config files\")",
+      "Bash(npm list:*)",
+      "Bash(cd \"C:\\\\Users\\\\isdnb\\\\Documents\\\\code\\\\berichtgen\" && npx vitest run src/test/write_docx_security.test.ts --reporter=verbose 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\isdnb\\\\Documents\\\\code\\\\berichtgen\" && npx tsc --noEmit 2>&1 | grep \"write_docx\")",
+      "Bash(cd \"C:\\\\Users\\\\isdnb\\\\Documents\\\\code\\\\berichtgen\" && npx vitest run src/test/write_docx_security.test.ts --reporter=verbose 2>&1 | tail -20)",
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "Bash(cd \"C:/Users/isdnb/Documents/code/berichtgen\" && npx vitest run --reporter=verbose 2>&1 | tail -60)",
+      "Bash(cd \"C:/Users/isdnb/Documents/code/berichtgen\" && npx vitest run --reporter=verbose 2>&1 | grep -E \"FAIL|PASS|✓|×|Error|failed|passed\" | head -40)",
+      "Bash(cd \"C:/Users/isdnb/Documents/code/berichtgen\" && npx vitest run src/test/write_docx_integration.test.ts src/test/write_docx_security.test.ts src/test/time_spread.test.ts src/test/csv_config_reader.test.ts --reporter=verbose 2>&1 | grep -E \"✓|×|FAIL|PASS|Tests|Test Files\")",
+      "mcp__plugin_context-mode_context-mode__ctx_fetch_and_index",
+      "mcp__plugin_context-mode_context-mode__ctx_search",
+      "mcp__codebase-memory-mcp__index_repository",
+      "mcp__codebase-memory-mcp__get_architecture",
+      "Bash(find:*)",
+      "Bash(cd:*)",
+      "mcp__plugin_context-mode_context-mode__ctx_execute",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__generate_typescript_types"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "svelte"
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/react-app/quality-check.js"
+          }
+        ]
+      }
+    ]
+  }
 }

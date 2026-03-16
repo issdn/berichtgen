@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { SearchIcon } from '@lucide/svelte';
-	import { createInfiniteQuery, keepPreviousData } from '@tanstack/svelte-query';
+	import {
+		createInfiniteQuery,
+		keepPreviousData
+	} from '@tanstack/svelte-query';
 	import { fade } from 'svelte/transition';
 	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import ScrollArea from '$src/lib/components/ui/scroll-area/scroll-area.svelte';
-	import { Spinner } from '$src/lib/components/ui/spinner';
+	import { Skeleton } from '$src/lib/components/ui/skeleton';
 	import Thumbnail from '$src/lib/templates/Thumbnail.svelte';
 	import { getContext } from 'svelte';
 	import type { UserContext } from '../types';
@@ -19,7 +22,7 @@
 	async function fetchTemplates(page: number, nameFilter?: string) {
 		let queryBuilder = supabase
 			.from('template')
-			.select('*, template_report(id, status)')
+			.select('*, template_report(id, status), profile(*)')
 			.order('created_at', { ascending: false })
 			.order('updated_at', { ascending: false })
 			.range(page * itemsPerPage, (page + 1) * itemsPerPage);
@@ -34,7 +37,7 @@
 			throw error;
 		}
 
-		return await new Promise<typeof data>((resolve) => setTimeout(() => resolve(data ?? []), 500));
+		return data ?? [];
 	}
 
 	const query = createInfiniteQuery(() => ({
@@ -60,7 +63,13 @@
 			<SearchIcon />
 		</InputGroup.Addon>
 	</InputGroup.Root>
-	{#if query.data && query.data.pages.length === 0}
+	{#if query.isPending}
+		<div class="flex w-full flex-wrap gap-2">
+			{#each { length: 3 } as _, i (i)}
+				<Skeleton class="h-50.75 w-36 shrink-0 rounded-sm" />
+			{/each}
+		</div>
+	{:else if query.data && query.data.pages[0]?.length === 0}
 		<p>Wir haben noch keine Templates 🥺</p>
 	{:else if query.data?.pages}
 		<ScrollArea
@@ -69,7 +78,8 @@
 			onscroll={(e) => {
 				const virtualListContainer = e.target as HTMLDivElement;
 				const passedScrollThreshold =
-					virtualListContainer!.scrollTop + virtualListContainer!.clientHeight >=
+					virtualListContainer!.scrollTop +
+						virtualListContainer!.clientHeight >=
 					virtualListContainer!.scrollHeight - 10;
 				const scrollingDown = virtualListContainer!.scrollTop > lastScroll;
 
@@ -78,25 +88,33 @@
 					query.fetchNextPage();
 				}
 			}}
-			class="flex max-h-64 w-full flex-col items-center pr-4"
+			class="max-h-64 w-full pr-4"
 		>
-			<ul
-				class="grid h-full grid-cols-[repeat(auto-fit,minmax(144px,1fr))] justify-items-center gap-1"
-			>
+			<ul class="flex h-full flex-wrap gap-2">
 				{#if query.data.pages[0]?.length === 0}
 					<p>Keine Templates gefunden.</p>
 				{/if}
 				{#each query.data.pages as page, i (i)}
 					{#each page as template (template.id)}
-						{@const isPreferred = berichtgenStore.preferedTemplatePath === template.storage_path}
-						{@const hasPendingReport = template.template_report?.some((r) => r.status === 'pending') ?? false}
-						<Thumbnail {isPreferred} {template} {hasPendingReport} />
+						{@const isPreferred =
+							berichtgenStore.preferedTemplatePath === template.storage_path}
+						{@const hasPendingReport =
+							template.template_report?.some((r) => r.status === 'pending') ??
+							false}
+						<Thumbnail
+							profile={template.profile}
+							{isPreferred}
+							{template}
+							{hasPendingReport}
+						/>
 					{/each}
 				{/each}
 			</ul>
 			{#if query.isFetchingNextPage}
-				<div class="flex w-full flex-row justify-center pt-4" transition:fade>
-					<Spinner class="size-6" />
+				<div class="flex w-full flex-wrap gap-2 pt-2" transition:fade>
+					{#each { length: 3 } as _, i (i)}
+						<Skeleton class="h-50.75 w-36 shrink-0 rounded-sm" />
+					{/each}
 				</div>
 			{/if}
 		</ScrollArea>

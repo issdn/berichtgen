@@ -1,4 +1,10 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+﻿export type Json =
+	| string
+	| number
+	| boolean
+	| null
+	| { [key: string]: Json | undefined }
+	| Json[];
 
 export type Database = {
 	// Allows to automatically instantiate createClient with right options
@@ -10,22 +16,48 @@ export type Database = {
 		Tables: {
 			cart: {
 				Row: {
-					createdAt: string | null;
-					intentId: string;
+					created_at: string | null;
+					intent_id: string;
+					user_id: string;
 					quantity: number;
-					userId: string;
 				};
 				Insert: {
-					createdAt?: string | null;
-					intentId: string;
+					created_at?: string | null;
+					intent_id: string;
+					user_id: string;
 					quantity?: number;
-					userId: string;
 				};
 				Update: {
-					createdAt?: string | null;
-					intentId?: string;
+					created_at?: string | null;
+					intent_id?: string;
+					user_id?: string;
 					quantity?: number;
-					userId?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'cart_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: true;
+						referencedRelation: 'profile';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			profile: {
+				Row: {
+					avatar_url: string | null;
+					full_name: string | null;
+					id: string;
+				};
+				Insert: {
+					avatar_url?: string | null;
+					full_name?: string | null;
+					id: string;
+				};
+				Update: {
+					avatar_url?: string | null;
+					full_name?: string | null;
+					id?: string;
 				};
 				Relationships: [];
 			};
@@ -33,38 +65,46 @@ export type Database = {
 				Row: {
 					created_at: string;
 					id: string;
+					user_id: string;
 					safe_marked_at: string | null;
 					storage_path: string;
 					thumbnail_path: string | null;
 					updated_at: string | null;
-					user_id: string;
 				};
 				Insert: {
 					created_at?: string;
 					id?: string;
+					user_id: string;
 					safe_marked_at?: string | null;
 					storage_path: string;
 					thumbnail_path?: string | null;
 					updated_at?: string | null;
-					user_id: string;
 				};
 				Update: {
 					created_at?: string;
 					id?: string;
+					user_id?: string;
 					safe_marked_at?: string | null;
 					storage_path?: string;
 					thumbnail_path?: string | null;
 					updated_at?: string | null;
-					user_id?: string;
 				};
-				Relationships: [];
+				Relationships: [
+					{
+						foreignKeyName: 'template_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'profile';
+						referencedColumns: ['id'];
+					}
+				];
 			};
 			template_report: {
 				Row: {
 					created_at: string;
 					id: string;
 					message: string | null;
-					reporter_id: string;
+					reporter_user_id: string;
 					status: string;
 					template_id: string;
 				};
@@ -72,7 +112,7 @@ export type Database = {
 					created_at?: string;
 					id?: string;
 					message?: string | null;
-					reporter_id: string;
+					reporter_user_id: string;
 					status?: string;
 					template_id: string;
 				};
@@ -80,69 +120,92 @@ export type Database = {
 					created_at?: string;
 					id?: string;
 					message?: string | null;
-					reporter_id?: string;
+					reporter_user_id?: string;
 					status?: string;
 					template_id?: string;
 				};
 				Relationships: [
+					{
+						foreignKeyName: 'template_report_reporter_user_id_fkey';
+						columns: ['reporter_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'profile';
+						referencedColumns: ['id'];
+					},
 					{
 						foreignKeyName: 'template_report_template_id_fkey';
 						columns: ['template_id'];
 						isOneToOne: false;
 						referencedRelation: 'template';
 						referencedColumns: ['id'];
-					},
+					}
+				];
+			};
+			user_metadata: {
+				Row: {
+					abteilung: string | null;
+					ausbildungsberuf: string | null;
+					full_name: string;
+					user_id: string;
+				};
+				Insert: {
+					abteilung?: string | null;
+					ausbildungsberuf?: string | null;
+					full_name: string;
+					user_id: string;
+				};
+				Update: {
+					abteilung?: string | null;
+					ausbildungsberuf?: string | null;
+					full_name?: string;
+					user_id?: string;
+				};
+				Relationships: [
 					{
-						foreignKeyName: 'template_report_reporter_id_fkey';
-						columns: ['reporter_id'];
-						isOneToOne: false;
-						referencedRelation: 'users';
+						foreignKeyName: 'user_metadata_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: true;
+						referencedRelation: 'profile';
 						referencedColumns: ['id'];
 					}
 				];
 			};
-			userMetadata: {
+			user_token_count: {
 				Row: {
-					abteilung: string | null;
-					ausbildungsberuf: string | null;
-					fullName: string | null;
-					userId: string;
-				};
-				Insert: {
-					abteilung?: string | null;
-					ausbildungsberuf?: string | null;
-					fullName?: string | null;
-					userId: string;
-				};
-				Update: {
-					abteilung?: string | null;
-					ausbildungsberuf?: string | null;
-					fullName?: string | null;
-					userId?: string;
-				};
-				Relationships: [];
-			};
-			userTokenCount: {
-				Row: {
+					user_id: string;
 					tokens: number;
-					userId: string;
 				};
 				Insert: {
+					user_id: string;
 					tokens?: number;
-					userId: string;
 				};
 				Update: {
+					user_id?: string;
 					tokens?: number;
-					userId?: string;
 				};
-				Relationships: [];
+				Relationships: [
+					{
+						foreignKeyName: 'user_token_count_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: true;
+						referencedRelation: 'profile';
+						referencedColumns: ['id'];
+					}
+				];
 			};
 		};
 		Views: {
 			[_ in never]: never;
 		};
 		Functions: {
-			[_ in never]: never;
+			add_user_tokens: {
+				Args: { amount: number; p_user_id: string };
+				Returns: undefined;
+			};
+			deduct_user_tokens: {
+				Args: { p_amount: number; p_user_id: string };
+				Returns: boolean;
+			};
 		};
 		Enums: {
 			[_ in never]: never;
@@ -155,7 +218,10 @@ export type Database = {
 
 type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>];
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+	keyof Database,
+	'public'
+>];
 
 export type Tables<
 	DefaultSchemaTableNameOrOptions extends
@@ -176,8 +242,10 @@ export type Tables<
 		}
 		? R
 		: never
-	: DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-		? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+	: DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+				DefaultSchema['Views'])
+		? (DefaultSchema['Tables'] &
+				DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
 				Row: infer R;
 			}
 			? R
