@@ -6,7 +6,7 @@
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import ScrollArea from '$src/lib/components/ui/scroll-area/scroll-area.svelte';
 	import { Skeleton } from '$src/lib/components/ui/skeleton';
-	import Thumbnail from '$src/lib/templates/Thumbnail.svelte';
+	import Template from '$src/lib/templates/Template.svelte';
 	import { getTemplates } from './templates.remote';
 	import Spinner from '../components/ui/Spinner.svelte';
 
@@ -73,7 +73,7 @@
 						{@const hasPendingReport =
 							template.template_report?.some((r) => r.status === 'pending') ??
 							false}
-						<Thumbnail
+						<Template
 							profile={template.profile}
 							{isPreferred}
 							{template}

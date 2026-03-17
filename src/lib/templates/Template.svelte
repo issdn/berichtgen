@@ -1,16 +1,6 @@
 <script lang="ts">
 	import type { Database } from '$src/lib/database.types';
-	import {
-		Flag,
-		ImageOff,
-		Shredder,
-		TriangleAlert,
-		View
-	} from '@lucide/svelte';
-	import {
-		getQueryClientContext,
-		createMutation
-	} from '@tanstack/svelte-query';
+	import { Flag, ImageOff, Shredder, TriangleAlert, View } from '@lucide/svelte';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { Button } from '$src/lib/components/ui/button';
@@ -22,6 +12,8 @@
 	import Badge from '../components/ui/badge/badge.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
+	import { deleteTemplate, reportTemplate } from './templates.remote';
+	import { toErrorBody } from '../errors';
 
 	const {
 		isPreferred,
@@ -35,64 +27,11 @@
 		profile: Database['public']['Tables']['profile']['Row'];
 	} = $props();
 
-	let { supabase, user } = getContext<UserContext>('user')();
+	const { user } = getContext<UserContext>('user')();
 
-	const context = getQueryClientContext();
-
-	let reportMessage = $state('');
 	let reportDialogOpen = $state(false);
 
-	async function deleteTemplate(storagePath: string) {
-		const { error } = await supabase.storage
-			.from('templates')
-			.remove([storagePath]);
-		if (error) throw error;
-		await context.refetchQueries({ queryKey: ['template'] });
-	}
-
-	const deleteMutation = createMutation(() => ({
-		mutationFn: ({ storagePath }: { id: string; storagePath: string }) =>
-			deleteTemplate(storagePath),
-		onSuccess: () => toast.success('Datei erfolgreich gelöscht.'),
-		onError: (error) =>
-			toast.error('Fehler beim Löschen der Datei.', {
-				description: error.message
-			})
-	}));
-
-	const reportMutation = createMutation(() => ({
-		mutationFn: async ({
-			templateId,
-			message
-		}: {
-			templateId: string;
-			message?: string;
-		}) => {
-			const res = await fetch('/board/user/templates/report', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					template_id: templateId,
-					message: message || undefined
-				})
-			});
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err.message ?? 'Unbekannter Fehler');
-			}
-		},
-		onSuccess: () => {
-			toast.success('Template gemeldet.');
-			reportDialogOpen = false;
-			reportMessage = '';
-			context.refetchQueries({ queryKey: ['template'] });
-		},
-		onError: (err) =>
-			toast.error('Fehler beim Melden.', { description: err.message })
-	}));
-
 	const isSafe = $derived(template.safe_marked_at !== null);
-
 	const isOwnTemplate = $derived(user?.id === template.user_id);
 
 	const { name, filepath, thumbnailpath } = $derived.by(() => {
@@ -117,6 +56,12 @@
 					.toUpperCase()
 			: '?'
 	);
+
+	/** Isolated delete form instance for this template. */
+	const del = $derived(deleteTemplate.for(template.id));
+
+	/** Isolated report form instance for this template. */
+	const report = $derived(reportTemplate.for(template.id));
 </script>
 
 <Popover.Root>
@@ -124,16 +69,11 @@
 	<Popover.Trigger openOnHover class="h-min">
 		<button
 			class="bg-muted relative flex h-50.75 w-36 cursor-pointer overflow-hidden rounded-sm p-0.5"
-			onclick={() =>
-				(berichtgenStore.preferedTemplatePath = template.storage_path)}
+			onclick={() => (berichtgenStore.preferedTemplatePath = template.storage_path)}
 			title="Template auswählen"
 		>
 			{#if template.thumbnail_path}
-				<img
-					alt={name}
-					src={thumbnailpath}
-					class="h-full w-full object-cover"
-				/>
+				<img alt={name} src={thumbnailpath} class="h-full w-full object-cover" />
 			{:else}
 				<div
 					class={` ${isPreferred ? 'bg-muted' : 'bg-background'} focus:bg-muted hover:bg-muted flex h-full w-full items-center justify-center`}
@@ -163,14 +103,9 @@
 					</Tooltip.Root>
 				</Tooltip.Provider>
 			{/if}
-			<div
-				class="absolute bottom-1.5 left-1.5 flex w-full items-center gap-x-1.5"
-			>
+			<div class="absolute bottom-1.5 left-1.5 flex w-full items-center gap-x-1.5">
 				<Avatar.Root class="size-8 shrink-0 shadow-sm">
-					<Avatar.Image
-						src={profile?.avatar_url}
-						alt={profile?.full_name ?? ''}
-					/>
+					<Avatar.Image src={profile?.avatar_url} alt={profile?.full_name ?? ''} />
 					<Avatar.Fallback class="bg-primary text-secondary text-xs"
 						>{uploaderInitials}</Avatar.Fallback
 					>
@@ -179,9 +114,7 @@
 					<p class="w-full max-w-30 truncate text-left text-xs" title={name}>
 						{name}
 					</p>
-					<p
-						class="text-muted-foreground w-full max-w-30 truncate text-left text-xs"
-					>
+					<p class="text-muted-foreground w-full max-w-30 truncate text-left text-xs">
 						{profile.full_name ?? 'Anonym'}
 					</p>
 				</div>
@@ -210,20 +143,27 @@
 				</Dialog.Content>
 			</Dialog.Root>
 			{#if isOwnTemplate}
-				<Button
-					variant="default"
-					size="icon"
-					title="Template löschen"
-					onclick={() =>
-						deleteMutation.mutate({
-							id: template.id,
-							storagePath: template.storage_path
-						})}
-				>
-					<Shredder size={18} />
-				</Button>
+				<form {...del.enhance(async ({ submit }) => {
+						try {
+							await submit();
+							toast.success('Datei erfolgreich gelöscht.');
+						} catch (e) {
+							toast.error('Fehler beim Löschen der Datei.', { description: toErrorBody(e).message });
+						}
+					})}>
+					<input type="hidden" name="storagePath" value={template.storage_path} />
+					<Button
+						variant="default"
+						size="icon"
+						title="Template löschen"
+						type="submit"
+						disabled={!!del.pending}
+					>
+						<Shredder size={18} />
+					</Button>
+				</form>
 			{/if}
-			{#if !isOwnTemplate && !isSafe}
+			{#if !isOwnTemplate && !isSafe && !hasPendingReport}
 				<Dialog.Root bind:open={reportDialogOpen}>
 					<Dialog.Trigger>
 						<Button variant="default" size="icon" title="Template melden">
@@ -238,31 +178,38 @@
 								von einem Admin geprüft.
 							</Dialog.Description>
 						</Dialog.Header>
-						<div class="flex flex-col gap-2 py-2">
-							<textarea
-								class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-								placeholder="Optionale Nachricht (max. 1000 Zeichen)..."
-								maxlength={1000}
-								bind:value={reportMessage}
-							></textarea>
-						</div>
-						<Dialog.Footer>
-							<Button
-								variant="destructive"
-								disabled={reportMutation.isPending}
-								onclick={() =>
-									reportMutation.mutate({
-										templateId: template.id,
-										message: reportMessage
-									})}
-							>
-								{#if reportMutation.isPending}
-									Wird gemeldet...
-								{:else}
-									Melden
-								{/if}
-							</Button>
-						</Dialog.Footer>
+						<form {...report.enhance(async ({ submit }) => {
+								try {
+									await submit();
+									toast.success('Template gemeldet.');
+									reportDialogOpen = false;
+								} catch (e) {
+									toast.error('Fehler beim Melden.', { description: toErrorBody(e).message });
+								}
+							})}>
+							<input type="hidden" name="templateId" value={template.id} />
+							<div class="flex flex-col gap-2 py-2">
+								<textarea
+									{...report.fields.message.as('text')}
+									class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+									placeholder="Optionale Nachricht (max. 1000 Zeichen)..."
+									maxlength={1000}
+								></textarea>
+							</div>
+							<Dialog.Footer>
+								<Button
+									variant="destructive"
+									disabled={!!report.pending}
+									type="submit"
+								>
+									{#if report.pending}
+										Wird gemeldet...
+									{:else}
+										Melden
+									{/if}
+								</Button>
+							</Dialog.Footer>
+						</form>
 					</Dialog.Content>
 				</Dialog.Root>
 			{/if}
