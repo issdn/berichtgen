@@ -38,12 +38,6 @@ importers:
       '@sveltejs/adapter-vercel':
         specifier: ^5.10.3
         version: 5.10.3(@sveltejs/kit@2.53.4(@opentelemetry/api@1.9.0)(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.53.12)(vite@6.4.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.31.1)))(svelte@5.53.12)(typescript@5.9.3)(vite@6.4.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.31.1)))(rollup@4.59.0)
-      '@tanstack/svelte-query':
-        specifier: ^6.1.0
-        version: 6.1.0(svelte@5.53.12)
-      '@tanstack/svelte-query-devtools':
-        specifier: ^6.0.4
-        version: 6.0.4(@tanstack/svelte-query@6.1.0(svelte@5.53.12))(svelte@5.53.12)
       '@types/bun':
         specifier: ^1.3.10
         version: 1.3.10
@@ -1677,23 +1671,6 @@ packages:
     resolution: {integrity: sha512-TBf2sJjYeb28jD2U/OhwdW0bbOsxkWPwQ7SrqGf9sVcoYwZj7rkXljroBO9wKBut9XnmQLXanuDUeqQK0lGg/w==}
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7
-
-  '@tanstack/query-core@5.90.20':
-    resolution: {integrity: sha512-OMD2HLpNouXEfZJWcKeVKUgQ5n+n3A2JFmBaScpNDUqSrQSjiveC7dKMe53uJUg1nDG16ttFPz2xfilz6i2uVg==}
-
-  '@tanstack/query-devtools@5.93.0':
-    resolution: {integrity: sha512-+kpsx1NQnOFTZsw6HAFCW3HkKg0+2cepGtAWXjiiSOJJ1CtQpt72EE2nyZb+AjAbLRPoeRmPJ8MtQd8r8gsPdg==}
-
-  '@tanstack/svelte-query-devtools@6.0.4':
-    resolution: {integrity: sha512-jHcpWb8KrL3QxoyBHpceR1tIfZUQB1uCiXjh+rDBrmkw1AMIMnIKANzLoz8eQgIGJC7C2dUZXRvDpUvtLDgRAQ==}
-    peerDependencies:
-      '@tanstack/svelte-query': ^6.0.18
-      svelte: ^5.25.0
-
-  '@tanstack/svelte-query@6.1.0':
-    resolution: {integrity: sha512-iKeMaBalk5NeRvp1Y2LgtG3j9HCeLcTEpfsyM+jL1wASnW/EYdCqyyotMKkOY4SNsnBpPDM5zrmstMn6tOzKFQ==}
-    peerDependencies:
-      svelte: ^5.25.0
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -5521,22 +5498,6 @@ snapshots:
       '@tailwindcss/oxide': 4.2.1
       tailwindcss: 4.2.1
       vite: 6.4.1(@types/node@25.5.0)(jiti@2.6.1)(lightningcss@1.31.1)
-
-  '@tanstack/query-core@5.90.20': {}
-
-  '@tanstack/query-devtools@5.93.0': {}
-
-  '@tanstack/svelte-query-devtools@6.0.4(@tanstack/svelte-query@6.1.0(svelte@5.53.12))(svelte@5.53.12)':
-    dependencies:
-      '@tanstack/query-devtools': 5.93.0
-      '@tanstack/svelte-query': 6.1.0(svelte@5.53.12)
-      esm-env: 1.2.2
-      svelte: 5.53.12
-
-  '@tanstack/svelte-query@6.1.0(svelte@5.53.12)':
-    dependencies:
-      '@tanstack/query-core': 5.90.20
-      svelte: 5.53.12
 
   '@tybys/wasm-util@0.10.1':
     dependencies:

@@ -10,18 +10,15 @@ type EnumError = {
 		code: string;
 		httpCode: number;
 		message: string;
-		cause?: string | null;
+		cause?: string;
 	};
 };
 
-export function throwSvelteError(
-	e: APIError[keyof APIError],
-	cause?: string | null
-) {
+export function throwSvelteError(e: APIError[keyof APIError], cause?: string) {
 	return error(e.httpCode, {
 		message: e.message,
 		code: e.code,
-		cause: cause || null
+		cause: cause
 	});
 }
 
@@ -180,15 +177,23 @@ export function toErrorBody(e: unknown): Omit<ErrorBody<APIError>, 'httpCode'> {
 				return {
 					code: body.code,
 					message: body.message,
-					cause: typeof body.cause === 'string' ? body.cause : null
+					cause: typeof body.cause === 'string' ? body.cause : undefined
 				};
 			}
 		}
 		if (e instanceof Error) {
-			return { code: 'INTERNAL_ERROR', message: e.message, cause: null };
+			return {
+				code: 'INTERNAL_ERROR',
+				message: e.message,
+				cause: undefined
+			};
 		}
 	}
-	return { code: 'INTERNAL_ERROR', message: 'Ein unbekannter Fehler ist aufgetreten.', cause: null };
+	return {
+		code: 'INTERNAL_ERROR',
+		message: 'Ein unbekannter Fehler ist aufgetreten.',
+		cause: undefined
+	};
 }
 
 export const OAuthError = buildError({

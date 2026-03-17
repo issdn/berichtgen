@@ -2,24 +2,18 @@
 	import Dropzone from '$src/lib/components/Dropzone.svelte';
 	import { FileTypes } from '$src/lib/enums';
 	import { extractFilesSimple } from '$src/lib/parse/file_scan';
-	import { createMutation } from '@tanstack/svelte-query';
-	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import type { UserContext } from '../types';
+	import { uploadTemplate, getTemplates } from './templates.remote';
+	import { toErrorBody } from '../errors';
 
-	let { user, supabase } = getContext<UserContext>('user')();
+	const ITEMS_PER_PAGE = 9;
 
-	const upload = createMutation(() => ({
-		mutationFn: (file: File) => uploadTemplates(file),
-		onSuccess(data, variables, onMutateResult, context) {
-			toast.success('Datei erfolgreich hochgeladen.');
-			context.client.refetchQueries({ queryKey: ['template'] });
-		},
-		onError(error) {
-			toast.error('Fehler beim Hochladen der Datei.', { description: error.message });
-		},
-	}));
+	let isPending = $state(false);
 
+	/**
+	 * Validates the dropped/selected file, reads it as a Uint8Array,
+	 * and uploads it to the server via the uploadTemplate command.
+	 */
 	async function handleFiles(input: FileList | DataTransferItemList) {
 		const files = extractFilesSimple(input);
 		const firstFile = files[0];
@@ -35,22 +29,25 @@
 			return;
 		}
 
-		upload.mutate(firstFile);
-	}
-
-	async function uploadTemplates(file: File) {
-		const { error } = await supabase.storage
-			.from('templates')
-			.upload(`${user!.id}/${file.name}`, file, {
-				contentType: file.type
+		isPending = true;
+		try {
+			const data = new Uint8Array(await firstFile.arrayBuffer());
+			await uploadTemplate({
+				name: firstFile.name,
+				type: firstFile.type,
+				data
+			}).updates(getTemplates({ limit: ITEMS_PER_PAGE, search: '' }));
+			toast.success('Datei erfolgreich hochgeladen.');
+		} catch (e) {
+			toast.error('Fehler beim Hochladen der Datei.', {
+				description: toErrorBody(e).cause
 			});
-
-			if(error) {
-				throw error;
-			}
+		} finally {
+			isPending = false;
+		}
 	}
 </script>
 
 <div class="h-full w-full">
-	<Dropzone disabled={upload.isPending} {handleFiles} />
+	<Dropzone disabled={isPending} {handleFiles} />
 </div>

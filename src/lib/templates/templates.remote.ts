@@ -1,4 +1,4 @@
-import { query, form } from '$app/server';
+import { query, form, command } from '$app/server';
 import { getRequestEvent } from '$app/server';
 import { z } from 'zod';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
@@ -41,6 +41,26 @@ export const getTemplates = query(argsSchema, async ({ limit, search }) => {
 
 	return { templates: data, hasMore };
 });
+
+/** Uploads a .docx template file into the authenticated user's storage folder. */
+export const uploadTemplate = command(
+	z.object({
+		name: z.string().min(1),
+		type: z.string().min(1),
+		data: z.instanceof(Uint8Array)
+	}),
+	async ({ name, type, data }) => {
+		const {
+			locals: { supabase, user }
+		} = getRequestEvent();
+
+		const { error } = await supabase.storage
+			.from('templates')
+			.upload(`${user!.id}/${name}`, data, { contentType: type });
+
+		if (error) throwSvelteError(ECommonServerError.DATABASE_ERROR, error.message);
+	}
+);
 
 /** Permanently removes a template file from storage. */
 export const deleteTemplate = form(
