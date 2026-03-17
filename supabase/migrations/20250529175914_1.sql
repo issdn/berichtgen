@@ -44,7 +44,6 @@ CREATE TABLE template_report (
     template_id uuid NOT NULL REFERENCES template(id) ON DELETE CASCADE ON UPDATE CASCADE,
     reporter_user_id uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE ,
     message text,
-    status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'false_flag')),
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -72,6 +71,26 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================
 -- Functions
 -- ============================================================
+
+CREATE FUNCTION get_templates(
+  limit_val int,
+  search_val text DEFAULT '',
+  only_unreported boolean DEFAULT false,
+  only_mine boolean DEFAULT false
+)
+RETURNS SETOF template AS $$
+  SELECT t.*
+  FROM template t
+  LEFT JOIN template_report tr ON tr.template_id = t.id
+  WHERE
+    (search_val = '' OR t.storage_path ILIKE '%/%' || search_val || '%.docx')
+    AND (only_mine = false OR t.profile_id = auth.uid())
+  GROUP BY t.id
+  HAVING (only_unreported = false OR COUNT(tr.id) = 0)
+  ORDER BY t.created_at DESC, t.updated_at DESC
+  LIMIT limit_val;
+$$ LANGUAGE sql STABLE SECURITY INVOKER;
+
 
 CREATE OR REPLACE FUNCTION add_user_tokens(p_user_id uuid, amount integer)
 RETURNS void
@@ -181,9 +200,8 @@ BEGIN
         SET safe_marked_at = now()
         WHERE id = target_template_id;
 
-        UPDATE template_report
-        SET status = 'false_flag'
-        WHERE template_id = target_template_id AND status = 'pending';
+        DELETE FROM template_report
+        WHERE template_id = target_template_id;
     END IF;
     RETURN OLD;
 EXCEPTION WHEN invalid_text_representation THEN
@@ -278,6 +296,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.user_metadata TO authentica
 
 GRANT SELECT, INSERT ON TABLE public.template_report TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.template_report TO service_role;
+
+CREATE POLICY "Users can delete own reports"
+    ON template_report FOR DELETE TO authenticated
+    USING (reporter_user_id = auth.uid());
 
 -- cart
 CREATE POLICY "User can select cart"

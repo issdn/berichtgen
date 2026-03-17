@@ -14,7 +14,7 @@ DELETE FROM cart WHERE "createdAt" < NOW() - INTERVAL '7 days';
 ### types
 
 ```ps1
-supabase gen types typescript --project-id eqlqxanawsygdwfaqzbp --schema public --schema auth | Set-Content -Path src\lib\database.types.ts -Encoding UTF8
+supabase gen types --local typescript --schema public | Set-Content -Path src\lib\database.types.ts -Encoding UTF8
 ```
 
 ### stripe

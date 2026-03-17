@@ -10,7 +10,13 @@
 	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}
 		><FileCode /> Templates</Dialog.Trigger
 	>
-	<Dialog.Content>
+	<Dialog.Content
+		onInteractOutside={(e) => {
+			if ((e.target as HTMLElement)?.closest('[data-sonner-toaster]')) {
+				e.preventDefault();
+			}
+		}}
+	>
 		<Dialog.Header>
 			<Dialog.Title>Templates</Dialog.Title>
 		</Dialog.Header>

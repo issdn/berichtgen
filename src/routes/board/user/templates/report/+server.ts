@@ -52,7 +52,6 @@ export const POST: RequestHandler = async ({
 		.select('id')
 		.eq('template_id', template_id)
 		.eq('reporter_user_id', user!.id)
-		.eq('status', 'pending')
 		.maybeSingle();
 
 	if (existing) {

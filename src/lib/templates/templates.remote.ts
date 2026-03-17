@@ -1,4 +1,4 @@
-import { query, form, command } from '$app/server';
+import { query, command } from '$app/server';
 import { getRequestEvent } from '$app/server';
 import { z } from 'zod';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
@@ -12,35 +12,35 @@ import {
 
 const argsSchema = z.object({
 	limit: z.number().int().min(1).max(100),
-	search: z.string()
+	search: z.string().optional().default(''),
+	hideReported: z.boolean().optional().default(false),
+	onlyMine: z.boolean().optional().default(false)
 });
 
-export const getTemplates = query(argsSchema, async ({ limit, search }) => {
-	const {
-		locals: { supabase }
-	} = getRequestEvent();
+export const getTemplates = query(
+	argsSchema,
+	async ({ limit, search, hideReported, onlyMine }) => {
+		const {
+			locals: { supabase }
+		} = getRequestEvent();
 
-	let q = supabase
-		.from('template')
-		.select('*, template_report(id, status), profile(*)', {
-			count: 'estimated'
-		})
-		.order('created_at', { ascending: false })
-		.order('updated_at', { ascending: false })
-		.limit(limit);
+		const { data, error } = await supabase
+			.rpc('get_templates', {
+				limit_val: limit,
+				search_val: search,
+				only_unreported: hideReported,
+				only_mine: onlyMine
+			})
+			.select('*, profile(*), template_report!left(*)');
 
-	if (search) {
-		q = q.ilike('storage_path', `%/%${search}%.docx`);
+		if (error)
+			return throwSvelteError(ECommonServerError.INTERNAL_ERROR, error.message);
+
+		const hasMore = data.length === limit;
+
+		return { templates: data, hasMore };
 	}
-
-	const { data, error, count } = await q;
-	if (error)
-		return throwSvelteError(ECommonServerError.INTERNAL_ERROR, error.message);
-
-	const hasMore = data.length < (count ?? 0);
-
-	return { templates: data, hasMore };
-});
+);
 
 /** Uploads a .docx template file into the authenticated user's storage folder. */
 export const uploadTemplate = command(
@@ -58,12 +58,13 @@ export const uploadTemplate = command(
 			.from('templates')
 			.upload(`${user!.id}/${name}`, data, { contentType: type });
 
-		if (error) throwSvelteError(ECommonServerError.DATABASE_ERROR, error.message);
+		if (error)
+			throwSvelteError(ECommonServerError.DATABASE_ERROR, error.message);
 	}
 );
 
 /** Permanently removes a template file from storage. */
-export const deleteTemplate = form(
+export const deleteTemplate = command(
 	z.object({ storagePath: z.string().min(1) }),
 	async ({ storagePath }) => {
 		const {
@@ -78,11 +79,29 @@ export const deleteTemplate = form(
 	}
 );
 
+/** Removes the current user's report for a template. */
+export const deleteReport = command(
+	z.object({ templateId: z.uuid() }),
+	async ({ templateId }) => {
+		const {
+			locals: { supabase, user }
+		} = getRequestEvent();
+
+		const { error } = await supabase
+			.from('template_report')
+			.delete()
+			.eq('template_id', templateId)
+			.eq('reporter_user_id', user!.id);
+
+		if (error) throwSvelteError(ECommonServerError.DATABASE_ERROR);
+	}
+);
+
 /** Submits a report for a template that violates community guidelines. */
-export const reportTemplate = form(
+export const reportTemplate = command(
 	z.object({
 		templateId: z.uuid(),
-		message: z.string().max(1000)
+		message: z.string().max(1000).optional()
 	}),
 	async ({ templateId, message }) => {
 		const {
@@ -107,7 +126,6 @@ export const reportTemplate = form(
 			.select('id')
 			.eq('template_id', templateId)
 			.eq('reporter_user_id', user!.id)
-			.eq('status', 'pending')
 			.maybeSingle();
 
 		if (existing) throwSvelteError(ETemplateReportError.ALREADY_REPORTED);

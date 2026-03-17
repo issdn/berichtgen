@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Error from './Error.svelte';
-
 	import { SearchIcon } from '@lucide/svelte';
 	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
@@ -9,16 +8,21 @@
 	import Template from '$src/lib/templates/Template.svelte';
 	import { getTemplates } from './templates.remote';
 	import Spinner from '../components/ui/Spinner.svelte';
+	import { Toggle } from '$src/lib/components/ui/toggle/index.js';
 
 	const ITEMS_PER_PAGE = 9;
 
 	let limit = $state(ITEMS_PER_PAGE);
 	let search = $state('');
-	let lastScroll = 0;
+	let hideReported = $state(false);
+	let onlyMine = $state(false);
 
-	const { templates, hasMore } = $derived(
-		await getTemplates({ limit, search })
+	const query = $derived(
+		getTemplates({ limit, search, hideReported, onlyMine })
 	);
+	const { templates, hasMore } = $derived(await query);
+
+	let lastScroll = 0;
 </script>
 
 <div class="flex w-full flex-col items-center gap-y-4">
@@ -36,6 +40,31 @@
 		</InputGroup.Addon>
 	</InputGroup.Root>
 
+	<div class="flex w-full gap-2">
+		<Toggle
+			size="sm"
+			variant="outline"
+			pressed={hideReported}
+			onPressedChange={(v) => {
+				hideReported = v;
+				limit = ITEMS_PER_PAGE;
+			}}
+		>
+			Gemeldete ausblenden
+		</Toggle>
+		<Toggle
+			size="sm"
+			variant="outline"
+			pressed={onlyMine}
+			onPressedChange={(v) => {
+				onlyMine = v;
+				limit = ITEMS_PER_PAGE;
+			}}
+		>
+			Nur meine
+		</Toggle>
+	</div>
+
 	<svelte:boundary>
 		{#snippet pending()}
 			<div class="flex w-full flex-wrap gap-2">
@@ -50,7 +79,7 @@
 		{/snippet}
 
 		{#if templates.length === 0}
-			<p>Wir haben noch keine Templates 🥺</p>
+			<p>Keine Templates gefunden 🥺</p>
 		{:else}
 			<ScrollArea
 				type="auto"
@@ -71,17 +100,17 @@
 						{@const isPreferred =
 							berichtgenStore.preferedTemplatePath === template.storage_path}
 						{@const hasPendingReport =
-							template.template_report?.some((r) => r.status === 'pending') ??
-							false}
+							(template.template_report?.length ?? 0) > 0}
 						<Template
 							profile={template.profile}
 							{isPreferred}
 							{template}
 							{hasPendingReport}
+							{query}
 						/>
 					{/each}
 				</ul>
-				{#if hasMore}
+				{#if hasMore && $effect.pending()}
 					<div class="flex w-full items-center justify-center pt-2">
 						<Spinner />
 					</div>
