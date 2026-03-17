@@ -1,0 +1,1 @@
+SELECT * FROM public.template WHERE storage_path LIKE '%/%em%.docx'

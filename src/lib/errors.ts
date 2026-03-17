@@ -6,11 +6,23 @@ type OmitErrorField<T extends EnumError, F extends keyof T[keyof T]> = {
 };
 
 type EnumError = {
-	[key: string]: { code: string; httpCode: number; message: string };
+	[key: string]: {
+		code: string;
+		httpCode: number;
+		message: string;
+		cause?: string | null;
+	};
 };
 
-export function throwSvelteError(e: APIError[keyof APIError]) {
-	return error(e.httpCode, { message: e.message, code: e.code });
+export function throwSvelteError(
+	e: APIError[keyof APIError],
+	cause?: string | null
+) {
+	return error(e.httpCode, {
+		message: e.message,
+		code: e.code,
+		cause: cause || null
+	});
 }
 
 export type ErrorBody<T extends EnumError> = T[keyof T];
@@ -20,16 +32,13 @@ function buildError<T extends OmitErrorField<EnumError, 'code'>>(error: T) {
 		Object.fromEntries(
 			Object.entries(error).map(([key, val]) => [key, { ...val, code: key }])
 		)
-	) as unknown as {
-		[K in keyof T]: { message: string; code: K; httpCode: T[K]['httpCode'] };
-	};
+	);
 }
 
 export function errorByHttpCode<T extends EnumError>(
 	error: T,
 	httpCode: number
 ): T[keyof T] | null {
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const entry = Object.entries(error).find(
 		([_, val]) => val.httpCode === httpCode
 	);
@@ -69,7 +78,8 @@ export const ECommonServerError = buildError({
 	DATABASE_ERROR: { httpCode: 500, message: 'Datenbankfehler.' },
 	UNAUTHORIZED: { httpCode: 401, message: 'Nicht autorisiert.' },
 	VALIDATION_ERROR: { httpCode: 400, message: 'Validierungsfehler.' },
-	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' }
+	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' },
+	INTERNAL_ERROR: { httpCode: 500, message: 'Interner Serverfehler.' }
 } as const);
 
 export const E***REMOVED***Error = buildError({
@@ -148,6 +158,38 @@ export const ECompletionException = buildError({
 	TOO_MANY_REQUESTS: { httpCode: 429, message: 'Zu viele Anfragen.' },
 	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' }
 } as const);
+
+/**
+ * Normalises an unknown thrown value into a structured error body.
+ *
+ * Handles three cases in priority order:
+ * 1. SvelteKit `HttpError` produced by {@link throwSvelteError} — extracts `code`, `message` and
+ *    `cause` from the `.body` property.
+ * 2. Native `Error` instance — uses `.message` and falls back to `'INTERNAL_ERROR'` as the code.
+ * 3. Anything else — returns a generic German fallback message.
+ *
+ * @param e - The unknown value caught in a `catch` block.
+ * @returns A structured error body without the HTTP status code.
+ */
+export function toErrorBody(e: unknown): Omit<ErrorBody<APIError>, 'httpCode'> {
+	if (e !== null && typeof e === 'object') {
+		// SvelteKit HttpError thrown via throwSvelteError — body has { message, code, cause }
+		if ('body' in e && e.body !== null && typeof e.body === 'object') {
+			const body = e.body as Record<string, unknown>;
+			if (typeof body.code === 'string' && typeof body.message === 'string') {
+				return {
+					code: body.code,
+					message: body.message,
+					cause: typeof body.cause === 'string' ? body.cause : null
+				};
+			}
+		}
+		if (e instanceof Error) {
+			return { code: 'INTERNAL_ERROR', message: e.message, cause: null };
+		}
+	}
+	return { code: 'INTERNAL_ERROR', message: 'Ein unbekannter Fehler ist aufgetreten.', cause: null };
+}
 
 export const OAuthError = buildError({
 	NO_CODE: { httpCode: 500, message: 'Kein Code erhalten.' },

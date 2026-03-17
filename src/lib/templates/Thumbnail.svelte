@@ -21,6 +21,7 @@
 	import type { UserContext } from '../types';
 	import Badge from '../components/ui/badge/badge.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import * as Popover from '$lib/components/ui/popover/index.js';
 
 	const {
 		isPreferred,
@@ -118,151 +119,153 @@
 	);
 </script>
 
-<div class="group relative">
+<Popover.Root>
 	<!-- Thumbnail card — clicking selects it as preferred -->
-	<button
-		class="bg-muted relative flex h-50.75 w-36 cursor-pointer overflow-hidden rounded-sm p-0.5"
-		onclick={() =>
-			(berichtgenStore.preferedTemplatePath = template.storage_path)}
-		title="Template auswählen"
-	>
-		{#if template.thumbnail_path}
-			<img alt={name} src={thumbnailpath} class="h-full w-full object-cover" />
-		{:else}
-			<div
-				class={` ${isPreferred ? 'bg-muted' : 'bg-background'} focus:bg-muted hover:bg-muted flex h-full w-full items-center justify-center`}
-			>
-				<ImageOff size={72} class="text-muted-foreground" />
-			</div>
-		{/if}
-
-		<!-- Pending report badge -->
-		{#if hasPendingReport}
-			<Tooltip.Provider>
-				<Tooltip.Root>
-					<Tooltip.Trigger
-						><Badge
-							variant="destructive"
-							class="absolute top-1.5 right-1.5 [&>svg]:size-4"
-						>
-							<TriangleAlert class="mr-1" />
-							Gemeldet
-						</Badge></Tooltip.Trigger
-					>
-					<Tooltip.Content>
-						<p>
-							Dieses Template wurde gemeldet und wird überprüft. Nutzung auf
-							eigenes Risiko.
-						</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
-			</Tooltip.Provider>
-		{/if}
-
-		<div
-			class="absolute bottom-1.5 left-1.5 flex w-full items-center gap-x-1.5"
+	<Popover.Trigger openOnHover class="h-min">
+		<button
+			class="bg-muted relative flex h-50.75 w-36 cursor-pointer overflow-hidden rounded-sm p-0.5"
+			onclick={() =>
+				(berichtgenStore.preferedTemplatePath = template.storage_path)}
+			title="Template auswählen"
 		>
-			<Avatar.Root class="size-8 shrink-0 shadow-sm">
-				<Avatar.Image
-					src={profile?.avatar_url}
-					alt={profile?.full_name ?? ''}
+			{#if template.thumbnail_path}
+				<img
+					alt={name}
+					src={thumbnailpath}
+					class="h-full w-full object-cover"
 				/>
-				<Avatar.Fallback class="bg-primary text-secondary text-xs"
-					>{uploaderInitials}</Avatar.Fallback
+			{:else}
+				<div
+					class={` ${isPreferred ? 'bg-muted' : 'bg-background'} focus:bg-muted hover:bg-muted flex h-full w-full items-center justify-center`}
 				>
-			</Avatar.Root>
-			<div class="flex w-full flex-col items-start gap-y-0.5">
-				<p class="w-full max-w-30 truncate text-left text-xs" title={name}>
-					{name}
-				</p>
-				<p
-					class="text-muted-foreground w-full max-w-30 truncate text-left text-xs"
-				>
-					{profile.full_name ?? 'Anonym'}
-				</p>
+					<ImageOff size={72} class="text-muted-foreground" />
+				</div>
+			{/if}
+			<!-- Pending report badge -->
+			{#if hasPendingReport}
+				<Tooltip.Provider>
+					<Tooltip.Root>
+						<Tooltip.Trigger
+							><Badge
+								variant="destructive"
+								class="absolute top-1.5 right-1.5 [&>svg]:size-4"
+							>
+								<TriangleAlert class="mr-1" />
+								Gemeldet
+							</Badge></Tooltip.Trigger
+						>
+						<Tooltip.Content>
+							<p>
+								Dieses Template wurde gemeldet und wird überprüft. Nutzung auf
+								eigenes Risiko.
+							</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				</Tooltip.Provider>
+			{/if}
+			<div
+				class="absolute bottom-1.5 left-1.5 flex w-full items-center gap-x-1.5"
+			>
+				<Avatar.Root class="size-8 shrink-0 shadow-sm">
+					<Avatar.Image
+						src={profile?.avatar_url}
+						alt={profile?.full_name ?? ''}
+					/>
+					<Avatar.Fallback class="bg-primary text-secondary text-xs"
+						>{uploaderInitials}</Avatar.Fallback
+					>
+				</Avatar.Root>
+				<div class="flex w-full flex-col items-start gap-y-0.5">
+					<p class="w-full max-w-30 truncate text-left text-xs" title={name}>
+						{name}
+					</p>
+					<p
+						class="text-muted-foreground w-full max-w-30 truncate text-left text-xs"
+					>
+						{profile.full_name ?? 'Anonym'}
+					</p>
+				</div>
 			</div>
-		</div>
-	</button>
+		</button>
+	</Popover.Trigger>
 
 	<!-- Right column: solid background panel, full thumbnail height -->
-	<div
-		class="absolute top-0 left-full z-20 ml-1 flex h-50.75 flex-col items-start gap-1 rounded-sm opacity-0 shadow-md transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-	>
-		<Dialog.Root>
-			<Dialog.Trigger>
-				<Button variant="default" size="icon" title="Vorschau">
-					<View size={18} />
-				</Button>
-			</Dialog.Trigger>
-			<Dialog.Content class="h-[calc(100%-6rem)] sm:max-w-[calc(100%-6rem)]">
-				<div class="h-full w-full pt-4">
-					<iframe
-						class="h-full w-full rounded-xl border-0"
-						allowfullscreen={true}
-						title={name}
-						src={`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(filepath)}`}
-					></iframe>
-				</div>
-			</Dialog.Content>
-		</Dialog.Root>
-
-		{#if isOwnTemplate}
-			<Button
-				variant="default"
-				size="icon"
-				title="Template löschen"
-				onclick={() =>
-					deleteMutation.mutate({
-						id: template.id,
-						storagePath: template.storage_path
-					})}
-			>
-				<Shredder size={18} />
-			</Button>
-		{/if}
-
-		{#if !isOwnTemplate && !isSafe}
-			<Dialog.Root bind:open={reportDialogOpen}>
+	<Popover.Content side="bottom" class="w-min p-2">
+		<div class="flex flex-row items-start gap-1">
+			<Dialog.Root>
 				<Dialog.Trigger>
-					<Button variant="default" size="icon" title="Template melden">
-						<Flag size={18} />
+					<Button variant="default" size="icon" title="Vorschau">
+						<View size={18} />
 					</Button>
 				</Dialog.Trigger>
-				<Dialog.Content class="sm:max-w-md">
-					<Dialog.Header>
-						<Dialog.Title>Template melden</Dialog.Title>
-						<Dialog.Description>
-							Melde dieses Template als potenziell schädlich. Die Meldung wird
-							von einem Admin geprüft.
-						</Dialog.Description>
-					</Dialog.Header>
-					<div class="flex flex-col gap-2 py-2">
-						<textarea
-							class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-							placeholder="Optionale Nachricht (max. 1000 Zeichen)..."
-							maxlength={1000}
-							bind:value={reportMessage}
-						></textarea>
+				<Dialog.Content class="h-[calc(100%-6rem)] sm:max-w-[calc(100%-6rem)]">
+					<div class="h-full w-full pt-4">
+						<iframe
+							class="h-full w-full rounded-xl border-0"
+							allowfullscreen={true}
+							title={name}
+							src={`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(filepath)}`}
+						></iframe>
 					</div>
-					<Dialog.Footer>
-						<Button
-							variant="destructive"
-							disabled={reportMutation.isPending}
-							onclick={() =>
-								reportMutation.mutate({
-									templateId: template.id,
-									message: reportMessage
-								})}
-						>
-							{#if reportMutation.isPending}
-								Wird gemeldet...
-							{:else}
-								Melden
-							{/if}
-						</Button>
-					</Dialog.Footer>
 				</Dialog.Content>
 			</Dialog.Root>
-		{/if}
-	</div>
-</div>
+			{#if isOwnTemplate}
+				<Button
+					variant="default"
+					size="icon"
+					title="Template löschen"
+					onclick={() =>
+						deleteMutation.mutate({
+							id: template.id,
+							storagePath: template.storage_path
+						})}
+				>
+					<Shredder size={18} />
+				</Button>
+			{/if}
+			{#if !isOwnTemplate && !isSafe}
+				<Dialog.Root bind:open={reportDialogOpen}>
+					<Dialog.Trigger>
+						<Button variant="default" size="icon" title="Template melden">
+							<Flag size={18} />
+						</Button>
+					</Dialog.Trigger>
+					<Dialog.Content class="sm:max-w-md">
+						<Dialog.Header>
+							<Dialog.Title>Template melden</Dialog.Title>
+							<Dialog.Description>
+								Melde dieses Template als potenziell schädlich. Die Meldung wird
+								von einem Admin geprüft.
+							</Dialog.Description>
+						</Dialog.Header>
+						<div class="flex flex-col gap-2 py-2">
+							<textarea
+								class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+								placeholder="Optionale Nachricht (max. 1000 Zeichen)..."
+								maxlength={1000}
+								bind:value={reportMessage}
+							></textarea>
+						</div>
+						<Dialog.Footer>
+							<Button
+								variant="destructive"
+								disabled={reportMutation.isPending}
+								onclick={() =>
+									reportMutation.mutate({
+										templateId: template.id,
+										message: reportMessage
+									})}
+							>
+								{#if reportMutation.isPending}
+									Wird gemeldet...
+								{:else}
+									Melden
+								{/if}
+							</Button>
+						</Dialog.Footer>
+					</Dialog.Content>
+				</Dialog.Root>
+			{/if}
+		</div>
+	</Popover.Content>
+</Popover.Root>

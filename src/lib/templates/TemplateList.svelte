@@ -1,101 +1,73 @@
 <script lang="ts">
+	import Error from './Error.svelte';
+
 	import { SearchIcon } from '@lucide/svelte';
-	import {
-		createInfiniteQuery,
-		keepPreviousData
-	} from '@tanstack/svelte-query';
-	import { fade } from 'svelte/transition';
 	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import ScrollArea from '$src/lib/components/ui/scroll-area/scroll-area.svelte';
 	import { Skeleton } from '$src/lib/components/ui/skeleton';
 	import Thumbnail from '$src/lib/templates/Thumbnail.svelte';
-	import { getContext } from 'svelte';
-	import type { UserContext } from '../types';
+	import { getTemplates } from './templates.remote';
+	import Spinner from '../components/ui/Spinner.svelte';
 
-	let { supabase } = getContext<UserContext>('user')();
+	const ITEMS_PER_PAGE = 9;
 
-	const itemsPerPage = 9;
-
+	let limit = $state(ITEMS_PER_PAGE);
 	let search = $state('');
-
-	async function fetchTemplates(page: number, nameFilter?: string) {
-		let queryBuilder = supabase
-			.from('template')
-			.select('*, template_report(id, status), profile(*)')
-			.order('created_at', { ascending: false })
-			.order('updated_at', { ascending: false })
-			.range(page * itemsPerPage, (page + 1) * itemsPerPage);
-
-		if (nameFilter) {
-			queryBuilder = queryBuilder.ilike('storage_path', `%${nameFilter}%`);
-		}
-
-		const { data, error } = await queryBuilder;
-
-		if (error) {
-			throw error;
-		}
-
-		return data ?? [];
-	}
-
-	const query = createInfiniteQuery(() => ({
-		queryKey: ['template', search],
-		queryFn: ({ pageParam }) => fetchTemplates(pageParam, search),
-		initialPageParam: 0,
-		placeholderData: keepPreviousData,
-		getNextPageParam: (lastPage, allPages) => {
-			if (lastPage.length < itemsPerPage) {
-				return undefined;
-			}
-			return allPages.length;
-		}
-	}));
-
 	let lastScroll = 0;
+
+	const { templates, hasMore } = $derived(
+		await getTemplates({ limit, search })
+	);
 </script>
 
 <div class="flex w-full flex-col items-center gap-y-4">
 	<InputGroup.Root>
-		<InputGroup.Input placeholder="Suchen..." bind:value={search} />
+		<InputGroup.Input
+			placeholder="Suchen..."
+			value={search}
+			oninput={(e) => {
+				search = (e.target as HTMLInputElement).value;
+				limit = ITEMS_PER_PAGE;
+			}}
+		/>
 		<InputGroup.Addon>
 			<SearchIcon />
 		</InputGroup.Addon>
 	</InputGroup.Root>
-	{#if query.isPending}
-		<div class="flex w-full flex-wrap gap-2">
-			{#each { length: 3 } as _, i (i)}
-				<Skeleton class="h-50.75 w-36 shrink-0 rounded-sm" />
-			{/each}
-		</div>
-	{:else if query.data && query.data.pages[0]?.length === 0}
-		<p>Wir haben noch keine Templates 🥺</p>
-	{:else if query.data?.pages}
-		<ScrollArea
-			type="auto"
-			orientation="vertical"
-			onscroll={(e) => {
-				const virtualListContainer = e.target as HTMLDivElement;
-				const passedScrollThreshold =
-					virtualListContainer!.scrollTop +
-						virtualListContainer!.clientHeight >=
-					virtualListContainer!.scrollHeight - 10;
-				const scrollingDown = virtualListContainer!.scrollTop > lastScroll;
 
-				lastScroll = virtualListContainer!.scrollTop;
-				if (passedScrollThreshold && !query.isFetching && scrollingDown) {
-					query.fetchNextPage();
-				}
-			}}
-			class="max-h-64 w-full pr-4"
-		>
-			<ul class="flex h-full flex-wrap gap-2">
-				{#if query.data.pages[0]?.length === 0}
-					<p>Keine Templates gefunden.</p>
-				{/if}
-				{#each query.data.pages as page, i (i)}
-					{#each page as template (template.id)}
+	<svelte:boundary>
+		{#snippet pending()}
+			<div class="flex w-full flex-wrap gap-2">
+				{#each { length: 3 } as _item, i (i)}
+					<Skeleton class="h-50.75 w-36 shrink-0 rounded-sm" />
+				{/each}
+			</div>
+		{/snippet}
+
+		{#snippet failed(error)}
+			<Error {error} />
+		{/snippet}
+
+		{#if templates.length === 0}
+			<p>Wir haben noch keine Templates 🥺</p>
+		{:else}
+			<ScrollArea
+				type="auto"
+				orientation="vertical"
+				onscroll={(e) => {
+					const el = e.target as HTMLDivElement;
+					const near = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+					const down = el.scrollTop > lastScroll;
+					lastScroll = el.scrollTop;
+					if (near && down && hasMore) {
+						limit += ITEMS_PER_PAGE;
+					}
+				}}
+				class="h-50.75 w-full"
+			>
+				<ul class="flex h-full flex-wrap gap-2">
+					{#each templates as template (template.id)}
 						{@const isPreferred =
 							berichtgenStore.preferedTemplatePath === template.storage_path}
 						{@const hasPendingReport =
@@ -108,17 +80,13 @@
 							{hasPendingReport}
 						/>
 					{/each}
-				{/each}
-			</ul>
-			{#if query.isFetchingNextPage}
-				<div class="flex w-full flex-wrap gap-2 pt-2" transition:fade>
-					{#each { length: 3 } as _, i (i)}
-						<Skeleton class="h-50.75 w-36 shrink-0 rounded-sm" />
-					{/each}
-				</div>
-			{/if}
-		</ScrollArea>
-	{:else if query.isError}
-		<p>Fehler beim Laden der Templates: {query.error.message}</p>
-	{/if}
+				</ul>
+				{#if hasMore}
+					<div class="flex w-full items-center justify-center pt-2">
+						<Spinner />
+					</div>
+				{/if}
+			</ScrollArea>
+		{/if}
+	</svelte:boundary>
 </div>

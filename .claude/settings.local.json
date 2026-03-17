@@ -20,7 +20,10 @@
       "mcp__plugin_context-mode_context-mode__ctx_execute",
       "mcp__supabase__list_projects",
       "mcp__supabase__apply_migration",
-      "mcp__supabase__generate_typescript_types"
+      "mcp__supabase__generate_typescript_types",
+      "mcp__ESLint__lint-files",
+      "mcp__svelte__get-documentation",
+      "mcp__svelte__svelte-autofixer"
     ]
   },
   "enableAllProjectMcpServers": true,
