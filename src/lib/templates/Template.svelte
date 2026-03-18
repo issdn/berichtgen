@@ -13,6 +13,7 @@
 	import { Button } from '$src/lib/components/ui/button';
 	import * as Avatar from '$src/lib/components/ui/avatar';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { toast } from 'svelte-sonner';
 	import { getContext } from 'svelte';
 	import type { UserContext } from '../types';
@@ -44,6 +45,7 @@
 	const { user } = getContext<UserContext>('user')();
 
 	let reportDialogOpen = $state(false);
+	let confirmSelectOpen = $state(false);
 
 	const isReportedByMe = $derived(
 		template.template_report?.some((r) => r.reporter_user_id === user?.id) ??
@@ -164,8 +166,13 @@
 	<Popover.Trigger openOnHover class="h-min">
 		<button
 			class="bg-muted relative flex h-50.75 w-36 cursor-pointer overflow-hidden rounded-sm p-0.5"
-			onclick={() =>
-				(berichtgenStore.preferedTemplatePath = template.storage_path)}
+			onclick={() => {
+				if (hasPendingReport) {
+					confirmSelectOpen = true;
+				} else {
+					berichtgenStore.preferedTemplatePath = template.storage_path;
+				}
+			}}
 			title="Template auswählen"
 		>
 			{#if template.thumbnail_path}
@@ -314,3 +321,26 @@
 		</div>
 	</Popover.Content>
 </Popover.Root>
+
+<AlertDialog.Root bind:open={confirmSelectOpen}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Gemeldetes Template auswählen?</AlertDialog.Title>
+			<AlertDialog.Description>
+				Dieses Template wurde gemeldet und wird noch überprüft. Die Nutzung
+				erfolgt auf eigenes Risiko.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Abbrechen</AlertDialog.Cancel>
+			<AlertDialog.Action
+				onclick={() => {
+					berichtgenStore.preferedTemplatePath = template.storage_path;
+					confirmSelectOpen = false;
+				}}
+			>
+				Trotzdem auswählen
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
