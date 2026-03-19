@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import * as Sentry from '@sentry/sveltekit';
 import { supabaseAdmin } from '$lib/server/admin';
+import { db } from '$lib/server/db';
 import {
 	ECommonServerError,
 	ETemplateReportError,
@@ -86,17 +87,17 @@ export const deleteTemplate = command(
 export const deleteReport = command(
 	z.object({ templateId: z.uuid() }),
 	async ({ templateId }) => {
-		const {
-			locals: { supabase, user }
-		} = getRequestEvent();
+		const { locals: { user } } = getRequestEvent();
 
-		const { error } = await supabase
-			.from('template_report')
-			.delete()
-			.eq('template_id', templateId)
-			.eq('reporter_user_id', user!.id);
-
-		if (error) throwSvelteError(ECommonServerError.DATABASE_ERROR);
+		try {
+			await db
+				.deleteFrom('template_report')
+				.where('template_id', '=', templateId)
+				.where('reporter_user_id', '=', user!.id)
+				.execute();
+		} catch {
+			throwSvelteError(ECommonServerError.DATABASE_ERROR);
+		}
 	}
 );
 
@@ -107,42 +108,38 @@ export const reportTemplate = command(
 		message: z.string().max(1000).optional()
 	}),
 	async ({ templateId, message }) => {
-		const {
-			locals: { supabase, user }
-		} = getRequestEvent();
+		const { locals: { user } } = getRequestEvent();
 
-		const { data: template, error: templateError } = await supabase
-			.from('template')
-			.select('id, user_id, storage_path, safe_marked_at')
-			.eq('id', templateId)
-			.single();
+		const template = await db
+			.selectFrom('template')
+			.select(['id', 'user_id', 'storage_path', 'safe_marked_at'])
+			.where('id', '=', templateId)
+			.executeTakeFirst();
 
-		if (templateError || !template)
-			throwSvelteError(ETemplateReportError.TEMPLATE_NOT_FOUND);
-		if (template!.user_id === user!.id)
-			throwSvelteError(ETemplateReportError.CANNOT_REPORT_OWN);
-		if (template!.safe_marked_at !== null)
-			throwSvelteError(ETemplateReportError.TEMPLATE_SAFE);
+		if (!template) throwSvelteError(ETemplateReportError.TEMPLATE_NOT_FOUND);
+		if (template!.user_id === user!.id) throwSvelteError(ETemplateReportError.CANNOT_REPORT_OWN);
+		if (template!.safe_marked_at !== null) throwSvelteError(ETemplateReportError.TEMPLATE_SAFE);
 
-		const { data: existing } = await supabase
-			.from('template_report')
+		const existing = await db
+			.selectFrom('template_report')
 			.select('id')
-			.eq('template_id', templateId)
-			.eq('reporter_user_id', user!.id)
-			.maybeSingle();
+			.where('template_id', '=', templateId)
+			.where('reporter_user_id', '=', user!.id)
+			.executeTakeFirst();
 
 		if (existing) throwSvelteError(ETemplateReportError.ALREADY_REPORTED);
 
-		const { error: insertError } = await supabase
-			.from('template_report')
-			.insert({
-				template_id: templateId,
-				reporter_user_id: user!.id,
-				message: message || null
-			});
-
-		if (insertError) {
-			Sentry.captureException(insertError);
+		try {
+			await db
+				.insertInto('template_report')
+				.values({
+					template_id: templateId,
+					reporter_user_id: user!.id,
+					message: message ?? null
+				})
+				.execute();
+		} catch (e) {
+			Sentry.captureException(e);
 			throwSvelteError(ECommonServerError.DATABASE_ERROR);
 		}
 

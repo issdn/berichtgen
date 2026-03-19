@@ -1,8 +1,8 @@
-CREATE TABLE "userTokenCount" (
+CREATE TABLE "user_token_count" (
     "userId" uuid NOT NULL,
     "tokens" integer DEFAULT 0 NOT NULL,
-    CONSTRAINT "userTokenCount_userId_pk" PRIMARY KEY("userId"),
-    CONSTRAINT "userTokenCount_userId_users_id_fk" FOREIGN KEY ("userId") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action
+    CONSTRAINT "user_token_count_userId_pk" PRIMARY KEY("userId"),
+    CONSTRAINT "user_token_count_userId_users_id_fk" FOREIGN KEY ("userId") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action
 );
 
 CREATE TABLE "cart" (

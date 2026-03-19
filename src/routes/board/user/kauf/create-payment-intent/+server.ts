@@ -1,9 +1,9 @@
 import Stripe from 'stripe';
 import { SECRET_STRIPE_KEY } from '$env/static/private';
-import { error, json } from '@sveltejs/kit';
-import * as Sentry from '@sentry/node';
-import { CommonServerError } from '$src/lib/errors';
-import { supabaseAdmin } from '$src/lib/server/admin';
+import { json } from '@sveltejs/kit';
+import * as Sentry from '@sentry/sveltekit';
+import { ECommonServerError, throwSvelteError } from '$src/lib/errors';
+import { db } from '$lib/server/db';
 // initialize Stripe
 const stripe = new Stripe(SECRET_STRIPE_KEY);
 
@@ -12,32 +12,31 @@ export async function POST({ locals: { safeGetSession }, url }) {
 	const userId = (await safeGetSession())?.user?.id;
 
 	if (!userId) {
-		return error(401, {
-			type: CommonServerError.UNAUTHORIZED.code,
-			message: CommonServerError.UNAUTHORIZED.message
-		});
+		throwSvelteError(ECommonServerError.UNAUTHORIZED);
 	}
 
 	const quantity = parseInt(url.searchParams.get('quantity') || '1');
 
 	if (isNaN(quantity) || quantity <= 0 || quantity > 90) {
-		return error(400, {
-			type: CommonServerError.VALIDATION_ERROR.code,
-			message: 'Die Menge muss zwischen 1 und 90 liegen'
-		});
+		throwSvelteError(
+			ECommonServerError.VALIDATION_ERROR,
+			'Die Menge muss zwischen 1 und 90 liegen'
+		);
 	}
 
 	try {
-		const { data: cartData } = await supabaseAdmin
-			.from('cart')
-			.update({ quantity })
-			.eq('userId', userId)
-			.select('intentId, quantity')
-			.single();
+		const updated = await db
+			.updateTable('cart')
+			.set({ quantity })
+			.where('user_id', '=', userId!)
+			.returning(['intent_id', 'quantity'])
+			.executeTakeFirst();
 
-		if (cartData) {
-			const paymentIntent = await stripe.paymentIntents.retrieve(cartData.intentId);
-			paymentIntent.amount = cartData.quantity * 400;
+		if (updated) {
+			const paymentIntent = await stripe.paymentIntents.retrieve(
+				updated.intent_id
+			);
+			paymentIntent.amount = updated.quantity * 400;
 			return json({
 				clientSecret: paymentIntent.client_secret
 			});
@@ -49,29 +48,26 @@ export async function POST({ locals: { safeGetSession }, url }) {
 	try {
 		const paymentIntent = await stripe.paymentIntents.create({
 			amount: quantity * 400,
-			metadata: { userId, quantity: quantity },
+			metadata: { userId: userId!, quantity: quantity },
 			currency: 'eur',
 			payment_method_types: ['card']
 		});
 
-		const { error: cartError } = await supabaseAdmin
-			.from('cart')
-			.insert({ intentId: paymentIntent.id, userId, quantity });
-
-		if (cartError) throw cartError;
+		await db
+			.insertInto('cart')
+			.values({ intent_id: paymentIntent.id, user_id: userId!, quantity })
+			.execute();
 
 		return json({
 			clientSecret: paymentIntent.client_secret
 		});
 	} catch (err) {
-		let errorMessage = 'Unbekannter Fehler bei Erstellung eines Zahlungsvorgangs';
+		let errorMessage =
+			'Unbekannter Fehler bei Erstellung eines Zahlungsvorgangs';
 		if (err instanceof Stripe.errors.StripeError) {
 			Sentry.captureException(err);
 			errorMessage = err.message;
 		}
-		return error(500, {
-			type: CommonServerError.STRIPE_ERROR.code,
-			message: errorMessage
-		});
+		throwSvelteError(ECommonServerError.STRIPE_ERROR, errorMessage);
 	}
 }

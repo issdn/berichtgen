@@ -2,12 +2,14 @@ import Stripe from 'stripe';
 import { error, json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import * as Sentry from '@sentry/node';
+import { db } from '$lib/server/db';
+import { sql } from 'kysely';
 
 // init api client
 const stripe = new Stripe(env.SECRET_STRIPE_KEY);
 
 // endpoint to handle incoming webhooks
-export async function POST({ request, locals: { supabase } }) {
+export async function POST({ request }) {
 	// extract body
 	const body = await request.text();
 
@@ -40,34 +42,22 @@ export async function POST({ request, locals: { supabase } }) {
 			return error(400, 'User ID not found in metadata');
 		}
 
-		const { data, error: cartError } = await supabase
-			.from('cart')
+		const cartRow = await db
+			.selectFrom('cart')
 			.select('quantity')
-			.eq('userId', userId)
-			.order('createdAt', { ascending: false })
-			.limit(1);
+			.where('user_id', '=', userId)
+			.orderBy('created_at', 'desc')
+			.executeTakeFirst();
 
-		if (cartError || !data[0]) {
-			Sentry.captureException(error);
+		if (!cartRow) {
+			Sentry.captureException(new Error('No cart found for user'));
 			return error(400, 'No cart found for user');
 		}
 
 		try {
-			const { error: updateError } = await supabase.rpc('add_user_tokens', {
-				user_id: userId,
-				amount: data[0].quantity * 1_000_000
-			});
-
-			if (updateError) {
-				throw updateError;
-			}
-
-			// Delete cart
-			const { error: deleteError } = await supabase.from('cart').delete().eq('userId', userId);
-
-			if (deleteError) {
-				throw deleteError;
-			}
+			const amount = cartRow.quantity * 1_000_000;
+			await sql`SELECT add_user_tokens(p_user_id => ${userId}, amount => ${amount})`.execute(db);
+			await db.deleteFrom('cart').where('user_id', '=', userId).execute();
 		} catch (err) {
 			Sentry.captureException(err);
 			return error(500, "Couldn't find user in database");

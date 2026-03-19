@@ -1,8 +1,8 @@
-import { supabaseAdmin } from '$src/lib/server/admin';
 import * as Sentry from '@sentry/sveltekit';
 import type { LayoutServerLoad } from './$types';
+import { db } from '$lib/server/db';
 
-export const load: LayoutServerLoad = async ({ locals: { user, supabase, session } }) => {
+export const load: LayoutServerLoad = async ({ locals: { user, session } }) => {
 	if (!user) {
 		return {
 			tokenCount: null,
@@ -12,38 +12,34 @@ export const load: LayoutServerLoad = async ({ locals: { user, supabase, session
 
 	let tokenCount = 0;
 
-	const { data: getTokenCount, error: tokenCountError } = await supabase
-		.from('userTokenCount')
+	const tokenRow = await db
+		.selectFrom('user_token_count')
 		.select('tokens')
-		.eq('userId', user.id)
-		.single();
+		.where('user_id', '=', user.id)
+		.executeTakeFirst();
 
-	tokenCount = getTokenCount?.tokens ?? 0;
-
-	if (tokenCountError || !getTokenCount) {
-		const { data: insertTokenCount, error: insertError } = await supabaseAdmin
-			.from('userTokenCount')
-			.insert({ userId: user.id, tokens: 0 })
-			.select('tokens')
-			.single();
-
-		if (insertError) {
-			Sentry.captureException(insertError);
+	if (tokenRow) {
+		tokenCount = tokenRow.tokens;
+	} else {
+		try {
+			const inserted = await db
+				.insertInto('user_token_count')
+				.values({ user_id: user.id, tokens: 0 })
+				.onConflict((oc) => oc.column('user_id').doNothing())
+				.returning('tokens')
+				.executeTakeFirst();
+			tokenCount = inserted?.tokens ?? 0;
+		} catch (e) {
+			Sentry.captureException(e);
 		}
-
-		tokenCount = insertTokenCount?.tokens ?? 0;
 	}
 
-	// Load user metadata
-	const { data: userMetadata, error: metadataError } = await supabase
-		.from('userMetadata')
-		.select('*')
-		.eq('userId', user.id)
-		.single();
-
-	if (metadataError && metadataError.code !== 'PGRST116') {
-		Sentry.captureException(metadataError);
-	}
+	const userMetadata =
+		(await db
+			.selectFrom('user_metadata')
+			.selectAll()
+			.where('user_id', '=', user.id)
+			.executeTakeFirst()) ?? null;
 
 	return {
 		tokenCount,

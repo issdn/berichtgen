@@ -14,31 +14,30 @@ import { err, ok, ResultAsync } from 'neverthrow';
 import { countTokens } from '$src/lib/utils/token_counter';
 import * as Sentry from '@sentry/sveltekit';
 import { json } from '@sveltejs/kit';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { getContextPrompt } from '$src/lib/completion/prompt';
 import { completionApiSchema, completionSchema } from '$src/lib/schemas';
-import { supabaseAdmin } from '$src/lib/server/admin';
+import { db } from '$lib/server/db';
+import { sql } from 'kysely';
 
 // API key from environment
 const apiKey = env.GOOGLE_AI_API_KEY;
 
-async function deductUserTokens(supabase: SupabaseClient, userId: string, text: string) {
+async function deductUserTokens(userId: string, text: string) {
 	const amount = countTokens(new Blob([text]));
 
-	const { data, error } = await supabase.rpc('deduct_user_tokens', {
-		user_id: userId,
-		amount
-	});
+	try {
+		const result = await sql<{ deduct_user_tokens: boolean }>`
+			SELECT deduct_user_tokens(p_user_id => ${userId}, p_amount => ${amount})
+		`.execute(db);
 
-	if (error) {
-		Sentry.captureException(error, {
+		if (!result.rows[0]?.deduct_user_tokens) {
+			return err(ECompletionException.NOT_ENOUGH_TOKENS);
+		}
+	} catch (e) {
+		Sentry.captureException(e, {
 			extra: { user_id: userId, amount }
 		});
 		return err(ECompletionException.INTERNAL);
-	}
-
-	if (!data) {
-		return err(ECompletionException.NOT_ENOUGH_TOKENS);
 	}
 
 	return ok(amount);
@@ -63,7 +62,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 	const { text, ort } = parsed.data;
 
-	const tokensDeducted = await deductUserTokens(supabaseAdmin, user!.id!, text);
+	const tokensDeducted = await deductUserTokens(user!.id!, text);
 
 	if (tokensDeducted.isErr()) {
 		return throwSvelteError(tokensDeducted.error);
@@ -84,7 +83,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 		return throwSvelteError(ECompletionException.UNKNOWN_THIRD_PARTY_ERROR);
 	}
 	// Deduct tokens for output
-	const outputDeduction = await deductUserTokens(supabaseAdmin, user!.id!, completion);
+	const outputDeduction = await deductUserTokens(user!.id!, completion);
 	if (outputDeduction.isErr()) {
 		return throwSvelteError(outputDeduction.error);
 	}

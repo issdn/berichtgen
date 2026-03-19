@@ -29,7 +29,9 @@
       "Bash(powershell -Command \"\\(Get-Content 'C:/Users/isdnb/Documents/code/berichtgen/src/lib/templates/TemplateList.svelte' -Raw\\) -replace '<Template\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\tprofile={template.profile}\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t{isPreferred}\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t{template}\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t{hasPendingReport}\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t/>', '<Template\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\tprofile={template.profile}\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t{isPreferred}\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t{template}\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t{hasPendingReport}\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t{query}\\\\r\\\\n\\\\t\\\\t\\\\t\\\\t\\\\t\\\\t/>' | Set-Content 'C:/Users/isdnb/Documents/code/berichtgen/src/lib/templates/TemplateList.svelte' -NoNewline\")",
       "mcp__supabase__execute_sql",
       "Bash(npm install:*)",
-      "mcp__plugin_context-mode_context-mode__ctx_execute_file"
+      "mcp__plugin_context-mode_context-mode__ctx_execute_file",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm remove:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

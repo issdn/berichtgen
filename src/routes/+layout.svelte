@@ -11,6 +11,7 @@
 	import SettingsPopover from '$src/lib/components/SettingsPopover.svelte';
 
 	let { data, children } = $props();
+
 	let { user, supabase, loggedIn, session, profile } = $derived({
 		supabase: data.supabase,
 		user: data.user,

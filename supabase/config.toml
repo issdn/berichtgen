@@ -16,3 +16,10 @@ pass = "***REMOVED***"
 sender_name = "***REMOVED***"
 admin_email = "***REMOVED***"
 # sender = "***REMOVED***"
+
+[db.pooler]
+enabled = true
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
