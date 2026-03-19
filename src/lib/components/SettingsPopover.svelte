@@ -28,6 +28,8 @@
 	import { page } from '$app/state';
 	import { emailSchema } from '$src/lib/schemas';
 	import { resolve } from '$app/paths';
+	import { dev } from '$app/environment';
+	import DebugLoginDialog from '$lib/components/DebugLoginDialog.svelte';
 
 	let { user, loggedIn, supabase } = $derived(
 		getContext<UserContext>('user')()
@@ -155,6 +157,9 @@
 			<Button disabled={true} onclick={() => (otpDialogOpen = true)}
 				><KeyRound />OTP Anmeldung</Button
 			>
+			{#if dev}
+				<DebugLoginDialog />
+			{/if}
 		{/if}
 		<Button variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
 		<Button variant="outline" href="/datenschutz"

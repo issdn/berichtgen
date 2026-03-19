@@ -105,6 +105,11 @@ export const csvConfigSchema = z
 
 // ------------------------------------------------
 
+export const debugLoginSchema = z.object({
+	email: z.string().email('Bitte eine gültige E-Mail-Adresse eingeben'),
+	password: z.string().min(1, 'Passwort darf nicht leer sein')
+});
+
 export const userMetadataSchema = z.object({
 	fullName: z.string().max(256, { message: 'Max 256 Zeichen' }).nullable().optional(),
 	ausbildungsberuf: z.string().max(256, { message: 'Max 256 Zeichen' }).nullable().optional(),
