@@ -1,121 +1,92 @@
 <script lang="ts">
 	import Error from './Error.svelte';
-	import { SearchIcon } from '@lucide/svelte';
-	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import ScrollArea from '$src/lib/components/ui/scroll-area/scroll-area.svelte';
 	import { Skeleton } from '$src/lib/components/ui/skeleton';
 	import Template from '$src/lib/templates/Template.svelte';
 	import { getTemplates } from './templates.remote';
-	import Spinner from '../components/ui/Spinner.svelte';
-	import { Toggle } from '$src/lib/components/ui/toggle/index.js';
+	import { Spinner } from '../components/ui/spinner';
 
-	const ITEMS_PER_PAGE = 9;
+	type TemplateItem = Awaited<
+		ReturnType<typeof getTemplates>
+	>['templates'][number];
 
-	let limit = $state(ITEMS_PER_PAGE);
-	let search = $state('');
-	let hideReported = $state(false);
-	let onlyMine = $state(false);
+	const {
+		query,
+		cachedTemplates,
+		onLoadMore,
+		onTemplateDeleted,
+		onTemplateReported
+	}: {
+		query: ReturnType<typeof getTemplates>;
+		cachedTemplates: TemplateItem[];
+		onLoadMore: (pageTemplates: TemplateItem[]) => void;
+		onTemplateDeleted: (id: string) => void;
+		onTemplateReported: (
+			id: string,
+			report: NonNullable<TemplateItem['template_report']>
+		) => void;
+	} = $props();
 
-	const query = $derived(
-		getTemplates({ limit, search, hideReported, onlyMine })
-	);
-	const { templates, hasMore } = $derived(await query);
+	const { templates: pageTemplates, hasMore } = $derived(await query);
+
+	const allTemplates = $derived([...cachedTemplates, ...pageTemplates]);
 
 	let lastScroll = 0;
 </script>
 
-<div class="flex w-full flex-col items-center gap-y-4">
-	<InputGroup.Root>
-		<InputGroup.Input
-			placeholder="Suchen..."
-			value={search}
-			oninput={(e) => {
-				search = (e.target as HTMLInputElement).value;
-				limit = ITEMS_PER_PAGE;
-			}}
-		/>
-		<InputGroup.Addon>
-			<SearchIcon />
-		</InputGroup.Addon>
-	</InputGroup.Root>
+<svelte:boundary>
+	{#snippet pending()}
+		<div class="flex w-full flex-wrap gap-2">
+			{#each { length: 3 } as _item, i (i)}
+				<Skeleton class="h-50.75 w-36 shrink-0 rounded-sm" />
+			{/each}
+		</div>
+	{/snippet}
 
-	<div class="flex w-full gap-2">
-		<Toggle
-			size="sm"
-			variant="outline"
-			pressed={hideReported}
-			onPressedChange={(v) => {
-				hideReported = v;
-				limit = ITEMS_PER_PAGE;
-			}}
-		>
-			Gemeldete ausblenden
-		</Toggle>
-		<Toggle
-			size="sm"
-			variant="outline"
-			pressed={onlyMine}
-			onPressedChange={(v) => {
-				onlyMine = v;
-				limit = ITEMS_PER_PAGE;
-			}}
-		>
-			Nur meine
-		</Toggle>
-	</div>
+	{#snippet failed(error)}
+		<Error {error} />
+	{/snippet}
 
-	<svelte:boundary>
-		{#snippet pending()}
-			<div class="flex w-full flex-wrap gap-2">
-				{#each { length: 3 } as _item, i (i)}
-					<Skeleton class="h-50.75 w-36 shrink-0 rounded-sm" />
+	{#if allTemplates.length === 0}
+		<p>Keine Templates gefunden 🥺</p>
+	{:else}
+		<ScrollArea
+			type="auto"
+			orientation="vertical"
+			onscroll={(e) => {
+				const el = e.target as HTMLDivElement;
+				const near = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+				const down = el.scrollTop > lastScroll;
+				lastScroll = el.scrollTop;
+				if (near && down && hasMore) {
+					onLoadMore(pageTemplates);
+				}
+			}}
+			class="h-50.75 w-full"
+		>
+			<ul class="flex h-full flex-wrap gap-2">
+				{#each allTemplates as template (template.id)}
+					{@const isPreferred =
+						berichtgenStore.preferedTemplatePath === template.storage_path}
+					{@const hasPendingReport =
+						(template.template_report?.length ?? 0) > 0}
+					<Template
+						profile={template.profile}
+						{isPreferred}
+						{template}
+						{hasPendingReport}
+						{query}
+						{onTemplateDeleted}
+						{onTemplateReported}
+					/>
 				{/each}
-			</div>
-		{/snippet}
-
-		{#snippet failed(error)}
-			<Error {error} />
-		{/snippet}
-
-		{#if templates.length === 0}
-			<p>Keine Templates gefunden 🥺</p>
-		{:else}
-			<ScrollArea
-				type="auto"
-				orientation="vertical"
-				onscroll={(e) => {
-					const el = e.target as HTMLDivElement;
-					const near = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
-					const down = el.scrollTop > lastScroll;
-					lastScroll = el.scrollTop;
-					if (near && down && hasMore) {
-						limit += ITEMS_PER_PAGE;
-					}
-				}}
-				class="h-50.75 w-full"
-			>
-				<ul class="flex h-full flex-wrap gap-2">
-					{#each templates as template (template.id)}
-						{@const isPreferred =
-							berichtgenStore.preferedTemplatePath === template.storage_path}
-						{@const hasPendingReport =
-							(template.template_report?.length ?? 0) > 0}
-						<Template
-							profile={template.profile}
-							{isPreferred}
-							{template}
-							{hasPendingReport}
-							{query}
-						/>
-					{/each}
-				</ul>
-				{#if hasMore && $effect.pending()}
-					<div class="flex w-full items-center justify-center pt-2">
-						<Spinner />
-					</div>
-				{/if}
-			</ScrollArea>
-		{/if}
-	</svelte:boundary>
-</div>
+			</ul>
+			{#if hasMore && $effect.pending()}
+				<div class="flex w-full items-center justify-center pt-2">
+					<Spinner />
+				</div>
+			{/if}
+		</ScrollArea>
+	{/if}
+</svelte:boundary>

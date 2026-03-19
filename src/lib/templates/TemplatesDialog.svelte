@@ -3,7 +3,47 @@
 	import { buttonVariants } from '$src/lib/components/ui/button';
 	import TemplateList from '$src/lib/templates/TemplateList.svelte';
 	import TemplateUpload from '$src/lib/templates/TemplateUpload.svelte';
-	import { FileCode } from '@lucide/svelte';
+	import { FileCode, SearchIcon } from '@lucide/svelte';
+	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
+	import { Toggle } from '$src/lib/components/ui/toggle/index.js';
+	import { getTemplates } from '$src/lib/templates/templates.remote';
+
+	type TemplateItem = Awaited<
+		ReturnType<typeof getTemplates>
+	>['templates'][number];
+
+	let search = $state('');
+	let hideReported = $state(false);
+	let onlyMine = $state(false);
+	let lastId = $state<string | undefined>(undefined);
+	let cachedTemplates = $state<TemplateItem[]>([]);
+
+	const query = $derived(
+		getTemplates({ afterId: lastId, search, hideReported, onlyMine })
+	);
+
+	function reset() {
+		cachedTemplates = [];
+		lastId = undefined;
+	}
+
+	function onLoadMore(pageTemplates: TemplateItem[]) {
+		cachedTemplates = [...cachedTemplates, ...pageTemplates];
+		lastId = pageTemplates.at(-1)?.id ?? undefined;
+	}
+
+	function onTemplateDeleted(id: string) {
+		cachedTemplates = cachedTemplates.filter((t) => t.id !== id);
+	}
+
+	function onTemplateReported(
+		id: string,
+		report: NonNullable<TemplateItem['template_report']>
+	) {
+		cachedTemplates = cachedTemplates.map((t) =>
+			t.id === id ? { ...t, template_report: report } : t
+		);
+	}
 </script>
 
 <Dialog.Root>
@@ -21,8 +61,53 @@
 			<Dialog.Title>Templates</Dialog.Title>
 		</Dialog.Header>
 		<div class="flex w-full flex-col gap-y-4 py-4">
-			<TemplateList />
-			<TemplateUpload />
+			<InputGroup.Root>
+				<InputGroup.Input
+					placeholder="Suchen..."
+					value={search}
+					oninput={(e) => {
+						search = (e.target as HTMLInputElement).value;
+						reset();
+					}}
+				/>
+				<InputGroup.Addon>
+					<SearchIcon />
+				</InputGroup.Addon>
+			</InputGroup.Root>
+
+			<div class="flex w-full gap-2">
+				<Toggle
+					size="sm"
+					variant="outline"
+					pressed={hideReported}
+					onPressedChange={(v) => {
+						hideReported = v;
+						reset();
+					}}
+				>
+					Gemeldete ausblenden
+				</Toggle>
+				<Toggle
+					size="sm"
+					variant="outline"
+					pressed={onlyMine}
+					onPressedChange={(v) => {
+						onlyMine = v;
+						reset();
+					}}
+				>
+					Nur meine
+				</Toggle>
+			</div>
+
+			<TemplateList
+				{query}
+				{cachedTemplates}
+				{onLoadMore}
+				{onTemplateDeleted}
+				{onTemplateReported}
+			/>
+			<TemplateUpload {query} />
 		</div>
 	</Dialog.Content>
 </Dialog.Root>

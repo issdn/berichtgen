@@ -5,15 +5,41 @@
 	import { toast } from 'svelte-sonner';
 	import { uploadTemplate, getTemplates } from './templates.remote';
 	import { toErrorBody } from '../errors';
+	import type { UserContext } from '../types';
+	import { getContext } from 'svelte';
 
-	const ITEMS_PER_PAGE = 9;
+	type TemplateItem = Awaited<
+		ReturnType<typeof getTemplates>
+	>['templates'][number];
+
+	const { profile, user } = getContext<UserContext>('user')();
+
+	const {
+		query
+	}: {
+		query: ReturnType<typeof getTemplates>;
+	} = $props();
+
+	function createTemplate(file: File) {
+		return {
+			id: 'temp-id',
+			storage_path: file.name,
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+			safe_marked_at: null,
+			thumbnail_path: null,
+			user_id: user!.id,
+			profile: {
+				id: user!.id,
+				full_name: profile?.full_name || 'Anonym',
+				avatar_url: profile?.avatar_url || null
+			},
+			template_report: [] as TemplateItem['template_report']
+		};
+	}
 
 	let isPending = $state(false);
 
-	/**
-	 * Validates the dropped/selected file, reads it as a Uint8Array,
-	 * and uploads it to the server via the uploadTemplate command.
-	 */
 	async function handleFiles(input: FileList | DataTransferItemList) {
 		const files = extractFilesSimple(input);
 		const firstFile = files[0];
@@ -36,7 +62,12 @@
 				name: firstFile.name,
 				type: firstFile.type,
 				data
-			}).updates(getTemplates({ limit: ITEMS_PER_PAGE, search: '' }));
+			}).updates(
+				query.withOverride(({ templates, hasMore }) => ({
+					templates: [createTemplate(firstFile), ...templates],
+					hasMore
+				}))
+			);
 			toast.success('Datei erfolgreich hochgeladen.');
 		} catch (e) {
 			toast.error('Fehler beim Hochladen der Datei.', {

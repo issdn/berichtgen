@@ -10,8 +10,10 @@ import {
 	throwSvelteError
 } from '../errors';
 
+const PAGE_SIZE = 9;
+
 const argsSchema = z.object({
-	limit: z.number().int().min(1).max(100),
+	afterId: z.uuid().optional(),
 	search: z.string().optional().default(''),
 	hideReported: z.boolean().optional().default(false),
 	onlyMine: z.boolean().optional().default(false)
@@ -19,26 +21,27 @@ const argsSchema = z.object({
 
 export const getTemplates = query(
 	argsSchema,
-	async ({ limit, search, hideReported, onlyMine }) => {
+	async ({ afterId, search, hideReported, onlyMine }) => {
 		const {
 			locals: { supabase }
 		} = getRequestEvent();
 
 		const { data, error } = await supabase
 			.rpc('get_templates', {
-				limit_val: limit,
+				limit_val: PAGE_SIZE + 1,
 				search_val: search,
 				only_unreported: hideReported,
-				only_mine: onlyMine
+				only_mine: onlyMine,
+				after_id: afterId ?? null
 			})
 			.select('*, profile(*), template_report!left(*)');
 
 		if (error)
 			return throwSvelteError(ECommonServerError.INTERNAL_ERROR, error.message);
 
-		const hasMore = data.length === limit;
+		const hasMore = data.length > PAGE_SIZE;
 
-		return { templates: data, hasMore };
+		return { templates: hasMore ? data.slice(0, PAGE_SIZE) : data, hasMore };
 	}
 );
 

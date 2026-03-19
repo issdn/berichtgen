@@ -11,14 +11,20 @@
 	import SettingsPopover from '$src/lib/components/SettingsPopover.svelte';
 
 	let { data, children } = $props();
-	let { user, supabase, loggedIn, session } = $derived({
+	let { user, supabase, loggedIn, session, profile } = $derived({
 		supabase: data.supabase,
 		user: data.user,
 		loggedIn: data.user !== null,
-		session: data.session
+		session: data.session,
+		profile: data.profile
 	});
 
-	setContext('user', () => ({ user, loggedIn, supabase: supabase }));
+	setContext('user', () => ({
+		user,
+		loggedIn,
+		supabase: supabase,
+		profile: profile
+	}));
 
 	onMount(() => {
 		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {
@@ -30,7 +36,9 @@
 	});
 </script>
 
-<div class="h-nav flex w-full flex-row items-center justify-between px-4 md:px-8">
+<div
+	class="h-nav flex w-full flex-row items-center justify-between px-4 md:px-8"
+>
 	<Button
 		onclick={() => goto(resolve('/board'))}
 		variant="link"

@@ -1,3 +1,21 @@
+-- UUIDv7 generator: timestamp-ordered, no extension required (works on PG17+)
+CREATE OR REPLACE FUNCTION uuidv7() RETURNS uuid AS $$
+  SELECT encode(
+    set_bit(
+      set_bit(
+        overlay(
+          uuid_send(gen_random_uuid())
+          placing substring(int8send(floor(extract(epoch from clock_timestamp()) * 1000)::bigint) from 3)
+          from 1 for 6
+        ),
+        52, 1
+      ),
+      53, 1
+    ),
+    'hex'
+  )::uuid;
+$$ LANGUAGE sql VOLATILE;
+
 -- ============================================================
 -- Tables
 -- ============================================================
@@ -21,7 +39,7 @@ CREATE TABLE cart (
 );
 
 CREATE TABLE template (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    id uuid PRIMARY KEY DEFAULT uuidv7(),
     user_id uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     storage_path text NOT NULL,
     thumbnail_path text,
@@ -40,7 +58,7 @@ CREATE TABLE user_metadata (
 );
 
 CREATE TABLE template_report (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    id uuid PRIMARY KEY DEFAULT uuidv7(),
     template_id uuid NOT NULL REFERENCES template(id) ON DELETE CASCADE ON UPDATE CASCADE,
     reporter_user_id uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE ,
     message text,
@@ -72,22 +90,27 @@ ON CONFLICT (id) DO NOTHING;
 -- Functions
 -- ============================================================
 
-CREATE FUNCTION get_templates(
+CREATE OR REPLACE FUNCTION get_templates(
   limit_val int,
   search_val text DEFAULT '',
   only_unreported boolean DEFAULT false,
-  only_mine boolean DEFAULT false
+  only_mine boolean DEFAULT false,
+  after_id uuid DEFAULT NULL
 )
 RETURNS SETOF template AS $$
-  SELECT t.*
-  FROM template t
-  LEFT JOIN template_report tr ON tr.template_id = t.id
-  WHERE
-    (search_val = '' OR t.storage_path ILIKE '%/%' || search_val || '%.docx')
-    AND (only_mine = false OR t.profile_id = auth.uid())
-  GROUP BY t.id
-  HAVING (only_unreported = false OR COUNT(tr.id) = 0)
-  ORDER BY t.created_at DESC, t.updated_at DESC
+  WITH filtered AS (
+    SELECT t.*
+    FROM template t
+    LEFT JOIN template_report tr ON tr.template_id = t.id
+    WHERE
+      (search_val = '' OR t.storage_path ILIKE '%/%' || search_val || '%.docx')
+      AND (only_mine = false OR t.user_id = auth.uid())
+      AND (after_id IS NULL OR t.id < after_id)
+    GROUP BY t.id
+    HAVING (only_unreported = false OR COUNT(tr.id) = 0)
+  )
+  SELECT * FROM filtered
+  ORDER BY id DESC
   LIMIT limit_val;
 $$ LANGUAGE sql STABLE SECURITY INVOKER;
 

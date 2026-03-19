@@ -35,9 +35,12 @@ export const load = async ({ data, depends, fetch }) => {
 		data: { session }
 	} = await supabase.auth.getSession();
 
-	const {
-		data: { user }
-	} = await supabase.auth.getUser();
+	const [{ data: { user } }, { data: profile }] = await Promise.all([
+		supabase.auth.getUser(),
+		session
+			? supabase.from('profile').select('*').eq('id', session.user.id).single()
+			: Promise.resolve({ data: null })
+	]);
 
-	return { session, supabase, user };
+	return { session, supabase, user, profile };
 };
