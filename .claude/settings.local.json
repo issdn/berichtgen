@@ -31,7 +31,11 @@
       "Bash(npm install:*)",
       "mcp__plugin_context-mode_context-mode__ctx_execute_file",
       "Bash(pnpm add:*)",
-      "Bash(pnpm remove:*)"
+      "Bash(pnpm remove:*)",
+      "Bash(sed -i 's|theme=\"\"night\"\" labels=\"\"floating\"\"|appearance={{ theme: ''''night'''', labels: ''''floating'''' }}|g' \"/c/Users/isdnb/Documents/code/berichtgen/src/routes/board/user/kauf/+page.svelte\")",
+      "Bash(sed -i 's|on:submit|preventDefault={submit}|onsubmit={submit}|g' \"/c/Users/isdnb/Documents/code/berichtgen/src/routes/board/user/kauf/+page.svelte\")",
+      "Bash(python3:*)",
+      "Bash(winget install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

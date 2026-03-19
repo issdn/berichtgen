@@ -73,12 +73,6 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 	const { text, ort } = parsed.data;
 
-	const tokensDeducted = await deductUserTokens(user!.id!, text);
-
-	if (tokensDeducted.isErr()) {
-		return throwSvelteError(tokensDeducted.error);
-	}
-
 	const result = await ResultAsync.fromPromise(getGeminiCompletion(text, apiKey, ort), (e) =>
 		e instanceof genai.ApiError
 			? (errorByHttpCode(EGenAIError, e.status) ?? ECompletionException.UNKNOWN_THIRD_PARTY_ERROR)
@@ -93,7 +87,12 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	if (completion === undefined || completion === null) {
 		return throwSvelteError(ECompletionException.UNKNOWN_THIRD_PARTY_ERROR);
 	}
-	// Deduct tokens for output
+
+	const tokensDeducted = await deductUserTokens(user!.id!, text);
+	if (tokensDeducted.isErr()) {
+		return throwSvelteError(tokensDeducted.error);
+	}
+
 	const outputDeduction = await deductUserTokens(user!.id!, completion);
 	if (outputDeduction.isErr()) {
 		return throwSvelteError(outputDeduction.error);
@@ -101,7 +100,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 	return json({
 		completion,
-		tokensUsed: outputDeduction.value
+		tokensUsed: tokensDeducted.value + outputDeduction.value
 	});
 };
 

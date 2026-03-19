@@ -1,11 +1,11 @@
 import Stripe from 'stripe';
-import { SECRET_STRIPE_KEY } from '$env/static/private';
+import { STRIPE_SECRET_KEY } from '$env/static/private';
 import { json } from '@sveltejs/kit';
 import * as Sentry from '@sentry/sveltekit';
 import { ECommonServerError, throwSvelteError } from '$src/lib/errors';
 import { db } from '$lib/server/db';
 // initialize Stripe
-const stripe = new Stripe(SECRET_STRIPE_KEY);
+const stripe = new Stripe(STRIPE_SECRET_KEY);
 
 // handle POST /create-payment-intent
 export async function POST({ locals: { safeGetSession }, url }) {
@@ -33,10 +33,13 @@ export async function POST({ locals: { safeGetSession }, url }) {
 			.executeTakeFirst();
 
 		if (updated) {
-			const paymentIntent = await stripe.paymentIntents.retrieve(
-				updated.intent_id
+			const paymentIntent = await stripe.paymentIntents.update(
+				updated.intent_id,
+				{
+					amount: quantity * 400,
+					metadata: { userId: userId!, quantity }
+				}
 			);
-			paymentIntent.amount = updated.quantity * 400;
 			return json({
 				clientSecret: paymentIntent.client_secret
 			});

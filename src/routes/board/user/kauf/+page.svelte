@@ -42,7 +42,7 @@
 		const { data } = await supabase
 			.from('cart')
 			.select('quantity')
-			.eq('userId', user!.id)
+			.eq('user_id', user!.id)
 			.maybeSingle();
 
 		if (data?.quantity) {
@@ -78,7 +78,8 @@
 		}
 	}
 
-	async function submit() {
+	async function submit(event: SubmitEvent) {
+		event.preventDefault();
 		// avoid processing duplicates
 		if (processing || elements === null) return;
 
@@ -185,8 +186,8 @@
 		</div>
 		<div class="flex w-full max-w-150 flex-col justify-center">
 			{#if clientSecret}
-				<Elements locale="de" {stripe} {clientSecret} theme="night" labels="floating" bind:elements>
-					<form on:submit|preventDefault={submit}>
+				<Elements locale="de" {stripe} {clientSecret} appearance={{ theme: 'night', labels: 'floating' }} bind:elements>
+					<form onsubmit={submit}>
 						<PaymentElement />
 						<Address mode="billing" />
 						<Button

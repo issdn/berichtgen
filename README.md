@@ -11,12 +11,6 @@ Supabase Integrations -> Cron 0 0 \* \* 1
 DELETE FROM cart WHERE "createdAt" < NOW() - INTERVAL '7 days';
 ```
 
-### types
-
-```ps1
-supabase gen types --local typescript --schema public | Set-Content -Path src\lib\database.types.ts -Encoding UTF8
-```
-
 ### stripe
 
 ```ps1

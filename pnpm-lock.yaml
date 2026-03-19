@@ -90,8 +90,8 @@ importers:
         specifier: ^1.2.0
         version: 1.2.0
       svelte-stripe:
-        specifier: ^1.4.0
-        version: 1.4.0(@stripe/stripe-js@8.9.0)(svelte@5.53.12)
+        specifier: ^2.0.0
+        version: 2.0.0(@stripe/stripe-js@8.9.0)(svelte@5.53.12)
       tesseract.js:
         specifier: ^6.0.1
         version: 6.0.1
@@ -3718,11 +3718,11 @@ packages:
     peerDependencies:
       svelte: ^5.0.0
 
-  svelte-stripe@1.4.0:
-    resolution: {integrity: sha512-RUSui4IszIBXhGt3mT3pLJX17OJ34A0O+LAcZLooWVYQCAv95umVXoRB6WmjMabj3jOoJ8c3KHGufaJLRlIzRg==}
+  svelte-stripe@2.0.0:
+    resolution: {integrity: sha512-fKIufgE7Gd40j9PJh3RcQnL15XrKpJ544nWiv8CJmIzZwoF5lJjVRC0MJg6RVqJd1BEz+N9Ip731O12x2Y0PJg==}
     peerDependencies:
-      '@stripe/stripe-js': ^3 || ^4
-      svelte: ^3 || ^4 || ^5
+      '@stripe/stripe-js': '>=5'
+      svelte: ^5
 
   svelte-toolbelt@0.10.6:
     resolution: {integrity: sha512-YWuX+RE+CnWYx09yseAe4ZVMM7e7GRFZM6OYWpBKOb++s+SQ8RBIMMe+Bs/CznBMc0QPLjr+vDBxTAkozXsFXQ==}
@@ -7714,7 +7714,7 @@ snapshots:
       runed: 0.28.0(svelte@5.53.12)
       svelte: 5.53.12
 
-  svelte-stripe@1.4.0(@stripe/stripe-js@8.9.0)(svelte@5.53.12):
+  svelte-stripe@2.0.0(@stripe/stripe-js@8.9.0)(svelte@5.53.12):
     dependencies:
       '@stripe/stripe-js': 8.9.0
       svelte: 5.53.12
