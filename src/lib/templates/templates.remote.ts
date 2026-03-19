@@ -5,7 +5,7 @@ import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import * as Sentry from '@sentry/sveltekit';
 import { supabaseAdmin } from '$lib/server/admin';
 import { db } from '$lib/server/db';
-import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
+import { sql } from 'kysely';
 import {
 	ECommonServerError,
 	ETemplateReportError,
@@ -14,68 +14,110 @@ import {
 
 const PAGE_SIZE = 9;
 
+type ProfileRow = {
+	id: string;
+	full_name: string | null;
+	avatar_url: string | null;
+};
+
+type TemplateReportRow = {
+	id: string;
+	template_id: string;
+	reporter_user_id: string;
+	message: string | null;
+	created_at: string;
+};
+
+type TemplateRow = {
+	id: string;
+	user_id: string;
+	storage_path: string;
+	thumbnail_path: string | null;
+	safe_marked_at: string | null;
+	created_at: string;
+	updated_at: string | null;
+	is_mine: boolean;
+	profile: ProfileRow | null;
+	template_report: TemplateReportRow[];
+};
+
 export const getTemplates = query(
 	z.object({
 		afterId: z.uuid().optional(),
 		search: z.string().optional().default(''),
-		hideReported: z.boolean().optional().default(false),
-		onlyMine: z.boolean().optional().default(false)
+		hideReported: z.boolean().optional().default(false)
 	}),
-	async ({ afterId, search, hideReported, onlyMine }) => {
+	async ({ afterId, search, hideReported }) => {
 		const {
 			locals: { user }
 		} = getRequestEvent();
 
-		let query = db
-			.selectFrom('template as t')
-			.selectAll('t')
-			.select((eb) => [
-				jsonObjectFrom(
-					eb
-						.selectFrom('profile')
-						.selectAll()
-						.whereRef('profile.id', '=', 't.user_id')
-				).as('profile'),
-				jsonArrayFrom(
-					eb
-						.selectFrom('template_report')
-						.selectAll()
-						.whereRef('template_report.template_id', '=', 't.id')
-				).as('template_report')
-			])
-			.orderBy('t.id', 'desc')
-			.limit(PAGE_SIZE + 1);
+		const searchCond = search
+			? sql`AND t.storage_path ILIKE ${`%/%${search}%.docx`}`
+			: sql``;
+		const afterIdCond = afterId ? sql`AND t.id < ${afterId}` : sql``;
+		const hideReportedCond = hideReported
+			? sql`AND NOT EXISTS (SELECT 1 FROM template_report WHERE template_id = t.id)`
+			: sql``;
 
-		if (search) {
-			query = query.where('t.storage_path', 'ilike', `%/%${search}%.docx`);
-		}
-		if (onlyMine && user) {
-			query = query.where('t.user_id', '=', user.id);
-		}
-		if (afterId) {
-			query = query.where('t.id', '<', afterId);
-		}
-		if (hideReported) {
-			query = query.where((eb) =>
-				eb.not(
-					eb.exists(
-						eb
-							.selectFrom('template_report')
-							.select('id')
-							.whereRef('template_report.template_id', '=', 't.id')
-					)
+		let data: TemplateRow[];
+
+		if (user) {
+			const result = await sql<TemplateRow>`
+				(
+					SELECT t.*, true AS is_mine,
+					       row_to_json(p.*) AS profile,
+					       COALESCE(json_agg(tr.*) FILTER (WHERE tr.id IS NOT NULL), '[]'::json) AS template_report
+					FROM template t
+					LEFT JOIN profile p ON p.id = t.user_id
+					LEFT JOIN template_report tr ON tr.template_id = t.id
+					WHERE t.user_id = ${user.id} ${searchCond}
+					GROUP BY t.id, p.id
 				)
-			);
+				UNION ALL
+				(
+					SELECT t.*, false AS is_mine,
+					       row_to_json(p.*) AS profile,
+					       COALESCE(json_agg(tr.*) FILTER (WHERE tr.id IS NOT NULL), '[]'::json) AS template_report
+					FROM template t
+					LEFT JOIN profile p ON p.id = t.user_id
+					LEFT JOIN template_report tr ON tr.template_id = t.id
+					WHERE t.user_id != ${user.id} ${searchCond} ${afterIdCond} ${hideReportedCond}
+					GROUP BY t.id, p.id
+					ORDER BY t.id DESC
+					LIMIT ${PAGE_SIZE + 1}
+				)
+				ORDER BY is_mine DESC, id DESC
+			`.execute(db);
+			data = result.rows;
+		} else {
+			const result = await sql<TemplateRow>`
+				SELECT t.*, false AS is_mine,
+				       row_to_json(p.*) AS profile,
+				       COALESCE(json_agg(tr.*) FILTER (WHERE tr.id IS NOT NULL), '[]'::json) AS template_report
+				FROM template t
+				LEFT JOIN profile p ON p.id = t.user_id
+				LEFT JOIN template_report tr ON tr.template_id = t.id
+				WHERE true ${searchCond} ${afterIdCond} ${hideReportedCond}
+				GROUP BY t.id, p.id
+				ORDER BY t.id DESC
+				LIMIT ${PAGE_SIZE + 1}
+			`.execute(db);
+			data = result.rows;
 		}
 
-		const data = await query.execute();
-		const hasMore = data.length > PAGE_SIZE;
+		const mine = data.filter((t) => t.is_mine);
+		const others = data.filter((t) => !t.is_mine);
+		const hasMore = others.length > PAGE_SIZE;
 
-		return { templates: hasMore ? data.slice(0, PAGE_SIZE) : data, hasMore };
+		return {
+			templates: [...mine, ...others.slice(0, PAGE_SIZE)],
+			hasMore
+		};
 	}
 );
 
-/** Uploads a .docx template file and creates the template metadata row. */
+/** Uploads a .docx template file and creates or updates the template metadata row. */
 export const uploadTemplate = command(
 	z.object({
 		name: z.string().min(1),
@@ -91,15 +133,29 @@ export const uploadTemplate = command(
 
 		const { error } = await supabaseAdmin.storage
 			.from('templates')
-			.upload(storagePath, data, { contentType: type });
-		console.log(error);
+			.upload(storagePath, data, { contentType: type, upsert: true });
+
 		if (error)
 			throwSvelteError(ECommonServerError.DATABASE_ERROR, error.message);
 
-		await db
-			.insertInto('template')
-			.values({ user_id: user!.id, storage_path: storagePath })
-			.execute();
+		const existing = await db
+			.selectFrom('template')
+			.select('id')
+			.where('storage_path', '=', storagePath)
+			.executeTakeFirst();
+
+		if (existing) {
+			await db
+				.updateTable('template')
+				.set({ updated_at: new Date().toISOString() })
+				.where('storage_path', '=', storagePath)
+				.execute();
+		} else {
+			await db
+				.insertInto('template')
+				.values({ user_id: user!.id, storage_path: storagePath })
+				.execute();
+		}
 	}
 );
 

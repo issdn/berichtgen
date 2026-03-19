@@ -14,12 +14,11 @@
 
 	let search = $state('');
 	let hideReported = $state(false);
-	let onlyMine = $state(false);
 	let lastId = $state<string | undefined>(undefined);
 	let cachedTemplates = $state<TemplateItem[]>([]);
 
 	const query = $derived(
-		getTemplates({ afterId: lastId, search, hideReported, onlyMine })
+		getTemplates({ afterId: lastId, search, hideReported })
 	);
 
 	function reset() {
@@ -28,7 +27,8 @@
 	}
 
 	function onLoadMore(pageTemplates: TemplateItem[]) {
-		cachedTemplates = [...cachedTemplates, ...pageTemplates];
+		const existingIds = new Set(cachedTemplates.map((t) => t.id));
+		cachedTemplates = [...cachedTemplates, ...pageTemplates.filter((t) => !existingIds.has(t.id))];
 		lastId = pageTemplates.at(-1)?.id ?? undefined;
 	}
 
@@ -86,17 +86,6 @@
 					}}
 				>
 					Gemeldete ausblenden
-				</Toggle>
-				<Toggle
-					size="sm"
-					variant="outline"
-					pressed={onlyMine}
-					onPressedChange={(v) => {
-						onlyMine = v;
-						reset();
-					}}
-				>
-					Nur meine
 				</Toggle>
 			</div>
 

@@ -5,6 +5,7 @@
 	import { toast } from 'svelte-sonner';
 	import { uploadTemplate, getTemplates } from './templates.remote';
 	import { toErrorBody } from '../errors';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
 	const {
 		query
@@ -13,6 +14,8 @@
 	} = $props();
 
 	let isPending = $state(false);
+	let pendingFile = $state<File | null>(null);
+	let confirmOpen = $state(false);
 
 	async function handleFiles(input: FileList | DataTransferItemList) {
 		const files = extractFilesSimple(input);
@@ -29,12 +32,26 @@
 			return;
 		}
 
+		const isDuplicate = query.current?.templates
+			.filter((t) => t.is_mine)
+			.some((t) => t.storage_path.endsWith(`/${firstFile.name}`));
+
+		if (isDuplicate) {
+			pendingFile = firstFile;
+			confirmOpen = true;
+			return;
+		}
+
+		await doUpload(firstFile);
+	}
+
+	async function doUpload(file: File) {
 		isPending = true;
 		try {
-			const data = new Uint8Array(await firstFile.arrayBuffer());
+			const data = new Uint8Array(await file.arrayBuffer());
 			await uploadTemplate({
-				name: firstFile.name,
-				type: firstFile.type,
+				name: file.name,
+				type: file.type,
 				data
 			}).updates(query);
 			toast.success('Datei erfolgreich hochgeladen.');
@@ -44,6 +61,7 @@
 			});
 		} finally {
 			isPending = false;
+			pendingFile = null;
 		}
 	}
 </script>
@@ -51,3 +69,18 @@
 <div class="h-full w-full">
 	<Dropzone disabled={isPending} {handleFiles} />
 </div>
+
+<AlertDialog.Root bind:open={confirmOpen}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Template ersetzen?</AlertDialog.Title>
+			<AlertDialog.Description>
+				„{pendingFile?.name}" existiert bereits und wird unwiderruflich überschrieben.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel onclick={() => (pendingFile = null)}>Abbrechen</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={() => doUpload(pendingFile!)}>Ersetzen</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
