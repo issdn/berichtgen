@@ -1,8 +1,6 @@
 /**
  * Creates a test user and uploads src/test/template.docx to their storage subfolder.
- *
- * The insert trigger (on_new_file_insert_create_metadata) creates the template
- * metadata row automatically once the file lands in the bucket.
+ * Also inserts the template metadata row directly (trigger removed).
  *
  * Usage: bun src/test/seed-template.ts
  */
@@ -13,9 +11,10 @@ import { join } from 'node:path';
 
 const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SECRET;
 
-if (!SUPABASE_URL || !ANON_KEY) {
-	console.error('Missing PUBLIC_SUPABASE_URL or PUBLIC_SUPABASE_PUBLISHABLE_KEY env vars.');
+if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) {
+	console.error('Missing PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, or SUPABASE_SECRET env vars.');
 	process.exit(1);
 }
 
@@ -23,6 +22,10 @@ const TEST_EMAIL = 'test-seed@berichtgen.local';
 const TEST_PASSWORD = 'seed-password-123!';
 
 const supabase = createClient(SUPABASE_URL, ANON_KEY, {
+	auth: { autoRefreshToken: false, persistSession: false }
+});
+
+const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 	auth: { autoRefreshToken: false, persistSession: false }
 });
 
@@ -47,7 +50,7 @@ if (signInResult.error) {
 const user = signInResult.data.user!;
 console.log('Signed in as:', user.id);
 
-// 2. Upload the template file under the user's subfolder
+// 2. Upload the template file using the admin client (storage policies removed)
 const templatePath = join(import.meta.dir, 'template.docx');
 const fileBytes = readFileSync(templatePath);
 const file = new File([fileBytes], 'template.docx', {
@@ -57,12 +60,21 @@ const file = new File([fileBytes], 'template.docx', {
 const storagePath = `${user.id}/template.docx`;
 console.log(`Uploading to templates/${storagePath}…`);
 
-const { error: uploadError } = await supabase.storage
+const { error: uploadError } = await admin.storage
 	.from('templates')
 	.upload(storagePath, file, { upsert: true, contentType: file.type });
 
 if (uploadError) throw uploadError;
-
 console.log('Upload successful.');
-console.log('The insert trigger will create the template metadata row automatically.');
+
+// 3. Insert template metadata row (insert trigger removed)
+await admin.from('template').delete().eq('storage_path', storagePath);
+
+const { error: insertError } = await admin
+	.from('template')
+	.insert({ user_id: user.id, storage_path: storagePath });
+
+if (insertError) throw insertError;
+console.log('Template metadata row created.');
+
 console.log(`\nTest user:\n  email:    ${TEST_EMAIL}\n  password: ${TEST_PASSWORD}\n  user_id:  ${user.id}`);

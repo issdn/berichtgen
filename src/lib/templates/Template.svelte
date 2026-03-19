@@ -77,7 +77,12 @@
 											template_id: template.id,
 											reporter_user_id: user!.id,
 											message: null,
-											created_at: new Date().toISOString()
+											created_at: new Date().toISOString(),
+											user_id: user!.id,
+											storage_path: '',
+											thumbnail_path: null,
+											safe_marked_at: null,
+											updated_at: null
 										}
 									]
 								: []
@@ -162,7 +167,12 @@
 				template_id: template.id,
 				reporter_user_id: user!.id,
 				message: null,
-				created_at: new Date().toISOString()
+				created_at: new Date().toISOString(),
+				user_id: user!.id,
+				storage_path: '',
+				thumbnail_path: null,
+				safe_marked_at: null,
+				updated_at: null
 			}
 		];
 		const prevReport = template.template_report ?? [];

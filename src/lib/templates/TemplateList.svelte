@@ -49,7 +49,7 @@
 	{/snippet}
 
 	{#if allTemplates.length === 0}
-		<p>Keine Templates gefunden 🥺</p>
+		<p class="w-full text-center">Keine Templates gefunden 🥺</p>
 	{:else}
 		<ScrollArea
 			type="auto"
@@ -72,7 +72,7 @@
 					{@const hasPendingReport =
 						(template.template_report?.length ?? 0) > 0}
 					<Template
-						profile={template.profile}
+						profile={template.profile!}
 						{isPreferred}
 						{template}
 						{hasPendingReport}

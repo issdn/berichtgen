@@ -5,6 +5,7 @@ import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import * as Sentry from '@sentry/sveltekit';
 import { supabaseAdmin } from '$lib/server/admin';
 import { db } from '$lib/server/db';
+import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
 import {
 	ECommonServerError,
 	ETemplateReportError,
@@ -13,40 +14,68 @@ import {
 
 const PAGE_SIZE = 9;
 
-const argsSchema = z.object({
-	afterId: z.uuid().optional(),
-	search: z.string().optional().default(''),
-	hideReported: z.boolean().optional().default(false),
-	onlyMine: z.boolean().optional().default(false)
-});
-
 export const getTemplates = query(
-	argsSchema,
+	z.object({
+		afterId: z.uuid().optional(),
+		search: z.string().optional().default(''),
+		hideReported: z.boolean().optional().default(false),
+		onlyMine: z.boolean().optional().default(false)
+	}),
 	async ({ afterId, search, hideReported, onlyMine }) => {
 		const {
-			locals: { supabase }
+			locals: { user }
 		} = getRequestEvent();
 
-		const { data, error } = await supabase
-			.rpc('get_templates', {
-				limit_val: PAGE_SIZE + 1,
-				search_val: search,
-				only_unreported: hideReported,
-				only_mine: onlyMine,
-				after_id: afterId ?? null
-			})
-			.select('*, profile(*), template_report!left(*)');
+		let query = db
+			.selectFrom('template as t')
+			.selectAll('t')
+			.select((eb) => [
+				jsonObjectFrom(
+					eb
+						.selectFrom('profile')
+						.selectAll()
+						.whereRef('profile.id', '=', 't.user_id')
+				).as('profile'),
+				jsonArrayFrom(
+					eb
+						.selectFrom('template_report')
+						.selectAll()
+						.whereRef('template_report.template_id', '=', 't.id')
+				).as('template_report')
+			])
+			.orderBy('t.id', 'desc')
+			.limit(PAGE_SIZE + 1);
 
-		if (error)
-			return throwSvelteError(ECommonServerError.INTERNAL_ERROR, error.message);
+		if (search) {
+			query = query.where('t.storage_path', 'ilike', `%/%${search}%.docx`);
+		}
+		if (onlyMine && user) {
+			query = query.where('t.user_id', '=', user.id);
+		}
+		if (afterId) {
+			query = query.where('t.id', '<', afterId);
+		}
+		if (hideReported) {
+			query = query.where((eb) =>
+				eb.not(
+					eb.exists(
+						eb
+							.selectFrom('template_report')
+							.select('id')
+							.whereRef('template_report.template_id', '=', 't.id')
+					)
+				)
+			);
+		}
 
+		const data = await query.execute();
 		const hasMore = data.length > PAGE_SIZE;
 
 		return { templates: hasMore ? data.slice(0, PAGE_SIZE) : data, hasMore };
 	}
 );
 
-/** Uploads a .docx template file into the authenticated user's storage folder. */
+/** Uploads a .docx template file and creates the template metadata row. */
 export const uploadTemplate = command(
 	z.object({
 		name: z.string().min(1),
@@ -55,31 +84,39 @@ export const uploadTemplate = command(
 	}),
 	async ({ name, type, data }) => {
 		const {
-			locals: { supabase, user }
+			locals: { user }
 		} = getRequestEvent();
 
-		const { error } = await supabase.storage
-			.from('templates')
-			.upload(`${user!.id}/${name}`, data, { contentType: type });
+		const storagePath = `${user!.id}/${name}`;
 
+		const { error } = await supabaseAdmin.storage
+			.from('templates')
+			.upload(storagePath, data, { contentType: type });
+		console.log(error);
 		if (error)
 			throwSvelteError(ECommonServerError.DATABASE_ERROR, error.message);
+
+		await db
+			.insertInto('template')
+			.values({ user_id: user!.id, storage_path: storagePath })
+			.execute();
 	}
 );
 
-/** Permanently removes a template file from storage. */
+/** Removes a template file from storage and deletes its metadata row. */
 export const deleteTemplate = command(
 	z.object({ storagePath: z.string().min(1) }),
 	async ({ storagePath }) => {
-		const {
-			locals: { supabase }
-		} = getRequestEvent();
-
-		const { error } = await supabase.storage
+		const { error } = await supabaseAdmin.storage
 			.from('templates')
 			.remove([storagePath]);
 		if (error)
 			throwSvelteError(ECommonServerError.DATABASE_ERROR, error.message);
+
+		await db
+			.deleteFrom('template')
+			.where('storage_path', '=', storagePath)
+			.execute();
 	}
 );
 
@@ -87,7 +124,9 @@ export const deleteTemplate = command(
 export const deleteReport = command(
 	z.object({ templateId: z.uuid() }),
 	async ({ templateId }) => {
-		const { locals: { user } } = getRequestEvent();
+		const {
+			locals: { user }
+		} = getRequestEvent();
 
 		try {
 			await db
@@ -108,7 +147,9 @@ export const reportTemplate = command(
 		message: z.string().max(1000).optional()
 	}),
 	async ({ templateId, message }) => {
-		const { locals: { user } } = getRequestEvent();
+		const {
+			locals: { user }
+		} = getRequestEvent();
 
 		const template = await db
 			.selectFrom('template')
@@ -117,8 +158,10 @@ export const reportTemplate = command(
 			.executeTakeFirst();
 
 		if (!template) throwSvelteError(ETemplateReportError.TEMPLATE_NOT_FOUND);
-		if (template!.user_id === user!.id) throwSvelteError(ETemplateReportError.CANNOT_REPORT_OWN);
-		if (template!.safe_marked_at !== null) throwSvelteError(ETemplateReportError.TEMPLATE_SAFE);
+		if (template!.user_id === user!.id)
+			throwSvelteError(ETemplateReportError.CANNOT_REPORT_OWN);
+		if (template!.safe_marked_at !== null)
+			throwSvelteError(ETemplateReportError.TEMPLATE_SAFE);
 
 		const existing = await db
 			.selectFrom('template_report')
@@ -158,5 +201,27 @@ export const reportTemplate = command(
 		} catch (e) {
 			Sentry.captureException(e, { extra: { templateId } });
 		}
+	}
+);
+
+/** Marks a template as safe: removes it from quarantine and clears all reports. */
+export const markTemplateSafe = command(
+	z.object({ templateId: z.uuid() }),
+	async ({ templateId }) => {
+		const { error } = await supabaseAdmin.storage
+			.from('quarantine')
+			.remove([templateId]);
+		if (error) Sentry.captureException(error, { extra: { templateId } });
+
+		await db
+			.updateTable('template')
+			.set({ safe_marked_at: new Date().toISOString() })
+			.where('id', '=', templateId)
+			.execute();
+
+		await db
+			.deleteFrom('template_report')
+			.where('template_id', '=', templateId)
+			.execute();
 	}
 );

@@ -56,7 +56,11 @@ export async function POST({ request }) {
 
 		try {
 			const amount = cartRow.quantity * 1_000_000;
-			await sql`SELECT add_user_tokens(p_user_id => ${userId}, amount => ${amount})`.execute(db);
+			await db
+				.updateTable('user_token_count')
+				.set({ tokens: sql`tokens + ${amount}` })
+				.where('user_id', '=', userId)
+				.execute();
 			await db.deleteFrom('cart').where('user_id', '=', userId).execute();
 		} catch (err) {
 			Sentry.captureException(err);

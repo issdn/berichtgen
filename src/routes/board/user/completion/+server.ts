@@ -26,17 +26,28 @@ async function deductUserTokens(userId: string, text: string) {
 	const amount = countTokens(new Blob([text]));
 
 	try {
-		const result = await sql<{ deduct_user_tokens: boolean }>`
-			SELECT deduct_user_tokens(p_user_id => ${userId}, p_amount => ${amount})
-		`.execute(db);
+		const success = await db.transaction().execute(async (trx) => {
+			const row = await trx
+				.selectFrom('user_token_count')
+				.select('tokens')
+				.where('user_id', '=', userId)
+				.forUpdate()
+				.executeTakeFirst();
 
-		if (!result.rows[0]?.deduct_user_tokens) {
-			return err(ECompletionException.NOT_ENOUGH_TOKENS);
-		}
-	} catch (e) {
-		Sentry.captureException(e, {
-			extra: { user_id: userId, amount }
+			if (!row || row.tokens < amount) return false;
+
+			await trx
+				.updateTable('user_token_count')
+				.set({ tokens: sql`tokens - ${amount}` })
+				.where('user_id', '=', userId)
+				.execute();
+
+			return true;
 		});
+
+		if (!success) return err(ECompletionException.NOT_ENOUGH_TOKENS);
+	} catch (e) {
+		Sentry.captureException(e, { extra: { user_id: userId, amount } });
 		return err(ECompletionException.INTERNAL);
 	}
 
