@@ -31,7 +31,7 @@
 	import { dev } from '$app/environment';
 	import DebugLoginDialog from '$lib/components/DebugLoginDialog.svelte';
 
-	let { user, loggedIn, supabase } = $derived(
+	let { user, loggedIn, supabase, profile } = $derived(
 		getContext<UserContext>('user')()
 	);
 
@@ -40,6 +40,10 @@
 	let token = $state('');
 
 	let loading = $state(false);
+
+	let username = $derived(
+		profile?.full_name ?? (user?.user_metadata.name as string)
+	);
 
 	$effect(() => {
 		if (token.length >= 6) {
@@ -104,7 +108,7 @@
 		<div class="flex flex-row items-center gap-x-4">
 			{#if user?.user_metadata.name !== null && loggedIn}
 				<Label class="cursor-pointer"
-					>{user?.user_metadata.name ?? 'Benutzer'}</Label
+					>{username ?? 'Eingeloggter Benutzer'}</Label
 				>
 			{/if}
 			<Avatar.Root>
@@ -112,7 +116,7 @@
 				<Avatar.Fallback
 					>{!loggedIn
 						? 'AN'
-						: ((user?.user_metadata.name as string)
+						: (username
 								?.split(' ')
 								.map((s) => s[0])
 								.join('') ?? 'GEN')}</Avatar.Fallback

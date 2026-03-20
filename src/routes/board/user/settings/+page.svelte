@@ -10,9 +10,27 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { userMetadataSchema } from '$src/lib/schemas';
+	import { profileNameSchema, userMetadataSchema } from '$src/lib/schemas';
 
 	let { data } = $props();
+
+	const profileNameForm = $derived(superForm(data.profileNameForm, {
+		dataType: 'json',
+		validators: zod4Client(profileNameSchema),
+		validationMethod: 'oninput',
+		resetForm: false,
+		invalidateAll: true,
+		onError({ result }) {
+			toast.error(result.error.message);
+		},
+		onUpdated({ form }) {
+			if (form.valid) {
+				toast.success(form.message);
+			}
+		}
+	}));
+
+	const { form: profileFormData, enhance: profileEnhance, submitting: profileSubmitting } = profileNameForm;
 
 	const userMetadataForm = $derived(superForm(data.userMetadataForm, {
 		dataType: 'json',
@@ -44,6 +62,40 @@
 				<Card.Title class="flex items-center gap-2">
 					<User size={20} />
 					Profildaten
+				</Card.Title>
+				<Card.Description>Dein angezeigter Name im Profil.</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<form
+					id="profile-form"
+					class="flex w-full flex-col gap-y-4"
+					method="POST"
+					action="/board/user/settings?/updateProfile"
+					use:profileEnhance
+				>
+					<div class="grid gap-2">
+						<Label for="profileFullName">Voller Name</Label>
+						<Input
+							id="profileFullName"
+							name="fullName"
+							type="text"
+							placeholder="Max Mustermann"
+							bind:value={$profileFormData.fullName}
+						/>
+					</div>
+					<Button type="submit" disabled={$profileSubmitting} class="w-fit">
+						<Save size={16} class="mr-2" />
+						Speichern
+					</Button>
+				</form>
+			</Card.Content>
+		</Card.Root>
+
+		<Card.Root>
+			<Card.Header>
+				<Card.Title class="flex items-center gap-2">
+					<User size={20} />
+					Berichtsdaten
 				</Card.Title>
 				<Card.Description>
 					Deine persönlichen Daten für die Berichtsgenerierung.

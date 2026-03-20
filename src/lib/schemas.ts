@@ -129,6 +129,12 @@ export const debugLoginSchema = z.object({
 	password: z.string().min(1, 'Passwort darf nicht leer sein')
 });
 
+export const profileNameSchema = z.object({
+	fullName: z.string().max(256, { message: 'Max 256 Zeichen' }).nullable().optional()
+});
+
+export type ProfileNameSchema = typeof profileNameSchema;
+
 export const userMetadataSchema = z.object({
 	fullName: z
 		.string()

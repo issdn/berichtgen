@@ -4,17 +4,17 @@ import { redirect, type Actions } from '@sveltejs/kit';
 import * as Sentry from '@sentry/sveltekit';
 import { supabaseAdmin } from '$src/lib/server/admin';
 import { db } from '$lib/server/db';
-import { userMetadataSchema } from '$src/lib/schemas';
+import { profileNameSchema, userMetadataSchema } from '$src/lib/schemas';
 
 export const load = async ({ parent, locals: { user } }) => {
 	const { tokenCount } = await parent();
-	const userMetadataForm = await superValidate(zod4(userMetadataSchema));
 
-	const userMetadata = await db
-		.selectFrom('user_metadata')
-		.selectAll()
-		.where('user_id', '=', user!.id)
-		.executeTakeFirst() ?? null;
+	const [userMetadataForm, profileNameForm, userMetadata, profile] = await Promise.all([
+		superValidate(zod4(userMetadataSchema)),
+		superValidate(zod4(profileNameSchema)),
+		db.selectFrom('user_metadata').selectAll().where('user_id', '=', user!.id).executeTakeFirst() ?? null,
+		db.selectFrom('profile').select('full_name').where('id', '=', user!.id).executeTakeFirst() ?? null
+	]);
 
 	if (userMetadata) {
 		userMetadataForm.data = {
@@ -24,11 +24,11 @@ export const load = async ({ parent, locals: { user } }) => {
 		};
 	}
 
-	return {
-		tokenCount,
-		userMetadataForm,
-		userMetadata
-	};
+	if (profile) {
+		profileNameForm.data = { fullName: profile.full_name ?? '' };
+	}
+
+	return { tokenCount, userMetadataForm, profileNameForm, userMetadata };
 };
 
 export const actions: Actions = {
@@ -42,6 +42,26 @@ export const actions: Actions = {
 			return fail(406);
 		}
 		throw redirect(303, '/');
+	},
+	updateProfile: async ({ request, locals: { user } }) => {
+		const form = await superValidate(request, zod4(profileNameSchema));
+
+		if (!form.valid) {
+			return message(form, 'Daten sind ungültig.', { status: 400 });
+		}
+
+		try {
+			await db
+				.updateTable('profile')
+				.set({ full_name: form.data.fullName || null })
+				.where('id', '=', user!.id)
+				.execute();
+		} catch (e) {
+			Sentry.captureException(e);
+			return message(form, 'Fehler beim Speichern.', { status: 500 });
+		}
+
+		return message(form, 'Profildaten erfolgreich gespeichert!');
 	},
 	updateMetadata: async ({ request, locals: { user } }) => {
 		const form = await superValidate(request, zod4(userMetadataSchema));
