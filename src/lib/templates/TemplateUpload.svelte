@@ -62,6 +62,7 @@
 		} finally {
 			isPending = false;
 			pendingFile = null;
+			confirmOpen = false;
 		}
 	}
 </script>

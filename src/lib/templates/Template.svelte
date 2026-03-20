@@ -2,6 +2,7 @@
 	import type { Database } from '$src/lib/database.types';
 	import {
 		Check,
+		Download,
 		Flag,
 		FlagOff,
 		Shredder,
@@ -55,6 +56,7 @@
 
 	let reportDialogOpen = $state(false);
 	let confirmSelectOpen = $state(false);
+	let confirmDeleteOpen = $state(false);
 
 	const isReportedByMe = $derived(
 		template.template_report?.some((r) => r.reporter_user_id === user?.id) ??
@@ -242,13 +244,24 @@
 			</Dialog.Content>
 		</Dialog.Root>
 
+		<a
+			href={filepath}
+			rel="external"
+			download={name}
+			title="Template herunterladen"
+		>
+			<Button variant="ghost" size="icon" tabindex={-1}>
+				<Download size={16} />
+			</Button>
+		</a>
+
 		{#if isOwnTemplate}
 			<Button
 				variant="destructive"
 				size="icon"
 				title="Template löschen"
 				disabled={deletePending}
-				onclick={submitDelete}
+				onclick={() => (confirmDeleteOpen = true)}
 			>
 				<Shredder size={16} />
 			</Button>
@@ -328,6 +341,21 @@
 			>
 				Trotzdem auswählen
 			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
+
+<AlertDialog.Root bind:open={confirmDeleteOpen}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Template löschen?</AlertDialog.Title>
+			<AlertDialog.Description>
+				„{name}" wird unwiderruflich gelöscht.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Abbrechen</AlertDialog.Cancel>
+			<AlertDialog.Action onclick={submitDelete}>Löschen</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

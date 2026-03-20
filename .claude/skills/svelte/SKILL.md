@@ -13,3 +13,7 @@ Rules:
 - This app is in development so don't create new migrations and just update the initial one.
 - Breaking changes are also allowed.
 - Use shadcn-svelte components ONLY.
+- All client-facing text should be in German.
+
+Repo-specific info:
+- There are global files for types - src\lib\types.ts, form schemas - src\lib\schemas.ts, enums - src\lib\enums.ts and errors - src\lib\errors.ts. Use these files to avoid duplication and keep things consistent. 

@@ -3,6 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 	import { pasteStack } from '$src/lib/stores/paste_stack.svelte';
+	import * as Kbd from '$lib/components/ui/kbd/index.js';
 
 	let {
 		handleFiles,
@@ -82,7 +83,7 @@
 <button
 	id="dropzone"
 	data-testid="dropzone"
-	class={`text-border hover:border-primary hover:text-primary flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed text-sm transition-colors duration-300 ${isDraggingIn ? 'border-primary text-primary' : 'text-border hover:border-primary hover:text-primary'}`}
+	class={`text-border hover:border-primary hover:text-primary relative flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed text-sm transition-colors duration-300 ${isDraggingIn ? 'border-primary text-primary' : 'text-border hover:border-primary hover:text-primary'}`}
 	onclick={() => input?.click()}
 	ondragenter={handleDragEnter}
 	ondragleave={handleDragLeave}
@@ -91,6 +92,11 @@
 	onchange={handleChange}
 	{disabled}
 >
+	<Kbd.Group class="absolute bottom-2 left-2">
+		<Kbd.Root>Strg</Kbd.Root>
+		<span>+</span>
+		<Kbd.Root>V</Kbd.Root>
+	</Kbd.Group>
 	<input
 		data-testid="dropzone-input"
 		accept=".docx,.pdf,.json,.txt,.csv,.png,.jpg,.jpeg"
