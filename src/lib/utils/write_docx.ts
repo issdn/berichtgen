@@ -98,17 +98,16 @@ export async function generateReportBytes(
 	vm: QuickJSContext
 ) {
 	const berichte = await entries;
+
 	return await createReport({
 		cmdDelimiter: ['{{', '}}'],
 		template,
 		noSandbox: true,
 		data: {
 			berichte,
-			user: {
-				fullName: userMetadata?.fullName ?? '',
-				ausbildungsberuf: userMetadata?.ausbildungsberuf ?? '',
-				abteilung: userMetadata?.abteilung ?? ''
-			}
+			fullName: userMetadata?.fullName ?? '',
+			ausbildungsberuf: userMetadata?.ausbildungsberuf ?? '',
+			abteilung: userMetadata?.abteilung ?? ''
 		},
 		// Fix vuln-1: use buildRunJs — no vm.dispose() inside the callback
 		runJs: buildRunJs(vm, injected)

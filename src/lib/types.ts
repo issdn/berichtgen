@@ -14,8 +14,10 @@ export interface Entry {
 	qualifikationen: QualifikationenType[];
 	text: string;
 	datum?: string;
+	endDatum?: string;
 	ort?: Ort;
 	stunden?: number;
+	ausbildungsjahr?: number;
 }
 
 export type ResultEntry = Required<Entry>;

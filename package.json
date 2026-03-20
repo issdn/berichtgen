@@ -17,7 +17,8 @@
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"db:seed": "bun ./src/lib/server/db/seed.ts",
 		"test:seed-template": "bun src/test/seed-template.ts",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"test:template": "bun src/test/render-template.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.1",

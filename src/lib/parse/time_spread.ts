@@ -129,8 +129,10 @@ function cloneObjectWithDate(
 	return {
 		...entry,
 		datum: date.toString(),
+		endDatum: date.add({ days: 6 }).toString(),
 		ort,
-		stunden
+		stunden,
+		ausbildungsjahr: date.year
 	};
 }
 
