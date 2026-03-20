@@ -2,12 +2,17 @@ import { Ort } from '$src/lib/enums';
 import * as z from 'zod/v4';
 import type { DateRange } from 'bits-ui';
 import { CalendarDate } from '@internationalized/date';
-import { QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/constants';
+import {
+	QualifikationenBetrieb,
+	QualifikationenSchule
+} from '$src/lib/constants';
 
 export const completionSchema = z.object({
 	lessons: z
 		.object({
-			qualifikationen: z.enum([...QualifikationenBetrieb, ...QualifikationenSchule]).array(),
+			qualifikationen: z
+				.enum([...QualifikationenBetrieb, ...QualifikationenSchule])
+				.array(),
 			text: z.string()
 		})
 		.array()
@@ -21,8 +26,13 @@ export const fullResultSchema = z
 			.optional()
 			.default([]),
 		text: z.string({ message: 'Text muss ein Text enthalten!' }),
-		hours: z.number({ message: 'Hours/Stunden muss eine ganze Zahl sein.' }).int().optional(),
-		ort: z.enum(Ort, { message: 'Das Objekt muss einen Ort enthalten!' }).optional(),
+		hours: z
+			.number({ message: 'Hours/Stunden muss eine ganze Zahl sein.' })
+			.int()
+			.optional(),
+		ort: z
+			.enum(Ort, { message: 'Das Objekt muss einen Ort enthalten!' })
+			.optional(),
 		datum: z.string({ message: 'Dass Object muss ein Datum enthalten!' })
 	})
 	.array();
@@ -50,7 +60,12 @@ export const dateRangeSchema = z.object({
 				.nullable()
 		})
 		.array(),
-	ort: z.enum([Ort.SCHULE, Ort.BETRIEB, Ort.UNTERWEISUNG, Ort['SCHULE/BETRIEB']])
+	ort: z.enum([
+		Ort.SCHULE,
+		Ort.BETRIEB,
+		Ort.UNTERWEISUNG,
+		Ort['SCHULE/BETRIEB']
+	])
 });
 
 export type DateRangeSchema = z.infer<typeof dateRangeSchema>;
@@ -80,22 +95,26 @@ export const completionApiSchema = z.object({
 // ------------------------------------------------
 
 export const emailSchema = z.object({
-	mail: z.string().email('Bitte eine gültige Email-Adresse eingeben')
+	mail: z.email('Bitte eine gültige Email-Adresse eingeben')
 });
 
 // ------------------------------------------------
 
 export const csvConfigSchema = z
 	.object({
-		ort: z.nativeEnum(Ort, {
+		ort: z.enum(Ort, {
 			message: 'Ort muss ein gültiger Ort sein.'
 		}),
 		file: z.string().nonempty({ message: 'Dateiname muss angegeben werden.' }),
 		ranges: z
 			.object({
 				daterange: z.object({
-					start: z.instanceof(CalendarDate, { message: 'Startdatum muss angegeben werden.' }),
-					end: z.instanceof(CalendarDate, { message: 'Enddatum muss angegeben werden.' })
+					start: z.instanceof(CalendarDate, {
+						message: 'Startdatum muss angegeben werden.'
+					}),
+					end: z.instanceof(CalendarDate, {
+						message: 'Enddatum muss angegeben werden.'
+					})
 				}),
 				hours: z.number().int().min(0).optional()
 			})
@@ -106,14 +125,26 @@ export const csvConfigSchema = z
 // ------------------------------------------------
 
 export const debugLoginSchema = z.object({
-	email: z.string().email('Bitte eine gültige E-Mail-Adresse eingeben'),
+	email: z.email('Bitte eine gültige E-Mail-Adresse eingeben'),
 	password: z.string().min(1, 'Passwort darf nicht leer sein')
 });
 
 export const userMetadataSchema = z.object({
-	fullName: z.string().max(256, { message: 'Max 256 Zeichen' }).nullable().optional(),
-	ausbildungsberuf: z.string().max(256, { message: 'Max 256 Zeichen' }).nullable().optional(),
-	abteilung: z.string().max(256, { message: 'Max 256 Zeichen' }).nullable().optional()
+	fullName: z
+		.string()
+		.max(256, { message: 'Max 256 Zeichen' })
+		.nullable()
+		.optional(),
+	ausbildungsberuf: z
+		.string()
+		.max(256, { message: 'Max 256 Zeichen' })
+		.nullable()
+		.optional(),
+	abteilung: z
+		.string()
+		.max(256, { message: 'Max 256 Zeichen' })
+		.nullable()
+		.optional()
 });
 
 export type UserMetadataSchema = typeof userMetadataSchema;

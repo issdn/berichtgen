@@ -4,6 +4,7 @@
 	import '../app.css';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { goto, invalidate } from '$app/navigation';
+	import { navigating } from '$app/stores';
 	import DarkMode from './board/DarkMode.svelte';
 	import { onMount, setContext } from 'svelte';
 	import Logo from '$lib/svg/Logo.svelte';
@@ -36,6 +37,12 @@
 		return () => data.subscription.unsubscribe();
 	});
 </script>
+
+{#if $navigating}
+	<div class="fixed top-0 left-0 z-50 h-0.5 w-full overflow-hidden">
+		<div class="animate-nav-beam bg-primary h-full w-1/3"></div>
+	</div>
+{/if}
 
 <div
 	class="h-nav flex w-full flex-row items-center justify-between px-4 md:px-8"

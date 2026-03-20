@@ -108,6 +108,16 @@
 
 @theme {
 	--animate-breathing-shadow: breathing-shadow 3s ease-in-out infinite;
+	--animate-nav-beam: nav-beam 1.2s ease-in-out infinite;
+
+	@keyframes nav-beam {
+		0% {
+			transform: translateX(-100%);
+		}
+		100% {
+			transform: translateX(400%);
+		}
+	}
 
 	@keyframes breathing-shadow {
 		0%,
