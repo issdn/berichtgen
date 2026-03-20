@@ -81,6 +81,13 @@ const { error: insertError } = await admin
 if (insertError) throw insertError;
 console.log('Template metadata row created.');
 
+// 4. Grant the test user a large token balance
+const { error: tokenError } = await admin
+	.from('user_token_count')
+	.upsert({ user_id: user.id, tokens: 9990000000 }, { onConflict: 'user_id' });
+if (tokenError) throw tokenError;
+console.log('Token balance set to 9990000000.');
+
 console.log(
 	`\nTest user:\n  email:    ${TEST_EMAIL}\n  password: ${TEST_PASSWORD}\n  user_id:  ${user.id}`
 );

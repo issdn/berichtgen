@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import { Ort } from '$lib/enums';
 import {
@@ -110,13 +111,19 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 async function getGeminiCompletion(text: string, apiKey: string, ort: Ort) {
 	const ai = new genai.GoogleGenAI({ apiKey });
 
+	if (!env.GEMINI_MODEL) {
+		if (!dev) return throwSvelteError(ECompletionException.INTERNAL);
+		console.warn('[dev] GEMINI_MODEL not set, defaulting to gemini-2.0-flash-lite');
+	}
+	const model = env.GEMINI_MODEL ?? 'gemini-2.0-flash-lite';
+
 	const completion = await ai.models.generateContent({
 		config: {
 			responseMimeType: 'application/json',
 			systemInstruction: getContextPrompt(ort),
 			responseSchema: completionSchema.toJSONSchema()
 		},
-		model: 'gemini-3.1-flash-lite-preview',
+		model,
 		contents: text
 	});
 
