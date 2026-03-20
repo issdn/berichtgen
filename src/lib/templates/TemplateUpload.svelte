@@ -75,12 +75,17 @@
 		<AlertDialog.Header>
 			<AlertDialog.Title>Template ersetzen?</AlertDialog.Title>
 			<AlertDialog.Description>
-				„{pendingFile?.name}" existiert bereits und wird unwiderruflich überschrieben.
+				„{pendingFile?.name}" existiert bereits und wird unwiderruflich
+				überschrieben.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
-			<AlertDialog.Cancel onclick={() => (pendingFile = null)}>Abbrechen</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={() => doUpload(pendingFile!)}>Ersetzen</AlertDialog.Action>
+			<AlertDialog.Cancel onclick={() => (pendingFile = null)}
+				>Abbrechen</AlertDialog.Cancel
+			>
+			<AlertDialog.Action onclick={() => doUpload(pendingFile!)}
+				>Ersetzen</AlertDialog.Action
+			>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

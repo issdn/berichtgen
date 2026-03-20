@@ -63,9 +63,9 @@
 					onLoadMore(pageTemplates);
 				}
 			}}
-			class="h-50.75 w-full"
+			class="h-full w-full"
 		>
-			<ul class="flex h-full flex-wrap gap-2">
+			<ul class="flex h-48 flex-col">
 				{#each allTemplates as template (template.id)}
 					{@const isPreferred =
 						berichtgenStore.preferedTemplatePath === template.storage_path}

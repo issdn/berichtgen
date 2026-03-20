@@ -62,7 +62,6 @@ export type Database = {
           id: string
           safe_marked_at: string | null
           storage_path: string
-          thumbnail_path: string | null
           updated_at: string | null
           user_id: string
         }
@@ -71,7 +70,6 @@ export type Database = {
           id?: string
           safe_marked_at?: string | null
           storage_path: string
-          thumbnail_path?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -80,7 +78,6 @@ export type Database = {
           id?: string
           safe_marked_at?: string | null
           storage_path?: string
-          thumbnail_path?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -210,7 +207,6 @@ export type Database = {
           id: string
           safe_marked_at: string | null
           storage_path: string
-          thumbnail_path: string | null
           updated_at: string | null
           user_id: string
         }[]

@@ -9,3 +9,7 @@ Rules:
 - Use newest sveltekit features and best practices.
 - Try to unit test all of your code with vitest.
 - Try to write declarative code using SOLID principles.
+- If you need to make a change to the database, make sure to also update the types in src/lib/db/schema.ts and run the migration generator to create a new migration file.
+- This app is in development so don't create new migrations and just update the initial one.
+- Breaking changes are also allowed.
+- Use shadcn-svelte components ONLY.

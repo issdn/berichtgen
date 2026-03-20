@@ -12,7 +12,7 @@ import {
 	throwSvelteError
 } from '../errors';
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 20;
 
 type ProfileRow = {
 	id: string;
@@ -32,7 +32,6 @@ type TemplateRow = {
 	id: string;
 	user_id: string;
 	storage_path: string;
-	thumbnail_path: string | null;
 	safe_marked_at: string | null;
 	created_at: string;
 	updated_at: string | null;
