@@ -10,46 +10,23 @@ import {
 } from '$lib/errors';
 // import OpenAI from 'openai';
 import * as genai from '@google/genai';
-import { err, ok, ResultAsync } from 'neverthrow';
-import { countTokens } from '$src/lib/utils/token_counter';
-import * as Sentry from '@sentry/sveltekit';
+import { ok, ResultAsync } from 'neverthrow';
 import { json } from '@sveltejs/kit';
 import { getContextPrompt } from '$src/lib/completion/prompt';
 import { completionApiSchema, completionSchema } from '$src/lib/schemas';
 import { db } from '$lib/server/db';
 import { sql } from 'kysely';
+import * as Sentry from '@sentry/sveltekit';
 
 // API key from environment
 const apiKey = env.GOOGLE_AI_API_KEY;
 
-async function deductUserTokens(userId: string, text: string) {
-	const amount = countTokens(new Blob([text]));
-
-	try {
-		const success = await db.transaction().execute(async (trx) => {
-			const row = await trx
-				.selectFrom('user_token_count')
-				.select('tokens')
-				.where('user_id', '=', userId)
-				.forUpdate()
-				.executeTakeFirst();
-
-			if (!row || row.tokens < amount) return false;
-
-			await trx
-				.updateTable('user_token_count')
-				.set({ tokens: sql`tokens - ${amount}` })
-				.where('user_id', '=', userId)
-				.execute();
-
-			return true;
-		});
-
-		if (!success) return err(ECompletionException.NOT_ENOUGH_TOKENS);
-	} catch (e) {
-		Sentry.captureException(e, { extra: { user_id: userId, amount } });
-		return err(ECompletionException.INTERNAL);
-	}
+async function deductUserTokens(userId: string, amount: number) {
+	await db
+		.updateTable('user_token_count')
+		.set({ tokens: sql`tokens - ${amount}` })
+		.where('user_id', '=', userId)
+		.execute();
 
 	return ok(amount);
 }
@@ -71,6 +48,21 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 		return throwSvelteError(ECommonServerError.VALIDATION_ERROR);
 	}
 
+	const userTokens = await db
+		.selectFrom('user_token_count')
+		.select('tokens')
+		.where('user_id', '=', user.id)
+		.forUpdate()
+		.executeTakeFirst();
+
+	if (
+		userTokens === undefined ||
+		userTokens === null ||
+		userTokens.tokens <= 0
+	) {
+		return throwSvelteError(ECompletionException.NOT_ENOUGH_TOKENS);
+	}
+
 	const { text, ort } = parsed.data;
 
 	const result = await ResultAsync.fromPromise(
@@ -87,31 +79,35 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	}
 
 	const completion = result.value;
-	if (completion === undefined || completion === null) {
+	const summary = completion.text;
+	if (
+		completion === undefined ||
+		completion === null ||
+		summary === undefined ||
+		summary === null
+	) {
 		return throwSvelteError(ECompletionException.UNKNOWN_THIRD_PARTY_ERROR);
 	}
 
-	const tokensDeducted = await deductUserTokens(user!.id!, text);
-	if (tokensDeducted.isErr()) {
-		return throwSvelteError(tokensDeducted.error);
+	const tokensUsed = completion.usageMetadata?.totalTokenCount;
+
+	if (!tokensUsed) {
+		Sentry.captureEvent({
+			message:
+				'USER USED COMPLETION WITHOUT TOKEN USAGE INFO - NO TOKENS DEDUCTED',
+			level: 'fatal'
+		});
 	}
 
-	const outputDeduction = await deductUserTokens(user!.id!, completion);
-	if (outputDeduction.isErr()) {
-		return throwSvelteError(outputDeduction.error);
-	}
+	await deductUserTokens(user.id, tokensUsed ?? 0);
 
 	return json({
 		completion,
-		tokensUsed: tokensDeducted.value + outputDeduction.value
+		tokensUsed: tokensUsed
 	});
 };
 
-async function getGeminiCompletion(
-	text: string,
-	apiKey: string,
-	ort: Ort
-): Promise<string | undefined | null> {
+async function getGeminiCompletion(text: string, apiKey: string, ort: Ort) {
 	const ai = new genai.GoogleGenAI({ apiKey });
 
 	const completion = await ai.models.generateContent({
@@ -120,12 +116,11 @@ async function getGeminiCompletion(
 			systemInstruction: getContextPrompt(ort),
 			responseSchema: completionSchema.toJSONSchema()
 		},
-		// Using Gemini 2.0 Flash Lite - smaller, faster model
-		model: 'gemini-2.0-flash-lite',
+		model: 'gemini-3.1-flash-lite-preview',
 		contents: text
 	});
 
-	return completion.text;
+	return completion;
 }
 
 /*

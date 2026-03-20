@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Dropzone from '$src/lib/components/Dropzone.svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
-	import { countUserTokensDirectories } from '$src/lib/utils/token_counter';
 	import {
 		type UserContext,
 		type WizardDirectory,
@@ -40,8 +39,6 @@
 				.flat()
 				.find((f) => f.type !== FileTypes.JSON);
 			if (loggedIn) {
-				// eslint-disable-next-line @typescript-eslint/no-unused-vars
-				const _totalTokens = countUserTokensDirectories(directories);
 				// Note: userTokens check would need to be passed from parent or context
 				// For now, we proceed with the processing
 				init(directories);

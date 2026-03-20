@@ -5,10 +5,10 @@ import { ResultAsync } from 'neverthrow';
 import { type Ort } from '$src/lib/enums';
 
 // Hardcoded max tokens - should match the server's configuration
-const MAX_TOKENS = 60000;
+const MAX_CHARACTERS = 3500000;
 
 export function getCompletions(text: string, ort: Ort) {
-	const messages = splitByMaxLength(text, MAX_TOKENS);
+	const messages = splitByMaxLength(text, MAX_CHARACTERS);
 
 	const completionsPromises = messages.map(async (t) => {
 		const result = await fetch('/board/user/completion', {
@@ -56,7 +56,7 @@ export function getCompletions(text: string, ort: Ort) {
 	});
 }
 
-function splitByMaxLength(text: string, maxLength: number) {
-	const regex = new RegExp(`.{1,${maxLength}}`, 'gs');
+function splitByMaxLength(text: string, maxCharacters: number) {
+	const regex = new RegExp(`.{1,${maxCharacters}}`, 'gs');
 	return text.match(regex) || [];
 }
