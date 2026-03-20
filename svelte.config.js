@@ -15,8 +15,8 @@ const config = {
 			$src: path.resolve('./src')
 		},
 		experimental: {
-			remoteFunctions: true,
-		},
+			remoteFunctions: true
+		}
 	},
 	vitePlugin: {
 		dynamicCompileOptions: ({ filename }) =>

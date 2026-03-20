@@ -2,7 +2,11 @@ import type { Entry, ResultEntry } from '$lib/types';
 import { LOCALE } from '$src/lib/constants';
 import type { Ort } from '$src/lib/enums';
 import type { Valid***REMOVED***DateRanges } from '$src/lib/schemas';
-import { startOfYear, CalendarDate, startOfWeek } from '@internationalized/date';
+import {
+	startOfYear,
+	CalendarDate,
+	startOfWeek
+} from '@internationalized/date';
 
 /**
  *
@@ -15,31 +19,44 @@ export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
 	{ ranges, ort }: Valid***REMOVED***DateRanges
 ): Required<Entry>[] {
-	const hoursSum = ranges.reduce(
-		(prev, { daterange, hours }) =>
-			prev + (hours ?? weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate)),
+	const stundenSum = ranges.reduce(
+		(prev, { daterange, stunden }) =>
+			prev +
+			(stunden ??
+				weekDiff(
+					daterange.start as CalendarDate,
+					daterange.end as CalendarDate
+				)),
 		0
 	);
 
-	const sorted = ranges.sort((a, b) => a.daterange.start!.compare(b.daterange.end));
+	const sorted = ranges.sort((a, b) =>
+		a.daterange.start!.compare(b.daterange.end)
+	);
 
 	const minWeek = sorted[0];
 
 	const weeks = Math.min(
 		ranges.reduce((prev, { daterange }) => {
-			return prev + weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate);
+			return (
+				prev +
+				weekDiff(daterange.start as CalendarDate, daterange.end as CalendarDate)
+			);
 		}, 0),
 		entries.length
 	);
 
 	const adjustedForHours = sorted.map((week) => ({
 		...week,
-		hours: week.hours ?? 1,
+		stunden: week.stunden ?? 1,
 		entriesPerWeek: Math.max(
 			((entries.length /
-				weekDiff(week.daterange.start as CalendarDate, week.daterange.end as CalendarDate)) *
-				(week.hours ?? 1)) /
-				hoursSum,
+				weekDiff(
+					week.daterange.start as CalendarDate,
+					week.daterange.end as CalendarDate
+				)) *
+				(week.stunden ?? 1)) /
+				stundenSum,
 			1
 		)
 	}));
@@ -48,25 +65,42 @@ export function spreadEntriesAcrossWeeks(
 
 	let currWeekIndex = 0;
 	let entriesTotal = 0;
-	let mondayOfWeek = startOfWeek(minWeek.daterange.start!, LOCALE, 'mon') as CalendarDate;
+	let mondayOfWeek = startOfWeek(
+		minWeek.daterange.start!,
+		LOCALE,
+		'mon'
+	) as CalendarDate;
 
 	for (let i = 0; i < weeks; i += 1) {
-		const { entriesPerWeek, daterange, hours } = adjustedForHours[currWeekIndex];
+		const { entriesPerWeek, daterange, stunden } =
+			adjustedForHours[currWeekIndex];
 		const entriesPerWeekEven = Math.floor(entriesPerWeek);
 		const entriesPerWeekRemainder = entriesPerWeek - entriesPerWeekEven;
 
 		for (let j = 0; j < entriesPerWeekEven; j++) {
-			newEntries.push(cloneObjectWithDate(entries[entriesTotal + j], mondayOfWeek, ort, hours));
+			newEntries.push(
+				cloneObjectWithDate(
+					entries[entriesTotal + j],
+					mondayOfWeek,
+					ort,
+					stunden
+				)
+			);
 		}
 
 		entriesTotal += entriesPerWeekEven;
 
 		if (i + 1 <= Math.round(entriesPerWeekRemainder * weeks)) {
-			newEntries.push(cloneObjectWithDate(entries[entriesTotal], mondayOfWeek, ort, hours));
+			newEntries.push(
+				cloneObjectWithDate(entries[entriesTotal], mondayOfWeek, ort, stunden)
+			);
 			entriesTotal++;
 		}
 
-		if (i * entriesPerWeekEven + entriesPerWeekEven < weeks * entriesPerWeekEven)
+		if (
+			i * entriesPerWeekEven + entriesPerWeekEven <
+			weeks * entriesPerWeekEven
+		)
 			mondayOfWeek = mondayOfWeek.add({ days: 7 });
 
 		if (
@@ -76,7 +110,10 @@ export function spreadEntriesAcrossWeeks(
 			)
 		) {
 			currWeekIndex++;
-			mondayOfWeek = startOfWeek(sorted[currWeekIndex].daterange.start!, LOCALE) as CalendarDate;
+			mondayOfWeek = startOfWeek(
+				sorted[currWeekIndex].daterange.start!,
+				LOCALE
+			) as CalendarDate;
 		}
 	}
 
@@ -87,13 +124,13 @@ function cloneObjectWithDate(
 	entry: Entry,
 	date: CalendarDate,
 	ort: Ort,
-	hours: number
+	stunden: number
 ): ResultEntry {
 	return {
 		...entry,
 		datum: date.toString(),
 		ort,
-		hours
+		stunden
 	};
 }
 
@@ -109,7 +146,8 @@ function getWeek(date: CalendarDate) {
 
 	// Calculate the week number in the year
 	const daysSinceYearStart =
-		weekStart.calendar.toJulianDay(weekStart) - yearStart.calendar.toJulianDay(yearStart);
+		weekStart.calendar.toJulianDay(weekStart) -
+		yearStart.calendar.toJulianDay(yearStart);
 	const weekOfYear = Math.floor(daysSinceYearStart / 7);
 
 	// Use year and week to get an absolute week number

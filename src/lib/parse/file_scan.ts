@@ -4,7 +4,9 @@ import type { WizardRawDirectories, WizardRawDirectory } from '$src/lib/types';
 import { promisify } from '$src/lib/utils';
 import { getArrayDepth } from '$src/lib/utils/math';
 
-export function getFileListWithPreserverFolderStructure(files: FileList): WizardRawDirectories {
+export function getFileListWithPreserverFolderStructure(
+	files: FileList
+): WizardRawDirectories {
 	const directories = new Map<string, WizardRawDirectory>(
 		[...files].reduce((acc, file) => {
 			const pathParts = file.webkitRelativePath.split('/');
@@ -28,7 +30,10 @@ export async function get2DimensionalDirectories(
 	} else if (returnType === ScanReturnType.DATA_TRANSFER_ITEM) {
 		return _get2DimensionalDirectories(items, scanSystemFileEntries);
 	} else {
-		throw new ***REMOVED***Error('INVALID_FILE', 'Unbekannter Scan-Typ: ' + returnType);
+		throw new ***REMOVED***Error(
+			'INVALID_FILE',
+			'Unbekannter Scan-Typ: ' + returnType
+		);
 	}
 }
 
@@ -40,7 +45,11 @@ async function _get2DimensionalDirectories<T>(
 	const topLevelFilesPromises: Promise<T>[] = [];
 	[...items].forEach((item) => {
 		const entry = item.webkitGetAsEntry();
-		if (entry === null) throw new ***REMOVED***Error('INVALID_FILE', 'Fehler beim Lesen einer Datei');
+		if (entry === null)
+			throw new ***REMOVED***Error(
+				'INVALID_FILE',
+				'Fehler beim Lesen einer Datei'
+			);
 		if (entry.isFile) {
 			topLevelFilesPromises.push(scanFunction(entry) as Promise<T>);
 		} else {
@@ -49,28 +58,43 @@ async function _get2DimensionalDirectories<T>(
 	});
 	const resolvedDirectories = await Promise.all(resolvedDirectoriesPromises);
 	const depth = getArrayDepth(resolvedDirectories);
-	const flattenedDirectories = resolvedDirectories.flat(depth > 2 ? depth - 2 : 0) as T[][];
+	const flattenedDirectories = resolvedDirectories.flat(
+		depth > 2 ? depth - 2 : 0
+	) as T[][];
 	const directoriesWithoutAnyEmpty = flattenedDirectories.filter(
 		(directory) => directory.length > 0
 	);
 	if (topLevelFilesPromises.length > 0) {
-		directoriesWithoutAnyEmpty.push((await Promise.all(topLevelFilesPromises)).flat() as T[]);
+		directoriesWithoutAnyEmpty.push(
+			(await Promise.all(topLevelFilesPromises)).flat() as T[]
+		);
 	}
 	return directoriesWithoutAnyEmpty;
 }
 
-async function scanFiles(item: FileSystemEntry, items: WizardRawDirectories = []) {
+async function scanFiles(
+	item: FileSystemEntry,
+	items: WizardRawDirectories = []
+) {
 	if (item.isDirectory) {
 		const directoryReader = (item as FileSystemDirectoryEntry).createReader();
 		const allEntries: WizardRawDirectories = [];
 		let entriesResult: WizardRawDirectories = [];
 
 		do {
-			const readEntriesPromise = new Promise<WizardRawDirectories>((resolve, reject) => {
-				directoryReader.readEntries(async (entries) => {
-					resolve((await Promise.all(entries.map((entry) => scanFiles(entry, items)))).flat());
-				}, reject);
-			});
+			const readEntriesPromise = new Promise<WizardRawDirectories>(
+				(resolve, reject) => {
+					directoryReader.readEntries(async (entries) => {
+						resolve(
+							(
+								await Promise.all(
+									entries.map((entry) => scanFiles(entry, items))
+								)
+							).flat()
+						);
+					}, reject);
+				}
+			);
 			entriesResult = await readEntriesPromise;
 			if (entriesResult.length > 0) {
 				allEntries.push(entriesResult as unknown as File[]);
@@ -87,20 +111,29 @@ async function scanFiles(item: FileSystemEntry, items: WizardRawDirectories = []
 	return items;
 }
 
-async function scanSystemFileEntries(item: FileSystemEntry, items: FileSystemFileEntry[][] = []) {
+async function scanSystemFileEntries(
+	item: FileSystemEntry,
+	items: FileSystemFileEntry[][] = []
+) {
 	if (item.isDirectory) {
 		const directoryReader = (item as FileSystemDirectoryEntry).createReader();
 		const allEntries: FileSystemFileEntry[][] = [];
 		let entriesResult: FileSystemFileEntry[][] = [];
 
 		do {
-			const readEntriesPromise = new Promise<FileSystemFileEntry[][]>((resolve, reject) => {
-				directoryReader.readEntries(async (entries) => {
-					resolve(
-						(await Promise.all(entries.map((entry) => scanSystemFileEntries(entry, items)))).flat()
-					);
-				}, reject);
-			});
+			const readEntriesPromise = new Promise<FileSystemFileEntry[][]>(
+				(resolve, reject) => {
+					directoryReader.readEntries(async (entries) => {
+						resolve(
+							(
+								await Promise.all(
+									entries.map((entry) => scanSystemFileEntries(entry, items))
+								)
+							).flat()
+						);
+					}, reject);
+				}
+			);
 			entriesResult = await readEntriesPromise;
 			if (entriesResult.length > 0) {
 				allEntries.push(entriesResult as unknown as FileSystemFileEntry[]);
@@ -114,7 +147,9 @@ async function scanSystemFileEntries(item: FileSystemEntry, items: FileSystemFil
 	return items;
 }
 
-export function extractFilesSimple(input: DataTransferItemList | FileList): File[] {
+export function extractFilesSimple(
+	input: DataTransferItemList | FileList
+): File[] {
 	if (input instanceof FileList) {
 		return Array.from(input);
 	}

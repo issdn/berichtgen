@@ -246,10 +246,14 @@ describe('Vuln-5: Shared mutable VM state between template expressions', () => {
 		const fresh = [7, 8, 9]; // different JSON → will be re-injected
 
 		try {
-			runJs({ sandbox: box('data.push(999); data.length', { data: original }) });
+			runJs({
+				sandbox: box('data.push(999); data.length', { data: original })
+			});
 
 			// Same JSON as original → NOT re-injected → VM still has [1,2,3,999]
-			const r1 = runJs({ sandbox: box('data[data.length-1]', { data: updated }) });
+			const r1 = runJs({
+				sandbox: box('data[data.length-1]', { data: updated })
+			});
 			expect(r1.result).toBe(999); // mutation persists
 
 			// Different JSON → IS re-injected → VM global is reset

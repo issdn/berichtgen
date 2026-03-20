@@ -58,7 +58,10 @@ export class DOCXParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new ***REMOVED***Error('DEVELOPERS_FAULT', 'FileWizard wurde nicht initialisiert.');
+			throw new ***REMOVED***Error(
+				'DEVELOPERS_FAULT',
+				'FileWizard wurde nicht initialisiert.'
+			);
 		const result = [];
 		for (let i = 0; i < this.data.textsOrRelIds.length; i += this.batchSize) {
 			if (this.context.cancelled) break;
@@ -66,7 +69,9 @@ export class DOCXParser extends Parser {
 				...(await Promise.all(
 					this.data.textsOrRelIds
 						.slice(i, i + this.batchSize)
-						.map(async (textOrId) => this.parseChunk(textOrId)) as Promise<string>[]
+						.map(async (textOrId) =>
+							this.parseChunk(textOrId)
+						) as Promise<string>[]
 				))
 			);
 		}
@@ -78,16 +83,25 @@ export class DOCXParser extends Parser {
 		if (Array.isArray(textOrId)) {
 			const rel = this.data!.imgRels.get(textOrId[0]);
 			if (rel === undefined) {
-				throw new ***REMOVED***Error('DOCX_FAULTY', 'DOCX Fotoreferenz könnte nicht gefunden werden.');
+				throw new ***REMOVED***Error(
+					'DOCX_FAULTY',
+					'DOCX Fotoreferenz könnte nicht gefunden werden.'
+				);
 			}
 
 			const fileData = this.data!.images.get(rel);
 			if (fileData === undefined) {
-				throw new ***REMOVED***Error('DOCX_FAULTY', 'DOCX Foto könnte nicht gefunden werden.');
+				throw new ***REMOVED***Error(
+					'DOCX_FAULTY',
+					'DOCX Foto könnte nicht gefunden werden.'
+				);
 			}
 
 			if (this.withImages) {
-				const result = await this.scheduler!.addJob('recognize', fileData as ImageLike);
+				const result = await this.scheduler!.addJob(
+					'recognize',
+					fileData as ImageLike
+				);
 				this.context.onProgress();
 				return result.data.text;
 			}
@@ -110,7 +124,11 @@ export class DOCXParser extends Parser {
 				} else if (key === 'a:blip' && withImages) {
 					results.push([(obj[key] as Record<string, string>)['@_r:embed']]);
 				} else {
-					this.findAllWT(obj[key] as Record<string, unknown>, results, withImages);
+					this.findAllWT(
+						obj[key] as Record<string, unknown>,
+						results,
+						withImages
+					);
 				}
 			}
 		}
@@ -122,7 +140,8 @@ export class DOCXParser extends Parser {
 		const imgRels: Map<string, string> = new Map();
 
 		const mediaFiles = Object.keys(docx.files).filter(
-			(fileName) => fileName.startsWith('word/media/') || fileName.startsWith('media/')
+			(fileName) =>
+				fileName.startsWith('word/media/') || fileName.startsWith('media/')
 		);
 
 		const relsFiles = Object.keys(docx.files).filter(

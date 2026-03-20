@@ -19,7 +19,7 @@ const entries: ResultEntry[] = [
 		text: 'Test Eintrag',
 		datum: '2025-01-06',
 		ort: Ort.SCHULE,
-		hours: 40
+		stunden: 40
 	}
 ];
 

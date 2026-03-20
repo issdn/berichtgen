@@ -18,7 +18,10 @@ testDocx('reads plain text and OCR image text from a DOCX file', async () => {
 	const scheduler = await createScheduler();
 	scheduler.addWorker(await createWorker('eng'));
 	const file = await fs.readFileSync('./src/test/text_img.docx');
-	const docxParser = new DOCXParser(new WizardFileContext(file as unknown as File), scheduler);
+	const docxParser = new DOCXParser(
+		new WizardFileContext(file as unknown as File),
+		scheduler
+	);
 	await docxParser.init(new Uint8Array(file.buffer));
 	const response = await docxParser.parse();
 

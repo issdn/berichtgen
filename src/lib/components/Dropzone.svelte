@@ -17,7 +17,9 @@
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
 
-	async function extractAndHandleFiles(dataTransfer: DataTransfer | FileList | null) {
+	async function extractAndHandleFiles(
+		dataTransfer: DataTransfer | FileList | null
+	) {
 		if (dataTransfer instanceof DataTransfer) {
 			if (!dataTransfer) {
 				toast.error('Browser API Fehler. Versuche mit einem anderen Browser.');
@@ -107,6 +109,8 @@
 		<Clock size={48} />
 	{:else}
 		<FileUp size={48} />
-		<label for="dropzone" class="pointer-events-none font-medium"> Dateien hier droppen </label>
+		<label for="dropzone" class="pointer-events-none font-medium">
+			Dateien hier droppen
+		</label>
 	{/if}
 </button>

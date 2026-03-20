@@ -28,7 +28,9 @@
 	let label = $derived.by(() => {
 		if (!$formData.ranges[index].daterange) return 'Datumbereich wählen';
 		const start = $formData.ranges[index].daterange.start
-			? df.format($formData.ranges[index].daterange.start.toDate('Europe/Berlin'))
+			? df.format(
+					$formData.ranges[index].daterange.start.toDate('Europe/Berlin')
+				)
 			: 'TT.MM.JJ';
 		const end = $formData.ranges[index].daterange.end
 			? df.format($formData.ranges[index].daterange.end.toDate('Europe/Berlin'))
@@ -39,7 +41,7 @@
 
 <div class="flex flex-col">
 	<div class="flex flex-row gap-x-4">
-		<Form.Field {form} name={`ranges[${index}].hours`} class="w-full">
+		<Form.Field {form} name={`ranges[${index}].stunden`} class="w-full">
 			<div>
 				<p class="text-left font-normal">Stunden (pro Woche)</p>
 				<Form.Control>
@@ -47,7 +49,7 @@
 						<Input
 							min={1}
 							{...inputProps}
-							bind:value={$formData.ranges[index].hours}
+							bind:value={$formData.ranges[index].stunden}
 							type="number"
 							placeholder="0 Stunden"
 							class="w-full"

@@ -3,19 +3,26 @@ import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';
 
 test('Filename with comma', async () => {
-	// ort, file, start;end;hours
-	const testCSV = 'SCHULE,"first, example.test",2023-01-01;2023-01-07,2023-02-01;2023-02-13;40';
+	// ort, file, start;end;stunden
+	const testCSV =
+		'SCHULE,"first, example.test",2023-01-01;2023-01-07,2023-02-01;2023-02-13;40';
 	const expected = [
 		{
 			ort: 'SCHULE',
 			file: 'first, example.test',
 			ranges: [
 				{
-					daterange: { start: parseDate('2023-01-01'), end: parseDate('2023-01-07') }
+					daterange: {
+						start: parseDate('2023-01-01'),
+						end: parseDate('2023-01-07')
+					}
 				},
 				{
-					daterange: { start: parseDate('2023-02-01'), end: parseDate('2023-02-13') },
-					hours: 40
+					daterange: {
+						start: parseDate('2023-02-01'),
+						end: parseDate('2023-02-13')
+					},
+					stunden: 40
 				}
 			]
 		}
@@ -32,19 +39,26 @@ test('Filename with comma', async () => {
 });
 
 test('No comma with quotes', async () => {
-	// ort, file, start;end;hours
-	const testCSV = 'SCHULE,"example.test",2023-01-01;2023-01-07,2023-02-01;2023-02-13;40';
+	// ort, file, start;end;stunden
+	const testCSV =
+		'SCHULE,"example.test",2023-01-01;2023-01-07,2023-02-01;2023-02-13;40';
 	const expected = [
 		{
 			ort: 'SCHULE',
 			file: 'example.test',
 			ranges: [
 				{
-					daterange: { start: parseDate('2023-01-01'), end: parseDate('2023-01-07') }
+					daterange: {
+						start: parseDate('2023-01-01'),
+						end: parseDate('2023-01-07')
+					}
 				},
 				{
-					daterange: { start: parseDate('2023-02-01'), end: parseDate('2023-02-13') },
-					hours: 40
+					daterange: {
+						start: parseDate('2023-02-01'),
+						end: parseDate('2023-02-13')
+					},
+					stunden: 40
 				}
 			]
 		}

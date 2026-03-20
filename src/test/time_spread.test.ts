@@ -231,7 +231,7 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
 
-test('spreads more entries than available weeks across multiple ranges with hours', () => {
+test('spreads more entries than available weeks across multiple ranges with stunden', () => {
 	const entries = [
 		{
 			qualifikationen,
@@ -290,14 +290,14 @@ test('spreads more entries than available weeks across multiple ranges with hour
 					start: parseDate('2025-03-03'),
 					end: parseDate('2025-03-05')
 				},
-				hours: 30
+				stunden: 30
 			},
 			{
 				daterange: {
 					start: parseDate('2025-04-07'),
 					end: parseDate('2025-04-08')
 				},
-				hours: 20
+				stunden: 20
 			}
 		],
 		ort: Ort.BETRIEB
@@ -306,7 +306,7 @@ test('spreads more entries than available weeks across multiple ranges with hour
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
 
-test('Spread multiple entries across multiple week ranges with hours.', () => {
+test('Spread multiple entries across multiple week ranges with stunden.', () => {
 	const received = spreadEntriesAcrossWeeks(testAIResponse, {
 		ranges: [
 			{
@@ -314,7 +314,7 @@ test('Spread multiple entries across multiple week ranges with hours.', () => {
 					start: parseDate('2023-12-01'),
 					end: parseDate('2024-01-01')
 				},
-				hours: 30
+				stunden: 30
 			}
 		],
 		ort: Ort.BETRIEB

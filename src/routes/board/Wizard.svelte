@@ -1,7 +1,9 @@
 <script lang="ts">
 	import WizardFile from './WizardFile.svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
-	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
+	import Button, {
+		buttonVariants
+	} from '$lib/components/ui/button/button.svelte';
 	import { FileCheck2, FileClock, FileJson, FileType } from '@lucide/svelte';
 	import { getContext, onMount } from 'svelte';
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
@@ -13,7 +15,11 @@
 	import { handleDOCXDownload } from '$src/lib/utils/write_docx';
 	import { handleJSONDownload } from '$src/lib/utils/write_json';
 	import WizardSettingsPopover from '$src/lib/components/WizardSettingsPopover.svelte';
-	import type { UserBoardContext, UserContext, WizardProcessStateMachine } from '$src/lib/types';
+	import type {
+		UserBoardContext,
+		UserContext,
+		WizardProcessStateMachine
+	} from '$src/lib/types';
 	import { toast } from 'svelte-sonner';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
@@ -39,7 +45,7 @@
 	});
 
 	let { supabase } = $derived(getContext<UserContext>('user')());
-		
+
 	let { userMetadata } = $derived(getContext<UserBoardContext>('board')());
 
 	let dialogOpen = $state(false);
@@ -47,41 +53,63 @@
 	let result = $derived(wizardScheduler.result);
 
 	$effect(() => {
-		if (result !== null && wizardScheduler.filesReady - wizardScheduler.filesUnfinished > 0) {
+		if (
+			result !== null &&
+			wizardScheduler.filesReady - wizardScheduler.filesUnfinished > 0
+		) {
 			dialogOpen = true;
 		}
 	});
 
-	function handleDndConsider(e: CustomEvent<DndEvent<WizardProcessStateMachine>>) {
+	function handleDndConsider(
+		e: CustomEvent<DndEvent<WizardProcessStateMachine>>
+	) {
 		wizardScheduler.schedule = e.detail.items;
 	}
 
-	function handleDndFinalize(e: CustomEvent<DndEvent<WizardProcessStateMachine>>) {
+	function handleDndFinalize(
+		e: CustomEvent<DndEvent<WizardProcessStateMachine>>
+	) {
 		wizardScheduler.schedule = e.detail.items;
 	}
 </script>
 
-<div data-testid="wizard-container" class="relative flex h-full w-full flex-col overflow-hidden rounded-lg border-4">
-	<div data-testid="wizard-header" class="bg-muted flex flex-row flex-wrap items-center justify-between gap-x-4 p-4">
+<div
+	data-testid="wizard-container"
+	class="relative flex h-full w-full flex-col overflow-hidden rounded-lg border-4"
+>
+	<div
+		data-testid="wizard-header"
+		class="bg-muted flex flex-row flex-wrap items-center justify-between gap-x-4 p-4"
+	>
 		<div class="flex flex-row items-center gap-x-4">
 			<WizardSettingsPopover />
 		</div>
 		{#if result !== null}
 			<Dialog.Root bind:open={dialogOpen}>
-				<Dialog.Trigger data-testid="wizard-completion-button" class={buttonVariants({ variant: 'default' })}
+				<Dialog.Trigger
+					data-testid="wizard-completion-button"
+					class={buttonVariants({ variant: 'default' })}
 					><FileCheck2 /></Dialog.Trigger
 				>
 				<Dialog.Content {children} {childrenBehind} class="max-w-min" />
 			</Dialog.Root>
 		{:else}
-			<Button data-testid="wizard-completion-button" disabled={true}><FileCheck2 /></Button>
+			<Button data-testid="wizard-completion-button" disabled={true}
+				><FileCheck2 /></Button
+			>
 		{/if}
 	</div>
-	<div data-testid="wizard-content" class="h-full overflow-x-hidden overflow-y-auto">
-		<div class="relative p-4 h-full">
+	<div
+		data-testid="wizard-content"
+		class="h-full overflow-x-hidden overflow-y-auto"
+	>
+		<div class="relative h-full p-4">
 			{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
 				{#await wizardScheduler.processInit}
-					<div data-testid="wizard-loading" class="center-absolute"><Spinner /></div>
+					<div data-testid="wizard-loading" class="center-absolute">
+						<Spinner />
+					</div>
 				{:then}
 					{@const items = wizardScheduler.schedule.flat()}
 					<div
@@ -98,7 +126,10 @@
 					</div>
 				{/await}
 			{:else}
-				<FileClock data-testid="wizard-empty-state" class="center-absolute text-muted size-12"/>
+				<FileClock
+					data-testid="wizard-empty-state"
+					class="center-absolute text-muted size-12"
+				/>
 			{/if}
 		</div>
 	</div>
@@ -112,7 +143,8 @@
 		<div class="flex w-fit flex-col gap-y-2">
 			<FileDownloadButton
 				fn={() => handleJSONDownload(wizardScheduler.result!)}
-				download="bericht.json"><FileJson />Als JSON herunterladen</FileDownloadButton
+				download="bericht.json"
+				><FileJson />Als JSON herunterladen</FileDownloadButton
 			>
 			<FileDownloadButton
 				fn={async () => {
@@ -120,20 +152,27 @@
 					if (!exists) return;
 
 					const path = berichtgenStore.preferedTemplatePath;
-					
-					const templateResult = await supabase.storage.from('templates').download(path!);
-					if(!templateResult.data) {
-						toast.error('Vorlage existiert nicht. Bitte wähle eine andere Vorlage aus.');
+
+					const templateResult = await supabase.storage
+						.from('templates')
+						.download(path!);
+					if (!templateResult.data) {
+						toast.error(
+							'Vorlage existiert nicht. Bitte wähle eine andere Vorlage aus.'
+						);
 						return;
 					}
-					const uintarray = new Uint8Array(await templateResult.data!.arrayBuffer());
-					await handleDOCXDownload({ 
-						entries: wizardScheduler.result!, 
+					const uintarray = new Uint8Array(
+						await templateResult.data!.arrayBuffer()
+					);
+					await handleDOCXDownload({
+						entries: wizardScheduler.result!,
 						template: uintarray,
 						userMetadata: userMetadata ?? undefined
 					});
 				}}
-				download="bericht.docx"><FileType />Als DOCX herunterladen</FileDownloadButton
+				download="bericht.docx"
+				><FileType />Als DOCX herunterladen</FileDownloadButton
 			>
 		</div>
 	</div>

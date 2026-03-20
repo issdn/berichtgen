@@ -33,7 +33,9 @@
 		{...restProps}
 	>
 		{@render childrenBehind?.()}
-		<div class="bg-background relative w-full gap-4 p-6 shadow-lg sm:rounded-lg">
+		<div
+			class="bg-background relative w-full gap-4 p-6 shadow-lg sm:rounded-lg"
+		>
 			{@render children?.()}
 			{#if showCloseButton}
 				<DialogPrimitive.Close

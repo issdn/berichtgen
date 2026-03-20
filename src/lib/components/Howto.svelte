@@ -17,11 +17,13 @@
 				</Card.Header>
 				<Card.Content>
 					<p>
-						Du kannst deine Berichte kostenlos generieren in dem du die JSON-Dateien erstmal mit
-						einem LLM deiner Wahl generierst und dann hier droppst.
+						Du kannst deine Berichte kostenlos generieren in dem du die
+						JSON-Dateien erstmal mit einem LLM deiner Wahl generierst und dann
+						hier droppst.
 						<br />
-						Die JSON muss eine Liste von Objekten sein. Ein Objekt muss den Bericht als text im Feld
-						"text" und eine Liste von Text-Qualifikationen im feld 'qualifikationen' haben.
+						Die JSON muss eine Liste von Objekten sein. Ein Objekt muss den Bericht
+						als text im Feld "text" und eine Liste von Text-Qualifikationen im feld
+						'qualifikationen' haben.
 						<br />
 						Ein Prompt das du verwenden kannst:
 					</p>
@@ -48,22 +50,26 @@
 				</Card.Header>
 				<Card.Content>
 					<p>
-						Du kannst das manuelle Datieren mit einer <i class="bg-muted rounded-sm px-2"
-							>.csv|.txt</i
+						Du kannst das manuelle Datieren mit einer <i
+							class="bg-muted rounded-sm px-2">.csv|.txt</i
 						>
 						Datei automatisieren. Die Datei muss
-						<i class="bg-muted rounded-sm px-2">berichtgen.(csv|txt)</i> heißen und sie soll mit den
-						restlichen Dateien in die Dopzone gedroppt werden. Die <b>Reihenfolge</b> der Zeilen wird
-						beibehalten!
+						<i class="bg-muted rounded-sm px-2">berichtgen.(csv|txt)</i> heißen
+						und sie soll mit den restlichen Dateien in die Dopzone gedroppt
+						werden. Die <b>Reihenfolge</b> der Zeilen wird beibehalten!
 					</p>
 					<br />
 					<p>Format:</p>
 					<p>
-						<code class="font-mono text-sm">ORT,DATEI_NAME,[START_DATUM;END_DATUM;(STUNDEN)]</code>
+						<code class="font-mono text-sm"
+							>ORT,DATEI_NAME,[START_DATUM;END_DATUM;(STUNDEN)]</code
+						>
 					</p>
 					<br />
 					<p>Beispiel:</p>
-					<code class="font-mono text-sm">SCHULE,wit.pdf,2024-08-26;2024-10-16</code>
+					<code class="font-mono text-sm"
+						>SCHULE,wit.pdf,2024-08-26;2024-10-16</code
+					>
 					<code class="font-mono text-sm"
 						>SCHULE,rwc.docx,2024-08-26;2024-10-16;40,2025-01-01;2025-03-01;30</code
 					>

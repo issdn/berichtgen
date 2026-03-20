@@ -20,10 +20,13 @@
 	import type { UserBoardContext } from '$src/lib/types';
 	import { getContext, onDestroy } from 'svelte';
 
-	const { context, machine, id }: ReturnType<WizardScheduler['createProcessStateMachine']> =
-		$props();
+	const {
+		context,
+		machine,
+		id
+	}: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
 
-		let { setTokenCount } = getContext<UserBoardContext>('board')();
+	let { setTokenCount } = getContext<UserBoardContext>('board')();
 
 	function statusFromStep(step: WizardStep) {
 		switch (step) {
@@ -55,9 +58,14 @@
 	});
 </script>
 
-<div data-testid="wizard-file" class="bg-muted flex flex-col gap-y-4 rounded-md p-4">
+<div
+	data-testid="wizard-file"
+	class="bg-muted flex flex-col gap-y-4 rounded-md p-4"
+>
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
-		<span data-testid="wizard-file-name" class="truncate overflow-hidden">{context.file.name}</span>
+		<span data-testid="wizard-file-name" class="truncate overflow-hidden"
+			>{context.file.name}</span
+		>
 		<div class="flex flex-row gap-x-2">
 			{#if $machine === WizardStep.WAITING}
 				<TimeSpreadDialog
@@ -97,7 +105,9 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<Badge variant="default" class="gap-x-2">
-								<Icon size={18} /><span class="text-sm font-medium">{label}</span>
+								<Icon size={18} /><span class="text-sm font-medium"
+									>{label}</span
+								>
 							</Badge>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
@@ -106,7 +116,11 @@
 					</Tooltip.Root>
 				</Tooltip.Provider>
 			{:else}
-				<Badge data-testid="wizard-file-status" variant="default" class="gap-x-2">
+				<Badge
+					data-testid="wizard-file-status"
+					variant="default"
+					class="gap-x-2"
+				>
 					<Icon size={18} /><span class="text-sm font-medium">{label}</span>
 				</Badge>
 			{/if}
@@ -114,7 +128,9 @@
 		{#if $machine === WizardStep.PROCESSING || $machine === WizardStep.AI_COMPLETION || $machine === WizardStep.TIME_SPREADING}
 			<div class="flex flex-row items-center gap-x-2">
 				{#if context.max !== 0}
-					<span class="text-sm font-medium">Elemente: {context.value}/{context.max}</span>
+					<span class="text-sm font-medium"
+						>Elemente: {context.value}/{context.max}</span
+					>
 				{/if}
 				<Spinner size="sm" />
 			</div>

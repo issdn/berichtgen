@@ -15,7 +15,7 @@ export interface Entry {
 	text: string;
 	datum?: string;
 	ort?: Ort;
-	hours?: number;
+	stunden?: number;
 }
 
 export type ResultEntry = Required<Entry>;
@@ -25,7 +25,7 @@ export interface ***REMOVED***WeightedDateRange {
 		start: DateValue;
 		end: DateValue;
 	};
-	hours?: number;
+	stunden?: number;
 }
 
 export type QualifikationenType =
@@ -51,7 +51,7 @@ export type UserBoardContext = () => {
 };
 
 /**
- * Example: ort, file, start;end;[hours], start;end;[hours]
+ * Example: ort, file, start;end;[stunden], start;end;[stunden]
  *
  * See: $src/lib/parse/config_reader.ts
  */

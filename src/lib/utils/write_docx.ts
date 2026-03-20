@@ -71,7 +71,13 @@ export async function handleDOCXDownload({
 
 	const injected = new Map<string, string>();
 	try {
-		const blob = await generateReportBytes(template, entries, userMetadata, injected, vm);
+		const blob = await generateReportBytes(
+			template,
+			entries,
+			userMetadata,
+			injected,
+			vm
+		);
 		downloadBlob(
 			new Blob([Uint8Array.from(blob)], {
 				type: FileTypes.DOCX

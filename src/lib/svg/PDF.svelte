@@ -58,9 +58,21 @@
 			<feOffset dy="3" />
 			<feGaussianBlur stdDeviation="3.2" />
 			<feComposite in2="hardAlpha" operator="out" />
-			<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
-			<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_42" />
-			<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_42" result="shape" />
+			<feColorMatrix
+				type="matrix"
+				values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
+			/>
+			<feBlend
+				mode="normal"
+				in2="BackgroundImageFix"
+				result="effect1_dropShadow_1_42"
+			/>
+			<feBlend
+				mode="normal"
+				in="SourceGraphic"
+				in2="effect1_dropShadow_1_42"
+				result="shape"
+			/>
 		</filter>
 		<clipPath id="clip0_1_42">
 			<rect

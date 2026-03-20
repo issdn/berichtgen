@@ -14,12 +14,16 @@ export function readCsvConfig(file: File) {
 				const text = new TextDecoder().decode(buffer);
 				return readCsvConfigFromText(text);
 			},
-			(e) => ***REMOVED***Error.fromUnknown(e, 'Fehler beim Lesen der CSV-Konfiguration')
+			(e) =>
+				***REMOVED***Error.fromUnknown(
+					e,
+					'Fehler beim Lesen der CSV-Konfiguration'
+				)
 		)
 	);
 }
 
-// ort, file, start;end;hours
+// ort, file, start;end;stunden
 export function readCsvConfigFromText(text: string): CSVConfig {
 	const lines = text
 		.split('\n')
@@ -37,10 +41,10 @@ export function readCsvConfigFromText(text: string): CSVConfig {
 		const file = values.shift() as string;
 
 		const ranges = values.map((value) => {
-			const [start, end, hours] = value.split(';').map((part) => part.trim());
+			const [start, end, stunden] = value.split(';').map((part) => part.trim());
 			return {
 				daterange: { start: parseDate(start), end: parseDate(end) },
-				hours: hours ? parseInt(hours) : undefined
+				stunden: stunden ? parseInt(stunden) : undefined
 			};
 		});
 		data.push({ ort, file, ranges });

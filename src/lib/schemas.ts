@@ -26,8 +26,8 @@ export const fullResultSchema = z
 			.optional()
 			.default([]),
 		text: z.string({ message: 'Text muss ein Text enthalten!' }),
-		hours: z
-			.number({ message: 'Hours/Stunden muss eine ganze Zahl sein.' })
+		stunden: z
+			.number({ message: 'Stunden muss eine ganze Zahl sein.' })
 			.int()
 			.optional(),
 		ort: z
@@ -53,7 +53,7 @@ export const dateRangeSchema = z.object({
 				},
 				{ message: 'Mindestens eine Woche muss gewählt werden.' }
 			),
-			hours: z
+			stunden: z
 				.number({ message: 'Stunden müssen Zahlen sein.' })
 				.int({ message: 'Stunden müssen ganze Zahlen sein.' })
 				.optional()
@@ -80,7 +80,7 @@ export type ***REMOVED***DateRange = Pick<RemoveUndefined<DateRange>, 'end'> &
 export type Valid***REMOVED***DateRanges = {
 	ranges: {
 		daterange: ***REMOVED***DateRange;
-		hours?: number | null;
+		stunden?: number | null;
 	}[];
 	ort: Ort;
 };
@@ -116,7 +116,7 @@ export const csvConfigSchema = z
 						message: 'Enddatum muss angegeben werden.'
 					})
 				}),
-				hours: z.number().int().min(0).optional()
+				stunden: z.number().int().min(0).optional()
 			})
 			.array()
 	})
@@ -130,7 +130,11 @@ export const debugLoginSchema = z.object({
 });
 
 export const profileNameSchema = z.object({
-	fullName: z.string().max(256, { message: 'Max 256 Zeichen' }).nullable().optional()
+	fullName: z
+		.string()
+		.max(256, { message: 'Max 256 Zeichen' })
+		.nullable()
+		.optional()
 });
 
 export type ProfileNameSchema = typeof profileNameSchema;

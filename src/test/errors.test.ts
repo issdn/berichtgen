@@ -5,7 +5,11 @@ describe('toErrorBody', () => {
 	describe('SvelteKit HttpError (from throwSvelteError)', () => {
 		it('extracts code, message and cause from a structured body', () => {
 			const httpError = {
-				body: { code: 'DATABASE_ERROR', message: 'Datenbankfehler.', cause: 'connection timeout' }
+				body: {
+					code: 'DATABASE_ERROR',
+					message: 'Datenbankfehler.',
+					cause: 'connection timeout'
+				}
 			};
 			expect(toErrorBody(httpError)).toEqual({
 				code: 'DATABASE_ERROR',
@@ -16,7 +20,11 @@ describe('toErrorBody', () => {
 
 		it('sets cause to null when body.cause is not a string', () => {
 			const httpError = {
-				body: { code: 'UNAUTHORIZED', message: 'Nicht autorisiert.', cause: null }
+				body: {
+					code: 'UNAUTHORIZED',
+					message: 'Nicht autorisiert.',
+					cause: null
+				}
 			};
 			expect(toErrorBody(httpError)).toEqual({
 				code: 'UNAUTHORIZED',

@@ -14,48 +14,60 @@
 
 	let { data } = $props();
 
-	const profileNameForm = $derived(superForm(data.profileNameForm, {
-		dataType: 'json',
-		validators: zod4Client(profileNameSchema),
-		validationMethod: 'oninput',
-		resetForm: false,
-		invalidateAll: true,
-		onError({ result }) {
-			toast.error(result.error.message);
-		},
-		onUpdated({ form }) {
-			if (form.valid) {
-				toast.success(form.message);
+	const profileNameForm = $derived(
+		superForm(data.profileNameForm, {
+			dataType: 'json',
+			validators: zod4Client(profileNameSchema),
+			validationMethod: 'oninput',
+			resetForm: false,
+			invalidateAll: true,
+			onError({ result }) {
+				toast.error(result.error.message);
+			},
+			onUpdated({ form }) {
+				if (form.valid) {
+					toast.success(form.message);
+				}
 			}
-		}
-	}));
+		})
+	);
 
-	const { form: profileFormData, enhance: profileEnhance, submitting: profileSubmitting } = profileNameForm;
+	const {
+		form: profileFormData,
+		enhance: profileEnhance,
+		submitting: profileSubmitting
+	} = profileNameForm;
 
-	const userMetadataForm = $derived(superForm(data.userMetadataForm, {
-		dataType: 'json',
-		validators: zod4Client(userMetadataSchema),
-		validationMethod: 'oninput',
-		resetForm: false,
-		invalidateAll: true,
-		onError({ result }) {
-			toast.error(result.error.message);
-		},
-		onUpdated({ form }) {
-			if (form.valid) {
-				toast.success(form.message);
+	const userMetadataForm = $derived(
+		superForm(data.userMetadataForm, {
+			dataType: 'json',
+			validators: zod4Client(userMetadataSchema),
+			validationMethod: 'oninput',
+			resetForm: false,
+			invalidateAll: true,
+			onError({ result }) {
+				toast.error(result.error.message);
+			},
+			onUpdated({ form }) {
+				if (form.valid) {
+					toast.success(form.message);
+				}
 			}
-		}
-	}));
+		})
+	);
 
-	const { form: metadataFormData, enhance: metadataEnhance, submitting: metadataSubmitting } = userMetadataForm;
+	const {
+		form: metadataFormData,
+		enhance: metadataEnhance,
+		submitting: metadataSubmitting
+	} = userMetadataForm;
 </script>
 
 <svelte:head>
 	<title>Einstellungen</title>
 </svelte:head>
 
-<div class="flex flex-row justify-center h-full">
+<div class="flex h-full flex-row justify-center">
 	<div class="flex w-full max-w-175 flex-col gap-y-8">
 		<Card.Root>
 			<Card.Header>
@@ -139,11 +151,7 @@
 							bind:value={$metadataFormData.abteilung}
 						/>
 					</div>
-					<Button
-						type="submit"
-						disabled={$metadataSubmitting}
-						class="w-fit"
-					>
+					<Button type="submit" disabled={$metadataSubmitting} class="w-fit">
 						<Save size={16} class="mr-2" />
 						Speichern
 					</Button>
@@ -174,14 +182,18 @@
 								<AlertDialog.Header>
 									<AlertDialog.Title>Bist du sicher?</AlertDialog.Title>
 									<p class="text-red-500">
-										Dieser Vorgang ist unumkehrbar. Dies wird dein Konto und deine Daten entfernen.
+										Dieser Vorgang ist unumkehrbar. Dies wird dein Konto und
+										deine Daten entfernen.
 									</p>
 									{#if data.tokenCount !== null && data.tokenCount > 0}
 										<p
 											class="flex flex-row items-center gap-x-1 text-red-500 [&_span]:text-red-500"
 										>
 											Deine <Badge variant="default"
-												><HandCoins size={16} class="text-red-500" />{data.tokenCount}</Badge
+												><HandCoins
+													size={16}
+													class="text-red-500"
+												/>{data.tokenCount}</Badge
 											> Tokens werden ebenfalls gelöscht.
 										</p>
 									{/if}

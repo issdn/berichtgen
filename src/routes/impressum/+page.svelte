@@ -15,7 +15,9 @@
 		</div>
 
 		<div>
-			<p><strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:</strong></p>
+			<p>
+				<strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:</strong>
+			</p>
 			<p>Karol Bielski</p>
 			<p>Auf der Lieth 174</p>
 			<p>33100 Paderborn</p>

@@ -28,7 +28,10 @@
 
 	function onLoadMore(pageTemplates: TemplateItem[]) {
 		const existingIds = new Set(cachedTemplates.map((t) => t.id));
-		cachedTemplates = [...cachedTemplates, ...pageTemplates.filter((t) => !existingIds.has(t.id))];
+		cachedTemplates = [
+			...cachedTemplates,
+			...pageTemplates.filter((t) => !existingIds.has(t.id))
+		];
 		lastId = pageTemplates.at(-1)?.id ?? undefined;
 	}
 

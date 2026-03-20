@@ -20,11 +20,14 @@ export async function checkPreferredTemplate(supabase: App.Locals['supabase']) {
 	// Template was deleted
 	if (!template) {
 		berichtgenStore.preferedTemplatePath = null;
-		toast.info('Deine bevorzugte Vorlage wurde gelöscht. Bitte wähle eine neue Vorlage aus.', {
-			duration: Infinity,
-			closeButton: true,
-			dismissable: true
-		});
+		toast.info(
+			'Deine bevorzugte Vorlage wurde gelöscht. Bitte wähle eine neue Vorlage aus.',
+			{
+				duration: Infinity,
+				closeButton: true,
+				dismissable: true
+			}
+		);
 		return false;
 	}
 

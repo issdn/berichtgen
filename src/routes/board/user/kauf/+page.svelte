@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js';
+	import {
+		loadStripe,
+		type Stripe,
+		type StripeElements
+	} from '@stripe/stripe-js';
 	import { Elements, Address, PaymentElement } from 'svelte-stripe';
 	import { PUBLIC_STRIPE_KEY } from '$env/static/public';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -56,12 +60,15 @@
 	async function createPaymentIntent(quantity: number = 1) {
 		loadingIntent = true;
 		try {
-			const response = await fetch(`/board/user/kauf/create-payment-intent?quantity=${quantity}`, {
-				method: 'POST',
-				headers: {
-					'content-type': 'application/json'
+			const response = await fetch(
+				`/board/user/kauf/create-payment-intent?quantity=${quantity}`,
+				{
+					method: 'POST',
+					headers: {
+						'content-type': 'application/json'
+					}
 				}
-			});
+			);
 			const body = await response.json();
 			if (!response.ok) {
 				throw new ***REMOVED***Error('STRIPE_ERROR', body.message);
@@ -94,13 +101,14 @@
 		if (result?.error) {
 			// payment failed, notify user
 			processing = false;
-			const message = result.error.message ?? 'Unbekannter Fehler beim Zahlungsvorgang';
+			const message =
+				result.error.message ?? 'Unbekannter Fehler beim Zahlungsvorgang';
 			toast.error(message);
 			error = message;
 		} else {
 			goto(resolve(`/board`), {
 				replaceState: true,
-				invalidateAll: true,
+				invalidateAll: true
 			});
 		}
 	}
@@ -117,7 +125,9 @@
 </svelte:head>
 
 <div class="h-main flex w-full flex-col justify-center p-8">
-	<div class="flex w-full flex-col items-center gap-x-8 gap-y-8 lg:flex-row lg:justify-around">
+	<div
+		class="flex w-full flex-col items-center gap-x-8 gap-y-8 lg:flex-row lg:justify-around"
+	>
 		<div class="flex h-full w-full max-w-150 flex-col gap-y-4">
 			<div class="flex w-full flex-row items-center justify-end gap-x-2">
 				<div class="flex flex-row flex-wrap gap-x-2">
@@ -133,7 +143,8 @@
 					{/each}
 				</div>
 				<div class="flex flex-row">
-					<Label class="bg-muted flex w-8 flex-row items-center justify-center rounded-l-md text-lg"
+					<Label
+						class="bg-muted flex w-8 flex-row items-center justify-center rounded-l-md text-lg"
 						>€</Label
 					>
 					<Input
@@ -164,20 +175,22 @@
 								{(quantity * 70_000).toLocaleString(LOCALE)} Absätze oder
 								{(quantity * 1_400).toLocaleString(LOCALE)} Seiten
 							</p>
-							<div class="text-muted-foreground mt-2 flex flex-row items-center gap-x-2">
+							<div
+								class="text-muted-foreground mt-2 flex flex-row items-center gap-x-2"
+							>
 								<CircleAlert size={28} />
 								<p>
-									Tokens werden bei der Eingabe sowie der Ausgabe abgezogen! Das bedeutet 700 Seiten
-									Eingabe und 700 Seiten Ausgabe.
+									Tokens werden bei der Eingabe sowie der Ausgabe abgezogen! Das
+									bedeutet 700 Seiten Eingabe und 700 Seiten Ausgabe.
 								</p>
 							</div>
 						</div>
 						<div class="flex flex-row items-center gap-x-4">
 							<Checkbox id="terms-checkbox" bind:checked={termsAccepted} />
 							<Label class="cursor-pointer" for="terms-checkbox">
-								Ich stimme ausdrücklich zu, dass die Ausführung des Vertrags vor Ablauf der
-								Widerrufsfrist beginnt und ich mit vollständiger Bereitstellung der Tokens mein
-								Widerrufsrecht verliere.
+								Ich stimme ausdrücklich zu, dass die Ausführung des Vertrags vor
+								Ablauf der Widerrufsfrist beginnt und ich mit vollständiger
+								Bereitstellung der Tokens mein Widerrufsrecht verliere.
 							</Label>
 						</div>
 					</div>
@@ -186,7 +199,13 @@
 		</div>
 		<div class="flex w-full max-w-150 flex-col justify-center">
 			{#if clientSecret}
-				<Elements locale="de" {stripe} {clientSecret} appearance={{ theme: 'night', labels: 'floating' }} bind:elements>
+				<Elements
+					locale="de"
+					{stripe}
+					{clientSecret}
+					appearance={{ theme: 'night', labels: 'floating' }}
+					bind:elements
+				>
 					<form onsubmit={submit}>
 						<PaymentElement />
 						<Address mode="billing" />

@@ -52,7 +52,9 @@
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>Debug Login</Dialog.Title>
-			<Dialog.Description>Nur in der Entwicklungsumgebung verfügbar.</Dialog.Description>
+			<Dialog.Description
+				>Nur in der Entwicklungsumgebung verfügbar.</Dialog.Description
+			>
 		</Dialog.Header>
 		<form use:enhance class="flex flex-col gap-4 pt-2">
 			<Form.Field {form} name="email">

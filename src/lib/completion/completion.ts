@@ -21,22 +21,28 @@ export function getCompletions(text: string, ort: Ort) {
 
 		const data = await result.json();
 
-		if (result.status >= 400) throw new ***REMOVED***Error('INVALID_JSON_FROM_AI', data.message);
+		if (result.status >= 400)
+			throw new ***REMOVED***Error('INVALID_JSON_FROM_AI', data.message);
 
 		const parsed = completionSchema.safeParse(data.completion);
 		if (!parsed.success) {
-			throw new ***REMOVED***Error('INVALID_JSON_FROM_AI', 'KI hat unguiltige JSON-Antwort geliefert');
+			throw new ***REMOVED***Error(
+				'INVALID_JSON_FROM_AI',
+				'KI hat unguiltige JSON-Antwort geliefert'
+			);
 		}
 
 		return { completion: parsed.data, tokensUsed: data.tokensUsed as number };
 	});
 
-	const allCompletionsResult = ResultAsync.fromPromise(Promise.all(completionsPromises), (e) =>
-		***REMOVED***Error.fromUnknown(
-			e,
-			'Fehler beim Abrufen der Vervollständigung',
-			'INVALID_JSON_FROM_AI'
-		)
+	const allCompletionsResult = ResultAsync.fromPromise(
+		Promise.all(completionsPromises),
+		(e) =>
+			***REMOVED***Error.fromUnknown(
+				e,
+				'Fehler beim Abrufen der Vervollständigung',
+				'INVALID_JSON_FROM_AI'
+			)
 	);
 
 	return allCompletionsResult.map((results): CompletionResult => {

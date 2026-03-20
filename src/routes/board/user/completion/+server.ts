@@ -73,10 +73,13 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 	const { text, ort } = parsed.data;
 
-	const result = await ResultAsync.fromPromise(getGeminiCompletion(text, apiKey, ort), (e) =>
-		e instanceof genai.ApiError
-			? (errorByHttpCode(EGenAIError, e.status) ?? ECompletionException.UNKNOWN_THIRD_PARTY_ERROR)
-			: ECompletionException.UNKNOWN_THIRD_PARTY_ERROR
+	const result = await ResultAsync.fromPromise(
+		getGeminiCompletion(text, apiKey, ort),
+		(e) =>
+			e instanceof genai.ApiError
+				? (errorByHttpCode(EGenAIError, e.status) ??
+					ECompletionException.UNKNOWN_THIRD_PARTY_ERROR)
+				: ECompletionException.UNKNOWN_THIRD_PARTY_ERROR
 	);
 
 	if (result.isErr()) {

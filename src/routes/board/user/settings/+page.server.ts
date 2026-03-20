@@ -9,12 +9,21 @@ import { profileNameSchema, userMetadataSchema } from '$src/lib/schemas';
 export const load = async ({ parent, locals: { user } }) => {
 	const { tokenCount } = await parent();
 
-	const [userMetadataForm, profileNameForm, userMetadata, profile] = await Promise.all([
-		superValidate(zod4(userMetadataSchema)),
-		superValidate(zod4(profileNameSchema)),
-		db.selectFrom('user_metadata').selectAll().where('user_id', '=', user!.id).executeTakeFirst() ?? null,
-		db.selectFrom('profile').select('full_name').where('id', '=', user!.id).executeTakeFirst() ?? null
-	]);
+	const [userMetadataForm, profileNameForm, userMetadata, profile] =
+		await Promise.all([
+			superValidate(zod4(userMetadataSchema)),
+			superValidate(zod4(profileNameSchema)),
+			db
+				.selectFrom('user_metadata')
+				.selectAll()
+				.where('user_id', '=', user!.id)
+				.executeTakeFirst() ?? null,
+			db
+				.selectFrom('profile')
+				.select('full_name')
+				.where('id', '=', user!.id)
+				.executeTakeFirst() ?? null
+		]);
 
 	if (userMetadata) {
 		userMetadataForm.data = {
@@ -37,7 +46,8 @@ export const actions: Actions = {
 		if (signOutError) {
 			return fail(406);
 		}
-		const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(user!.id!);
+		const { error: deleteUserError } =
+			await supabaseAdmin.auth.admin.deleteUser(user!.id!);
 		if (deleteUserError) {
 			return fail(406);
 		}

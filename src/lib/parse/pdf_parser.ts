@@ -65,22 +65,30 @@ export class PDFParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new ***REMOVED***Error('DEVELOPERS_FAULT', 'FileWizard wurde nicht initialisiert.');
+			throw new ***REMOVED***Error(
+				'DEVELOPERS_FAULT',
+				'FileWizard wurde nicht initialisiert.'
+			);
 		const result = [];
 		for (let i = 0; i < this.data.length; i += this.batchSize) {
 			if (this.context.cancelled) break;
 			result.push(
 				...(await Promise.all(
-					this.data!.slice(i, i + this.batchSize).map(async ({ blobOrNull, page }) => {
-						let text: string;
-						if (blobOrNull === null) {
-							text = (await page.getTextContent()).items.map((c) => (c as TextItem).str).join('/n');
-						} else {
-							text = (await this.scheduler!.addJob('recognize', blobOrNull)).data.text;
+					this.data!.slice(i, i + this.batchSize).map(
+						async ({ blobOrNull, page }) => {
+							let text: string;
+							if (blobOrNull === null) {
+								text = (await page.getTextContent()).items
+									.map((c) => (c as TextItem).str)
+									.join('/n');
+							} else {
+								text = (await this.scheduler!.addJob('recognize', blobOrNull))
+									.data.text;
+							}
+							this.context.onProgress();
+							return text;
 						}
-						this.context.onProgress();
-						return text;
-					})
+					)
 				))
 			);
 		}
@@ -98,7 +106,10 @@ export class PDFParser extends Parser {
 			return null;
 		}
 
-		const { canvas, context } = this.getNewCanvas!(viewport.width, viewport.height);
+		const { canvas, context } = this.getNewCanvas!(
+			viewport.width,
+			viewport.height
+		);
 
 		await page.render({
 			canvasContext: context as unknown as CanvasRenderingContext2D,

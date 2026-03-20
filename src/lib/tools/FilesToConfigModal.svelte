@@ -28,10 +28,13 @@
 		const texts = new SvelteMap<string, string>();
 		for (const file of directories.flat()) {
 			const parent =
-				(file instanceof File ? file.webkitRelativePath : file.fullPath).split('/').at(-2) ?? '';
+				(file instanceof File ? file.webkitRelativePath : file.fullPath)
+					.split('/')
+					.at(-2) ?? '';
 			texts.set(
 				parent,
-				(texts.get(parent) || '') + `SCHULE,"${file.name}",YYYY-MM-DD;YYYY-MM-DD;40\n`
+				(texts.get(parent) || '') +
+					`SCHULE,"${file.name}",YYYY-MM-DD;YYYY-MM-DD;40\n`
 			);
 		}
 		resultFiles = texts;

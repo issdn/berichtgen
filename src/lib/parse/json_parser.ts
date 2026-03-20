@@ -26,7 +26,10 @@ export class JSONParser extends TXTParser {
 			);
 		} catch {
 			return err(
-				new ***REMOVED***Error('PARSE_FAILED', 'Fehler beim Parsen des JSON: Ungültiges JSON-Format')
+				new ***REMOVED***Error(
+					'PARSE_FAILED',
+					'Fehler beim Parsen des JSON: Ungültiges JSON-Format'
+				)
 			);
 		}
 	}

@@ -3,7 +3,10 @@ import { BULLETPOINT } from '$src/lib/constants';
 import { Ort } from '$src/lib/enums';
 import { parseDate } from '@internationalized/date';
 
-export function combineJSONs(jsons: ResultEntry[][], constantHours: boolean = false) {
+export function combineJSONs(
+	jsons: ResultEntry[][],
+	constantHours: boolean = false
+) {
 	const byDateMap = new Map<string, ResultEntry[]>();
 	jsons.forEach((json) => {
 		json.forEach((entry) => {
@@ -19,8 +22,10 @@ export function combineJSONs(jsons: ResultEntry[][], constantHours: boolean = fa
 			const combinedEntry = entries.reduce(
 				(acc, entry) => {
 					acc.text += BULLETPOINT + entry.text;
-					acc.hours += entry.hours;
-					acc.qualifikationen = [...new Set([...acc.qualifikationen, ...entry.qualifikationen])];
+					acc.stunden += entry.stunden;
+					acc.qualifikationen = [
+						...new Set([...acc.qualifikationen, ...entry.qualifikationen])
+					];
 					acc.ort = entry.ort;
 					return acc;
 				},
@@ -28,12 +33,12 @@ export function combineJSONs(jsons: ResultEntry[][], constantHours: boolean = fa
 					qualifikationen: [] as QualifikationenType[],
 					text: '',
 					datum: date,
-					hours: 0,
+					stunden: 0,
 					ort: Ort.BETRIEB
 				}
 			);
 			combinedEntry.text = combinedEntry.text.trim();
-			combinedEntry.hours = constantHours ? 40 : combinedEntry.hours;
+			combinedEntry.stunden = constantHours ? 40 : combinedEntry.stunden;
 			return combinedEntry;
 		})
 		.sort(({ datum: a }, { datum: b }) => parseDate(b).compare(parseDate(a)));

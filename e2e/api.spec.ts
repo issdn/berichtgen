@@ -11,12 +11,16 @@ async function setupCompletionMock(page: Page, { requireAuth = true } = {}) {
 	await page.route('/board/user/completion', async (route, request) => {
 		if (requireAuth) {
 			const headers = request.headers();
-			const hasAuth = headers['authorization'] || headers['cookie']?.includes('sb-');
+			const hasAuth =
+				headers['authorization'] || headers['cookie']?.includes('sb-');
 			if (!hasAuth) {
 				await route.fulfill({
 					status: 401,
 					contentType: 'application/json',
-					body: JSON.stringify({ code: 'UNAUTHORIZED', message: 'Nicht autorisiert.' })
+					body: JSON.stringify({
+						code: 'UNAUTHORIZED',
+						message: 'Nicht autorisiert.'
+					})
 				});
 				return;
 			}
@@ -40,7 +44,9 @@ async function setupCompletionMock(page: Page, { requireAuth = true } = {}) {
 }
 
 test.describe('Completion API', () => {
-	test('returns completion data when Authorization header is present', async ({ page }) => {
+	test('returns completion data when Authorization header is present', async ({
+		page
+	}) => {
 		await setupCompletionMock(page);
 		await page.goto('/board');
 
@@ -105,7 +111,9 @@ test.describe('Completion API', () => {
 	});
 
 	test('handles network failure gracefully', async ({ page }) => {
-		await page.route('/board/user/completion', (route) => route.abort('failed'));
+		await page.route('/board/user/completion', (route) =>
+			route.abort('failed')
+		);
 		await page.goto('/board');
 
 		const response = await page.evaluate(async () => {

@@ -1,8 +1,12 @@
-import { QualifikationenBetrieb, QualifikationenSchule } from '$src/lib/constants';
+import {
+	QualifikationenBetrieb,
+	QualifikationenSchule
+} from '$src/lib/constants';
 import { Ort } from '$src/lib/enums';
 
 export function getContextPrompt(ort: Ort) {
-	const qualifications = ort === Ort.SCHULE ? QualifikationenSchule : QualifikationenBetrieb;
+	const qualifications =
+		ort === Ort.SCHULE ? QualifikationenSchule : QualifikationenBetrieb;
 
 	return `
 Ich werde dir einen unbearbeiteten Text mit Aufzeichnungen von Unterrichten oder einem einzelnen Unterricht geben. Die Unterrichten sind chronologisch sortiert, aber nicht eindeutig voneinander abgegrenzt.

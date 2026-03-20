@@ -14,7 +14,9 @@ const ANON_KEY = process.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SECRET;
 
 if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) {
-	console.error('Missing PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, or SUPABASE_SECRET env vars.');
+	console.error(
+		'Missing PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, or SUPABASE_SECRET env vars.'
+	);
 	process.exit(1);
 }
 
@@ -32,12 +34,20 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 
 // 1. Sign up a fresh random user
 console.log(`Creating user ${TEST_EMAIL}…`);
-const { error: signUpError } = await supabase.auth.signUp({ email: TEST_EMAIL, password: TEST_PASSWORD });
+const { error: signUpError } = await supabase.auth.signUp({
+	email: TEST_EMAIL,
+	password: TEST_PASSWORD
+});
 if (signUpError) throw signUpError;
 
-const signInResult = await supabase.auth.signInWithPassword({ email: TEST_EMAIL, password: TEST_PASSWORD });
+const signInResult = await supabase.auth.signInWithPassword({
+	email: TEST_EMAIL,
+	password: TEST_PASSWORD
+});
 if (signInResult.error) {
-	console.error('Sign-in failed. If email confirmation is required, disable it in the Supabase dashboard for local dev.');
+	console.error(
+		'Sign-in failed. If email confirmation is required, disable it in the Supabase dashboard for local dev.'
+	);
 	throw signInResult.error;
 }
 
@@ -71,4 +81,6 @@ const { error: insertError } = await admin
 if (insertError) throw insertError;
 console.log('Template metadata row created.');
 
-console.log(`\nTest user:\n  email:    ${TEST_EMAIL}\n  password: ${TEST_PASSWORD}\n  user_id:  ${user.id}`);
+console.log(
+	`\nTest user:\n  email:    ${TEST_EMAIL}\n  password: ${TEST_PASSWORD}\n  user_id:  ${user.id}`
+);

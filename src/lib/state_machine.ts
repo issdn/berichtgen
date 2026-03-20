@@ -33,7 +33,9 @@ function parseFile(
 	context: WizardFileContext,
 	scheduler: Scheduler,
 	data: Uint8Array<ArrayBuffer>
-): ResultAsync<string | ResultEntry[] | never, ***REMOVED***Error> | Err<never, ***REMOVED***Error> {
+):
+	| ResultAsync<string | ResultEntry[] | never, ***REMOVED***Error>
+	| Err<never, ***REMOVED***Error> {
 	switch (file.type) {
 		case FileTypes.PNG:
 		case FileTypes.JPG: {
@@ -46,7 +48,11 @@ function parseFile(
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(imgParser.parse(), (e) =>
-					***REMOVED***Error.fromUnknown(e, 'Fehler beim Parsen des Bildes', 'PARSE_FAILED')
+					***REMOVED***Error.fromUnknown(
+						e,
+						'Fehler beim Parsen des Bildes',
+						'PARSE_FAILED'
+					)
 				)
 			);
 		}
@@ -69,7 +75,9 @@ function parseFile(
 					'Fehler beim Initialisieren des JSON Parsers',
 					'PARSE_FAILED'
 				)
-			).andThen(() => (berichtgenStore.rewordJSON ? jsonParser.parse() : jsonParser.toSchema()));
+			).andThen(() =>
+				berichtgenStore.rewordJSON ? jsonParser.parse() : jsonParser.toSchema()
+			);
 		}
 		case FileTypes.PDF: {
 			const pdfParser = new PDFParser(
@@ -83,15 +91,27 @@ function parseFile(
 				berichtgenStore.processPhotos
 			);
 			return ResultAsync.fromPromise(pdfParser.init(data), (e) =>
-				***REMOVED***Error.fromUnknown(e, 'Fehler beim Initialisieren des PDF Parsers', 'PARSE_FAILED')
+				***REMOVED***Error.fromUnknown(
+					e,
+					'Fehler beim Initialisieren des PDF Parsers',
+					'PARSE_FAILED'
+				)
 			).andThen(() =>
 				ResultAsync.fromPromise(pdfParser.parse(), (e) =>
-					***REMOVED***Error.fromUnknown(e, 'Fehler beim Parsen des PDF', 'PARSE_FAILED')
+					***REMOVED***Error.fromUnknown(
+						e,
+						'Fehler beim Parsen des PDF',
+						'PARSE_FAILED'
+					)
 				)
 			);
 		}
 		case FileTypes.DOCX: {
-			const docxParser = new DOCXParser(context, scheduler, berichtgenStore.processPhotos);
+			const docxParser = new DOCXParser(
+				context,
+				scheduler,
+				berichtgenStore.processPhotos
+			);
 			return ResultAsync.fromPromise(docxParser.init(data), (e) =>
 				***REMOVED***Error.fromUnknown(
 					e,
@@ -100,12 +120,18 @@ function parseFile(
 				)
 			).andThen(() =>
 				ResultAsync.fromPromise(docxParser.parse(), (e) =>
-					***REMOVED***Error.fromUnknown(e, 'Fehler beim Parsen des DOCX', 'PARSE_FAILED')
+					***REMOVED***Error.fromUnknown(
+						e,
+						'Fehler beim Parsen des DOCX',
+						'PARSE_FAILED'
+					)
 				)
 			);
 		}
 		default:
-			return err(new ***REMOVED***Error('INVALID_FILE', 'Dateityp nicht unterstützt.'));
+			return err(
+				new ***REMOVED***Error('INVALID_FILE', 'Dateityp nicht unterstützt.')
+			);
 	}
 }
 
@@ -167,7 +193,10 @@ export function createStateMachineForContext(
 					this.wait();
 					return;
 				}
-				getCompletions(context.snapshot as string, context.dateRanges.ort).match(
+				getCompletions(
+					context.snapshot as string,
+					context.dateRanges.ort
+				).match(
 					({ entries, tokensUsed }) => {
 						context.snapshot = entries;
 						context.tokensUsed = tokensUsed;
@@ -191,7 +220,11 @@ export function createStateMachineForContext(
 					return;
 				}
 				const throwableSpreadEntries = fromThrowable(
-					() => spreadEntriesAcrossWeeks(context.snapshot as Entry[], context.dateRanges!),
+					() =>
+						spreadEntriesAcrossWeeks(
+							context.snapshot as Entry[],
+							context.dateRanges!
+						),
 					(e) =>
 						***REMOVED***Error.fromUnknown(
 							e,

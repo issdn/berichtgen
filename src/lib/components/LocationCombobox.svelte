@@ -60,7 +60,9 @@
 								closeAndFocusTrigger();
 							}}
 						>
-							<Check class={cn(value !== framework.value && 'text-transparent')} />
+							<Check
+								class={cn(value !== framework.value && 'text-transparent')}
+							/>
 							{framework.value}
 						</Command.Item>
 					{/each}

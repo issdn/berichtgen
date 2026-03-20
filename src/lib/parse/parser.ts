@@ -12,7 +12,11 @@ export class Parser {
 
 	context: WizardFileContext;
 
-	constructor(context: WizardFileContext, scheduler: Scheduler, withImages: boolean) {
+	constructor(
+		context: WizardFileContext,
+		scheduler: Scheduler,
+		withImages: boolean
+	) {
 		this.scheduler = scheduler;
 		this.context = context;
 		this.withImages = withImages;
@@ -22,7 +26,10 @@ export class Parser {
 		if (!this.withImages) return;
 		const { createWorker } = await import('tesseract.js');
 		this.batchSize = clamp(nrImages * 0.1, 1, 25);
-		if (wizardScheduler.workersInUse + this.batchSize > wizardScheduler.workersNr) {
+		if (
+			wizardScheduler.workersInUse + this.batchSize >
+			wizardScheduler.workersNr
+		) {
 			wizardScheduler.workersNr += this.batchSize;
 		}
 		wizardScheduler.workersInUse += this.batchSize;

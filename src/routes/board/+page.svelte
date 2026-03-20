@@ -23,7 +23,10 @@
 	<div class="flex h-full flex-col gap-y-2 md:row-span-2">
 		<div class="w-full flex-row items-center gap-x-16">
 			{#if tokenCount !== null}
-				<Button onclick={() => goto(resolve('/board/user/kauf'))} variant="outline">
+				<Button
+					onclick={() => goto(resolve('/board/user/kauf'))}
+					variant="outline"
+				>
 					<AnimatedTokenCount {tokenCount} />
 				</Button>
 			{/if}

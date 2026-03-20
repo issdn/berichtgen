@@ -36,10 +36,12 @@
 							ScanReturnType.FILE
 						)) as WizardRawDirectories);
 			filesNumber = directories.flat().length;
-			const anyNonJsonFiles = directories.flat().find((f) => f.type !== FileTypes.JSON);
+			const anyNonJsonFiles = directories
+				.flat()
+				.find((f) => f.type !== FileTypes.JSON);
 			if (loggedIn) {
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const _totalTokens = countUserTokensDirectories(directories);
+				const _totalTokens = countUserTokensDirectories(directories);
 				// Note: userTokens check would need to be passed from parent or context
 				// For now, we proceed with the processing
 				init(directories);
@@ -60,14 +62,19 @@
 	function init(directories: WizardRawDirectories) {
 		wizardScheduler.processInit = (async () => {
 			await wizardScheduler.init();
-			const resolvedDirectories = await Promise.all(directories.map(resolveDirectory));
+			const resolvedDirectories = await Promise.all(
+				directories.map(resolveDirectory)
+			);
 			wizardScheduler.createSchedule(resolvedDirectories);
 			wizardScheduler.schedule?.forEach(wizardScheduler.enqueue);
 		})();
 	}
 
-	async function resolveDirectory(files: WizardRawDirectory): Promise<WizardDirectory> {
-		const configFile = files.find((file) => CONFIG_FILENAME_REGEX.test(file.name)) || null;
+	async function resolveDirectory(
+		files: WizardRawDirectory
+	): Promise<WizardDirectory> {
+		const configFile =
+			files.find((file) => CONFIG_FILENAME_REGEX.test(file.name)) || null;
 		const otherFiles = files.reduce((directory, file) => {
 			if (!CONFIG_FILENAME_REGEX.test(file.name)) {
 				return [{ file }, ...directory];
@@ -106,7 +113,9 @@
 				return otherFiles;
 			},
 			(err) => {
-				toast.error(`Fehler beim Lesen der Konfiguration: ${err.message || 'Unbekannter Fehler'}`);
+				toast.error(
+					`Fehler beim Lesen der Konfiguration: ${err.message || 'Unbekannter Fehler'}`
+				);
 				return otherFiles;
 			}
 		);

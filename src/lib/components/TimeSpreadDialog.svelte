@@ -17,7 +17,11 @@
 		onClose,
 		onValidChange,
 		id
-	}: { onClose: () => void; onValidChange: (data: DateRangeSchema) => void; id: string } = $props();
+	}: {
+		onClose: () => void;
+		onValidChange: (data: DateRangeSchema) => void;
+		id: string;
+	} = $props();
 
 	function newRow(id: number) {
 		return {
@@ -58,7 +62,8 @@
 	}}
 >
 	<Dialog.Trigger data-testid="time-spread-trigger"
-		><Button class="animate-breathing-shadow" variant="default"><Calendar /></Button
+		><Button class="animate-breathing-shadow" variant="default"
+			><Calendar /></Button
 		></Dialog.Trigger
 	>
 	<Dialog.Content class="w-full px-4">
@@ -70,7 +75,9 @@
 		</Dialog.Header>
 		<form method="POST" use:enhance>
 			<div class="max-h-[600px] w-full gap-y-8 overflow-y-auto pt-8">
-				<div class="mb-6 flex w-full flex-row items-center justify-between gap-x-4">
+				<div
+					class="mb-6 flex w-full flex-row items-center justify-between gap-x-4"
+				>
 					<p class="w-full pl-1 text-left align-middle font-normal">Ort</p>
 					<Form.Field
 						form={{ form, errors, enhance, validateForm, ...rest }}
