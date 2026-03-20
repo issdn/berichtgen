@@ -18,8 +18,9 @@ if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) {
 	process.exit(1);
 }
 
-const TEST_EMAIL = 'test-seed@berichtgen.local';
-const TEST_PASSWORD = 'seed-password-123!';
+const id = Math.random().toString(36).slice(2, 8);
+const TEST_EMAIL = `test-seed-${id}@berichtgen.local`;
+const TEST_PASSWORD = `seed-${id}-password!`;
 
 const supabase = createClient(SUPABASE_URL, ANON_KEY, {
 	auth: { autoRefreshToken: false, persistSession: false }
@@ -29,22 +30,15 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 	auth: { autoRefreshToken: false, persistSession: false }
 });
 
-// 1. Try signing in first (user may already exist)
-console.log('Signing in as test user…');
-let signInResult = await supabase.auth.signInWithPassword({ email: TEST_EMAIL, password: TEST_PASSWORD });
+// 1. Sign up a fresh random user
+console.log(`Creating user ${TEST_EMAIL}…`);
+const { error: signUpError } = await supabase.auth.signUp({ email: TEST_EMAIL, password: TEST_PASSWORD });
+if (signUpError) throw signUpError;
 
+const signInResult = await supabase.auth.signInWithPassword({ email: TEST_EMAIL, password: TEST_PASSWORD });
 if (signInResult.error) {
-	// User doesn't exist yet — sign up
-	console.log('User not found, signing up…');
-	const { error: signUpError } = await supabase.auth.signUp({ email: TEST_EMAIL, password: TEST_PASSWORD });
-	if (signUpError) throw signUpError;
-
-	// Sign in after signup
-	signInResult = await supabase.auth.signInWithPassword({ email: TEST_EMAIL, password: TEST_PASSWORD });
-	if (signInResult.error) {
-		console.error('Sign-in after sign-up failed. If email confirmation is required, confirm the user in the Supabase dashboard first, then re-run.');
-		throw signInResult.error;
-	}
+	console.error('Sign-in failed. If email confirmation is required, disable it in the Supabase dashboard for local dev.');
+	throw signInResult.error;
 }
 
 const user = signInResult.data.user!;

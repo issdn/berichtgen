@@ -37,9 +37,16 @@
 
 <svelte:boundary>
 	{#snippet pending()}
-		<div class="flex w-full flex-wrap gap-2">
-			{#each { length: 3 } as _item, i (i)}
-				<Skeleton class="h-50.75 w-36 shrink-0 rounded-sm" />
+		<div class="flex flex-col">
+			{#each { length: 4 } as _item, i (i)}
+				<div class="flex items-center gap-3 px-2 py-1.5">
+					<Skeleton class="size-8 shrink-0 rounded-full" />
+					<div class="flex flex-1 flex-col gap-1.5">
+						<Skeleton class="h-3.5 w-40 rounded" />
+						<Skeleton class="h-3 w-24 rounded" />
+					</div>
+					<Skeleton class="h-8 w-8 rounded" />
+				</div>
 			{/each}
 		</div>
 	{/snippet}
