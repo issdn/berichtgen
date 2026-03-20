@@ -1,8 +1,12 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN } from '$env/static/private';
 import { throwSvelteError, ECompletionException } from '$lib/errors';
 
-const redis = Redis.fromEnv();
+const redis = new Redis({
+	url: UPSTASH_REDIS_REST_URL,
+	token: UPSTASH_REDIS_REST_TOKEN
+});
 
 const rateLimiters: Record<string, Ratelimit> = {
 	'/board/user/completion': new Ratelimit({
