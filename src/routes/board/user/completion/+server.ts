@@ -18,6 +18,7 @@ import { completionApiSchema, completionSchema } from '$src/lib/schemas';
 import { db } from '$lib/server/db';
 import { sql } from 'kysely';
 import * as Sentry from '@sentry/sveltekit';
+import { DEFAULT_MODEL } from '$src/lib/constants';
 
 // API key from environment
 const apiKey = env.GOOGLE_AI_API_KEY;
@@ -103,7 +104,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	await deductUserTokens(user.id, tokensUsed ?? 0);
 
 	return json({
-		completion,
+		completion: summary,
 		tokensUsed: tokensUsed
 	});
 };
@@ -113,9 +114,9 @@ async function getGeminiCompletion(text: string, apiKey: string, ort: Ort) {
 
 	if (!env.GEMINI_MODEL) {
 		if (!dev) return throwSvelteError(ECompletionException.INTERNAL);
-		console.warn('[dev] GEMINI_MODEL not set, defaulting to gemini-2.0-flash-lite');
+		console.warn(`[dev] GEMINI_MODEL not set, defaulting to ${DEFAULT_MODEL}`);
 	}
-	const model = env.GEMINI_MODEL ?? 'gemini-2.0-flash-lite';
+	const model = env.GEMINI_MODEL ?? DEFAULT_MODEL;
 
 	const completion = await ai.models.generateContent({
 		config: {

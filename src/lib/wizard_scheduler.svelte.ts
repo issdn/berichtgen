@@ -48,14 +48,14 @@ export class WizardScheduler {
 	enqueue = (item: WizardProcessStateMachine) => {
 		this.queue.push(item);
 		if (this.queue.length <= this.batchSize) {
-			this.queue.at(-1)!.machine.run();
+			this.queue.at(-1)!.machine.next();
 		}
 	};
 
 	dequeue = (): WizardProcessStateMachine | undefined => {
 		const shifted = this.queue.shift();
 		this.filesReady += 1;
-		this.queue.at(this.batchSize)?.machine.run();
+		this.queue.at(this.batchSize)?.machine.next();
 		if (this.isDone) {
 			this.finish();
 		}
@@ -107,9 +107,9 @@ export class WizardScheduler {
 		const scheduler = this;
 
 		const machine = createStateMachineForContext(context, scheduler);
-		// For some insane fucking reason the run method is removed by the something if not accessed
+		// For some insane fucking reason the next method is removed by the something if not accessed
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-		machine.run;
+		machine.next;
 		return { context, machine, id: crypto.randomUUID() };
 	};
 }

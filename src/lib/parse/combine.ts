@@ -1,4 +1,4 @@
-import { type QualifikationenType, type ResultEntry } from '$lib/types';
+import { type ResultEntry } from '$lib/types';
 import { BULLETPOINT } from '$src/lib/constants';
 import { Ort } from '$src/lib/enums';
 import { parseDate } from '@internationalized/date';
@@ -18,23 +18,24 @@ export function combineJSONs(
 		});
 	});
 	return Array.from(byDateMap.entries())
-		.map(([date, entries]) => {
+		.map(([_, entries]) => {
 			const combinedEntry = entries.reduce(
 				(acc, entry) => {
 					acc.text += BULLETPOINT + entry.text;
 					acc.stunden += entry.stunden;
-					acc.qualifikationen = [
-						...new Set([...acc.qualifikationen, ...entry.qualifikationen])
-					];
 					acc.ort = entry.ort;
+					acc.datum = entry.datum;
+					acc.endDatum = entry.endDatum;
+					acc.ausbildungsjahr = entry.ausbildungsjahr;
 					return acc;
 				},
 				{
-					qualifikationen: [] as QualifikationenType[],
 					text: '',
-					datum: date,
+					datum: '',
+					endDatum: '',
+					ausbildungsjahr: 0,
 					stunden: 0,
-					ort: Ort.BETRIEB
+					ort: Ort.BETRIEB as Ort
 				}
 			);
 			combinedEntry.text = combinedEntry.text.trim();

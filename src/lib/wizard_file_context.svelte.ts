@@ -13,10 +13,6 @@ export class WizardFileContext {
 
 	dateRanges: DateRangeSchema | null = $state(null);
 
-	value: number = $state(0);
-
-	max: number = $state(0);
-
 	error?: ***REMOVED***Error;
 
 	file: File;
@@ -25,10 +21,6 @@ export class WizardFileContext {
 
 	get shouldSkip() {
 		return this.file.type === FileTypes.JSON && !berichtgenStore.rewordJSON;
-	}
-
-	onProgress() {
-		this.value += 1;
 	}
 
 	constructor(

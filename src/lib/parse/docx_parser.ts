@@ -50,7 +50,6 @@ export class DOCXParser extends Parser {
 			textsOrRelIds
 		};
 
-		this.context.max = this.data.textsOrRelIds.length;
 		if (this.withImages) {
 			await this.createWorkerPool(this.data!.images.size);
 		}
@@ -83,18 +82,12 @@ export class DOCXParser extends Parser {
 		if (Array.isArray(textOrId)) {
 			const rel = this.data!.imgRels.get(textOrId[0]);
 			if (rel === undefined) {
-				throw new ***REMOVED***Error(
-					'DOCX_FAULTY',
-					'DOCX Fotoreferenz könnte nicht gefunden werden.'
-				);
+				return '';
 			}
 
 			const fileData = this.data!.images.get(rel);
 			if (fileData === undefined) {
-				throw new ***REMOVED***Error(
-					'DOCX_FAULTY',
-					'DOCX Foto könnte nicht gefunden werden.'
-				);
+				return '';
 			}
 
 			if (this.withImages) {
@@ -102,11 +95,9 @@ export class DOCXParser extends Parser {
 					'recognize',
 					fileData as ImageLike
 				);
-				this.context.onProgress();
 				return result.data.text;
 			}
 		} else {
-			this.context.onProgress();
 			return textOrId;
 		}
 	}

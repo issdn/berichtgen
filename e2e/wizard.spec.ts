@@ -13,7 +13,6 @@ import { test, expect, type Page } from '@playwright/test';
 
 const VALID_JSON_ENTRY = [
 	{
-		qualifikationen: ['Programmieren von Softwarelösungen'],
 		text: 'Entwicklung von React Komponenten.',
 		datum: '2024-01-15',
 		ort: 'BETRIEB',

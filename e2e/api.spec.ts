@@ -29,14 +29,7 @@ async function setupCompletionMock(page: Page, { requireAuth = true } = {}) {
 			status: 200,
 			contentType: 'application/json',
 			body: JSON.stringify({
-				completion: {
-					lessons: [
-						{
-							qualifikationen: ['Programmieren von Softwarelösungen'],
-							text: 'Entwicklung von React Komponenten.'
-						}
-					]
-				},
+				completion: ['Entwicklung von React Komponenten.'],
 				tokensUsed: 100
 			})
 		});
@@ -63,10 +56,8 @@ test.describe('Completion API', () => {
 		});
 
 		expect(response).toHaveProperty('completion');
-		expect(response.completion).toHaveProperty('lessons');
-		expect(Array.isArray(response.completion.lessons)).toBe(true);
-		expect(response.completion.lessons[0]).toHaveProperty('qualifikationen');
-		expect(response.completion.lessons[0]).toHaveProperty('text');
+		expect(Array.isArray(response.completion)).toBe(true);
+		expect(response.completion[0]).toBe('Entwicklung von React Komponenten.');
 		expect(response).toHaveProperty('tokensUsed');
 	});
 

@@ -2,29 +2,11 @@ import { Ort } from '$src/lib/enums';
 import * as z from 'zod/v4';
 import type { DateRange } from 'bits-ui';
 import { CalendarDate } from '@internationalized/date';
-import {
-	QualifikationenBetrieb,
-	QualifikationenSchule
-} from '$src/lib/constants';
 
-export const completionSchema = z.object({
-	lessons: z
-		.object({
-			qualifikationen: z
-				.enum([...QualifikationenBetrieb, ...QualifikationenSchule])
-				.array(),
-			text: z.string()
-		})
-		.array()
-});
+export const completionSchema = z.array(z.string());
 
 export const fullResultSchema = z
 	.object({
-		qualifikationen: z
-			.enum([...QualifikationenBetrieb, ...QualifikationenSchule])
-			.array()
-			.optional()
-			.default([]),
 		text: z.string({ message: 'Text muss ein Text enthalten!' }),
 		stunden: z
 			.number({ message: 'Stunden muss eine ganze Zahl sein.' })

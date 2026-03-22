@@ -56,7 +56,6 @@ export class PDFParser extends Parser {
 			)
 		);
 
-		this.context.max = blobsOrNullsAndPages.length;
 		this.data = blobsOrNullsAndPages;
 		if (this.withImages) {
 			await this.createWorkerPool(nrImages);
@@ -85,7 +84,6 @@ export class PDFParser extends Parser {
 								text = (await this.scheduler!.addJob('recognize', blobOrNull))
 									.data.text;
 							}
-							this.context.onProgress();
 							return text;
 						}
 					)

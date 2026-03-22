@@ -21,9 +21,7 @@
 						JSON-Dateien erstmal mit einem LLM deiner Wahl generierst und dann
 						hier droppst.
 						<br />
-						Die JSON muss eine Liste von Objekten sein. Ein Objekt muss den Bericht
-						als text im Feld "text" und eine Liste von Text-Qualifikationen im feld
-						'qualifikationen' haben.
+						Die JSON muss eine Liste von Texten sein.
 						<br />
 						Ein Prompt das du verwenden kannst:
 					</p>

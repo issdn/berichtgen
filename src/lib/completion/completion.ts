@@ -32,11 +32,11 @@ export function getCompletions(text: string, ort: Ort) {
 		if (result.status >= 400)
 			throw new ***REMOVED***Error('INVALID_JSON_FROM_AI', data.message);
 
-		const parsed = completionSchema.safeParse(data.completion);
+		const parsed = completionSchema.safeParse(JSON.parse(data.completion));
 		if (!parsed.success) {
 			throw new ***REMOVED***Error(
 				'INVALID_JSON_FROM_AI',
-				'KI hat unguiltige JSON-Antwort geliefert'
+				'KI hat ungültige JSON-Antwort geliefert'
 			);
 		}
 
@@ -55,7 +55,7 @@ export function getCompletions(text: string, ort: Ort) {
 
 	return allCompletionsResult.map((results): CompletionResult => {
 		const entries = results.reduce(
-			(prev, next) => [...prev, ...next.completion.lessons],
+			(prev, next) => [...prev, ...next.completion.map((text) => ({ text }))],
 			[] as Entry[]
 		);
 		// Use the last token count (all should be the same after each deduction)

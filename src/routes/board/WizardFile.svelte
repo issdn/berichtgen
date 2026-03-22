@@ -72,7 +72,7 @@
 					{id}
 					onClose={() => {
 						if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
-							machine.run();
+							machine.next();
 						}
 					}}
 					onValidChange={(data) => (context.dateRanges = data)}
@@ -83,7 +83,7 @@
 					variant="destructive"
 					onclick={() => {
 						context.cancelled = true;
-						machine.run();
+						machine.next();
 					}}><XIcon /></Button
 				>
 			{/if}
@@ -92,7 +92,7 @@
 					variant="default"
 					onclick={() => {
 						context.cancelled = false;
-						machine.run({ context, machine, id });
+						machine.next({ context, machine, id });
 					}}><RotateCcw /></Button
 				>
 			{/if}
@@ -126,14 +126,7 @@
 			{/if}
 		</div>
 		{#if $machine === WizardStep.PROCESSING || $machine === WizardStep.AI_COMPLETION || $machine === WizardStep.TIME_SPREADING}
-			<div class="flex flex-row items-center gap-x-2">
-				{#if context.max !== 0}
-					<span class="text-sm font-medium"
-						>Elemente: {context.value}/{context.max}</span
-					>
-				{/if}
-				<Spinner size="sm" />
-			</div>
+			<Spinner size="sm" />
 		{/if}
 	</div>
 </div>

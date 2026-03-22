@@ -141,7 +141,7 @@ export function createStateMachineForContext(
 ) {
 	return fsm(WizardStep.INITIALISING, {
 		[WizardStep.INITIALISING]: {
-			run: WizardStep.PROCESSING
+			next: WizardStep.PROCESSING
 		},
 		[WizardStep.PROCESSING]: {
 			_enter() {
@@ -169,7 +169,9 @@ export function createStateMachineForContext(
 				if (context.cancelled) {
 					return WizardStep.CANCELLED;
 				}
-				this.next();
+				if (context.shouldSkip || context.dateRanges !== null) {
+					this.next();
+				}
 			},
 			next: () => {
 				if (context.shouldSkip) {
@@ -267,7 +269,7 @@ export function createStateMachineForContext(
 				scheduler.filesUnfinished += 1;
 				scheduler.dequeue();
 			},
-			run(machine: WizardProcessStateMachine) {
+			next(machine: WizardProcessStateMachine) {
 				scheduler.filesUnfinished -= 1;
 				scheduler.filesReady -= 1;
 				this.init();

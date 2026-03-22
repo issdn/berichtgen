@@ -1,7 +1,3 @@
-import type {
-	QualifikationenBetrieb,
-	QualifikationenSchule
-} from '$src/lib/constants';
 import type { Ort } from '$src/lib/enums';
 import type { DateRangeSchema } from '$src/lib/schemas';
 import { type StateMachineSignature } from '$src/lib/state_machine';
@@ -11,7 +7,6 @@ import type { User } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
 export interface Entry {
-	qualifikationen: QualifikationenType[];
 	text: string;
 	datum?: string;
 	endDatum?: string;
@@ -29,10 +24,6 @@ export interface ***REMOVED***WeightedDateRange {
 	};
 	stunden?: number;
 }
-
-export type QualifikationenType =
-	| (typeof QualifikationenSchule)[number]
-	| (typeof QualifikationenBetrieb)[number];
 
 export type UserContext = () => {
 	user: User | null;
