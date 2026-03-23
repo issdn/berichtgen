@@ -34,7 +34,7 @@
 	>
 		{@render childrenBehind?.()}
 		<div
-			class="bg-background relative w-full gap-4 p-6 shadow-lg sm:rounded-lg"
+			class="bg-background relative flex h-full w-full flex-col gap-4 overflow-hidden p-6 shadow-lg sm:rounded-lg"
 		>
 			{@render children?.()}
 			{#if showCloseButton}

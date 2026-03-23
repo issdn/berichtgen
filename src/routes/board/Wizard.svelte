@@ -76,7 +76,7 @@
 
 <div
 	data-testid="wizard-container"
-	class="relative flex h-full w-full flex-col overflow-hidden rounded-lg border-4"
+	class="relative flex h-96 w-full flex-col overflow-hidden rounded-lg border-4 md:h-full"
 >
 	<div
 		data-testid="wizard-header"

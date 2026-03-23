@@ -8,7 +8,8 @@
 		Shredder,
 		TriangleAlert,
 		View,
-		FileBox
+		FileBox,
+		ExternalLink
 	} from '@lucide/svelte';
 	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
@@ -26,6 +27,7 @@
 		getTemplates
 	} from './templates.remote';
 	import { toErrorBody } from '../errors';
+	import DocxPreview from './preview/DocxPreview.svelte';
 
 	type TemplateItem = Awaited<
 		ReturnType<typeof getTemplates>
@@ -194,7 +196,9 @@
 	<!-- Name + uploader -->
 	<div class="flex min-w-0 flex-1 flex-col">
 		<span class="flex items-center gap-1.5 text-sm font-medium">
-			<span class="truncate">{name}</span>
+			<span class="truncate" title={name}>
+				{name}
+			</span>
 			{#if hasPendingReport}
 				<Badge variant="destructive" class="shrink-0 text-xs [&>svg]:size-3">
 					<TriangleAlert class="mr-0.5" />
@@ -232,18 +236,69 @@
 					<View size={16} />
 				</Button>
 			</Dialog.Trigger>
-			<Dialog.Content class="h-[calc(100%-6rem)] sm:max-w-[calc(100%-6rem)]">
-				<div class="h-full w-full pt-4">
-					<iframe
-						class="h-full w-full rounded-xl border-0"
-						allowfullscreen={true}
-						title={name}
-						src={`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(filepath)}`}
-					></iframe>
+			<Dialog.Content
+				class="flex h-[calc(100%-6rem)] flex-col overflow-hidden sm:max-w-[calc(100%-6rem)]"
+			>
+				<Dialog.Header class="shrink-0">
+					<Dialog.Title>{name}</Dialog.Title>
+					<Dialog.Description>
+						{profile.full_name ?? 'Anonym'} · Hochgeladen am {new Date(
+							template.created_at
+						).toLocaleDateString('de-DE')}{template.updated_at
+							? ` · Zuletzt geändert ${new Date(template.updated_at).toLocaleDateString('de-DE')}`
+							: ''}
+					</Dialog.Description>
+				</Dialog.Header>
+				<div class="min-h-0 flex-1 overflow-y-scroll pt-2">
+					<svelte:boundary>
+						<DocxPreview fileUrl={filepath} />
+						{#snippet pending()}
+							<div class="flex h-full items-center justify-center">
+								<div class="text-muted-foreground animate-pulse text-sm">
+									Dokument wird geladen…
+								</div>
+							</div>
+						{/snippet}
+						{#snippet failed(error)}
+							<div class="flex h-full items-center justify-center">
+								<div class="text-destructive text-sm">
+									Fehler beim Laden: {error instanceof Error
+										? error.message
+										: String(error)}
+								</div>
+							</div>
+						{/snippet}
+					</svelte:boundary>
+				</div>
+				<!-- Note: preview is best-effort; full fidelity needs Word. -->
+				<div
+					class="text-muted-foreground shrink-0 border-t px-6 py-2 text-center text-xs"
+				>
+					Die Vorschau gibt das Dokument möglicherweise nicht vollständig
+					wieder. Für eine genaue Darstellung öffne die Datei in
+					<a
+						href="https://docs.google.com/viewer?url={encodeURIComponent(
+							filepath
+						)}"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="underline">Microsoft Word Online</a
+					>.
 				</div>
 			</Dialog.Content>
 		</Dialog.Root>
 
+		<!-- Open in Microsoft Word Online -->
+		<a
+			href="https://docs.google.com/viewer?url={encodeURIComponent(filepath)}"
+			target="_blank"
+			rel="noopener noreferrer"
+			title="In Word Online öffnen"
+		>
+			<Button variant="ghost" size="icon" tabindex={-1}>
+				<ExternalLink size={16} />
+			</Button>
+		</a>
 		<a
 			href={filepath}
 			rel="external"
