@@ -3,6 +3,7 @@ import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import { Ort } from '$lib/enums';
 import {
+	E***REMOVED***Error,
 	ECommonServerError,
 	ECompletionException,
 	EGenAIError,
@@ -101,12 +102,15 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 		});
 	}
 
+	const parsedResponse = completionSchema.safeParse(summary);
+	if (!parsedResponse.success) {
+		Sentry.captureMessage(parsedResponse.error.message);
+		return throwSvelteError(E***REMOVED***Error.INVALID_JSON_FROM_AI);
+	}
+
 	await deductUserTokens(user.id, tokensUsed ?? 0);
 
-	return json({
-		completion: summary,
-		tokensUsed: tokensUsed
-	});
+	return json(parsedResponse.data);
 };
 
 async function getGeminiCompletion(text: string, apiKey: string, ort: Ort) {

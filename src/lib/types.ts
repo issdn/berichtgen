@@ -87,7 +87,4 @@ export type UserMetadata = {
 	abteilung?: string | null;
 };
 
-export type CompletionResult = {
-	entries: Entry[];
-	tokensUsed: number;
-};
+export type CompletionResult = Entry[];

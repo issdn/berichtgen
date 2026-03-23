@@ -1,6 +1,5 @@
-import { type CompletionResult, type Entry } from '$lib/types';
+import { type CompletionResult } from '$lib/types';
 import { ***REMOVED***Error } from '$src/lib/errors';
-import { completionSchema } from '$src/lib/schemas';
 import { ResultAsync } from 'neverthrow';
 import { type Ort } from '$src/lib/enums';
 import { PUBLIC_COMPLETION_MAX_CHARACTERS } from '$env/static/public';
@@ -32,15 +31,7 @@ export function getCompletions(text: string, ort: Ort) {
 		if (result.status >= 400)
 			throw new ***REMOVED***Error('INVALID_JSON_FROM_AI', data.message);
 
-		const parsed = completionSchema.safeParse(JSON.parse(data.completion));
-		if (!parsed.success) {
-			throw new ***REMOVED***Error(
-				'INVALID_JSON_FROM_AI',
-				'KI hat ungültige JSON-Antwort geliefert'
-			);
-		}
-
-		return { completion: parsed.data, tokensUsed: data.tokensUsed as number };
+		return data as string[];
 	});
 
 	const allCompletionsResult = ResultAsync.fromPromise(
@@ -53,14 +44,13 @@ export function getCompletions(text: string, ort: Ort) {
 			)
 	);
 
-	return allCompletionsResult.map((results): CompletionResult => {
+	return allCompletionsResult.map((results) => {
 		const entries = results.reduce(
-			(prev, next) => [...prev, ...next.completion.map((text) => ({ text }))],
-			[] as Entry[]
+			(prev, next) => [...prev, ...next.map((text) => ({ text }))],
+			[] as CompletionResult
 		);
-		// Use the last token count (all should be the same after each deduction)
-		const tokensUsed = results.at(-1)?.tokensUsed ?? 0;
-		return { entries, tokensUsed };
+
+		return entries;
 	});
 }
 

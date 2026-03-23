@@ -3,7 +3,10 @@ import * as z from 'zod/v4';
 import type { DateRange } from 'bits-ui';
 import { CalendarDate } from '@internationalized/date';
 
-export const completionSchema = z.array(z.string());
+export const completionSchema = z.preprocess(
+	(str: string) => JSON.parse(str),
+	z.array(z.string())
+);
 
 export const fullResultSchema = z
 	.object({

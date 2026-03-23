@@ -14,6 +14,7 @@ import { ***REMOVED***Error } from '$src/lib/errors';
 import { JSONParser } from '$src/lib/parse/json_parser';
 import { TXTParser } from '$src/lib/parse/txt_parser';
 import { IMGParser } from '$src/lib/parse/img_parser';
+import { invalidate } from '$app/navigation';
 
 function parseByFileType(context: WizardFileContext, scheduler: Scheduler) {
 	return readFile(context.file).andThen((data) =>
@@ -199,9 +200,9 @@ export function createStateMachineForContext(
 					context.snapshot as string,
 					context.dateRanges.ort
 				).match(
-					({ entries, tokensUsed }) => {
+					(entries) => {
 						context.snapshot = entries;
-						context.tokensUsed = tokensUsed;
+						invalidate('user:tokenCount');
 						this.next();
 					},
 					(error) => {

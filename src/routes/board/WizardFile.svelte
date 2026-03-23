@@ -17,16 +17,12 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Spinner from '$src/lib/components/ui/Spinner.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
-	import type { UserBoardContext } from '$src/lib/types';
-	import { getContext, onDestroy } from 'svelte';
 
 	const {
 		context,
 		machine,
 		id
 	}: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
-
-	let { setTokenCount } = getContext<UserBoardContext>('board')();
 
 	function statusFromStep(step: WizardStep) {
 		switch (step) {
@@ -50,12 +46,6 @@
 	}
 
 	let { icon: Icon, label } = $derived.by(() => statusFromStep($machine));
-
-	onDestroy(() => {
-		if (context.tokensUsed !== undefined) {
-			setTokenCount(context.tokensUsed);
-		}
-	});
 </script>
 
 <div
