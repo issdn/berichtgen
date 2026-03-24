@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { Database } from '$src/lib/database.types';
 	import {
 		Check,
 		Download,
@@ -28,6 +27,9 @@
 	} from './templates.remote';
 	import { toErrorBody } from '../errors';
 	import DocxPreview from './preview/DocxPreview.svelte';
+	import Authed from '../components/Authed.svelte';
+	import type { KyselyDatabase } from '../schema';
+	import { getUserDisplayName } from '../utils/text';
 
 	type TemplateItem = Awaited<
 		ReturnType<typeof getTemplates>
@@ -45,7 +47,7 @@
 		isPreferred: boolean;
 		template: TemplateItem;
 		hasPendingReport?: boolean;
-		profile: Database['public']['Tables']['profile']['Row'];
+		profile: KyselyDatabase['profile'];
 		query: ReturnType<typeof getTemplates>;
 		onTemplateDeleted: (id: string) => void;
 		onTemplateReported: (
@@ -57,13 +59,37 @@
 	const { user } = getContext<UserContext>('user')();
 
 	let reportDialogOpen = $state(false);
+
 	let confirmSelectOpen = $state(false);
+
 	let confirmDeleteOpen = $state(false);
 
+	let reportMessage = $state('');
+
+	let reportPending = $state(false);
+
+	let deletePending = $state(false);
+
 	const isReportedByMe = $derived(
-		template.template_report?.some((r) => r.reporter_user_id === user?.id) ??
-			false
+		template.template_report?.some(
+			(r) => user && r.reporter_user_id === user.id
+		) ?? false
 	);
+
+	const isSafe = $derived(template.safe_marked_at !== null);
+
+	const isOwnTemplate = $derived(user?.id === template.user_id);
+
+	const { name, filepath } = $derived.by(() => {
+		const name = template.storage_path
+			.split('/')
+			.at(-1)
+			?.split('.')
+			.slice(0, -1)
+			.join('.');
+		const filepath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/templates/${template.storage_path}`;
+		return { name, filepath };
+	});
 
 	function reportOverride(reported: boolean) {
 		return query.withOverride((result) => ({
@@ -109,22 +135,6 @@
 		}
 	}
 
-	const isSafe = $derived(template.safe_marked_at !== null);
-	const isOwnTemplate = $derived(user?.id === template.user_id);
-
-	const { name, filepath } = $derived.by(() => {
-		const name = template.storage_path
-			.split('/')
-			.at(-1)
-			?.split('.')
-			.slice(0, -1)
-			.join('.');
-		const filepath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/templates/${template.storage_path}`;
-		return { name, filepath };
-	});
-
-	let deletePending = $state(false);
-
 	async function submitDelete() {
 		deletePending = true;
 		try {
@@ -144,9 +154,6 @@
 			deletePending = false;
 		}
 	}
-
-	let reportMessage = $state('');
-	let reportPending = $state(false);
 
 	async function submitReport() {
 		reportPending = true;
@@ -191,9 +198,7 @@
 		? 'bg-muted'
 		: ''}"
 >
-	<!-- Avatar -->
 	<FileBox class={isPreferred ? 'text-primary' : 'text-muted'} />
-	<!-- Name + uploader -->
 	<div class="flex min-w-0 flex-1 flex-col">
 		<span class="flex items-center gap-1.5 text-sm font-medium">
 			<span class="truncate" title={name}>
@@ -207,7 +212,7 @@
 			{/if}
 		</span>
 		<span class="text-muted-foreground truncate text-xs"
-			>{profile.full_name ?? 'Anonym'}</span
+			>{getUserDisplayName(profile)}</span
 		>
 	</div>
 
@@ -310,70 +315,72 @@
 			</Button>
 		</a>
 
-		{#if isOwnTemplate}
-			<Button
-				variant="destructive"
-				size="icon"
-				title="Template löschen"
-				disabled={deletePending}
-				onclick={() => (confirmDeleteOpen = true)}
-			>
-				<Shredder size={16} />
-			</Button>
-		{/if}
+		<Authed>
+			{#if isOwnTemplate}
+				<Button
+					variant="destructive"
+					size="icon"
+					title="Template löschen"
+					disabled={deletePending}
+					onclick={() => (confirmDeleteOpen = true)}
+				>
+					<Shredder size={16} />
+				</Button>
+			{/if}
 
-		{#if !isOwnTemplate && isReportedByMe}
-			<Button
-				variant="ghost"
-				size="icon"
-				title="Meldung zurückziehen"
-				onclick={undoReport}
-			>
-				<FlagOff size={16} />
-			</Button>
-		{/if}
+			{#if !isOwnTemplate && isReportedByMe}
+				<Button
+					variant="ghost"
+					size="icon"
+					title="Meldung zurückziehen"
+					onclick={undoReport}
+				>
+					<FlagOff size={16} />
+				</Button>
+			{/if}
 
-		{#if !isOwnTemplate && !isSafe && !isReportedByMe}
-			<Dialog.Root bind:open={reportDialogOpen}>
-				<Dialog.Trigger>
-					<Button variant="destructive" size="icon" title="Template melden">
-						<Flag size={16} />
-					</Button>
-				</Dialog.Trigger>
-				<Dialog.Content class="sm:max-w-md">
-					<Dialog.Header>
-						<Dialog.Title>Template melden</Dialog.Title>
-						<Dialog.Description>
-							Melde dieses Template als potenziell schädlich. Die Meldung wird
-							von einem Admin geprüft.
-						</Dialog.Description>
-					</Dialog.Header>
-					<div>
-						<div class="flex flex-col gap-2 py-2">
-							<textarea
-								bind:value={reportMessage}
-								class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-								placeholder="Optionale Nachricht (max. 1000 Zeichen)..."
-								maxlength={1000}
-							></textarea>
+			{#if !isOwnTemplate && !isSafe && !isReportedByMe}
+				<Dialog.Root bind:open={reportDialogOpen}>
+					<Dialog.Trigger>
+						<Button variant="destructive" size="icon" title="Template melden">
+							<Flag size={16} />
+						</Button>
+					</Dialog.Trigger>
+					<Dialog.Content class="sm:max-w-md">
+						<Dialog.Header>
+							<Dialog.Title>Template melden</Dialog.Title>
+							<Dialog.Description>
+								Melde dieses Template als potenziell schädlich. Die Meldung wird
+								von einem Admin geprüft.
+							</Dialog.Description>
+						</Dialog.Header>
+						<div>
+							<div class="flex flex-col gap-2 py-2">
+								<textarea
+									bind:value={reportMessage}
+									class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-20 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+									placeholder="Optionale Nachricht (max. 1000 Zeichen)..."
+									maxlength={1000}
+								></textarea>
+							</div>
+							<Dialog.Footer>
+								<Button
+									variant="destructive"
+									disabled={reportPending}
+									onclick={submitReport}
+								>
+									{#if reportPending}
+										Wird gemeldet...
+									{:else}
+										Melden
+									{/if}
+								</Button>
+							</Dialog.Footer>
 						</div>
-						<Dialog.Footer>
-							<Button
-								variant="destructive"
-								disabled={reportPending}
-								onclick={submitReport}
-							>
-								{#if reportPending}
-									Wird gemeldet...
-								{:else}
-									Melden
-								{/if}
-							</Button>
-						</Dialog.Footer>
-					</div>
-				</Dialog.Content>
-			</Dialog.Root>
-		{/if}
+					</Dialog.Content>
+				</Dialog.Root>
+			{/if}
+		</Authed>
 	</div>
 </div>
 

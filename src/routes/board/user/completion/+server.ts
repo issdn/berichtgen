@@ -12,6 +12,7 @@ import {
 } from '$lib/errors';
 // import OpenAI from 'openai';
 import * as genai from '@google/genai';
+import { LocalTokenizer } from '@google/genai/tokenizer';
 import { ok, ResultAsync } from 'neverthrow';
 import { json } from '@sveltejs/kit';
 import { getContextPrompt } from '$src/lib/completion/prompt';
@@ -25,11 +26,24 @@ import { DEFAULT_MODEL } from '$src/lib/constants';
 const apiKey = env.GOOGLE_AI_API_KEY;
 
 async function deductUserTokens(userId: string, amount: number) {
-	await db
-		.updateTable('user_token_count')
-		.set({ tokens: sql`tokens - ${amount}` })
-		.where('user_id', '=', userId)
-		.execute();
+	await db.transaction().execute(async (trx) => {
+		const current = await trx
+			.selectFrom('user_token_count')
+			.select('tokens')
+			.where('user_id', '=', userId)
+			.forUpdate()
+			.executeTakeFirst();
+
+		if (!current || current.tokens < amount) {
+			throw new Error('insufficient_tokens');
+		}
+
+		await trx
+			.updateTable('user_token_count')
+			.set({ tokens: sql`tokens - ${amount}` })
+			.where('user_id', '=', userId)
+			.execute();
+	});
 
 	return ok(amount);
 }
@@ -51,25 +65,42 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 		return throwSvelteError(ECommonServerError.VALIDATION_ERROR);
 	}
 
-	const userTokens = await db
-		.selectFrom('user_token_count')
-		.select('tokens')
-		.where('user_id', '=', user.id)
-		.forUpdate()
-		.executeTakeFirst();
-
-	if (
-		userTokens === undefined ||
-		userTokens === null ||
-		userTokens.tokens <= 0
-	) {
-		return throwSvelteError(ECompletionException.NOT_ENOUGH_TOKENS);
+	if (!env.GEMINI_MODEL) {
+		if (!dev) return throwSvelteError(ECompletionException.INTERNAL);
+		console.warn(`[dev] GEMINI_MODEL not set, defaulting to ${DEFAULT_MODEL}`);
 	}
+	const model = env.GEMINI_MODEL ?? DEFAULT_MODEL;
 
 	const { text, ort } = parsed.data;
 
+	// Count tokens locally before making the API call
+	const tokenizer = new LocalTokenizer(model);
+	const estimatedTokens = await tokenizer.countTokens(text);
+
+	if (!estimatedTokens.totalTokens) {
+		return throwSvelteError(
+			ECompletionException.INTERNAL,
+			'Die Tokenization ist fehlgeschlagen.'
+		);
+	}
+
+	const deductResult = await ResultAsync.fromPromise(
+		deductUserTokens(user.id, estimatedTokens.totalTokens),
+		(e) => {
+			if (e instanceof Error && e.message === 'insufficient_tokens') {
+				return ECompletionException.NOT_ENOUGH_TOKENS;
+			}
+			Sentry.captureException(e);
+			return ECompletionException.INTERNAL;
+		}
+	);
+
+	if (deductResult.isErr()) {
+		return throwSvelteError(deductResult.error);
+	}
+
 	const result = await ResultAsync.fromPromise(
-		getGeminiCompletion(text, apiKey, ort),
+		getGeminiCompletion(text, apiKey, ort, model),
 		(e) =>
 			e instanceof genai.ApiError
 				? (errorByHttpCode(EGenAIError, e.status) ??
@@ -78,6 +109,11 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	);
 
 	if (result.isErr()) {
+		await db
+			.updateTable('user_token_count')
+			.set({ tokens: sql`tokens + ${estimatedTokens.totalTokens}` })
+			.where('user_id', '=', user.id)
+			.execute();
 		return throwSvelteError(result.error);
 	}
 
@@ -92,35 +128,22 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 		return throwSvelteError(ECompletionException.UNKNOWN_THIRD_PARTY_ERROR);
 	}
 
-	const tokensUsed = completion.usageMetadata?.totalTokenCount;
-
-	if (!tokensUsed) {
-		Sentry.captureEvent({
-			message:
-				'USER USED COMPLETION WITHOUT TOKEN USAGE INFO - NO TOKENS DEDUCTED',
-			level: 'fatal'
-		});
-	}
-
 	const parsedResponse = completionSchema.safeParse(summary);
 	if (!parsedResponse.success) {
 		Sentry.captureMessage(parsedResponse.error.message);
 		return throwSvelteError(E***REMOVED***Error.INVALID_JSON_FROM_AI);
 	}
 
-	await deductUserTokens(user.id, tokensUsed ?? 0);
-
 	return json(parsedResponse.data);
 };
 
-async function getGeminiCompletion(text: string, apiKey: string, ort: Ort) {
+async function getGeminiCompletion(
+	text: string,
+	apiKey: string,
+	ort: Ort,
+	model: string
+) {
 	const ai = new genai.GoogleGenAI({ apiKey });
-
-	if (!env.GEMINI_MODEL) {
-		if (!dev) return throwSvelteError(ECompletionException.INTERNAL);
-		console.warn(`[dev] GEMINI_MODEL not set, defaulting to ${DEFAULT_MODEL}`);
-	}
-	const model = env.GEMINI_MODEL ?? DEFAULT_MODEL;
 
 	const completion = await ai.models.generateContent({
 		config: {

@@ -10,7 +10,7 @@
 
 	let { data } = $props();
 
-	let { tokenCount, user } = $derived(data);
+	let { tokenCount } = $derived(data);
 </script>
 
 <svelte:head>
@@ -30,9 +30,7 @@
 					<AnimatedTokenCount {tokenCount} />
 				</Button>
 			{/if}
-			{#if user !== null}
-				<TemplatesDialog />
-			{/if}
+			<TemplatesDialog />
 		</div>
 		<Howto />
 	</div>

@@ -15,10 +15,12 @@ type EnumError = {
 };
 
 export function throwSvelteError(e: APIError[keyof APIError], cause?: string) {
+	cause ??= e.cause;
+
 	return error(e.httpCode, {
 		message: e.message,
 		code: e.code,
-		cause: cause
+		cause
 	});
 }
 
@@ -73,7 +75,11 @@ export class ***REMOVED***Error extends Error {
 
 export const ECommonServerError = buildError({
 	DATABASE_ERROR: { httpCode: 500, message: 'Datenbankfehler.' },
-	UNAUTHORIZED: { httpCode: 401, message: 'Nicht autorisiert.' },
+	UNAUTHORIZED: {
+		httpCode: 401,
+		message: 'Nicht autorisiert.',
+		cause: 'Muss angemeldet sein, um diese Aktion durchzuführen.'
+	},
 	VALIDATION_ERROR: { httpCode: 400, message: 'Validierungsfehler.' },
 	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' },
 	INTERNAL_ERROR: { httpCode: 500, message: 'Interner Serverfehler.' }
@@ -174,6 +180,7 @@ export function toErrorBody(e: unknown): Omit<ErrorBody<APIError>, 'httpCode'> {
 		if ('body' in e && e.body !== null && typeof e.body === 'object') {
 			const body = e.body as Record<string, unknown>;
 			if (typeof body.code === 'string' && typeof body.message === 'string') {
+				console.log(body);
 				return {
 					code: body.code,
 					message: body.message,

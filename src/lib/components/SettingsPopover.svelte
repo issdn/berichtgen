@@ -30,6 +30,7 @@
 	import { resolve } from '$app/paths';
 	import { dev } from '$app/environment';
 	import DebugLoginDialog from '$lib/components/DebugLoginDialog.svelte';
+	import { getUserDisplayName } from '../utils/text';
 
 	let { user, loggedIn, supabase, profile } = $derived(
 		getContext<UserContext>('user')()
@@ -41,9 +42,7 @@
 
 	let loading = $state(false);
 
-	let username = $derived(
-		profile?.full_name ?? (user?.user_metadata.name as string)
-	);
+	let { fullName, shortName } = $derived(getUserDisplayName(profile, user));
 
 	$effect(() => {
 		if (token.length >= 6) {
@@ -106,21 +105,11 @@
 <Popover.Root>
 	<Popover.Trigger>
 		<div class="flex flex-row items-center gap-x-4">
-			{#if user?.user_metadata.name !== null && loggedIn}
-				<Label class="cursor-pointer"
-					>{username ?? 'Eingeloggter Benutzer'}</Label
-				>
-			{/if}
+			<Label class="cursor-pointer">{fullName}</Label>
+
 			<Avatar.Root>
 				<Avatar.Image src={user?.user_metadata.image} alt="Avatar" />
-				<Avatar.Fallback
-					>{!loggedIn
-						? 'AN'
-						: (username
-								?.split(' ')
-								.map((s) => s[0])
-								.join('') ?? 'GEN')}</Avatar.Fallback
-				>
+				<Avatar.Fallback>{shortName}</Avatar.Fallback>
 			</Avatar.Root>
 		</div>
 	</Popover.Trigger>

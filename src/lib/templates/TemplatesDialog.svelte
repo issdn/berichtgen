@@ -7,6 +7,7 @@
 	import * as InputGroup from '$src/lib/components/ui/input-group/index.js';
 	import { Toggle } from '$src/lib/components/ui/toggle/index.js';
 	import { getTemplates } from '$src/lib/templates/templates.remote';
+	import Authed from '../components/Authed.svelte';
 
 	type TemplateItem = Awaited<
 		ReturnType<typeof getTemplates>
@@ -63,7 +64,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Templates</Dialog.Title>
 		</Dialog.Header>
-		<div class="flex w-full flex-col gap-y-4 py-4">
+		<div class="flex w-full flex-col gap-y-2">
 			<InputGroup.Root>
 				<InputGroup.Input
 					placeholder="Suchen..."
@@ -91,7 +92,6 @@
 					Gemeldete ausblenden
 				</Toggle>
 			</div>
-
 			<TemplateList
 				{query}
 				{cachedTemplates}
@@ -99,7 +99,9 @@
 				{onTemplateDeleted}
 				{onTemplateReported}
 			/>
-			<TemplateUpload {query} />
+			<Authed>
+				<TemplateUpload {query} />
+			</Authed>
 		</div>
 	</Dialog.Content>
 </Dialog.Root>

@@ -1,5 +1,4 @@
-import { query, command } from '$app/server';
-import { getRequestEvent } from '$app/server';
+import { getRequestEvent, query } from '$app/server';
 import { z } from 'zod';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import * as Sentry from '@sentry/sveltekit';
@@ -11,6 +10,7 @@ import {
 	ETemplateReportError,
 	throwSvelteError
 } from '../errors';
+import { guardedCommand } from '../server/remote';
 
 const PAGE_SIZE = 20;
 
@@ -117,7 +117,7 @@ export const getTemplates = query(
 );
 
 /** Uploads a .docx template file and creates or updates the template metadata row. */
-export const uploadTemplate = command(
+export const uploadTemplate = guardedCommand(
 	z.object({
 		name: z.string().min(1),
 		type: z.string().min(1),
@@ -159,7 +159,7 @@ export const uploadTemplate = command(
 );
 
 /** Removes a template file from storage and deletes its metadata row. */
-export const deleteTemplate = command(
+export const deleteTemplate = guardedCommand(
 	z.object({ storagePath: z.string().min(1) }),
 	async ({ storagePath }) => {
 		const { error } = await supabaseAdmin.storage
@@ -176,7 +176,7 @@ export const deleteTemplate = command(
 );
 
 /** Removes the current user's report for a template. */
-export const deleteReport = command(
+export const deleteReport = guardedCommand(
 	z.object({ templateId: z.uuid() }),
 	async ({ templateId }) => {
 		const {
@@ -196,7 +196,7 @@ export const deleteReport = command(
 );
 
 /** Submits a report for a template that violates community guidelines. */
-export const reportTemplate = command(
+export const reportTemplate = guardedCommand(
 	z.object({
 		templateId: z.uuid(),
 		message: z.string().max(1000).optional()
@@ -260,7 +260,7 @@ export const reportTemplate = command(
 );
 
 /** Marks a template as safe: removes it from quarantine and clears all reports. */
-export const markTemplateSafe = command(
+export const markTemplateSafe = guardedCommand(
 	z.object({ templateId: z.uuid() }),
 	async ({ templateId }) => {
 		const { error } = await supabaseAdmin.storage
