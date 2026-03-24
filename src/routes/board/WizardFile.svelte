@@ -30,6 +30,8 @@
 				return { icon: Coffee, label: 'Initialiserung...' };
 			case WizardStep.PROCESSING:
 				return { icon: Binary, label: 'Verarbeitung...' };
+			case WizardStep.BATCH_PENDING:
+				return { icon: Clock, label: 'Warte auf andere Dateien...' };
 			case WizardStep.AI_COMPLETION:
 				return { icon: WandSparkles, label: 'KI-Umformulierung...' };
 			case WizardStep.TIME_SPREADING:

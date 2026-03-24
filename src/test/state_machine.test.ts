@@ -1,0 +1,114 @@
+import { describe, test, expect, vi } from 'vitest';
+import { WizardStep } from '$lib/enums';
+import { CalendarDate } from '@internationalized/date';
+import { ok } from 'neverthrow';
+import type { Scheduler } from 'tesseract.js';
+
+// ---------------------------------------------------------------------------
+// Infrastructure mocks — things that cannot run outside a browser/SvelteKit
+// ---------------------------------------------------------------------------
+
+vi.mock('$app/navigation', () => ({ invalidate: vi.fn() }));
+vi.mock('$src/lib/stores/berichtgen.svelte', () => ({
+	berichtgenStore: { rewordJSON: false, processPhotos: false, constantHours: 8 }
+}));
+
+// Parser mocks — only to avoid heavy native import chains for file types not used in this test
+vi.mock('$lib/parse/docx_parser', () => ({ DOCXParser: vi.fn() }));
+vi.mock('$lib/parse/pdf_parser', () => ({ PDFParser: vi.fn() }));
+vi.mock('$lib/parse/json_parser', () => ({ JSONParser: vi.fn() }));
+vi.mock('$lib/parse/img_parser', () => ({ IMGParser: vi.fn() }));
+
+// ---------------------------------------------------------------------------
+// The single behavioral mock: the HTTP completion endpoint
+// Everything else in the completion module (sanitize, split, batch, stringsToEntries) runs real.
+// ---------------------------------------------------------------------------
+
+const mockSendBatch = vi.hoisted(() => vi.fn());
+vi.mock('$lib/completion/completion', async (importOriginal) => ({
+	...(await importOriginal() as object),
+	sendBatchCompletion: mockSendBatch
+}));
+
+// ---------------------------------------------------------------------------
+// Imports (after mocks)
+// ---------------------------------------------------------------------------
+
+import { WizardScheduler } from '$lib/wizard_scheduler.svelte';
+import type { DateRangeSchema } from '$lib/schemas';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function flush() {
+	return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// ---------------------------------------------------------------------------
+// Test
+// ---------------------------------------------------------------------------
+
+const DUMMY_TEXT = 'Montag: Programmieren';
+const AI_RESULT = 'KI: Montag: Programmieren';
+
+describe('State machine full lifecycle', () => {
+	test('INITIALISING → PROCESSING → WAITING → BATCH_PENDING → AI_COMPLETION → TIME_SPREADING → DONE', async () => {
+		// The mocked server responds instantly with a prefixed version of the text
+		mockSendBatch.mockResolvedValue(
+			ok({ results: [[AI_RESULT]], insufficient_tokens: false })
+		);
+
+		// Real WizardScheduler — skip OCR worker init since TXTParser uses TextDecoder only
+		const scheduler = new WizardScheduler();
+		scheduler.scheduler = { terminate: () => Promise.resolve() } as unknown as Scheduler;
+
+		// Create the schedule with a single plain-text file
+		const file = new File([DUMMY_TEXT], 'test.txt', { type: 'text/plain' });
+		scheduler.createSchedule([[{ file }]]);
+
+		const { context, machine } = scheduler.schedule![0];
+
+		// Track the current FSM state via store subscription
+		let currentState = WizardStep.INITIALISING as string;
+		machine.subscribe((s: string) => {
+			currentState = s;
+		});
+
+		// 1. Kick off: INITIALISING → PROCESSING
+		expect(currentState).toBe(WizardStep.INITIALISING);
+		scheduler.enqueue(scheduler.schedule![0]);
+
+		// 2. Wait for the async file read + TXTParser.init() + parse()
+		await flush();
+
+		// 3. PROCESSING finished — snapshot holds the decoded file content, machine waits for date config
+		expect(currentState).toBe(WizardStep.WAITING);
+		expect(context.snapshot).toBe(DUMMY_TEXT);
+
+		// 4. Provide real date ranges (real CalendarDate objects for real spreadEntriesAcrossWeeks)
+		context.dateRanges = {
+			ort: 'BETRIEB',
+			ranges: [
+				{
+					id: 0,
+					daterange: {
+						start: new CalendarDate(2024, 1, 1),
+						end: new CalendarDate(2024, 1, 14)
+					},
+					stunden: null
+				}
+			]
+		} as unknown as DateRangeSchema;
+
+		// WAITING → BATCH_PENDING → checkBatchReady fires → runBatches → mocked endpoint
+		machine.next();
+
+		// 5+6. Wait for the async endpoint call + TIME_SPREADING + DONE
+		await flush();
+
+		// 7. Machine reached DONE with the AI-prefixed text preserved through TIME_SPREADING
+		expect(currentState).toBe(WizardStep.DONE);
+		expect(context.finished![0].text).toBe(AI_RESULT);
+	});
+});

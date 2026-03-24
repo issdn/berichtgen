@@ -19,7 +19,10 @@ export default defineConfig({
 		}),
 		sveltekit()
 	],
-	test: { include: ['./src/test/**/*'] },
+	test: {
+		include: ['./src/test/**/*.test.ts'],
+		alias: { canvas: new URL('./src/test/__mocks__/canvas.ts', import.meta.url).pathname }
+	},
 	ssr: {
 		noExternal: ['@lucide/svelte']
 	},

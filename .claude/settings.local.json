@@ -42,7 +42,8 @@
       "Bash(node fix_parser.mjs)",
       "Bash(rm fix_parser.mjs)",
       "Bash(node fix_parser2.mjs)",
-      "Bash(rm fix_parser2.mjs)"
+      "Bash(rm fix_parser2.mjs)",
+      "Bash(npx vitest:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -212,7 +212,7 @@
 			{/if}
 		</span>
 		<span class="text-muted-foreground truncate text-xs"
-			>{getUserDisplayName(profile)}</span
+			>{getUserDisplayName(profile).fullName}</span
 		>
 	</div>
 

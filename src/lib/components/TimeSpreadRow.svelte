@@ -69,6 +69,7 @@
 				<Form.Control>
 					<Popover.Root>
 						<Popover.Trigger
+							data-testid="date-range-trigger"
 							class={cn(
 								buttonVariants({
 									variant: 'outline',

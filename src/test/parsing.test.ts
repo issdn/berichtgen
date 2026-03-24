@@ -1,3 +1,8 @@
+import { vi } from 'vitest';
+vi.mock('canvas', () => ({ createCanvas: vi.fn() }));
+vi.mock('$lib/wizard_scheduler.svelte', () => ({
+	wizardScheduler: { workersInUse: 0, workersNr: 0 }
+}));
 import { createWorker, createScheduler } from 'tesseract.js';
 import { createCanvas } from 'canvas';
 import { DOCXParser } from '$lib/parse/docx_parser';

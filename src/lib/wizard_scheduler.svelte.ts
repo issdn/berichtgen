@@ -1,4 +1,5 @@
 import type { Scheduler } from 'tesseract.js';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { combineJSONs } from './parse/combine';
 import { WizardFileContext } from './wizard_file_context.svelte';
 import { createStateMachineForContext } from './state_machine';
@@ -10,6 +11,31 @@ import type {
 } from './types';
 import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
 import type { DateRangeSchema } from '$src/lib/schemas';
+import {
+	createBatchesBySize,
+	MAX_BATCH_BYTES,
+	sanitizeToTwoByteUTF8,
+	sendBatchCompletion,
+	splitTextIntoChunks,
+	stringsToEntries
+} from './completion/completion';
+import { ***REMOVED***Error } from '$src/lib/errors';
+import type { Ort } from './enums';
+
+/**
+ * Internal representation of one text chunk that will be sent to the AI.
+ * A single file produces one chunk unless its text exceeds MAX_BATCH_BYTES,
+ * in which case it is split into equal-sized chunks.
+ */
+type ChunkDescriptor = {
+	file: WizardProcessStateMachine;
+	text: string;
+	ort: Ort;
+	/** Index of the originating file within the pending list (stable across batches). */
+	fileIndex: number;
+	/** 0-based position of this chunk within its file. */
+	chunkIndex: number;
+};
 
 export class WizardScheduler {
 	queue: WizardProcessStateMachine[] = [];
@@ -37,6 +63,12 @@ export class WizardScheduler {
 
 	workersNr = 0;
 
+	/**
+	 * Files that have been parsed, dated, and are waiting to be grouped into
+	 * a batch AI request. Keyed by file id for O(1) deduplication.
+	 */
+	batchPendingFiles: SvelteMap<string, WizardProcessStateMachine> = new SvelteMap();
+
 	get isDone() {
 		return this.schedule !== null && this.filesReady === this.numberOfFiles;
 	}
@@ -59,6 +91,7 @@ export class WizardScheduler {
 		if (this.isDone) {
 			this.finish();
 		}
+		this.checkBatchReady();
 		return shifted;
 	};
 
@@ -72,6 +105,7 @@ export class WizardScheduler {
 		this.result = null;
 		this.filesReady = 0;
 		this.filesUnfinished = 0;
+		this.batchPendingFiles.clear();
 	};
 
 	createSchedule = (directories: WizardDirectories) => {
@@ -95,6 +129,150 @@ export class WizardScheduler {
 		})();
 	};
 
+	/**
+	 * Called by a file's state machine when it enters BATCH_PENDING.
+	 * Registers the file in the pending map by id (avoids Svelte proxy reference issues).
+	 */
+	onFileBatchPending = (id: string) => {
+		const file = this.schedule!.find((f) => f.id === id);
+		if (!file) return;
+		this.batchPendingFiles.set(id, file);
+		this.checkBatchReady();
+	};
+
+	/**
+	 * Fires when every file has either finished (filesReady) or is waiting in
+	 * BATCH_PENDING (batchPendingFiles.size) — i.e. all files have settled.
+	 */
+	private checkBatchReady = () => {
+		if (
+			this.schedule !== null &&
+			this.batchPendingFiles.size > 0 &&
+			this.filesReady + this.batchPendingFiles.size === this.schedule.length
+		) {
+			void this.runBatches();
+		}
+	};
+
+	/**
+	 * Expands a list of pending files into `ChunkDescriptor` entries.
+	 * Files whose sanitised text exceeds `MAX_BATCH_BYTES` are split into
+	 * equal-sized chunks so that each chunk fits within one batch.
+	 */
+	private expandIntoChunks(
+		pendingList: WizardProcessStateMachine[]
+	): ChunkDescriptor[] {
+		const chunks: ChunkDescriptor[] = [];
+		for (let fi = 0; fi < pendingList.length; fi++) {
+			const file = pendingList[fi];
+			const raw = sanitizeToTwoByteUTF8(file.context.snapshot as string);
+			const textChunks = splitTextIntoChunks(raw, MAX_BATCH_BYTES);
+			for (let ci = 0; ci < textChunks.length; ci++) {
+				chunks.push({
+					file,
+					text: textChunks[ci],
+					ort: file.context.dateRanges!.ort,
+					fileIndex: fi,
+					chunkIndex: ci
+				});
+			}
+		}
+		return chunks;
+	}
+
+	/**
+	 * Processes all `batchPendingFiles` in sequential batches of at most 4 MB.
+	 *
+	 * Flow:
+	 * 1. Expand files into chunks (splitting files > 4 MB into equal chunks).
+	 * 2. Group chunks into ≤ 4 MB batches.
+	 * 3. For each batch: transition those files to AI_COMPLETION, send request
+	 *    (server runs Gemini calls in parallel within the batch), collect results.
+	 * 4. Reassemble chunk results back into per-file entries.
+	 * 5. On any failure or `insufficient_tokens`, error all remaining files and halt.
+	 */
+	private runBatches = async () => {
+		// Snapshot pending ids and clear — look machines up from schedule (single proxy layer)
+		// rather than iterating SvelteMap values, which can double-proxy the machine objects
+		const pendingIds = [...this.batchPendingFiles.keys()];
+		this.batchPendingFiles.clear();
+
+		const pendingList = pendingIds.map((id) => this.schedule!.find((f) => f.id === id)!);
+		const allChunks = this.expandIntoChunks(pendingList);
+		const batches = createBatchesBySize(allChunks, MAX_BATCH_BYTES);
+
+		// chunkResults[fileIndex][chunkIndex] = AI string[] for that chunk
+		const chunkResults = new SvelteMap<number, SvelteMap<number, string[]>>();
+		const startedFileIndices = new SvelteSet<number>();
+
+		let errorCause: ***REMOVED***Error | null = null;
+		let batchHalted = false;
+
+		for (const batch of batches) {
+			if (batchHalted) break;
+
+			// Transition each file's machine to AI_COMPLETION on its first chunk
+			for (const { fileIndex } of batch) {
+				if (!startedFileIndices.has(fileIndex)) {
+					pendingList[fileIndex].machine.start();
+					startedFileIndices.add(fileIndex);
+				}
+			}
+
+			const items = batch.map(({ text, ort }) => ({ text, ort }));
+			const result = await sendBatchCompletion(items);
+
+			if (result.isErr()) {
+				errorCause = result.error;
+				batchHalted = true;
+				break;
+			}
+
+			const { results, insufficient_tokens } = result.value;
+
+			for (let i = 0; i < batch.length; i++) {
+				const { fileIndex, chunkIndex } = batch[i];
+				const chunkResult = results[i];
+				if (chunkResult != null) {
+					if (!chunkResults.has(fileIndex)) {
+						chunkResults.set(fileIndex, new SvelteMap());
+					}
+					chunkResults.get(fileIndex)!.set(chunkIndex, chunkResult);
+				}
+			}
+
+			if (insufficient_tokens) {
+				errorCause = new ***REMOVED***Error(
+					'COMPLETION_FAILED',
+					'Nicht genügend Token für alle Dateien.'
+				);
+				batchHalted = true;
+			}
+		}
+
+		// Distribute results — reassemble chunks in order for each file
+		for (let fi = 0; fi < pendingList.length; fi++) {
+			const file = pendingList[fi];
+			const fileChunks = allChunks
+				.filter((c) => c.fileIndex === fi)
+				.sort((a, b) => a.chunkIndex - b.chunkIndex);
+			const fileChunkMap = chunkResults.get(fi);
+			const allPresent = fileChunks.every((c) => fileChunkMap?.has(c.chunkIndex));
+
+			if (!allPresent) {
+				file.context.error =
+					errorCause ??
+					new ***REMOVED***Error('COMPLETION_FAILED', 'KI-Verarbeitung fehlgeschlagen.');
+				file.machine.error();
+			} else {
+				const combined = fileChunks.flatMap((c) => fileChunkMap!.get(c.chunkIndex)!);
+				const entries = stringsToEntries(combined);
+				file.context.snapshot = entries;
+				file.machine.next(entries);
+			}
+		}
+	};
+
 	createProcessStateMachine = ({
 		file,
 		config = null
@@ -102,15 +280,17 @@ export class WizardScheduler {
 		file: File;
 		config?: DateRangeSchema | null | undefined;
 	}) => {
+		const id = crypto.randomUUID();
 		const context = new WizardFileContext(file, config);
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const scheduler = this;
 
-		const machine = createStateMachineForContext(context, scheduler);
-		// For some insane fucking reason the next method is removed by the something if not accessed
+		const machine = createStateMachineForContext(context, scheduler, id);
+		// Svelte 5 deep-proxies objects stored in $state — accessing methods here
+		// prevents the proxy from hiding them when the machine is retrieved later
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-		machine.next;
-		return { context, machine, id: crypto.randomUUID() };
+		machine.next; machine.start; machine.error;
+		return { context, machine, id };
 	};
 }
 

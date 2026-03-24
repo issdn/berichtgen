@@ -7,7 +7,6 @@ import type { WizardScheduler } from '$lib/wizard_scheduler.svelte';
 import fsm from 'svelte-fsm';
 import type { Scheduler } from 'tesseract.js';
 import { Err, ResultAsync, err, fromThrowable } from 'neverthrow';
-import { getCompletions } from '$src/lib/completion/completion';
 import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
 import type { WizardFileContext } from './wizard_file_context.svelte';
 import { ***REMOVED***Error } from '$src/lib/errors';
@@ -138,18 +137,21 @@ function parseFile(
 
 export function createStateMachineForContext(
 	context: WizardFileContext,
-	scheduler: WizardScheduler
+	scheduler: WizardScheduler,
+	id: string
 ) {
 	return fsm(WizardStep.INITIALISING, {
 		[WizardStep.INITIALISING]: {
 			next: WizardStep.PROCESSING
 		},
+
 		[WizardStep.PROCESSING]: {
 			_enter() {
 				if (context.cancelled) {
 					this.cancel();
 					return;
 				}
+
 				parseByFileType(context, scheduler.scheduler!).match(
 					(result) => {
 						context.snapshot = result;
@@ -161,61 +163,69 @@ export function createStateMachineForContext(
 					}
 				);
 			},
+			/** Parsed successfully — move to WAITING for user date-range input. */
 			next: () => WizardStep.WAITING,
-			error: () => WizardStep.ERROR,
+				error: () => WizardStep.ERROR,
 			cancel: () => WizardStep.CANCELLED
 		},
+
 		[WizardStep.WAITING]: {
 			_enter() {
 				if (context.cancelled) {
-					return WizardStep.CANCELLED;
+					this.cancel();
+					return;
 				}
 				if (context.shouldSkip || context.dateRanges !== null) {
 					this.next();
 				}
 			},
-			next: () => {
+			next() {
 				if (context.shouldSkip) {
 					if (context.dateRanges === null) {
 						return WizardStep.DONE;
 					} else {
 						return WizardStep.TIME_SPREADING;
 					}
-				} else {
-					return WizardStep.AI_COMPLETION;
 				}
-			}
-		},
-		[WizardStep.AI_COMPLETION]: {
-			_enter() {
-				if (context.cancelled) {
-					this.cancel();
-					return;
-				}
-				if (context.dateRanges === null) {
-					this.wait();
-					return;
-				}
-				getCompletions(
-					context.snapshot as string,
-					context.dateRanges.ort
-				).match(
-					(entries) => {
-						context.snapshot = entries;
-						invalidate('user:tokenCount');
-						this.next();
-					},
-					(error) => {
-						context.error = error;
-						this.error();
-					}
-				);
+				return WizardStep.BATCH_PENDING;
 			},
-			wait: () => WizardStep.WAITING,
-			next: () => WizardStep.TIME_SPREADING,
-			error: () => WizardStep.ERROR,
 			cancel: () => WizardStep.CANCELLED
 		},
+
+		/**
+		 * The file has been parsed and configured.
+		 * It waits here (without a spinner) until the scheduler has collected all
+		 * pending files and is ready to fire the batch request.
+		 * Transitions are driven externally by WizardScheduler.
+		 */
+		[WizardStep.BATCH_PENDING]: {
+			_enter() {
+				scheduler.onFileBatchPending(id);
+			},
+			/** Called by the scheduler just before it sends this file's batch to the API. */
+			start: () => WizardStep.AI_COMPLETION,
+			/** Called by the scheduler if the file must be errored before the batch starts. */
+			error: () => WizardStep.ERROR
+		},
+
+		/**
+		 * The batch request is in-flight. The spinner is shown in this state.
+		 * Transitions are driven externally by WizardScheduler.runBatches().
+		 */
+		[WizardStep.AI_COMPLETION]: {
+			/**
+			 * Called by the scheduler on success with the AI-returned entries.
+			 * Moves the file to TIME_SPREADING to distribute entries across weeks.
+			 */
+			next(entries: Entry[]) {
+				context.snapshot = entries;
+				invalidate('user:tokenCount');
+				return WizardStep.TIME_SPREADING;
+			},
+			/** Called by the scheduler when the batch failed (API error, token shortage, etc.). */
+			error: () => WizardStep.ERROR
+		},
+
 		[WizardStep.TIME_SPREADING]: {
 			_enter() {
 				if (context.cancelled) {
@@ -250,6 +260,7 @@ export function createStateMachineForContext(
 			error: () => WizardStep.ERROR,
 			cancel: () => WizardStep.CANCELLED
 		},
+
 		[WizardStep.DONE]: {
 			_enter: () => {
 				if (context.cancelled) {
@@ -259,12 +270,14 @@ export function createStateMachineForContext(
 				scheduler.dequeue();
 			}
 		},
+
 		[WizardStep.ERROR]: {
 			_enter() {
 				scheduler.filesUnfinished += 1;
 				scheduler.dequeue();
 			}
 		},
+
 		[WizardStep.CANCELLED]: {
 			_enter() {
 				scheduler.filesUnfinished += 1;

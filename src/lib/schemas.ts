@@ -79,6 +79,29 @@ export const completionApiSchema = z.object({
 
 // ------------------------------------------------
 
+/** One item in a batch completion request. */
+export const batchCompletionItemSchema = z.object({
+	text: z.string().nonempty(),
+	ort: z.enum([Ort.SCHULE, Ort.BETRIEB])
+});
+
+/** Schema for the batch completion endpoint request body. */
+export const batchCompletionApiSchema = z.object({
+	items: z.array(batchCompletionItemSchema).min(1)
+});
+
+/**
+ * Response from the batch completion endpoint.
+ * `results[i]` is `null` when item i was not processed due to an insufficient token budget.
+ * `insufficient_tokens` is true when some items were skipped for that reason.
+ */
+export type BatchCompletionApiResponse = {
+	results: (string[] | null)[];
+	insufficient_tokens: boolean;
+};
+
+// ------------------------------------------------
+
 export const emailSchema = z.object({
 	mail: z.email('Bitte eine gültige Email-Adresse eingeben')
 });

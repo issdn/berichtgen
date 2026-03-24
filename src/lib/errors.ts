@@ -10,11 +10,14 @@ type EnumError = {
 		code: string;
 		httpCode: number;
 		message: string;
-		cause?: string;
+		cause?: string | null;
 	};
 };
 
-export function throwSvelteError(e: APIError[keyof APIError], cause?: string) {
+export function throwSvelteError(
+	e: APIError[keyof APIError],
+	cause?: string | null
+) {
 	cause ??= e.cause;
 
 	return error(e.httpCode, {
@@ -180,11 +183,10 @@ export function toErrorBody(e: unknown): Omit<ErrorBody<APIError>, 'httpCode'> {
 		if ('body' in e && e.body !== null && typeof e.body === 'object') {
 			const body = e.body as Record<string, unknown>;
 			if (typeof body.code === 'string' && typeof body.message === 'string') {
-				console.log(body);
 				return {
 					code: body.code,
 					message: body.message,
-					cause: typeof body.cause === 'string' ? body.cause : undefined
+					cause: typeof body.cause === 'string' ? body.cause : null
 				};
 			}
 		}
@@ -192,14 +194,14 @@ export function toErrorBody(e: unknown): Omit<ErrorBody<APIError>, 'httpCode'> {
 			return {
 				code: 'INTERNAL_ERROR',
 				message: e.message,
-				cause: undefined
+				cause: null
 			};
 		}
 	}
 	return {
 		code: 'INTERNAL_ERROR',
 		message: 'Ein unbekannter Fehler ist aufgetreten.',
-		cause: undefined
+		cause: null
 	};
 }
 

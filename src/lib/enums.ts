@@ -10,6 +10,9 @@ export type Ort = (typeof Ort)[keyof typeof Ort];
 export const WizardStep = Object.freeze({
 	INITIALISING: 'init',
 	PROCESSING: 'process',
+	/** File has been parsed and configured — waiting for the scheduler to group all files. */
+	BATCH_PENDING: 'batch_pending',
+	/** Batch is actively being sent to the AI completion API. */
 	AI_COMPLETION: 'completion',
 	TIME_SPREADING: 'time_spread',
 	DONE: 'done',
