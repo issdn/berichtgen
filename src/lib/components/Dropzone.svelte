@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Clock, FileCheck, FileUp } from '@lucide/svelte';
+	import { Clock, FileCheck, FileUp, FileX } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 	import { pasteStack } from '$src/lib/stores/paste_stack.svelte';
@@ -8,15 +8,18 @@
 	let {
 		handleFiles,
 		filesNumber = $bindable(null),
-		disabled = false
+		disabled = false,
+		accept = '.docx,.pdf,.json,.txt,.csv,.png,.jpg,.jpeg'
 	}: {
 		handleFiles: (files: DataTransferItemList | FileList) => Promise<void>;
 		filesNumber?: number | null;
 		disabled?: boolean;
+		accept?: string;
 	} = $props();
 
 	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
+	let isDraggedInputValid = $state(true);
 
 	async function extractAndHandleFiles(
 		dataTransfer: DataTransfer | FileList | null
@@ -45,11 +48,15 @@
 	function handleDragEnter(e: DragEvent) {
 		preventDefaults(e);
 		isDraggingIn = true;
+		const items = [...(e.dataTransfer?.items ?? [])];
+		const allValid = items.every((item) => accept.includes(item.type));
+		isDraggedInputValid = allValid ? true : false;
 	}
 
 	function handleDragLeave(e: DragEvent) {
 		preventDefaults(e);
 		isDraggingIn = false;
+		isDraggedInputValid = true;
 	}
 
 	function handleDragOver(e: DragEvent) {
@@ -60,6 +67,7 @@
 	async function handleDrop(e: DragEvent) {
 		preventDefaults(e);
 		isDraggingIn = false;
+		isDraggedInputValid = true;
 		await extractAndHandleFiles(e.dataTransfer);
 	}
 
@@ -80,17 +88,18 @@
 	});
 </script>
 
-<button
+<label
 	id="dropzone"
 	data-testid="dropzone"
-	class={`text-border hover:border-primary hover:text-primary relative flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed text-sm transition-colors duration-300 ${isDraggingIn ? 'border-primary text-primary' : 'text-border hover:border-primary hover:text-primary'}`}
-	onclick={() => input?.click()}
+	data-dragging={isDraggingIn}
+	data-valid={isDraggedInputValid}
+	class="text-border hover:border-primary hover:text-primary data-[dragging=true]:border-primary data-[dragging=true]:text-primary data-[valid=false]:border-destructive data-[valid=false]:text-destructive relative flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed
+         text-sm font-medium transition-colors duration-300"
 	ondragenter={handleDragEnter}
 	ondragleave={handleDragLeave}
 	ondragover={handleDragOver}
 	ondrop={handleDrop}
 	onchange={handleChange}
-	{disabled}
 >
 	<Kbd.Group class="absolute bottom-2 left-2">
 		<Kbd.Root>Strg</Kbd.Root>
@@ -99,7 +108,7 @@
 	</Kbd.Group>
 	<input
 		data-testid="dropzone-input"
-		accept=".docx,.pdf,.json,.txt,.csv,.png,.jpg,.jpeg"
+		{accept}
 		bind:this={input}
 		type="file"
 		multiple
@@ -108,15 +117,12 @@
 	/>
 	{#if filesNumber && filesNumber > 0}
 		<FileCheck size={48} />
-		<label for="dropzone" class="pointer-events-none font-medium">
-			{filesNumber ? filesNumber : ''} Dateien ausgewählt
-		</label>
+		{filesNumber ? filesNumber : ''} Dateien ausgewählt
 	{:else if disabled}
 		<Clock size={48} />
+	{:else if isDraggedInputValid === false}
+		<FileX size={48} />Ungültige Datei(en) erkannt
 	{:else}
-		<FileUp size={48} />
-		<label for="dropzone" class="pointer-events-none font-medium">
-			Dateien hier droppen
-		</label>
+		<FileUp size={48} />Dateien hier droppen
 	{/if}
-</button>
+</label>

@@ -19,13 +19,11 @@
 
 	let { loggedIn } = getContext<UserContext>('user')();
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	let _error: string | null = $state(null);
-
 	let filesNumber = $state(0);
 
+	let accept = $derived(loggedIn ? undefined : '.json');
+
 	async function handleFiles(items: DataTransferItemList | FileList) {
-		_error = null;
 		try {
 			const directories =
 				items instanceof FileList
@@ -44,8 +42,9 @@
 				init(directories);
 			} else {
 				if (anyNonJsonFiles) {
-					_error =
-						'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.';
+					toast.error(
+						'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.'
+					);
 					wizardScheduler.schedule = null;
 				} else {
 					init(directories);
@@ -106,7 +105,6 @@
 						`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${notFoundFiles.join(', ')}`
 					);
 				}
-				console.log(otherFiles);
 				return otherFiles;
 			},
 			(err) => {
@@ -119,4 +117,4 @@
 	}
 </script>
 
-<Dropzone {handleFiles} {filesNumber} />
+<Dropzone {accept} {handleFiles} {filesNumber} />

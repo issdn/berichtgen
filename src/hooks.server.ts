@@ -6,8 +6,8 @@ import {
 	PUBLIC_SUPABASE_URL,
 	PUBLIC_SUPABASE_PUBLISHABLE_KEY
 } from '$env/static/public';
-import type { Database } from '$lib/database.types';
 import { checkRateLimit } from '$src/lib/server/rate_limit';
+import type { KyselyDatabase } from './lib/schema';
 
 const supabase: Handle = async ({ event, resolve }) => {
 	/**
@@ -15,7 +15,7 @@ const supabase: Handle = async ({ event, resolve }) => {
 	 *
 	 * The Supabase client gets the Auth token from the request cookies.
 	 */
-	event.locals.supabase = createServerClient<Database>(
+	event.locals.supabase = createServerClient<KyselyDatabase>(
 		PUBLIC_SUPABASE_URL,
 		PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 		{

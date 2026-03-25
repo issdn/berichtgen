@@ -1,9 +1,7 @@
 <script lang="ts">
 	import WizardFile from './WizardFile.svelte';
 	import { wizardScheduler } from '$lib/wizard_scheduler.svelte';
-	import Button, {
-		buttonVariants
-	} from '$lib/components/ui/button/button.svelte';
+	import { buttonVariants } from '$lib/components/ui/button/button.svelte';
 	import { FileCheck2, FileClock, FileJson, FileType } from '@lucide/svelte';
 	import { getContext, onMount } from 'svelte';
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
@@ -85,20 +83,14 @@
 		<div class="flex flex-row items-center gap-x-4">
 			<WizardSettingsPopover />
 		</div>
-		{#if result !== null}
-			<Dialog.Root bind:open={dialogOpen}>
-				<Dialog.Trigger
-					data-testid="wizard-completion-button"
-					class={buttonVariants({ variant: 'default' })}
-					><FileCheck2 /></Dialog.Trigger
-				>
-				<Dialog.Content {children} {childrenBehind} class="max-w-min" />
-			</Dialog.Root>
-		{:else}
-			<Button data-testid="wizard-completion-button" disabled={true}
-				><FileCheck2 /></Button
+		<Dialog.Root bind:open={dialogOpen}>
+			<Dialog.Trigger
+				class={buttonVariants({ variant: 'default' })}
+				data-testid="wizard-completion-button"
+				disabled={result === null}><FileCheck2 /></Dialog.Trigger
 			>
-		{/if}
+			<Dialog.Content {children} {childrenBehind} class="max-w-min" />
+		</Dialog.Root>
 	</div>
 	<div
 		data-testid="wizard-content"
@@ -144,6 +136,7 @@
 			<FileDownloadButton
 				fn={() => handleJSONDownload(wizardScheduler.result!)}
 				download="bericht.json"
+				data-testid="wizard-json-download"
 				><FileJson />Als JSON herunterladen</FileDownloadButton
 			>
 			<FileDownloadButton

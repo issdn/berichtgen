@@ -44,6 +44,7 @@
 		WithElementRef<HTMLAnchorAttributes> & {
 			variant?: ButtonVariant;
 			size?: ButtonSize;
+			'data-testid'?: string;
 		};
 </script>
 
