@@ -233,4 +233,149 @@ test.describe('Wizard — full state-machine flow', () => {
 			expect(entry.endDatum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		}
 	});
+
+	test('processes 3 large TXT files (>4 MB, 3 MB, 2 MB) through batching to DONE', async ({
+		page
+	}) => {
+		// ── Mock: collect every batch request ────────────────────────────────────
+		const capturedRequests: Array<{
+			items: Array<{ text: string; ort: string }>;
+		}> = [];
+
+		await page.route('**/board/user/completion', async (route) => {
+			const body = await route.request().postDataJSON();
+			capturedRequests.push(body);
+			const results = body.items.map(() => [AI_RESULT_1, AI_RESULT_2]);
+			await new Promise((r) => setTimeout(r, MOCK_DELAY_MS));
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ results, insufficient_tokens: false })
+			});
+		});
+
+		// Builds a buffer of exactly `targetBytes`.  TXT_CONTENT sits at the
+		// front so the parser always sees the same 3 meaningful lines; the rest
+		// is space padding so file size is accurate without inflating entry count.
+		function makeBuffer(targetBytes: number): Buffer {
+			const base = Buffer.from(TXT_CONTENT, 'utf-8');
+			const buf = Buffer.alloc(targetBytes, 0x20);
+			base.copy(buf, 0);
+			return buf;
+		}
+
+		// ── 1. Navigate ─────────────────────────────────────────────────────────
+		await page.goto('/board', { waitUntil: 'networkidle' });
+		await expect(page.getByTestId('wizard-container')).toBeVisible();
+		await expect(page.getByTestId('wizard-empty-state')).toBeVisible();
+		await expect(page.getByTestId('wizard-completion-button')).toBeDisabled();
+
+		// ── 2. Upload 3 files simultaneously ────────────────────────────────────
+		const dropzone = page.getByTestId('dropzone');
+		await expect(dropzone).toBeVisible();
+		await dropzone.setInputFiles([
+			{
+				name: 'bericht1.txt',
+				mimeType: 'text/plain',
+				buffer: makeBuffer(Math.ceil(4.5 * 1024 * 1024))
+			},
+			{
+				name: 'bericht2.txt',
+				mimeType: 'text/plain',
+				buffer: makeBuffer(3 * 1024 * 1024)
+			},
+			{
+				name: 'bericht3.txt',
+				mimeType: 'text/plain',
+				buffer: makeBuffer(2 * 1024 * 1024)
+			}
+		]);
+
+		// ── 3. All 3 file cards appear ───────────────────────────────────────────
+		await expect(page.getByTestId('wizard-file')).toHaveCount(3, {
+			timeout: 15_000
+		});
+
+		const now = new Date();
+		const startStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+		// ── 4. Set date ranges for each file once it reaches WAITING ─────────────
+		// Files are processed in parallel; scope each interaction to its own card
+		// so we don't depend on a fixed completion order.
+		for (let i = 0; i < 3; i++) {
+			const fileCard = page.getByTestId('wizard-file').nth(i);
+
+			await expect(fileCard.getByTestId('wizard-file-status')).toContainText(
+				'Warten auf Eingabe',
+				{ timeout: 30_000 }
+			);
+
+			await fileCard.getByTestId('time-spread-trigger').click();
+
+			const dialog = page.getByRole('dialog');
+			await expect(dialog).toBeVisible();
+
+			const calendarTrigger = dialog.getByTestId('date-range-trigger').first();
+			await calendarTrigger.click();
+
+			const calendarGrid = page.locator('[role="grid"]').first();
+			await expect(calendarGrid).toBeVisible({ timeout: 3_000 });
+
+			await calendarGrid
+				.locator(`[role="button"][data-value="${startStr}"]`)
+				.click();
+
+			await expect(calendarTrigger).not.toContainText('TT.MM.JJ', {
+				timeout: 3_000
+			});
+
+			await page.keyboard.press('Escape');
+			await page.keyboard.press('Escape');
+		}
+
+		// ── 5. All 3 files reach DONE ────────────────────────────────────────────
+		for (let i = 0; i < 3; i++) {
+			await expect(
+				page.getByTestId('wizard-file').nth(i).getByTestId('wizard-file-status')
+			).toContainText('Fertig', { timeout: 30_000 });
+		}
+
+		await expect(page.getByTestId('wizard-completion-button')).toBeEnabled();
+
+		// ── 6. Batch requests contain items from all 3 files ─────────────────────
+		expect(capturedRequests.length).toBeGreaterThan(0);
+		const totalItems = capturedRequests.reduce(
+			(sum, r) => sum + r.items.length,
+			0
+		);
+		// At minimum one batch item per file; large files may produce more chunks.
+		expect(totalItems).toBeGreaterThanOrEqual(3);
+		capturedRequests.forEach((r) => {
+			r.items.forEach((item) => expect(item.ort).toBeTruthy());
+		});
+
+		// ── 7. Verify time-spread ────────────────────────────────────────────────
+		const jsonDownloadButton = page.getByTestId('wizard-json-download');
+		await jsonDownloadButton.waitFor({ state: 'visible' });
+
+		const downloadPromise = page.waitForEvent('download');
+		await jsonDownloadButton.click();
+		const download = await downloadPromise;
+
+		const stream = await download.createReadStream();
+		const chunks: Buffer[] = [];
+		for await (const chunk of stream) {
+			chunks.push(
+				Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string)
+			);
+		}
+		const resultEntries: Array<{ datum: string; endDatum: string }> =
+			JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+
+		expect(resultEntries.length).toBeGreaterThan(0);
+		for (const entry of resultEntries) {
+			expect(entry.datum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+			expect(entry.endDatum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		}
+	});
 });

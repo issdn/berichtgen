@@ -40,20 +40,13 @@
 		template,
 		hasPendingReport = false,
 		profile,
-		query,
-		onTemplateDeleted,
-		onTemplateReported
+		query
 	}: {
 		isPreferred: boolean;
 		template: TemplateItem;
 		hasPendingReport?: boolean;
 		profile: KyselyDatabase['profile'];
 		query: ReturnType<typeof getTemplates>;
-		onTemplateDeleted: (id: string) => void;
-		onTemplateReported: (
-			id: string,
-			report: NonNullable<TemplateItem['template_report']>
-		) => void;
 	} = $props();
 
 	const { user } = getContext<UserContext>('user')();
@@ -120,15 +113,12 @@
 	}
 
 	async function undoReport() {
-		const prevReport = template.template_report ?? [];
-		onTemplateReported(template.id, []);
 		try {
 			await deleteReport({ templateId: template.id }).updates(
 				reportOverride(false)
 			);
 			toast.success('Meldung zurückgezogen.');
 		} catch (e) {
-			onTemplateReported(template.id, prevReport);
 			toast.error('Fehler beim Zurückziehen.', {
 				description: toErrorBody(e).message
 			});
@@ -144,7 +134,6 @@
 					templates: result.templates.filter((t) => t.id !== template.id)
 				}))
 			);
-			onTemplateDeleted(template.id);
 			toast.success('Datei erfolgreich gelöscht.');
 		} catch (e) {
 			toast.error('Fehler beim Löschen der Datei.', {
@@ -157,21 +146,6 @@
 
 	async function submitReport() {
 		reportPending = true;
-		const optimisticReport = [
-			{
-				id: 'optimistic',
-				template_id: template.id,
-				reporter_user_id: user!.id,
-				message: null,
-				created_at: new Date().toISOString(),
-				user_id: user!.id,
-				storage_path: '',
-				safe_marked_at: null,
-				updated_at: null
-			}
-		];
-		const prevReport = template.template_report ?? [];
-		onTemplateReported(template.id, optimisticReport);
 		try {
 			await reportTemplate({
 				templateId: template.id,
@@ -183,7 +157,6 @@
 				action: { label: 'Rückgängig', onClick: undoReport }
 			});
 		} catch (e) {
-			onTemplateReported(template.id, prevReport);
 			toast.error('Fehler beim Melden.', {
 				description: toErrorBody(e).message
 			});

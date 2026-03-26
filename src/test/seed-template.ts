@@ -54,14 +54,16 @@ if (signInResult.error) {
 const user = signInResult.data.user!;
 console.log('Signed in as:', user.id);
 
+const templateName = `template-${id}.docx`;
+
 // 2. Upload the template file using the admin client (storage policies removed)
 const templatePath = join(import.meta.dir, 'template.docx');
 const fileBytes = readFileSync(templatePath);
-const file = new File([fileBytes], 'template.docx', {
+const file = new File([fileBytes], templateName, {
 	type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 });
 
-const storagePath = `${user.id}/template.docx`;
+const storagePath = `${user.id}/${templateName}`;
 console.log(`Uploading to templates/${storagePath}…`);
 
 const { error: uploadError } = await admin.storage
@@ -84,9 +86,9 @@ console.log('Template metadata row created.');
 // 4. Grant the test user a large token balance
 const { error: tokenError } = await admin
 	.from('user_token_count')
-	.upsert({ user_id: user.id, tokens: 9990000000 }, { onConflict: 'user_id' });
+	.upsert({ user_id: user.id, tokens: 999000 }, { onConflict: 'user_id' });
 if (tokenError) throw tokenError;
-console.log('Token balance set to 9990000000.');
+console.log('Token balance set to 999000.');
 
 console.log(
 	`\nTest user:\n  email:    ${TEST_EMAIL}\n  password: ${TEST_PASSWORD}\n  user_id:  ${user.id}`

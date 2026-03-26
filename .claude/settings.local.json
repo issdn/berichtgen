@@ -44,7 +44,9 @@
       "Bash(node fix_parser2.mjs)",
       "Bash(rm fix_parser2.mjs)",
       "Bash(npx vitest:*)",
-      "Bash(pnpm test:e2e)"
+      "Bash(pnpm test:e2e)",
+      "Bash(grep -r \"RemoteQueryOverride\\\\|withOverride\" C:/Users/isdnb/Documents/code/berichtgen/node_modules/@sveltejs/kit --include=*.d.ts -l)",
+      "mcp__svelte__list-sections"
     ]
   },
   "enableAllProjectMcpServers": true,
