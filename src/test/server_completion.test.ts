@@ -36,7 +36,9 @@ const {
 
 	const db = {
 		transaction: vi.fn().mockReturnValue({
-			execute: vi.fn().mockImplementation(async (fn: (t: typeof trx) => unknown) => fn(trx))
+			execute: vi
+				.fn()
+				.mockImplementation(async (fn: (t: typeof trx) => unknown) => fn(trx))
 		}),
 		selectFrom: vi.fn().mockReturnThis(),
 		updateTable: vi.fn().mockReturnThis(),
@@ -47,7 +49,16 @@ const {
 		execute: () => mockRefundExecute()
 	};
 
-	return { mockCountTokens, mockGenerateContent, mockTrxBalance, mockTrxExecute, mockBalance, mockRefundExecute, trx, db };
+	return {
+		mockCountTokens,
+		mockGenerateContent,
+		mockTrxBalance,
+		mockTrxExecute,
+		mockBalance,
+		mockRefundExecute,
+		trx,
+		db
+	};
 });
 
 // ---------------------------------------------------------------------------
@@ -55,7 +66,9 @@ const {
 // ---------------------------------------------------------------------------
 
 vi.mock('@google/genai/tokenizer', () => ({
-	LocalTokenizer: vi.fn().mockImplementation(() => ({ countTokens: mockCountTokens }))
+	LocalTokenizer: vi
+		.fn()
+		.mockImplementation(() => ({ countTokens: mockCountTokens }))
 }));
 
 vi.mock('@google/genai', () => ({
@@ -90,14 +103,15 @@ vi.mock('$lib/server/db', () => ({ db }));
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
-import { POST } from '$src/routes/board/user/completion/+server';
+import { POST } from '../routes/board/user/completion/+server';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeEvent(body: unknown, userId = 'user-1'): RequestEvent {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeEvent(body: unknown, userId = 'user-1'): any {
 	return {
 		request: new Request('http://localhost/board/user/completion', {
 			method: 'POST',

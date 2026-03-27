@@ -8,7 +8,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createReport } from 'docx-templates';
-import { Ort } from '$src/lib/enums';
+import { Ort } from '$wizard/enums';
 
 // ---------------------------------------------------------------------------
 // Sample data

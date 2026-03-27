@@ -1,4 +1,4 @@
-import type { Entry } from '$src/lib/types';
+import type { Entry } from '$wizard/types';
 
 export const testAIResponse = [
 	{
@@ -101,4 +101,4 @@ export const testAIResponse = [
 		],
 		text: 'Optimale Bestellhäufigkeit für einen Rohstoff berechnen'
 	}
-] as Entry[];
+] as unknown as Entry[];

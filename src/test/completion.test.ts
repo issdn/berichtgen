@@ -5,7 +5,7 @@ import {
 	MAX_BATCH_BYTES,
 	sanitizeToTwoByteUTF8,
 	splitTextIntoChunks
-} from '$lib/completion/completion';
+} from '$wizard/completion/completion';
 
 // ---------------------------------------------------------------------------
 // sanitizeToTwoByteUTF8

@@ -1,6 +1,6 @@
 <script>
 	import { page } from '$app/state';
-	import { Button } from '$src/lib/components/ui/button';
+	import { Button } from '$ui/button';
 	import { Home } from '@lucide/svelte';
 </script>
 

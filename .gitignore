@@ -33,3 +33,6 @@ vite.config.ts.timestamp-*
 __snapshots__/
 # Sentry Config File
 .env.sentry-build-plugin
+
+*storybook.log
+storybook-static

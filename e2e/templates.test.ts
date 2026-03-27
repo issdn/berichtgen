@@ -41,19 +41,28 @@ async function openTemplatesDialog(page: Page) {
  * @param dialog  Locator scoped to the dialog content.
  * @param timeout Max ms to wait for the list to appear (default 15 s).
  */
-async function waitForListToLoad(dialog: ReturnType<Page['getByTestId']>, timeout = 15_000) {
+async function waitForListToLoad(
+	dialog: ReturnType<Page['getByTestId']>,
+	timeout = 15_000
+) {
 	await expect(
-		dialog.getByTestId('templates-list').or(dialog.getByTestId('templates-empty'))
+		dialog
+			.getByTestId('templates-list')
+			.or(dialog.getByTestId('templates-empty'))
 	).toBeVisible({ timeout });
 }
 
 /**
  * Collect all `data-template-id` attribute values currently rendered in the list.
  */
-async function getRenderedTemplateIds(dialog: ReturnType<Page['getByTestId']>): Promise<string[]> {
-	return dialog.getByTestId('template-item').evaluateAll((els) =>
-		els.map((el) => el.getAttribute('data-template-id') ?? '')
-	);
+async function getRenderedTemplateIds(
+	dialog: ReturnType<Page['getByTestId']>
+): Promise<string[]> {
+	return dialog
+		.getByTestId('template-item')
+		.evaluateAll((els) =>
+			els.map((el) => el.getAttribute('data-template-id') ?? '')
+		);
 }
 
 /**
@@ -79,18 +88,24 @@ test.describe('Templates — infinite list', () => {
 	});
 
 	// ── 1. Initial load ────────────────────────────────────────────────────────
-	test('loads and renders the list (or empty state) on first open', async ({ page }) => {
+	test('loads and renders the list (or empty state) on first open', async ({
+		page
+	}) => {
 		const dialog = await openTemplatesDialog(page);
 		await waitForListToLoad(dialog);
 
 		// At least one item or the empty-state message must be rendered
 		const itemCount = await dialog.getByTestId('template-item').count();
-		const emptyVisible = await dialog.getByTestId('templates-empty').isVisible();
+		const emptyVisible = await dialog
+			.getByTestId('templates-empty')
+			.isVisible();
 		expect(itemCount > 0 || emptyVisible).toBe(true);
 	});
 
 	// ── 2. No duplicate items ──────────────────────────────────────────────────
-	test('renders each template exactly once on the first page', async ({ page }) => {
+	test('renders each template exactly once on the first page', async ({
+		page
+	}) => {
 		const dialog = await openTemplatesDialog(page);
 		await waitForListToLoad(dialog);
 
@@ -102,7 +117,9 @@ test.describe('Templates — infinite list', () => {
 	});
 
 	// ── 3. Search filtering ────────────────────────────────────────────────────
-	test('keeps old list visible while search results load, then updates', async ({ page }) => {
+	test('keeps old list visible while search results load, then updates', async ({
+		page
+	}) => {
 		const dialog = await openTemplatesDialog(page);
 		await waitForListToLoad(dialog);
 
@@ -113,19 +130,27 @@ test.describe('Templates — infinite list', () => {
 		await searchInput.fill('xyzxyzxyz_no_match');
 
 		// The spinner should appear (not skeleton — list must NOT blank out)
-		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({ timeout: 3_000 });
+		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({
+			timeout: 3_000
+		});
 		await expect(dialog.getByTestId('templates-skeleton')).not.toBeVisible();
 
 		// Spinner disappears once results arrive
-		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({ timeout: 15_000 });
+		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({
+			timeout: 15_000
+		});
 
 		// Empty state shown (no matches for gibberish query)
 		await expect(dialog.getByTestId('templates-empty')).toBeVisible();
 
 		// Now clear the search — list should recover with the original items
 		await searchInput.fill('');
-		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({ timeout: 3_000 });
-		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({ timeout: 15_000 });
+		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({
+			timeout: 3_000
+		});
+		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({
+			timeout: 15_000
+		});
 
 		const idsAfter = await getRenderedTemplateIds(dialog);
 		expect(idsAfter).toEqual(idsBefore);
@@ -141,18 +166,28 @@ test.describe('Templates — infinite list', () => {
 		await expect(dialog.getByTestId('templates-skeleton')).not.toBeVisible();
 
 		// Spinner shown, then disappears
-		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({ timeout: 3_000 });
-		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({ timeout: 15_000 });
+		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({
+			timeout: 3_000
+		});
+		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({
+			timeout: 15_000
+		});
 
 		// Toggle off — same expectation
 		await dialog.getByTestId('templates-hide-reported-toggle').click();
 		await expect(dialog.getByTestId('templates-skeleton')).not.toBeVisible();
-		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({ timeout: 3_000 });
-		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({ timeout: 15_000 });
+		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({
+			timeout: 3_000
+		});
+		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({
+			timeout: 15_000
+		});
 	});
 
 	// ── 5. Infinite scroll — load more ────────────────────────────────────────
-	test('appends next page on scroll without duplicating items', async ({ page }) => {
+	test('appends next page on scroll without duplicating items', async ({
+		page
+	}) => {
 		const dialog = await openTemplatesDialog(page);
 		await waitForListToLoad(dialog);
 
@@ -177,11 +212,15 @@ test.describe('Templates — infinite list', () => {
 		await scrollListToBottom(dialog);
 
 		// Spinner must appear below the list (not the initial skeleton)
-		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({ timeout: 5_000 });
+		await expect(dialog.getByTestId('templates-spinner')).toBeVisible({
+			timeout: 5_000
+		});
 		await expect(dialog.getByTestId('templates-skeleton')).not.toBeVisible();
 
 		// Spinner disappears once the next page arrives
-		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({ timeout: 15_000 });
+		await expect(dialog.getByTestId('templates-spinner')).not.toBeVisible({
+			timeout: 15_000
+		});
 
 		const idsAfter = await getRenderedTemplateIds(dialog);
 

@@ -1,12 +1,18 @@
+import {
+	UPSTASH_REDIS_REST_TOKEN,
+	UPSTASH_REDIS_REST_URL
+} from '$env/static/private';
+import { ECompletionException, throwSvelteError } from '$lib/errors';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { env } from '$env/dynamic/private';
-import { throwSvelteError, ECompletionException } from '$lib/errors';
 
 /** Null when UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN are not set — rate limiting is skipped. */
 const redis =
-	env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
-		? new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN })
+	UPSTASH_REDIS_REST_URL && UPSTASH_REDIS_REST_TOKEN
+		? new Redis({
+				url: UPSTASH_REDIS_REST_URL,
+				token: UPSTASH_REDIS_REST_TOKEN
+			})
 		: null;
 
 const rateLimiters: Record<string, Ratelimit> | null = redis

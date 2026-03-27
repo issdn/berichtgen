@@ -1,7 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
-import { Ort } from '$lib/enums';
 import {
 	E***REMOVED***Error,
 	ECommonServerError,
@@ -13,16 +12,17 @@ import * as genai from '@google/genai';
 import { LocalTokenizer } from '@google/genai/tokenizer';
 import { ok, ResultAsync } from 'neverthrow';
 import { json } from '@sveltejs/kit';
-import { getContextPrompt } from '$src/lib/completion/prompt';
+import { db } from '$lib/server/db';
+import { sql } from 'kysely';
+import * as Sentry from '@sentry/sveltekit';
 import {
 	batchCompletionApiSchema,
 	completionSchema,
 	type BatchCompletionApiResponse
-} from '$src/lib/schemas';
-import { db } from '$lib/server/db';
-import { sql } from 'kysely';
-import * as Sentry from '@sentry/sveltekit';
-import { DEFAULT_MODEL } from '$src/lib/constants';
+} from '$wizard/schemas';
+import { DEFAULT_MODEL } from '$lib/constants';
+import { getContextPrompt } from '$wizard/completion/prompt';
+import type { Ort } from '$wizard/enums';
 
 // API key from environment
 const apiKey = env.GOOGLE_AI_API_KEY;

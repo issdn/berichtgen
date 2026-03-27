@@ -1,6 +1,6 @@
-import { spreadEntriesAcrossWeeks } from '$lib/parse/time_spread';
-import { Ort } from '$src/lib/enums';
-import { testAIResponse } from '$src/test/test_inputs';
+import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
+import { Ort } from '$wizard/enums';
+import { testAIResponse } from './test_inputs';
 import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';
 

@@ -5,11 +5,11 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { goto, invalidate } from '$app/navigation';
 	import { navigating } from '$app/stores';
-	import DarkMode from './board/DarkMode.svelte';
+	import DarkMode from '../lib/components/ui/DarkMode.svelte';
 	import { onMount, setContext } from 'svelte';
-	import Logo from '$lib/svg/Logo.svelte';
+	import Logo from '$ui/svg/Logo.svelte';
 	import { resolve } from '$app/paths';
-	import SettingsPopover from '$src/lib/components/SettingsPopover.svelte';
+	import SettingsPopover from '$auth/components/SettingsPopover.svelte';
 
 	let { data, children } = $props();
 

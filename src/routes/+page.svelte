@@ -1,8 +1,8 @@
 <script lang="ts">
-	import Arrow from '$lib/svg/Arrow.svelte';
-	import DOCX from '$lib/svg/DOCX.svelte';
-	import PDF from '$lib/svg/PDF.svelte';
-	import PNG from '$lib/svg/PNG.svelte';
+	import Arrow from '$ui/svg/Arrow.svelte';
+	import DOCX from '$ui/svg/DOCX.svelte';
+	import PDF from '$ui/svg/PDF.svelte';
+	import PNG from '$ui/svg/PNG.svelte';
 	import { ArrowRight, FileUp } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 </script>

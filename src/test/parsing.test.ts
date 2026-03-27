@@ -1,15 +1,16 @@
 import { vi } from 'vitest';
 vi.mock('canvas', () => ({ createCanvas: vi.fn() }));
-vi.mock('$lib/wizard_scheduler.svelte', () => ({
+vi.mock('$wizard/services/wizard_scheduler.svelte', () => ({
 	wizardScheduler: { workersInUse: 0, workersNr: 0 }
 }));
 import { createWorker, createScheduler } from 'tesseract.js';
+// @ts-ignore - canvas has no type declarations in this environment
 import { createCanvas } from 'canvas';
-import { DOCXParser } from '$lib/parse/docx_parser';
-import { PDFParser } from '$lib/parse/pdf_parser';
+import { DOCXParser } from '$core/parser/docx_parser';
+import { PDFParser } from '$core/parser/pdf_parser';
 import { expect, test } from 'vitest';
 import * as fs from 'node:fs';
-import { WizardFileContext } from '$src/lib/wizard_file_context.svelte';
+import { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
 
 const hasDocxFixture = fs.existsSync('./src/test/text_img.docx');
 const hasPdfFixture = fs.existsSync('./src/test/text_img.pdf');
@@ -31,7 +32,7 @@ testDocx('reads plain text and OCR image text from a DOCX file', async () => {
 	const response = await docxParser.parse();
 
 	await scheduler.terminate();
-	expect(response.join('\n')).toBe(['NORMAL TEXT', 'IMAGE TEXT\n'].join('\n'));
+	expect(response).toBe(['NORMAL TEXT', 'IMAGE TEXT\n'].join('\n'));
 });
 
 testPdf('reads OCR image text from a PDF file', async () => {
@@ -55,5 +56,5 @@ testPdf('reads OCR image text from a PDF file', async () => {
 
 	await scheduler.terminate();
 	expect(pdfParser.batchSize).toBe(1);
-	expect(response.join('\n')).toBe(['IMAGE TEXT\n'].join('\n'));
+	expect(response).toBe(['IMAGE TEXT\n'].join('\n'));
 });

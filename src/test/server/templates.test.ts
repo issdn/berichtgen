@@ -66,7 +66,7 @@ import {
 	markTemplateSafeById,
 	PAGE_SIZE,
 	type TemplateRow
-} from './templates';
+} from '$templates/api/handlers/templates';
 
 // ─── Factories ───────────────────────────────────────────────────────────────
 
@@ -102,13 +102,21 @@ describe('paginateTemplates', () => {
 	});
 
 	test('subsequent pages exclude mine entirely', () => {
-		const result = paginateTemplates([mine, ...others], 'some-cursor-id', PAGE_SIZE);
+		const result = paginateTemplates(
+			[mine, ...others],
+			'some-cursor-id',
+			PAGE_SIZE
+		);
 		expect(result.templates.every((t) => !t.is_mine)).toBe(true);
 	});
 
 	test('hasMore is false when others fit within page size', () => {
 		const fewOthers = others.slice(0, PAGE_SIZE - 1);
-		const result = paginateTemplates([mine, ...fewOthers], undefined, PAGE_SIZE);
+		const result = paginateTemplates(
+			[mine, ...fewOthers],
+			undefined,
+			PAGE_SIZE
+		);
 		expect(result.hasMore).toBe(false);
 	});
 
@@ -139,36 +147,45 @@ describe('validateCanReport', () => {
 	const otherUserId = 'other-user-id';
 	const existingReport = { id: 'report-1' };
 
-	const validTemplate = makeRow({ id: 'tmpl-1', user_id: otherUserId, safe_marked_at: null });
+	const validTemplate = makeRow({
+		id: 'tmpl-1',
+		user_id: otherUserId,
+		safe_marked_at: null
+	});
 
 	test('passes silently when all conditions are satisfied', () => {
-		expect(() => validateCanReport(validTemplate, userId, undefined)).not.toThrow();
+		expect(() =>
+			validateCanReport(validTemplate, userId, undefined)
+		).not.toThrow();
 	});
 
 	test('throws TEMPLATE_NOT_FOUND when template is undefined', () => {
 		expect(() => validateCanReport(undefined, userId, undefined)).toThrow(
-			ETemplateReportError.TEMPLATE_NOT_FOUND
+			ETemplateReportError.TEMPLATE_NOT_FOUND.message
 		);
 	});
 
 	test('throws CANNOT_REPORT_OWN when user owns the template', () => {
 		const ownTemplate = makeRow({ user_id: userId });
 		expect(() => validateCanReport(ownTemplate, userId, undefined)).toThrow(
-			ETemplateReportError.CANNOT_REPORT_OWN
+			ETemplateReportError.CANNOT_REPORT_OWN.message
 		);
 	});
 
 	test('throws TEMPLATE_SAFE when safe_marked_at is set', () => {
-		const safeTemplate = makeRow({ user_id: otherUserId, safe_marked_at: '2024-01-01T00:00:00Z' });
+		const safeTemplate = makeRow({
+			user_id: otherUserId,
+			safe_marked_at: '2024-01-01T00:00:00Z'
+		});
 		expect(() => validateCanReport(safeTemplate, userId, undefined)).toThrow(
-			ETemplateReportError.TEMPLATE_SAFE
+			ETemplateReportError.TEMPLATE_SAFE.message
 		);
 	});
 
 	test('throws ALREADY_REPORTED when an existing report is present', () => {
-		expect(() => validateCanReport(validTemplate, userId, existingReport)).toThrow(
-			ETemplateReportError.ALREADY_REPORTED
-		);
+		expect(() =>
+			validateCanReport(validTemplate, userId, existingReport)
+		).toThrow(ETemplateReportError.ALREADY_REPORTED.message);
 	});
 });
 
@@ -183,15 +200,19 @@ describe('deleteTemplateReport', () => {
 
 		expect(dbMock.deleteFrom).toHaveBeenCalledWith('template_report');
 		expect(dbMock.where).toHaveBeenCalledWith('template_id', '=', 'tmpl-uuid');
-		expect(dbMock.where).toHaveBeenCalledWith('reporter_user_id', '=', 'user-uuid');
+		expect(dbMock.where).toHaveBeenCalledWith(
+			'reporter_user_id',
+			'=',
+			'user-uuid'
+		);
 		expect(dbMock.execute).toHaveBeenCalledOnce();
 	});
 
 	test('throws DATABASE_ERROR when the delete query fails', async () => {
 		dbMock.execute.mockRejectedValue(new Error('db failure'));
-		await expect(deleteTemplateReport('tmpl-uuid', 'user-uuid')).rejects.toThrow(
-			ECommonServerError.DATABASE_ERROR
-		);
+		await expect(
+			deleteTemplateReport('tmpl-uuid', 'user-uuid')
+		).rejects.toThrow(ECommonServerError.DATABASE_ERROR.message);
 	});
 });
 
@@ -214,7 +235,10 @@ describe('submitTemplateReport', () => {
 			.mockResolvedValueOnce(undefined);
 		dbMock.execute.mockResolvedValue({});
 
-		await submitTemplateReport({ templateId: 'tmpl-1', message: 'spam' }, 'reporter-id');
+		await submitTemplateReport(
+			{ templateId: 'tmpl-1', message: 'spam' },
+			'reporter-id'
+		);
 
 		expect(dbMock.insertInto).toHaveBeenCalledWith('template_report');
 		expect(dbMock.values).toHaveBeenCalledWith(
@@ -244,7 +268,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ETemplateReportError.TEMPLATE_NOT_FOUND);
+		).rejects.toThrow(ETemplateReportError.TEMPLATE_NOT_FOUND.message);
 	});
 
 	test('throws CANNOT_REPORT_OWN when reporter is the owner', async () => {
@@ -254,7 +278,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ETemplateReportError.CANNOT_REPORT_OWN);
+		).rejects.toThrow(ETemplateReportError.CANNOT_REPORT_OWN.message);
 	});
 
 	test('throws ALREADY_REPORTED when a report already exists', async () => {
@@ -264,7 +288,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ETemplateReportError.ALREADY_REPORTED);
+		).rejects.toThrow(ETemplateReportError.ALREADY_REPORTED.message);
 	});
 
 	test('throws DATABASE_ERROR when the insert fails', async () => {
@@ -275,7 +299,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ECommonServerError.DATABASE_ERROR);
+		).rejects.toThrow(ECommonServerError.DATABASE_ERROR.message);
 	});
 });
 

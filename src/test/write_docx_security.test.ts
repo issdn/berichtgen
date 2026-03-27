@@ -7,7 +7,7 @@
 
 import { describe, test, expect } from 'vitest';
 import { getQuickJS } from 'quickjs-emscripten';
-import { buildRunJs, type SandBox } from '$lib/utils/write_docx';
+import { buildRunJs, type SandBox } from '$wizard/write/write_docx';
 
 /** Build a minimal valid SandBox for tests. */
 function box(code: string, extra: Record<string, unknown> = {}): SandBox {

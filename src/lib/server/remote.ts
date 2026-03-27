@@ -1,7 +1,7 @@
 import { command, getRequestEvent, query } from '$app/server';
-import { ECommonServerError, throwSvelteError } from '$src/lib/errors';
-import * as z from 'zod/v4';
+import { ECommonServerError, throwSvelteError } from '$lib/errors';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
+import type z from 'zod';
 
 export function guardedQuery<S extends z.ZodTypeAny, T>(
 	schema: S,

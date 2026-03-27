@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { type UserContext } from '$src/lib/types.js';
+	import type { UserContext } from '$auth/types';
 	import { getContext, setContext } from 'svelte';
-	import { berichtgenStore } from '$src/lib/stores/berichtgen.svelte';
+	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 
 	let { data, children } = $props();
 

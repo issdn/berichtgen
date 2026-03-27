@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { WizardStep } from '$lib/enums';
+import { WizardStep } from '$wizard/enums';
 import { CalendarDate } from '@internationalized/date';
 import { ok } from 'neverthrow';
 import type { Scheduler } from 'tesseract.js';
@@ -9,15 +9,15 @@ import type { Scheduler } from 'tesseract.js';
 // ---------------------------------------------------------------------------
 
 vi.mock('$app/navigation', () => ({ invalidate: vi.fn() }));
-vi.mock('$src/lib/stores/berichtgen.svelte', () => ({
+vi.mock('$lib/stores/berichtgen.svelte', () => ({
 	berichtgenStore: { rewordJSON: false, processPhotos: false, constantHours: 8 }
 }));
 
 // Parser mocks — only to avoid heavy native import chains for file types not used in this test
-vi.mock('$lib/parse/docx_parser', () => ({ DOCXParser: vi.fn() }));
-vi.mock('$lib/parse/pdf_parser', () => ({ PDFParser: vi.fn() }));
-vi.mock('$lib/parse/json_parser', () => ({ JSONParser: vi.fn() }));
-vi.mock('$lib/parse/img_parser', () => ({ IMGParser: vi.fn() }));
+vi.mock('$core/parser/docx_parser', () => ({ DOCXParser: vi.fn() }));
+vi.mock('$core/parser/pdf_parser', () => ({ PDFParser: vi.fn() }));
+vi.mock('$core/parser/json_parser', () => ({ JSONParser: vi.fn() }));
+vi.mock('$core/parser/img_parser', () => ({ IMGParser: vi.fn() }));
 
 // ---------------------------------------------------------------------------
 // The single behavioral mock: the HTTP completion endpoint
@@ -25,8 +25,8 @@ vi.mock('$lib/parse/img_parser', () => ({ IMGParser: vi.fn() }));
 // ---------------------------------------------------------------------------
 
 const mockSendBatch = vi.hoisted(() => vi.fn());
-vi.mock('$lib/completion/completion', async (importOriginal) => ({
-	...(await importOriginal() as object),
+vi.mock('$wizard/completion/completion', async (importOriginal) => ({
+	...((await importOriginal()) as object),
 	sendBatchCompletion: mockSendBatch
 }));
 
@@ -34,8 +34,8 @@ vi.mock('$lib/completion/completion', async (importOriginal) => ({
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
-import { WizardScheduler } from '$lib/wizard_scheduler.svelte';
-import type { DateRangeSchema } from '$lib/schemas';
+import { WizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
+import type { DateRangeSchema } from '$wizard/schemas';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,7 +61,9 @@ describe('State machine full lifecycle', () => {
 
 		// Real WizardScheduler — skip OCR worker init since TXTParser uses TextDecoder only
 		const scheduler = new WizardScheduler();
-		scheduler.scheduler = { terminate: () => Promise.resolve() } as unknown as Scheduler;
+		scheduler.scheduler = {
+			terminate: () => Promise.resolve()
+		} as unknown as Scheduler;
 
 		// Create the schedule with a single plain-text file
 		const file = new File([DUMMY_TEXT], 'test.txt', { type: 'text/plain' });

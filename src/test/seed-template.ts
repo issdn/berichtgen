@@ -57,7 +57,7 @@ console.log('Signed in as:', user.id);
 const templateName = `template-${id}.docx`;
 
 // 2. Upload the template file using the admin client (storage policies removed)
-const templatePath = join(import.meta.dir, 'template.docx');
+const templatePath = join((import.meta as any).dir, 'template.docx');
 const fileBytes = readFileSync(templatePath);
 const file = new File([fileBytes], templateName, {
 	type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

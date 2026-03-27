@@ -1,4 +1,4 @@
-import type { PasteHandler } from '$src/lib/types';
+import type { PasteHandler } from '$board/types';
 
 class GlobalPasteStack {
 	pasteStack: PasteHandler = [];

@@ -1,12 +1,12 @@
 <script lang="ts">
-	import Howto from '$lib/components/Howto.svelte';
-	import Wizard from './Wizard.svelte';
+	import Howto from '$board/components/Howto.svelte';
+	import Wizard from '$wizard/components/Wizard.svelte';
 	import { goto } from '$app/navigation';
-	import WizardDropzone from '$src/lib/components/WizardDropzone.svelte';
-	import { Button } from '$src/lib/components/ui/button';
-	import TemplatesDialog from '$src/lib/templates/TemplatesDialog.svelte';
+	import WizardDropzone from '$wizard/components/WizardDropzone.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import TemplatesDialog from '$templates/components/TemplatesDialog.svelte';
 	import { resolve } from '$app/paths';
-	import AnimatedTokenCount from '$src/lib/components/AnimatedTokenCount.svelte';
+	import AnimatedTokenCount from '$board/components/AnimatedTokenCount.svelte';
 
 	let { data } = $props();
 

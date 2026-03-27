@@ -5,15 +5,15 @@
 
 import { describe, test, expect } from 'vitest';
 import { getQuickJS } from 'quickjs-emscripten';
-import { generateReportBytes } from '$lib/utils/write_docx';
-import { Ort } from '$src/lib/enums';
-import type { ResultEntry, UserMetadata } from '$src/lib/types';
+import { generateReportBytes } from '$wizard/write/write_docx';
+import { Ort } from '$wizard/enums';
+import type { ResultEntry, UserMetadata } from '$wizard/types';
 import * as fs from 'node:fs';
 import JSZip from 'jszip';
 
 const TEMPLATE_PATH = './src/test/template.docx';
 
-const entries: ResultEntry[] = [
+const entries = [
 	{
 		qualifikationen: ['Allgemeinbildende Fächer'],
 		text: 'Test Eintrag',
@@ -43,7 +43,7 @@ describe('generateReportBytes integration', () => {
 		try {
 			result = await generateReportBytes(
 				template,
-				Promise.resolve(entries),
+				Promise.resolve(entries) as any,
 				userMetadata,
 				injected,
 				vm
@@ -71,7 +71,7 @@ describe('generateReportBytes integration', () => {
 		try {
 			result = await generateReportBytes(
 				template,
-				Promise.resolve(entries),
+				Promise.resolve(entries) as any,
 				userMetadata,
 				injected,
 				vm
@@ -97,7 +97,7 @@ describe('generateReportBytes integration', () => {
 		try {
 			result = await generateReportBytes(
 				template,
-				Promise.resolve(entries),
+				Promise.resolve(entries) as any,
 				userMetadata,
 				injected,
 				vm

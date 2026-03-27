@@ -13,7 +13,10 @@ function loadEnvFile(filePath: string): void {
 		const eqIdx = trimmed.indexOf('=');
 		if (eqIdx === -1) continue;
 		const key = trimmed.slice(0, eqIdx).trim();
-		const value = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+		const value = trimmed
+			.slice(eqIdx + 1)
+			.trim()
+			.replace(/^["']|["']$/g, '');
 		if (!(key in process.env)) process.env[key] = value;
 	}
 }
@@ -59,13 +62,17 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	const email = `e2e-${id}@berichtgen.local`;
 	const password = `e2e-${id}-pw!`;
 
-	const { error: signUpError } = await supabase.auth.signUp({ email, password });
-	if (signUpError) throw new Error(`signUp failed: ${signUpError.message}`);
-
-	const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+	const { error: signUpError } = await supabase.auth.signUp({
 		email,
 		password
 	});
+	if (signUpError) throw new Error(`signUp failed: ${signUpError.message}`);
+
+	const { data: signInData, error: signInError } =
+		await supabase.auth.signInWithPassword({
+			email,
+			password
+		});
 	if (signInError) {
 		throw new Error(
 			`signIn failed (if email confirmation is required, disable it in the Supabase dashboard): ${signInError.message}`
@@ -78,7 +85,9 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	// ── 2. Upload template.docx to storage ──────────────────────────────────
 	const templatePath = path.join('src', 'test', 'template.docx');
 	if (!fs.existsSync(templatePath)) {
-		throw new Error(`Template fixture not found at ${templatePath} — run seed-template.ts first`);
+		throw new Error(
+			`Template fixture not found at ${templatePath} — run seed-template.ts first`
+		);
 	}
 
 	const fileBytes = fs.readFileSync(templatePath);
@@ -91,19 +100,24 @@ async function globalSetup(config: FullConfig): Promise<void> {
 			contentType:
 				'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 		});
-	if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
+	if (uploadError)
+		throw new Error(`Storage upload failed: ${uploadError.message}`);
 
 	// ── 3. Insert template metadata row ─────────────────────────────────────
 	await admin.from('template').delete().eq('storage_path', storagePath);
 	const { error: insertError } = await admin
 		.from('template')
 		.insert({ user_id: userId, storage_path: storagePath });
-	if (insertError) throw new Error(`Template insert failed: ${insertError.message}`);
+	if (insertError)
+		throw new Error(`Template insert failed: ${insertError.message}`);
 
 	// ── 4. Grant a large token balance ──────────────────────────────────────
 	const { error: tokenError } = await admin
 		.from('user_token_count')
-		.upsert({ user_id: userId, tokens: 2_000_000_000 }, { onConflict: 'user_id' });
+		.upsert(
+			{ user_id: userId, tokens: 2_000_000_000 },
+			{ onConflict: 'user_id' }
+		);
 	if (tokenError) throw new Error(`Token upsert failed: ${tokenError.message}`);
 
 	// ── 5. Inject session cookies and save storage state ────────────────────
@@ -137,7 +151,11 @@ async function globalSetup(config: FullConfig): Promise<void> {
 		});
 	} else {
 		let chunkIndex = 0;
-		for (let offset = 0; offset < cookieValue.length; offset += CHUNK_SIZE, chunkIndex++) {
+		for (
+			let offset = 0;
+			offset < cookieValue.length;
+			offset += CHUNK_SIZE, chunkIndex++
+		) {
 			cookies.push({
 				name: `${cookieName}.${chunkIndex}`,
 				value: cookieValue.slice(offset, offset + CHUNK_SIZE),

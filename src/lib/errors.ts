@@ -1,5 +1,5 @@
-import { ZodError } from 'zod';
 import { error } from '@sveltejs/kit';
+import { ZodError } from 'zod';
 
 type OmitErrorField<T extends EnumError, F extends keyof T[keyof T]> = {
 	[K in keyof T]: Omit<T[K], F>;

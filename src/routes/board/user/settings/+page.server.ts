@@ -2,9 +2,9 @@ import { fail, message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { redirect, type Actions } from '@sveltejs/kit';
 import * as Sentry from '@sentry/sveltekit';
-import { supabaseAdmin } from '$src/lib/server/admin';
+import { supabaseAdmin } from '$lib/server/admin';
 import { db } from '$lib/server/db';
-import { profileNameSchema, userMetadataSchema } from '$src/lib/schemas';
+import { profileNameSchema, userMetadataSchema } from '$lib/modules/settings/schemas';
 
 export const load = async ({ parent, locals: { user } }) => {
 	const { tokenCount } = await parent();
