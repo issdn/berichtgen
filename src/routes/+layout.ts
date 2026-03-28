@@ -7,7 +7,7 @@ import {
 	PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 	PUBLIC_SUPABASE_URL
 } from '$env/static/public';
-import { type KyselyDatabase } from '$src/lib/schema.js';
+import { type KyselyDatabase } from '$lib/schema.js';
 
 export const load = async ({
 	data: { profile, user, cookies, session },

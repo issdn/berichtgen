@@ -7,8 +7,7 @@
 	import { Toggle } from 'bits-ui';
 	import TemplateList from './TemplateList.svelte';
 	import TemplateUpload from './TemplateUpload.svelte';
-
-	let search = $state('');
+let search = $state('');
 	let hideReported = $state(false);
 
 	/**
