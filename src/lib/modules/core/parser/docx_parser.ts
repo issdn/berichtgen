@@ -4,7 +4,6 @@ import type { Scheduler, ImageLike } from 'tesseract.js';
 import { ***REMOVED***Error } from '$lib/errors';
 import { XMLParser } from 'fast-xml-parser';
 import JSZip from 'jszip';
-import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 import type {
 	DocxBodyNode,
 	DocxCell,
@@ -42,7 +41,7 @@ export class DOCXParser extends Parser {
 	constructor(
 		context: WizardFileContext,
 		scheduler: Scheduler,
-		withImages: boolean = berichtgenStore.processPhotos
+		withImages: boolean = false
 	) {
 		super(context, scheduler, withImages);
 	}

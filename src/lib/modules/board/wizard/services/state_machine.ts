@@ -1,143 +1,14 @@
 import fsm from 'svelte-fsm';
-import type { Scheduler } from 'tesseract.js';
-import { Err, ResultAsync, err, fromThrowable } from 'neverthrow';
+import { fromThrowable } from 'neverthrow';
 import type { WizardFileContext } from './wizard_file_context.svelte';
 import { invalidate } from '$app/navigation';
 import type { WizardScheduler } from './wizard_scheduler.svelte';
 import { ***REMOVED***Error } from '$lib/errors';
-import type {
-	Entry,
-	ResultEntry,
-	WizardProcessStateMachine
-} from '$wizard/types';
-import { FileTypes, WizardStep } from '$wizard/enums';
-import { TXTParser } from '$core/parser/txt_parser';
-import { JSONParser } from '$core/parser/json_parser';
-import { IMGParser } from '$core/parser/img_parser';
+import type { Entry, ResultEntry, WizardProcessStateMachine } from '$wizard/types';
+import { WizardStep } from '$wizard/enums';
 import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
-import { PDFParser } from '$core/parser/pdf_parser';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
-import { DOCXParser } from '$core/parser/docx_parser';
-
-function parseByFileType(context: WizardFileContext, scheduler: Scheduler) {
-	return readFile(context.file).andThen((data) =>
-		parseFile(context.file, context, scheduler, data)
-	);
-}
-
-function readFile(file: File) {
-	return ResultAsync.fromPromise(
-		(async () => new Uint8Array(await file.arrayBuffer()))(),
-		() => new ***REMOVED***Error('INVALID_FILE', 'Fehler beim Lesen der Datei')
-	);
-}
-
-function parseFile(
-	file: File,
-	context: WizardFileContext,
-	scheduler: Scheduler,
-	data: Uint8Array<ArrayBuffer>
-):
-	| ResultAsync<string | ResultEntry[] | never, ***REMOVED***Error>
-	| Err<never, ***REMOVED***Error> {
-	switch (file.type) {
-		case FileTypes.PNG:
-		case FileTypes.JPG: {
-			const imgParser = new IMGParser(context, scheduler);
-			return ResultAsync.fromPromise(imgParser.init(data), (e) =>
-				***REMOVED***Error.fromUnknown(
-					e,
-					'Fehler beim Initialisieren des Bild Parsers',
-					'PARSE_FAILED'
-				)
-			).andThen(() =>
-				ResultAsync.fromPromise(imgParser.parse(), (e) =>
-					***REMOVED***Error.fromUnknown(
-						e,
-						'Fehler beim Parsen des Bildes',
-						'PARSE_FAILED'
-					)
-				)
-			);
-		}
-		case FileTypes.TXT:
-		case FileTypes.CSV: {
-			const textParser = new TXTParser(context, scheduler);
-			return ResultAsync.fromPromise(textParser.init(data), (e) =>
-				***REMOVED***Error.fromUnknown(
-					e,
-					'Fehler beim Initialisieren des Text Parsers',
-					'PARSE_FAILED'
-				)
-			).andThen(() => textParser.parse());
-		}
-		case FileTypes.JSON: {
-			const jsonParser = new JSONParser(context, scheduler);
-			return ResultAsync.fromPromise(jsonParser.init(data), (e) =>
-				***REMOVED***Error.fromUnknown(
-					e,
-					'Fehler beim Initialisieren des JSON Parsers',
-					'PARSE_FAILED'
-				)
-			).andThen(() =>
-				berichtgenStore.rewordJSON ? jsonParser.parse() : jsonParser.toSchema()
-			);
-		}
-		case FileTypes.PDF: {
-			const pdfParser = new PDFParser(
-				context,
-				scheduler,
-				(width, height) => {
-					const canvas = new OffscreenCanvas(width, height);
-					const context = canvas.getContext('2d')!;
-					return { canvas, context };
-				},
-				berichtgenStore.processPhotos
-			);
-			return ResultAsync.fromPromise(pdfParser.init(data), (e) =>
-				***REMOVED***Error.fromUnknown(
-					e,
-					'Fehler beim Initialisieren des PDF Parsers',
-					'PARSE_FAILED'
-				)
-			).andThen(() =>
-				ResultAsync.fromPromise(pdfParser.parse(), (e) =>
-					***REMOVED***Error.fromUnknown(
-						e,
-						'Fehler beim Parsen des PDF',
-						'PARSE_FAILED'
-					)
-				)
-			);
-		}
-		case FileTypes.DOCX: {
-			const docxParser = new DOCXParser(
-				context,
-				scheduler,
-				berichtgenStore.processPhotos
-			);
-			return ResultAsync.fromPromise(docxParser.init(data), (e) =>
-				***REMOVED***Error.fromUnknown(
-					e,
-					'Fehler beim Initialisieren des DOCX Parsers',
-					'PARSE_FAILED'
-				)
-			).andThen(() =>
-				ResultAsync.fromPromise(docxParser.parse(), (e) =>
-					***REMOVED***Error.fromUnknown(
-						e,
-						'Fehler beim Parsen des DOCX',
-						'PARSE_FAILED'
-					)
-				)
-			);
-		}
-		default:
-			return err(
-				new ***REMOVED***Error('INVALID_FILE', 'Dateityp nicht unterstützt.')
-			);
-	}
-}
+import { parseFile } from '$core/parser/parse_service';
 
 export function createStateMachineForContext(
 	context: WizardFileContext,
@@ -156,7 +27,10 @@ export function createStateMachineForContext(
 					return;
 				}
 
-				parseByFileType(context, scheduler.scheduler!).match(
+				parseFile(context.file, context, scheduler.scheduler!, {
+					processPhotos: berichtgenStore.processPhotos,
+					rewordJSON: berichtgenStore.rewordJSON
+				}).match(
 					(result) => {
 						context.snapshot = result;
 						this.next();

@@ -47,7 +47,8 @@
       "Bash(pnpm test:e2e)",
       "Bash(grep -r \"RemoteQueryOverride\\\\|withOverride\" C:/Users/isdnb/Documents/code/berichtgen/node_modules/@sveltejs/kit --include=*.d.ts -l)",
       "mcp__svelte__list-sections",
-      "Bash(pnpx svelte-check:*)"
+      "Bash(pnpx svelte-check:*)",
+      "Bash(xargs head:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

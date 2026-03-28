@@ -1,6 +1,5 @@
 import { Parser } from '$core/parser/parser';
 import { ***REMOVED***Error } from '$lib/errors';
-import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
@@ -27,7 +26,7 @@ export class PDFParser extends Parser {
 		context: WizardFileContext,
 		scheduler: Scheduler,
 		getNewCanvas: GetCanvasFunction,
-		withImages: boolean = berichtgenStore.processPhotos
+		withImages: boolean = false
 	) {
 		if (context == null || getNewCanvas == null) {
 			throw new ***REMOVED***Error(
