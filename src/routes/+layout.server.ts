@@ -1,5 +1,5 @@
 import type { LayoutServerLoad } from './$types';
-import { db } from '$lib/server/db';
+import db from '$server/db';
 
 export const load: LayoutServerLoad = async ({
 	locals: { safeGetSession },

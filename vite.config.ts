@@ -16,7 +16,7 @@ const dirname =
 export default defineConfig({
 	plugins: [
 		nodePolyfills({
-			include: ['buffer', 'util']
+			include: ['buffer']
 		}),
 		tailwindcss(),
 		sentrySvelteKit({

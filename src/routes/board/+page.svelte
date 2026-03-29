@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Howto from '$board/components/Howto.svelte';
 	import Wizard from '$wizard/components/Wizard.svelte';
-	import { goto } from '$app/navigation';
 	import WizardDropzone from '$wizard/components/WizardDropzone.svelte';
-	import { Button } from '$lib/components/ui/button';
 	import TemplatesDialog from '$templates/components/TemplatesDialog.svelte';
+	import { goto } from '$app/navigation';
+	import { Button } from '$lib/components/ui/button';
 	import { resolve } from '$app/paths';
 	import AnimatedTokenCount from '$board/components/AnimatedTokenCount.svelte';
 

@@ -5,7 +5,6 @@
 		WizardRawDirectories,
 		WizardRawDirectory
 	} from '$wizard/types';
-
 	import Dropzone from '$board/components/Dropzone.svelte';
 	import { readCsvConfig } from '$core/parser/config_reader';
 	import { ScanReturnValue } from '$core/types';

@@ -26,11 +26,11 @@
 	} from '@lucide/svelte';
 	import { Label } from '$ui/label';
 	import DebugLoginDialog from './DebugLoginDialog.svelte';
-	import { dev } from '$app/environment';
 	import Google from '$ui/svg/Google.svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { Input } from '$ui/input';
+	import Debug from './Debug.svelte';
 
 	let { user, loggedIn, supabase, profile } = $derived(
 		getContext<UserContext>('user')()
@@ -150,9 +150,9 @@
 			<Button disabled={true} onclick={() => (otpDialogOpen = true)}
 				><KeyRound />OTP Anmeldung</Button
 			>
-			{#if dev}
+			<Debug>
 				<DebugLoginDialog />
-			{/if}
+			</Debug>
 		{/if}
 		<Button variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
 		<Button variant="outline" href="/datenschutz"

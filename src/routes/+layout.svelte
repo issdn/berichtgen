@@ -4,7 +4,7 @@
 	import '../app.css';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { goto, invalidate } from '$app/navigation';
-	import { navigating } from '$app/stores';
+	import { navigating } from '$app/state';
 	import DarkMode from '../lib/components/ui/DarkMode.svelte';
 	import { onMount, setContext } from 'svelte';
 	import Logo from '$ui/svg/Logo.svelte';
@@ -38,7 +38,7 @@
 	});
 </script>
 
-{#if $navigating}
+{#if navigating.from}
 	<div class="fixed top-0 left-0 z-50 h-0.5 w-full overflow-hidden">
 		<div class="animate-nav-beam bg-primary h-full w-1/3"></div>
 	</div>

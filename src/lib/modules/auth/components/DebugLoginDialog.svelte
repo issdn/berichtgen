@@ -3,10 +3,10 @@
 	import { resolve } from '$app/paths';
 	import { debugLoginSchema } from '$auth/schemas';
 	import type { UserContext } from '$auth/types';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
-	import { Input } from '$ui/command';
+	import { Input } from '$ui/input';
 	import { Bug } from '@lucide/svelte';
 	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -47,8 +47,8 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Trigger>
-		<Button variant="outline" class="w-full"><Bug />Debug Login</Button>
+	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}
+		><Bug />Debug Login
 	</Dialog.Trigger>
 	<Dialog.Content>
 		<Dialog.Header>

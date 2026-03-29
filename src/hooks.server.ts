@@ -6,8 +6,8 @@ import {
 	PUBLIC_SUPABASE_URL,
 	PUBLIC_SUPABASE_PUBLISHABLE_KEY
 } from '$env/static/public';
-import { checkRateLimit } from '$src/lib/server/rate_limit';
-import type { KyselyDatabase } from './lib/schema';
+import { checkRateLimit } from '$server/rate_limit';
+import type { KyselyDatabase } from '$lib/schema';
 
 const supabase: Handle = async ({ event, resolve }) => {
 	/**

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import FileDownloadButton from '$board/components/FileDownloadButton.svelte';
 	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
-	import { checkPreferredTemplate } from '$templates/utils';
+	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
 	import { wizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
@@ -19,7 +19,6 @@
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { db } from '$lib/server/db';
 	import Docx from '$ui/svg/DOCX.svelte';
 	import Pdf from '$ui/svg/PDF.svelte';
 	import Png from '$ui/svg/PNG.svelte';
@@ -140,11 +139,17 @@
 			>
 			<FileDownloadButton
 				fn={async () => {
-					const exists = await checkPreferredTemplate(db);
-					if (!exists) return;
-
 					const path = berichtgenStore.preferedTemplatePath;
-
+					if (!path) return;
+					const { exists } = await checkPreferredTemplate({ storagePath: path });
+					if (!exists) {
+						berichtgenStore.preferedTemplatePath = null;
+						toast.info(
+							'Deine bevorzugte Vorlage wurde gelöscht. Bitte wähle eine neue Vorlage aus.',
+							{ duration: Infinity, closeButton: true, dismissable: true }
+						);
+						return;
+					}
 					const templateResult = await supabase.storage
 						.from('templates')
 						.download(path!);

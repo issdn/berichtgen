@@ -2,7 +2,6 @@ import { ScanReturnValue, type ScanReturnType } from '$core/types';
 import { ***REMOVED***Error } from '$lib/errors';
 import { getArrayDepth } from '$lib/utils';
 import type { WizardRawDirectories, WizardRawDirectory } from '$wizard/types';
-import { promisify } from 'util';
 
 export function getFileListWithPreserverFolderStructure(
 	files: FileList
@@ -105,7 +104,9 @@ async function scanFiles(
 	} else if (item.isFile) {
 		return [
 			...items,
-			await promisify((item as FileSystemFileEntry).file.bind(item))
+			await new Promise<File>((resolve, reject) =>
+				(item as FileSystemFileEntry).file(resolve, reject)
+			)
 		] as WizardRawDirectories;
 	}
 	return items;

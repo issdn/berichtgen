@@ -1,4 +1,4 @@
-import { OAuthError, throwSvelteError } from '$src/lib/errors.js';
+import { OAuthError, throwSvelteError } from '$lib/errors.js';
 import { redirect } from '@sveltejs/kit';
 
 export const load = async ({ locals: { supabase }, url }) => {

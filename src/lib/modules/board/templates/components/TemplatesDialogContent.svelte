@@ -3,11 +3,12 @@
 	import { getTemplates } from '$templates/api/templates.remote';
 	import * as InputGroup from '$ui/input-group';
 	import { SearchIcon } from '@lucide/svelte';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as Dialog from '$ui/dialog/index.js';
 	import { Toggle } from 'bits-ui';
 	import TemplateList from './TemplateList.svelte';
 	import TemplateUpload from './TemplateUpload.svelte';
-let search = $state('');
+
+	let search = $state('');
 	let hideReported = $state(false);
 
 	/**

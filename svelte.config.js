@@ -17,7 +17,8 @@ const config = {
 			$auth: path.resolve('./src/lib/modules/auth'),
 			$wizard: path.resolve('./src/lib/modules/board/wizard'),
 			$board: path.resolve('./src/lib/modules/board'),
-			$ui: path.resolve('./src/lib/components/ui')
+			$ui: path.resolve('./src/lib/components/ui'),
+			$server: path.resolve('./src/lib/server'),
 		},
 		experimental: {
 			remoteFunctions: true
