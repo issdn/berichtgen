@@ -1,6 +1,5 @@
 import { Parser } from '$core/parser/parser';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
-import { ok } from 'neverthrow';
 import type { Scheduler } from 'tesseract.js';
 
 export class TXTParser extends Parser {
@@ -14,7 +13,7 @@ export class TXTParser extends Parser {
 		this.data = new TextDecoder().decode(data);
 	}
 
-	parse() {
-		return ok(this.data as string);
+	parse(): string {
+		return this.data as string;
 	}
 }

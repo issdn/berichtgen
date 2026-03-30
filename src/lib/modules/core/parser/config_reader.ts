@@ -1,25 +1,17 @@
-import { ResultAsync } from 'neverthrow';
-import { ***REMOVED***Error } from '$lib/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
+import { type Result, tryResult } from '$lib/result';
 import type { CSVConfig } from '$wizard/types';
 import { Ort } from '$wizard/enums';
 import { csvConfigSchema } from '$wizard/schemas';
 import { parseDate } from '@internationalized/date';
 
-export function readCsvConfig(file: File) {
-	return ResultAsync.fromPromise(file.arrayBuffer(), (e) =>
-		***REMOVED***Error.fromUnknown(e, 'Config Datei ist nicht lesbar')
-	).andThen(
-		ResultAsync.fromThrowable(
-			async (buffer) => {
-				const text = new TextDecoder().decode(buffer);
-				return readCsvConfigFromText(text);
-			},
-			(e) =>
-				***REMOVED***Error.fromUnknown(
-					e,
-					'Fehler beim Lesen der CSV-Konfiguration'
-				)
-		)
+export function readCsvConfig(file: File): Promise<Result<CSVConfig>> {
+	return tryResult(
+		file.arrayBuffer().then((buffer) => {
+			const text = new TextDecoder().decode(buffer);
+			return readCsvConfigFromText(text);
+		}),
+		() => new ParserError(EParserError.PARSE_FAILED)
 	);
 }
 

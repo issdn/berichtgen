@@ -1,9 +1,8 @@
 import fsm from 'svelte-fsm';
-import { fromThrowable } from 'neverthrow';
 import type { WizardFileContext } from './wizard_file_context.svelte';
 import { invalidate } from '$app/navigation';
 import type { WizardScheduler } from './wizard_scheduler.svelte';
-import { ***REMOVED***Error } from '$lib/errors';
+import { WizardError, EWizardError } from '$wizard/errors';
 import type { Entry, ResultEntry, WizardProcessStateMachine } from '$wizard/types';
 import { WizardStep } from '$wizard/enums';
 import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
@@ -30,16 +29,15 @@ export function createStateMachineForContext(
 				parseFile(context.file, context, scheduler.scheduler!, {
 					processPhotos: berichtgenStore.processPhotos,
 					rewordJSON: berichtgenStore.rewordJSON
-				}).match(
-					(result) => {
-						context.snapshot = result;
+				}).then((result) => {
+					if (result.ok) {
+						context.snapshot = result.data;
 						this.next();
-					},
-					(error) => {
-						context.error = error;
+					} else {
+						context.error = result.error;
 						this.error();
 					}
-				);
+				});
 			},
 			/** Parsed successfully — move to WAITING for user date-range input. */
 			next: () => WizardStep.WAITING,
@@ -110,29 +108,16 @@ export function createStateMachineForContext(
 					this.cancel();
 					return;
 				}
-				const throwableSpreadEntries = fromThrowable(
-					() =>
-						spreadEntriesAcrossWeeks(
-							context.snapshot as Entry[],
-							context.dateRanges!
-						),
-					(e) =>
-						***REMOVED***Error.fromUnknown(
-							e,
-							'Fehler beim Umformulieren der Einträge',
-							'SPREAD_FAILED'
-						)
-				);
-				throwableSpreadEntries().match(
-					(value) => {
-						context.snapshot = value;
-						this.next();
-					},
-					(error) => {
-						context.error = error;
-						this.error();
-					}
-				);
+				try {
+					context.snapshot = spreadEntriesAcrossWeeks(
+						context.snapshot as Entry[],
+						context.dateRanges!
+					);
+					this.next();
+				} catch (e) {
+					context.error = new WizardError(EWizardError.SPREAD_FAILED);
+					this.error();
+				}
 			},
 			next: () => WizardStep.DONE,
 			error: () => WizardStep.ERROR,

@@ -48,7 +48,12 @@
       "Bash(grep -r \"RemoteQueryOverride\\\\|withOverride\" C:/Users/isdnb/Documents/code/berichtgen/node_modules/@sveltejs/kit --include=*.d.ts -l)",
       "mcp__svelte__list-sections",
       "Bash(pnpx svelte-check:*)",
-      "Bash(xargs head:*)"
+      "Bash(xargs head:*)",
+      "mcp__plugin_context-mode_context-mode__ctx_index",
+      "Bash(pnpm check:*)",
+      "Bash(node:*)",
+      "Bash(pnpm test:*)",
+      "Bash(grep -n \"$wizard\\\\|wizard.*alias\\\\|moduleResolution\" src/lib/modules/board/wizard/completion/completion.ts src/lib/modules/board/wizard/services/wizard_scheduler.svelte.ts src/lib/modules/board/wizard/services/state_machine.ts)"
     ]
   },
   "enableAllProjectMcpServers": true,

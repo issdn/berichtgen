@@ -1,7 +1,7 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { ok, err } from 'neverthrow';
+import { describe, test, expect, vi } from 'vitest';
+import { okResult, errResult } from '$lib/result';
 import { FileTypes } from '$wizard/enums';
-import { ***REMOVED***Error } from '$lib/errors';
+import { ParserError, EParserError } from '$lib/modules/core/parser/errors';
 import type { ResultEntry } from '$wizard/types';
 
 // ─── Module mocks ─────────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ vi.mock('$wizard/services/wizard_scheduler.svelte', () => ({
 vi.mock('$core/parser/txt_parser', () => ({
 	TXTParser: vi.fn().mockImplementation(() => ({
 		init: vi.fn().mockResolvedValue(undefined),
-		parse: vi.fn().mockReturnValue(ok('decoded text'))
+		parse: vi.fn().mockReturnValue('decoded text')
 	}))
 }));
 
@@ -24,10 +24,10 @@ vi.mock('$core/parser/json_parser', () => ({
 	JSONParser: vi.fn().mockImplementation(() => ({
 		init: vi.fn().mockResolvedValue(undefined),
 		/** Inherited parse() returns the raw text string. */
-		parse: vi.fn().mockReturnValue(ok('raw json text')),
+		parse: vi.fn().mockReturnValue('raw json text'),
 		/** toSchema() returns validated ResultEntry[]. */
 		toSchema: vi.fn().mockReturnValue(
-			ok([{ text: 'Eintrag', datum: '2024-01-01', ort: 'BETRIEB', stunden: 8 }] as ResultEntry[])
+			okResult([{ text: 'Eintrag', datum: '2024-01-01', ort: 'BETRIEB', stunden: 8 }] as ResultEntry[])
 		)
 	}))
 }));
@@ -84,8 +84,8 @@ describe('parseFile', () => {
 				SCHEDULER,
 				DEFAULT_OPTIONS
 			);
-			expect(result.isOk()).toBe(true);
-			expect(result._unsafeUnwrap()).toBe('decoded text');
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.data).toBe('decoded text');
 		});
 
 		test('parses CSV file via the same TXT parser path', async () => {
@@ -96,8 +96,8 @@ describe('parseFile', () => {
 				SCHEDULER,
 				DEFAULT_OPTIONS
 			);
-			expect(result.isOk()).toBe(true);
-			expect(result._unsafeUnwrap()).toBe('decoded text');
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.data).toBe('decoded text');
 		});
 	});
 
@@ -108,9 +108,9 @@ describe('parseFile', () => {
 				...DEFAULT_OPTIONS,
 				rewordJSON: false
 			});
-			expect(result.isOk()).toBe(true);
+			expect(result.ok).toBe(true);
 			// toSchema() was called → returns ResultEntry[]
-			expect(Array.isArray(result._unsafeUnwrap())).toBe(true);
+			expect(result.ok && Array.isArray(result.data)).toBe(true);
 		});
 
 		test('returns raw text for AI reformatting when rewordJSON=true', async () => {
@@ -119,27 +119,27 @@ describe('parseFile', () => {
 				...DEFAULT_OPTIONS,
 				rewordJSON: true
 			});
-			expect(result.isOk()).toBe(true);
+			expect(result.ok).toBe(true);
 			// parse() was called → returns raw string
-			expect(result._unsafeUnwrap()).toBe('raw json text');
+			expect(result.ok && result.data).toBe('raw json text');
 		});
 
 		test('propagates toSchema() errors', async () => {
 			const { JSONParser } = await import('$core/parser/json_parser');
-			const parseError = new ***REMOVED***Error('PARSE_FAILED', 'Ungültiges JSON');
-			vi.mocked(JSONParser).mockImplementationOnce(() => ({
+			const parseError = new ParserError(EParserError.PARSE_FAILED);
+			vi.mocked(JSONParser).mockImplementationOnce((() => ({
 				init: vi.fn().mockResolvedValue(undefined),
-				parse: vi.fn().mockReturnValue(ok('raw')),
-				toSchema: vi.fn().mockReturnValue(err(parseError))
-			}));
+				parse: vi.fn().mockReturnValue('raw'),
+				toSchema: vi.fn().mockReturnValue(errResult(parseError))
+			})) as never);
 
 			const file = makeFile('{invalid}', FileTypes.JSON, 'bad.json');
 			const result = await parseFile(file, new WizardFileContext(file), SCHEDULER, {
 				...DEFAULT_OPTIONS,
 				rewordJSON: false
 			});
-			expect(result.isErr()).toBe(true);
-			expect(result._unsafeUnwrapErr()).toBe(parseError);
+			expect(result.ok).toBe(false);
+			expect(!result.ok && result.error).toBe(parseError);
 		});
 	});
 
@@ -152,8 +152,8 @@ describe('parseFile', () => {
 				SCHEDULER,
 				DEFAULT_OPTIONS
 			);
-			expect(result.isOk()).toBe(true);
-			expect(result._unsafeUnwrap()).toBe('ocr ergebnis');
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.data).toBe('ocr ergebnis');
 		});
 
 		test('parses JPG file via OCR', async () => {
@@ -164,8 +164,8 @@ describe('parseFile', () => {
 				SCHEDULER,
 				DEFAULT_OPTIONS
 			);
-			expect(result.isOk()).toBe(true);
-			expect(result._unsafeUnwrap()).toBe('ocr ergebnis');
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.data).toBe('ocr ergebnis');
 		});
 	});
 
@@ -178,8 +178,8 @@ describe('parseFile', () => {
 				SCHEDULER,
 				DEFAULT_OPTIONS
 			);
-			expect(result.isOk()).toBe(true);
-			expect(result._unsafeUnwrap()).toBe('pdf text');
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.data).toBe('pdf text');
 		});
 	});
 
@@ -192,8 +192,8 @@ describe('parseFile', () => {
 				SCHEDULER,
 				DEFAULT_OPTIONS
 			);
-			expect(result.isOk()).toBe(true);
-			expect(result._unsafeUnwrap()).toBe('docx text');
+			expect(result.ok).toBe(true);
+			expect(result.ok && result.data).toBe('docx text');
 		});
 	});
 
@@ -206,16 +206,16 @@ describe('parseFile', () => {
 				SCHEDULER,
 				DEFAULT_OPTIONS
 			);
-			expect(result.isErr()).toBe(true);
-			expect(result._unsafeUnwrapErr().type).toBe('INVALID_FILE');
+			expect(result.ok).toBe(false);
+			expect(!result.ok && result.error.apiError).toBe(EParserError.INVALID_FILE);
 		});
 
 		test('wraps parser init errors as PARSE_FAILED', async () => {
 			const { TXTParser } = await import('$core/parser/txt_parser');
-			vi.mocked(TXTParser).mockImplementationOnce(() => ({
+			vi.mocked(TXTParser).mockImplementationOnce((() => ({
 				init: vi.fn().mockRejectedValue(new Error('Lesefehler')),
 				parse: vi.fn()
-			}));
+			})) as never);
 
 			const file = makeFile('data', FileTypes.TXT, 'fail.txt');
 			const result = await parseFile(
@@ -224,8 +224,8 @@ describe('parseFile', () => {
 				SCHEDULER,
 				DEFAULT_OPTIONS
 			);
-			expect(result.isErr()).toBe(true);
-			expect(result._unsafeUnwrapErr().type).toBe('PARSE_FAILED');
+			expect(result.ok).toBe(false);
+			expect(!result.ok && result.error.apiError).toBe(EParserError.PARSE_FAILED);
 		});
 	});
 });

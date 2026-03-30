@@ -1,5 +1,5 @@
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
-import type { APIError, ErrorBody } from '$src/lib/errors';
+import type { AnyErrorValue } from '$src/lib/errors';
 import type { KyselyDatabase } from './lib/schema';
 
 declare global {
@@ -19,7 +19,7 @@ declare global {
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-		interface Error extends Omit<ErrorBody<APIError>, 'httpCode'> {}
+		interface Error extends Omit<AnyErrorValue, 'httpCode'> {}
 		// interface PageState {}
 		// interface Platform {}
 	}

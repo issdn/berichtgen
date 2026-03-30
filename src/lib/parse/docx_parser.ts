@@ -16,7 +16,7 @@ import type {
 import { Parser } from '$core/parser/parser';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
 import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
-import { ***REMOVED***Error } from '$lib/errors';
+import { ParserError, EParserError } from '$lib/modules/core/parser/errors';
 
 export type DOCXFileData = {
 	images: Map<string, Uint8Array<ArrayBufferLike>>;
@@ -121,10 +121,7 @@ export class DOCXParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new ***REMOVED***Error(
-				'DEVELOPERS_FAULT',
-				'FileWizard wurde nicht initialisiert.'
-			);
+			throw new ParserError(EParserError.DEVELOPERS_FAULT);
 		const result = [];
 		for (let i = 0; i < this.data.textsOrRelIds.length; i += this.batchSize) {
 			if (this.context.cancelled) break;
@@ -144,10 +141,7 @@ export class DOCXParser extends Parser {
 
 	parseAST(): DocxDocument {
 		if (this.data === null)
-			throw new ***REMOVED***Error(
-				'DEVELOPERS_FAULT',
-				'FileWizard wurde nicht initialisiert.'
-			);
+			throw new ParserError(EParserError.DEVELOPERS_FAULT);
 
 		const docBody =
 			((this.data.xml['w:document'] as Record<string, unknown>)?.[

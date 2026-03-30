@@ -1,5 +1,5 @@
 import { ScanReturnValue, type ScanReturnType } from '$core/types';
-import { ***REMOVED***Error } from '$lib/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import { getArrayDepth } from '$lib/utils';
 import type { WizardRawDirectories, WizardRawDirectory } from '$wizard/types';
 
@@ -29,10 +29,7 @@ export async function get2DimensionalDirectories(
 	} else if (returnType === ScanReturnValue.DATA_TRANSFER_ITEM) {
 		return _get2DimensionalDirectories(items, scanSystemFileEntries);
 	} else {
-		throw new ***REMOVED***Error(
-			'INVALID_FILE',
-			'Unbekannter Scan-Typ: ' + returnType
-		);
+		throw new ParserError(EParserError.INVALID_FILE);
 	}
 }
 
@@ -45,10 +42,7 @@ async function _get2DimensionalDirectories<T>(
 	[...items].forEach((item) => {
 		const entry = item.webkitGetAsEntry();
 		if (entry === null)
-			throw new ***REMOVED***Error(
-				'INVALID_FILE',
-				'Fehler beim Lesen einer Datei'
-			);
+			throw new ParserError(EParserError.INVALID_FILE);
 		if (entry.isFile) {
 			topLevelFilesPromises.push(scanFunction(entry) as Promise<T>);
 		} else {

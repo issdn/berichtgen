@@ -12,11 +12,11 @@
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import {
 	ECommonServerError,
-	ETemplateReportError,
 	throwSvelteError
 } from '$lib/errors';
+import { ETemplateError } from '$wizard/errors';
 import { supabaseAdmin } from '$lib/server/admin';
-import { db } from '$lib/server/db';
+import db from '$lib/server/db';
 import * as Sentry from '@sentry/sveltekit';
 import { sql } from 'kysely';
 
@@ -107,12 +107,12 @@ export function validateCanReport(
 	userId: string,
 	existing: { id: string } | undefined
 ): void {
-	if (!template) throwSvelteError(ETemplateReportError.TEMPLATE_NOT_FOUND);
+	if (!template) throwSvelteError(ETemplateError.TEMPLATE_NOT_FOUND);
 	if (template!.user_id === userId)
-		throwSvelteError(ETemplateReportError.CANNOT_REPORT_OWN);
+		throwSvelteError(ETemplateError.CANNOT_REPORT_OWN);
 	if (template!.safe_marked_at !== null)
-		throwSvelteError(ETemplateReportError.TEMPLATE_SAFE);
-	if (existing) throwSvelteError(ETemplateReportError.ALREADY_REPORTED);
+		throwSvelteError(ETemplateError.TEMPLATE_SAFE);
+	if (existing) throwSvelteError(ETemplateError.ALREADY_REPORTED);
 }
 
 // ─── Database functions ───────────────────────────────────────────────────────

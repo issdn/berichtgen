@@ -1,7 +1,7 @@
 import { Parser } from './parser';
 import { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
 import type { Scheduler, ImageLike } from 'tesseract.js';
-import { ***REMOVED***Error } from '$lib/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import { XMLParser } from 'fast-xml-parser';
 import JSZip from 'jszip';
 import type {
@@ -119,10 +119,7 @@ export class DOCXParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new ***REMOVED***Error(
-				'DEVELOPERS_FAULT',
-				'FileWizard wurde nicht initialisiert.'
-			);
+			throw new ParserError(EParserError.DEVELOPERS_FAULT);
 		const result = [];
 		for (let i = 0; i < this.data.textsOrRelIds.length; i += this.batchSize) {
 			if (this.context.cancelled) break;
@@ -142,10 +139,7 @@ export class DOCXParser extends Parser {
 
 	parseAST(): DocxDocument {
 		if (this.data === null)
-			throw new ***REMOVED***Error(
-				'DEVELOPERS_FAULT',
-				'FileWizard wurde nicht initialisiert.'
-			);
+			throw new ParserError(EParserError.DEVELOPERS_FAULT);
 
 		const docBody =
 			((this.data.xml['w:document'] as Record<string, unknown>)?.[

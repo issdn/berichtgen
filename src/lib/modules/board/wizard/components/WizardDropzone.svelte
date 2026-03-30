@@ -83,38 +83,34 @@
 			return otherFiles;
 		}
 		const config = await readCsvConfig(configFile);
-		return config.match(
-			(config) => {
-				const notFoundFiles: string[] = [];
-				const nameToFileMap = new Map(otherFiles.map((f) => [f.file.name, f]));
-				config.forEach(({ file, ort, ranges }) => {
-					const wizardFile = nameToFileMap.get(file);
-					if (wizardFile) {
-						wizardFile.config = {
-							ranges: ranges.map((obj, i) => ({ ...obj, id: i })),
-							ort
-						};
-					} else {
-						notFoundFiles.push(file);
-					}
-				});
-				if (config.length < otherFiles.length) {
-					toast('Nicht alle Dateien in der Konfiguration gefunden.');
-				}
-				if (notFoundFiles.length > 0) {
-					toast.error(
-						`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${notFoundFiles.join(', ')}`
-					);
-				}
-				return otherFiles;
-			},
-			(err) => {
-				toast.error(
-					`Fehler beim Lesen der Konfiguration: ${err.message || 'Unbekannter Fehler'}`
-				);
-				return otherFiles;
+		if (!config.ok) {
+			toast.error(
+				`Fehler beim Lesen der Konfiguration: ${config.error.message || 'Unbekannter Fehler'}`
+			);
+			return otherFiles;
+		}
+		const notFoundFiles: string[] = [];
+		const nameToFileMap = new Map(otherFiles.map((f) => [f.file.name, f]));
+		config.data.forEach(({ file, ort, ranges }) => {
+			const wizardFile = nameToFileMap.get(file);
+			if (wizardFile) {
+				wizardFile.config = {
+					ranges: ranges.map((obj, i) => ({ ...obj, id: i })),
+					ort
+				};
+			} else {
+				notFoundFiles.push(file);
 			}
-		);
+		});
+		if (config.data.length < otherFiles.length) {
+			toast('Nicht alle Dateien in der Konfiguration gefunden.');
+		}
+		if (notFoundFiles.length > 0) {
+			toast.error(
+				`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${notFoundFiles.join(', ')}`
+			);
+		}
+		return otherFiles;
 	}
 </script>
 

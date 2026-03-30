@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { json } from '@sveltejs/kit';
 import { throwSvelteError, ECommonServerError } from '$lib/errors';
 import * as Sentry from '@sentry/sveltekit';
-import { db } from '$lib/server/db';
+import db from '$lib/server/db';
 import { sql } from 'kysely';
 import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from '$env/static/private';
 

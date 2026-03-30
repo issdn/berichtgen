@@ -91,7 +91,6 @@
 		"jszip": "^3.10.1",
 		"kysely": "^0.28.13",
 		"mode-watcher": "^1.1.0",
-		"neverthrow": "^8.2.0",
 		"openai": "^5.23.2",
 		"pdfjs-dist": "5.3.31",
 		"pg": "^8.20.0",

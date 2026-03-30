@@ -15,7 +15,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { ETemplateReportError, ECommonServerError } from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
+import { ETemplateError } from '$lib/modules/board/wizard/errors';
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
 
@@ -161,14 +162,14 @@ describe('validateCanReport', () => {
 
 	test('throws TEMPLATE_NOT_FOUND when template is undefined', () => {
 		expect(() => validateCanReport(undefined, userId, undefined)).toThrow(
-			ETemplateReportError.TEMPLATE_NOT_FOUND.message
+			ETemplateError.TEMPLATE_NOT_FOUND.message
 		);
 	});
 
 	test('throws CANNOT_REPORT_OWN when user owns the template', () => {
 		const ownTemplate = makeRow({ user_id: userId });
 		expect(() => validateCanReport(ownTemplate, userId, undefined)).toThrow(
-			ETemplateReportError.CANNOT_REPORT_OWN.message
+			ETemplateError.CANNOT_REPORT_OWN.message
 		);
 	});
 
@@ -178,14 +179,14 @@ describe('validateCanReport', () => {
 			safe_marked_at: '2024-01-01T00:00:00Z'
 		});
 		expect(() => validateCanReport(safeTemplate, userId, undefined)).toThrow(
-			ETemplateReportError.TEMPLATE_SAFE.message
+			ETemplateError.TEMPLATE_SAFE.message
 		);
 	});
 
 	test('throws ALREADY_REPORTED when an existing report is present', () => {
 		expect(() =>
 			validateCanReport(validTemplate, userId, existingReport)
-		).toThrow(ETemplateReportError.ALREADY_REPORTED.message);
+		).toThrow(ETemplateError.ALREADY_REPORTED.message);
 	});
 });
 
@@ -268,7 +269,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ETemplateReportError.TEMPLATE_NOT_FOUND.message);
+		).rejects.toThrow(ETemplateError.TEMPLATE_NOT_FOUND.message);
 	});
 
 	test('throws CANNOT_REPORT_OWN when reporter is the owner', async () => {
@@ -278,7 +279,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ETemplateReportError.CANNOT_REPORT_OWN.message);
+		).rejects.toThrow(ETemplateError.CANNOT_REPORT_OWN.message);
 	});
 
 	test('throws ALREADY_REPORTED when a report already exists', async () => {
@@ -288,7 +289,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ETemplateReportError.ALREADY_REPORTED.message);
+		).rejects.toThrow(ETemplateError.ALREADY_REPORTED.message);
 	});
 
 	test('throws DATABASE_ERROR when the insert fails', async () => {

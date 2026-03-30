@@ -2,17 +2,16 @@ import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import {
-	E***REMOVED***Error,
+	***REMOVED***Error,
 	ECommonServerError,
-	ECompletionException,
 	throwSvelteError
 } from '$lib/errors';
+import { ECompletionException, EWizardError } from '$wizard/errors';
 // import OpenAI from 'openai';
 import * as genai from '@google/genai';
 import { LocalTokenizer } from '@google/genai/tokenizer';
-import { ok, ResultAsync } from 'neverthrow';
 import { json } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
+import db from '$lib/server/db';
 import { sql } from 'kysely';
 import * as Sentry from '@sentry/sveltekit';
 import {
@@ -42,7 +41,7 @@ async function deductUserTokens(userId: string, amount: number) {
 			.executeTakeFirst();
 
 		if (!current || current.tokens < amount) {
-			throw new Error('insufficient_tokens');
+			throw new ***REMOVED***Error(ECompletionException.NOT_ENOUGH_TOKENS);
 		}
 
 		await trx
@@ -52,7 +51,7 @@ async function deductUserTokens(userId: string, amount: number) {
 			.execute();
 	});
 
-	return ok(amount);
+	return amount;
 }
 
 /**
@@ -129,19 +128,12 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	const totalDeducted = fittingTokenCounts.reduce((sum, t) => sum + t, 0);
 
 	// Atomically deduct tokens for all fitting items before any Gemini call
-	const deductResult = await ResultAsync.fromPromise(
-		deductUserTokens(user.id, totalDeducted),
-		(e) => {
-			if (e instanceof Error && e.message === 'insufficient_tokens') {
-				return ECompletionException.NOT_ENOUGH_TOKENS;
-			}
-			Sentry.captureException(e);
-			return ECompletionException.INTERNAL;
-		}
-	);
-
-	if (deductResult.isErr()) {
-		return throwSvelteError(deductResult.error);
+	try {
+		await deductUserTokens(user.id, totalDeducted);
+	} catch (e) {
+		if (e instanceof ***REMOVED***Error) return throwSvelteError(e.apiError);
+		Sentry.captureException(e);
+		return throwSvelteError(ECompletionException.INTERNAL);
 	}
 
 	// Send all fitting items to Gemini in parallel
@@ -198,7 +190,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	// If any item failed JSON parsing, refund all tokens and error out
 	if (parseErrorCount > 0) {
 		await refundUserTokens(user.id, totalDeducted);
-		return throwSvelteError(E***REMOVED***Error.INVALID_JSON_FROM_AI);
+		return throwSvelteError(EWizardError.INVALID_JSON_FROM_AI);
 	}
 
 	const response: BatchCompletionApiResponse = {

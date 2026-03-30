@@ -2,8 +2,8 @@ import { TXTParser } from './txt_parser';
 import { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
 import type { Scheduler } from 'tesseract.js';
 import { fullResultSchema } from '$wizard/schemas';
-import { ok, err } from 'neverthrow';
-import { ***REMOVED***Error } from '$lib/errors';
+import { okResult, errResult, type Result } from '$lib/result';
+import { ParserError, EParserError } from '$core/parser/errors';
 import type { ResultEntry } from '$wizard/types';
 
 export class JSONParser extends TXTParser {
@@ -11,26 +11,16 @@ export class JSONParser extends TXTParser {
 		super(context, scheduler);
 	}
 
-	toSchema() {
+	toSchema(): Result<ResultEntry[]> {
 		try {
 			const json = JSON.parse(this.data as string);
-			const { data, error, success } = fullResultSchema.safeParse(json);
+			const { data, success } = fullResultSchema.safeParse(json);
 			if (success) {
-				return ok(data as ResultEntry[]);
+				return okResult(data as ResultEntry[]);
 			}
-			return err(
-				new ***REMOVED***Error(
-					'PARSE_FAILED',
-					`Fehler beim Parsen des JSON: ${error.issues[0].message}`
-				)
-			);
+			return errResult(new ParserError(EParserError.PARSE_FAILED));
 		} catch {
-			return err(
-				new ***REMOVED***Error(
-					'PARSE_FAILED',
-					'Fehler beim Parsen des JSON: Ungültiges JSON-Format'
-				)
-			);
+			return errResult(new ParserError(EParserError.PARSE_FAILED));
 		}
 	}
 }

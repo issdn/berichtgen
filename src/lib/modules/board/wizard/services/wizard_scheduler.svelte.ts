@@ -2,6 +2,7 @@ import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 import { createStateMachineForContext } from './state_machine';
 import { ***REMOVED***Error } from '$lib/errors';
+import { WizardError, EWizardError } from '$wizard/errors';
 import { WizardFileContext } from './wizard_file_context.svelte';
 import type { Scheduler } from 'tesseract.js';
 import type {
@@ -225,13 +226,13 @@ export class WizardScheduler {
 			const items = batch.map(({ text, ort }) => ({ text, ort }));
 			const result = await sendBatchCompletion(items);
 
-			if (result.isErr()) {
+			if (!result.ok) {
 				errorCause = result.error;
 				batchHalted = true;
 				break;
 			}
 
-			const { results, insufficient_tokens } = result.value;
+			const { results, insufficient_tokens } = result.data;
 
 			for (let i = 0; i < batch.length; i++) {
 				const { fileIndex, chunkIndex } = batch[i];
@@ -245,10 +246,7 @@ export class WizardScheduler {
 			}
 
 			if (insufficient_tokens) {
-				errorCause = new ***REMOVED***Error(
-					'COMPLETION_FAILED',
-					'Nicht genügend Token für alle Dateien.'
-				);
+				errorCause = new WizardError(EWizardError.COMPLETION_FAILED);
 				batchHalted = true;
 			}
 		}
@@ -267,10 +265,7 @@ export class WizardScheduler {
 			if (!allPresent) {
 				file.context.error =
 					errorCause ??
-					new ***REMOVED***Error(
-						'COMPLETION_FAILED',
-						'KI-Verarbeitung fehlgeschlagen.'
-					);
+					new WizardError(EWizardError.COMPLETION_FAILED);
 				file.machine.error();
 			} else {
 				const combined = fileChunks.flatMap(

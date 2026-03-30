@@ -1,7 +1,7 @@
 import { describe, test, expect, vi } from 'vitest';
 import { WizardStep } from '$wizard/enums';
 import { CalendarDate } from '@internationalized/date';
-import { ok, okAsync } from 'neverthrow';
+import { okResult } from '$lib/result';
 import type { Scheduler } from 'tesseract.js';
 
 // ---------------------------------------------------------------------------
@@ -55,11 +55,11 @@ const AI_RESULT = 'KI: Montag: Programmieren';
 describe('State machine full lifecycle', () => {
 	test('INITIALISING → PROCESSING → WAITING → BATCH_PENDING → AI_COMPLETION → TIME_SPREADING → DONE', async () => {
 		// The parse service returns the file content instantly.
-		mockParseFile.mockReturnValue(okAsync(DUMMY_TEXT));
+		mockParseFile.mockResolvedValue(okResult(DUMMY_TEXT));
 
 		// The mocked server responds instantly with a prefixed version of the text.
 		mockSendBatch.mockResolvedValue(
-			ok({ results: [[AI_RESULT]], insufficient_tokens: false })
+			okResult({ results: [[AI_RESULT]], insufficient_tokens: false })
 		);
 
 		// Real WizardScheduler — parse_service is mocked so no OCR workers needed.

@@ -97,7 +97,7 @@ vi.mock('$src/lib/completion/prompt', () => ({
 	getContextPrompt: vi.fn().mockReturnValue('system-prompt')
 }));
 vi.mock('$src/lib/constants', () => ({ DEFAULT_MODEL: 'gemini-default' }));
-vi.mock('$lib/server/db', () => ({ db }));
+vi.mock('$lib/server/db', () => db);
 
 // ---------------------------------------------------------------------------
 // Imports (after mocks)

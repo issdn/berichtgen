@@ -1,5 +1,5 @@
 import { Parser } from '$core/parser/parser';
-import { ***REMOVED***Error } from '$lib/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
@@ -29,10 +29,7 @@ export class PDFParser extends Parser {
 		withImages: boolean = false
 	) {
 		if (context == null || getNewCanvas == null) {
-			throw new ***REMOVED***Error(
-				'DEVELOPERS_FAULT',
-				'To use text from image extraction you have to pass getNewCanvas.'
-			);
+			throw new ParserError(EParserError.DEVELOPERS_FAULT);
 		}
 		super(context, scheduler, withImages);
 		this.getNewCanvas = getNewCanvas;
@@ -63,10 +60,7 @@ export class PDFParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new ***REMOVED***Error(
-				'DEVELOPERS_FAULT',
-				'FileWizard wurde nicht initialisiert.'
-			);
+			throw new ParserError(EParserError.DEVELOPERS_FAULT);
 		const result = [];
 		for (let i = 0; i < this.data.length; i += this.batchSize) {
 			if (this.context.cancelled) break;

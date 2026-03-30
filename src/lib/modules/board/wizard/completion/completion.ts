@@ -1,8 +1,8 @@
-import { ***REMOVED***Error } from '$lib/errors';
+import { WizardError, EWizardError } from '$wizard/errors';
+import { type Result, tryResult } from '$lib/result';
 import type { Ort } from '$wizard/enums';
 import type { BatchCompletionApiResponse } from '$wizard/schemas';
 import type { CompletionResult } from '$wizard/types';
-import { ResultAsync } from 'neverthrow';
 
 /** Maximum total UTF-8 byte size for a single batch request (4 MB). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
@@ -93,8 +93,8 @@ export function createBatchesBySize<T extends { text: string }>(
  */
 export function sendBatchCompletion(
 	items: Array<{ text: string; ort: Ort }>
-): ResultAsync<BatchCompletionApiResponse, ***REMOVED***Error> {
-	return ResultAsync.fromPromise(
+): Promise<Result<BatchCompletionApiResponse>> {
+	return tryResult(
 		fetch('/board/user/completion', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -102,19 +102,11 @@ export function sendBatchCompletion(
 		}).then(async (res) => {
 			const data = await res.json();
 			if (res.status >= 400) {
-				throw new ***REMOVED***Error(
-					'INVALID_JSON_FROM_AI',
-					(data as { message?: string }).message ?? 'Unbekannter Fehler'
-				);
+				throw new WizardError(EWizardError.INVALID_JSON_FROM_AI);
 			}
 			return data as BatchCompletionApiResponse;
 		}),
-		(e) =>
-			***REMOVED***Error.fromUnknown(
-				e,
-				'Fehler beim Abrufen der KI-Vervollständigung',
-				'INVALID_JSON_FROM_AI'
-			)
+		() => new WizardError(EWizardError.INVALID_JSON_FROM_AI)
 	);
 }
 

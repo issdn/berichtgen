@@ -3,7 +3,7 @@ import { STRIPE_SECRET_KEY } from '$env/static/private';
 import { json } from '@sveltejs/kit';
 import * as Sentry from '@sentry/sveltekit';
 import { ECommonServerError, throwSvelteError } from '$lib/errors';
-import { db } from '$lib/server/db';
+import db from '$lib/server/db';
 // initialize Stripe
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
