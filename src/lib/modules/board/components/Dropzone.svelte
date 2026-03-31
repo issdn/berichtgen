@@ -76,6 +76,7 @@
 	}
 
 	async function handlePaste(e: ClipboardEvent) {
+		if (!e.clipboardData?.files.length) return;
 		await extractAndHandleFiles(e.clipboardData);
 	}
 

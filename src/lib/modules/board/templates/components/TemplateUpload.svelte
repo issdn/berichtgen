@@ -9,6 +9,9 @@
 	import { FileTypes } from '$wizard/enums';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { toast } from 'svelte-sonner';
+	import { getContext } from 'svelte';
+
+	const mutation = getContext<{ start(): void; end(): void }>('templatesMutation');
 
 	const {
 		query
@@ -50,6 +53,7 @@
 
 	async function doUpload(file: File) {
 		isPending = true;
+		mutation?.start();
 		try {
 			const data = new Uint8Array(await file.arrayBuffer());
 			await uploadTemplate({
@@ -66,6 +70,7 @@
 			isPending = false;
 			pendingFile = null;
 			confirmOpen = false;
+			mutation?.end();
 		}
 	}
 </script>

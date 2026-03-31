@@ -20,3 +20,8 @@
 	by default. Override in loaders if you need specific fixture data.
 -->
 <Story name="Standard" />
+
+<Story
+	name="LoggedIn"
+	decorators={[() => ({ Component: TemplatesContextDecorator, props: { loggedIn: true, userId: 'user-story-a' } })]}
+/>

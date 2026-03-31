@@ -10,10 +10,7 @@
  */
 
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import {
-	ECommonServerError,
-	throwSvelteError
-} from '$lib/errors';
+import { ECommonServerError, throwSvelteError } from '$lib/errors';
 import { ETemplateError } from '$wizard/errors';
 import { supabaseAdmin } from '$lib/server/admin';
 import db from '$lib/server/db';

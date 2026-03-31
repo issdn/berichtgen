@@ -10,6 +10,7 @@
 	import Logo from '$ui/svg/Logo.svelte';
 	import { resolve } from '$app/paths';
 	import SettingsPopover from '$auth/components/SettingsPopover.svelte';
+	import ProgressBar from '$ui/ProgressBar.svelte';
 
 	let { data, children } = $props();
 
@@ -38,11 +39,7 @@
 	});
 </script>
 
-{#if navigating.from}
-	<div class="fixed top-0 left-0 z-50 h-0.5 w-full overflow-hidden">
-		<div class="animate-nav-beam bg-primary h-full w-1/3"></div>
-	</div>
-{/if}
+<ProgressBar visible={!!navigating.to} class="fixed top-0 left-0 z-50" />
 
 <div
 	class="h-nav flex w-full flex-row items-center justify-between px-4 md:px-8"

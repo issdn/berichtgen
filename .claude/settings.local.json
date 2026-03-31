@@ -53,7 +53,12 @@
       "Bash(pnpm check:*)",
       "Bash(node:*)",
       "Bash(pnpm test:*)",
-      "Bash(grep -n \"$wizard\\\\|wizard.*alias\\\\|moduleResolution\" src/lib/modules/board/wizard/completion/completion.ts src/lib/modules/board/wizard/services/wizard_scheduler.svelte.ts src/lib/modules/board/wizard/services/state_machine.ts)"
+      "Bash(grep -n \"$wizard\\\\|wizard.*alias\\\\|moduleResolution\" src/lib/modules/board/wizard/completion/completion.ts src/lib/modules/board/wizard/services/wizard_scheduler.svelte.ts src/lib/modules/board/wizard/services/state_machine.ts)",
+      "Bash(grep -r \"progress\\\\|NProgress\\\\|nprogress\\\\|LoadingBar\\\\|TopBar\\\\|navigation.*bar\\\\|bar.*navigation\" --include=*.svelte --include=*.ts -l src/)",
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx shadcn-svelte@latest add empty)",
+      "Bash(printf \"y\\\\nn\\\\n\")"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -49,10 +49,15 @@ export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
 ) => {
 	let timeout: ReturnType<typeof setTimeout>;
 
-	return (...args: Parameters<F>) => {
+	const debounced = (...args: Parameters<F>): void => {
 		clearTimeout(timeout);
 		timeout = setTimeout(() => func(...args), waitFor);
 	};
+
+	/** Cancel any pending invocation. Safe to call multiple times. */
+	debounced.cancel = (): void => clearTimeout(timeout);
+
+	return debounced;
 };
 
 export function clamp(num: number, min: number, max: number) {

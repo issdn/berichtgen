@@ -51,6 +51,7 @@
 	} = $props();
 
 	const { user } = getContext<UserContext>('user')();
+	const mutation = getContext<{ start(): void; end(): void }>('templatesMutation');
 
 	let reportDialogOpen = $state(false);
 
@@ -114,6 +115,7 @@
 	}
 
 	async function undoReport() {
+		mutation?.start();
 		try {
 			await deleteReport({ templateId: template.id }).updates(
 				reportOverride(false)
@@ -123,11 +125,14 @@
 			toast.error('Fehler beim Zurückziehen.', {
 				description: toErrorBody(e).message
 			});
+		} finally {
+			mutation?.end();
 		}
 	}
 
 	async function submitDelete() {
 		deletePending = true;
+		mutation?.start();
 		try {
 			await deleteTemplate({ storagePath: template.storage_path }).updates(
 				query.withOverride((result) => ({
@@ -142,11 +147,13 @@
 			});
 		} finally {
 			deletePending = false;
+			mutation?.end();
 		}
 	}
 
 	async function submitReport() {
 		reportPending = true;
+		mutation?.start();
 		try {
 			await reportTemplate({
 				templateId: template.id,
@@ -163,6 +170,7 @@
 			});
 		} finally {
 			reportPending = false;
+			mutation?.end();
 		}
 	}
 </script>
