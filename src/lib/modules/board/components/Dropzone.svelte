@@ -72,7 +72,10 @@
 	}
 
 	async function handleChange(e: Event) {
-		await extractAndHandleFiles((e.target as HTMLInputElement).files);
+		const target = e.target as HTMLInputElement;
+		await extractAndHandleFiles(target.files);
+		// Reset value so selecting the same file again triggers the change event.
+		target.value = '';
 	}
 
 	async function handlePaste(e: ClipboardEvent) {
