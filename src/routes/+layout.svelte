@@ -39,7 +39,9 @@
 	});
 </script>
 
-<ProgressBar visible={!!navigating.to} class="fixed top-0 left-0 z-50" />
+{#await navigating.complete}
+	<ProgressBar visible class="fixed top-0 left-0 z-50" />
+{/await}
 
 <div
 	class="h-nav flex w-full flex-row items-center justify-between px-4 md:px-8"

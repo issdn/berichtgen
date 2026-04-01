@@ -58,7 +58,10 @@
 			Sentry.captureException(e);
 			toast.error(
 				'Stripe-Fehler: ' +
-					(e instanceof Error ? e.message : 'Ursache unbekannt')
+					(e instanceof Error ? e.message : 'Ursache unbekannt'),
+				{
+					duration: Infinity
+				}
 			);
 		} finally {
 			loadingIntent = false;
@@ -67,24 +70,41 @@
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
-		if (processing || elements === null) return;
+		if (processing || !elements || !stripe || !clientSecret) return;
 
 		processing = true;
 
-		const result = await stripe?.confirmPayment({
+		// elements.submit() must be called before confirmPayment() in the deferred flow.
+		const { error: submitError } = await elements.submit();
+		if (submitError) {
+			processing = false;
+			toast.error(submitError.message ?? 'Fehler beim Vorbereiten der Zahlung');
+			return;
+		}
+
+		const result = await stripe.confirmPayment({
 			elements,
-			clientSecret: clientSecret!,
+			clientSecret,
 			confirmParams: {
-				return_url: resolve('/board')
+				return_url: `${window.location.origin}${resolve('/board')}`
 			}
 		});
 
 		if (result?.error) {
 			processing = false;
 			toast.error(
-				result.error.message ?? 'Unbekannter Fehler beim Zahlungsvorgang'
+				result.error.message ?? 'Unbekannter Fehler beim Zahlungsvorgang',
+				{
+					duration: Infinity
+				}
 			);
 		} else {
+			// Toast fires before navigation — Toaster lives in the layout so it
+			// survives the page transition and is visible on /board.
+			toast.info(
+				'Zahlung wird verarbeitet. Du erhältst deine Tokens sobald die Zahlung bestätigt wurde - lade die Seite dann neu.',
+				{ duration: 10_000 }
+			);
 			goto(resolve('/board'), { replaceState: true, invalidateAll: true });
 		}
 	}
@@ -307,7 +327,7 @@
 
 				<!-- Right: persistent summary -->
 				<div class="w-full lg:max-w-xs">
-					<Card.Root class="bg-muted/30 h-full">
+					<Card.Root class="bg-muted/30">
 						<Card.Header class="pb-3">
 							<Card.Title class="text-base">Zusammenfassung</Card.Title>
 						</Card.Header>
