@@ -19,12 +19,8 @@
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import { Label } from '$lib/components/ui/label';
-	import {
-		CircleAlert,
-		CircleCheck,
-		CreditCard,
-		Package
-	} from '@lucide/svelte';
+	import { CircleAlert, CreditCard, Package } from '@lucide/svelte';
+	import Stepper from '$lib/components/ui/Stepper.svelte';
 	import { LOCALE, PRICE_PER_MILLION_TOKENS_EUR } from '$lib/constants';
 	import { resolve } from '$app/paths';
 	import { getPaymentIntent, updatePaymentIntent } from './kauf.remote';
@@ -129,46 +125,11 @@
 	<div class="min-h-main flex w-full flex-col items-center p-6 lg:p-10">
 		<div class="flex w-full max-w-4xl flex-col">
 			<!-- Step indicator -->
-			<div class="mb-8 flex items-center gap-x-3">
-				<!-- Step 1 -->
-				<div class="flex items-center gap-x-2">
-					<div
-						class="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold transition-colors
-						{step === 1
-							? 'bg-primary text-primary-foreground'
-							: 'bg-primary/20 text-primary'}"
-					>
-						{#if step > 1}
-							<CircleCheck class="size-4" />
-						{:else}
-							1
-						{/if}
-					</div>
-					<span
-						class="text-sm font-medium {step === 1
-							? 'text-foreground'
-							: 'text-muted-foreground'}">Mengenauswahl</span
-					>
-				</div>
-
-				<div class="bg-border h-px w-8"></div>
-
-				<!-- Step 2 -->
-				<div class="flex items-center gap-x-2">
-					<div
-						class="flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold transition-colors
-						{step === 2
-							? 'bg-primary text-primary-foreground'
-							: 'bg-muted text-muted-foreground'}"
-					>
-						2
-					</div>
-					<span
-						class="text-sm font-medium {step === 2
-							? 'text-foreground'
-							: 'text-muted-foreground'}">Zahlungsdetails</span
-					>
-				</div>
+			<div class="mb-8">
+				<Stepper
+					steps={['Mengenauswahl', 'Zahlungsdetails']}
+					currentStep={step}
+				/>
 			</div>
 
 			<!-- Main content -->
@@ -354,7 +315,7 @@
 						<Card.Content class="pt-4">
 							<div class="flex flex-col gap-y-3 text-sm">
 								<div class="flex justify-between">
-									<span class="text-muted-foreground">Umfang</span>
+									<span class="text-muted-foreground">Menge</span>
 									<span class="font-medium">{quantity} Mio. Tokens</span>
 								</div>
 								<div class="flex justify-between">
