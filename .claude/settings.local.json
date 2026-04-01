@@ -58,7 +58,8 @@
       "Bash(grep:*)",
       "Bash(npx tsc:*)",
       "Bash(npx shadcn-svelte@latest add empty)",
-      "Bash(printf \"y\\\\nn\\\\n\")"
+      "Bash(printf \"y\\\\nn\\\\n\")",
+      "mcp__plugin_context-mode_context-mode__ctx_stats"
     ]
   },
   "enableAllProjectMcpServers": true,

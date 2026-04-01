@@ -9,69 +9,75 @@ import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from '$env/static/private';
 // init api client
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
-// endpoint to handle incoming webhooks
+/** POST /webhooks/stripe — receives and processes Stripe webhook events. */
 export async function POST({ request }) {
-	// extract body
 	const body = await request.text();
-
-	// get the signature from the header
 	const signature = request.headers.get('stripe-signature');
 
 	if (!signature) {
 		Sentry.captureException(new Error('No stripe signature found'));
-		return throwSvelteError(
-			ECommonServerError.VALIDATION_ERROR,
-			'No stripe signature found'
-		);
+		return throwSvelteError(ECommonServerError.VALIDATION_ERROR, 'No stripe signature found');
 	}
 
-	// var to hold event data
-	let event;
+	let event: Stripe.Event;
 
-	// verify it
 	try {
-		event = stripe.webhooks.constructEvent(
-			body,
-			signature,
-			STRIPE_WEBHOOK_SECRET
-		);
+		event = stripe.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET);
 	} catch (err) {
 		Sentry.captureException(err);
-		return throwSvelteError(
-			ECommonServerError.VALIDATION_ERROR,
-			'Invalid request'
-		);
+		return throwSvelteError(ECommonServerError.VALIDATION_ERROR, 'Invalid request');
 	}
 
 	if (event.type === 'payment_intent.succeeded') {
 		const pi = event.data.object;
-		const userId = pi.metadata?.userId;
-		const quantity = parseInt(pi.metadata?.quantity ?? '0', 10);
 
-		if (!userId || !quantity) {
-			Sentry.captureException(new Error('Missing metadata on PI: ' + pi.id));
-			return throwSvelteError(
-				ECommonServerError.VALIDATION_ERROR,
-				'Missing metadata on PI: ' + pi.id
-			);
+		// Look up our own stored cart data by intent_id — never rely on Stripe metadata
+		// for business logic since it passes through an external system.
+		const cart = await db
+			.selectFrom('cart')
+			.select(['user_id', 'quantity'])
+			.where('intent_id', '=', pi.id)
+			.executeTakeFirst();
+
+		if (!cart) {
+			// Cart already deleted by a prior successful event delivery — safe to ack.
+			return json({}, { status: 200 });
+		}
+
+		const { user_id: userId, quantity } = cart;
+		const tokensToCredit = quantity * 1_000_000;
+
+		try {
+			// Insert a purchase record keyed on stripe_event_id (UNIQUE).
+			// If a concurrent or duplicate webhook fires, this insert throws a unique
+			// violation — we catch it and return 200 so Stripe stops retrying.
+			await db
+				.insertInto('purchase')
+				.values({
+					stripe_event_id: event.id,
+					stripe_intent_id: pi.id,
+					user_id: userId,
+					quantity,
+					tokens_credited: tokensToCredit
+				})
+				.execute();
+		} catch {
+			// Already processed — acknowledge without crediting again.
+			return json({}, { status: 200 });
 		}
 
 		try {
-			const amount = quantity * 1_000_000;
 			await db
 				.updateTable('user_token_count')
-				.set({ tokens: sql`tokens + ${amount}` })
+				.set({ tokens: sql`tokens + ${tokensToCredit}` })
 				.where('user_id', '=', userId)
 				.execute();
 		} catch (err) {
 			Sentry.captureException(err);
-			return throwSvelteError(
-				ECommonServerError.DATABASE_ERROR,
-				"Couldn't update token balance"
-			);
+			return throwSvelteError(ECommonServerError.DATABASE_ERROR, "Couldn't update token balance");
 		}
 
-		// Best-effort cleanup — if already deleted (duplicate event) this is a no-op.
+		// Best-effort cart cleanup — no-op if already deleted.
 		await db.deleteFrom('cart').where('intent_id', '=', pi.id).execute();
 	}
 

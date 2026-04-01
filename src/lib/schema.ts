@@ -25,7 +25,19 @@ export interface TemplateReportTable {
 
 export interface UserTokenCountTable {
 	user_id: string;
+	/** bigint in Postgres — stored as number (safe up to 2^53). */
 	tokens: Generated<number>;
+}
+
+export interface PurchaseTable {
+	id: Generated<string>;
+	/** Stripe event ID — UNIQUE constraint enforces webhook idempotency. */
+	stripe_event_id: string;
+	stripe_intent_id: string;
+	user_id: string;
+	quantity: number;
+	tokens_credited: number;
+	created_at: Generated<string>;
 }
 
 export interface UserMetadataTable {
@@ -49,4 +61,5 @@ export interface KyselyDatabase {
 	user_token_count: UserTokenCountTable;
 	user_metadata: UserMetadataTable;
 	cart: CartTable;
+	purchase: PurchaseTable;
 }

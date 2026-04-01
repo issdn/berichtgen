@@ -1,0 +1,53 @@
+/**
+ * Remote function transport shell for purchase (Kauf) operations.
+ *
+ * This file is intentionally thin — it only handles:
+ *   1. Input schema validation (via zod)
+ *   2. Authentication via `getRequestEvent`
+ *   3. Delegating to the pure business-logic functions in `api/handlers/kauf`
+ *
+ * All actual logic lives in `handlers/kauf.ts` so it can be unit-tested
+ * without the remote-function transport layer.
+ *
+ * Two flavors:
+ *   - `getPaymentIntent`    — `query`   — SSR-safe, used for the initial top-level await
+ *   - `updatePaymentIntent` — `command` — client-only, used for quantity changes
+ */
+
+import { query, command, getRequestEvent } from '$app/server';
+import * as z from 'zod';
+import { ECommonServerError, throwSvelteError } from '$lib/errors';
+import { handleCreatePaymentIntent, handleGetPaymentIntent } from './api/handlers/kauf';
+
+const quantitySchema = z.object({
+	quantity: z.number().int().min(1).max(90)
+});
+
+/** Shared auth helper. */
+async function getAuthenticatedUserId(): Promise<string> {
+	const { locals } = getRequestEvent();
+	const userId = (await locals.safeGetSession())?.user?.id;
+	if (!userId) throwSvelteError(ECommonServerError.UNAUTHORIZED);
+	return userId!;
+}
+
+/**
+ * SSR-safe initial fetch — looks up the user's cart quantity and returns
+ * the corresponding client secret. No input needed; quantity comes from the DB.
+ */
+export const getPaymentIntent = query(async () => {
+	const userId = await getAuthenticatedUserId();
+	return handleGetPaymentIntent(userId);
+});
+
+/**
+ * Client-only mutation — updates the PaymentIntent when the user changes quantity.
+ * Cannot be called during SSR.
+ */
+export const updatePaymentIntent = command(
+	quantitySchema,
+	async ({ quantity }) => {
+		const userId = await getAuthenticatedUserId();
+		return handleCreatePaymentIntent(userId, quantity);
+	}
+);

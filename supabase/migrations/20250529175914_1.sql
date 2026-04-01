@@ -28,7 +28,7 @@ CREATE TABLE profile (
 
 CREATE TABLE user_token_count (
     user_id uuid PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    tokens integer DEFAULT 0 NOT NULL
+    tokens bigint DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE cart (
@@ -36,6 +36,16 @@ CREATE TABLE cart (
     intent_id text NOT NULL,
     quantity integer DEFAULT 1 NOT NULL,
     created_at timestamp DEFAULT now()
+);
+
+CREATE TABLE purchase (
+    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    stripe_event_id text UNIQUE NOT NULL,
+    stripe_intent_id text NOT NULL,
+    user_id         uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    quantity        integer NOT NULL,
+    tokens_credited bigint NOT NULL,
+    created_at      timestamptz DEFAULT now()
 );
 
 CREATE TABLE template (
@@ -136,3 +146,4 @@ GRANT ALL ON public.user_token_count TO service_role;
 GRANT ALL ON public.template         TO service_role;
 GRANT ALL ON public.user_metadata    TO service_role;
 GRANT ALL ON public.template_report  TO service_role;
+GRANT ALL ON public.purchase         TO service_role;
