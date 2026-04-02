@@ -16,6 +16,7 @@ declare global {
 		}
 		interface PageData {
 			session: Session | null;
+			flash?: import('$core/types').FlashMessage;
 		}
 
 		// eslint-disable-next-line @typescript-eslint/no-empty-object-type

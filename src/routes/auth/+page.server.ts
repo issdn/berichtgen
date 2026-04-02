@@ -1,4 +1,5 @@
-import { json, redirect } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
+import { redirect } from 'sveltekit-flash-message/server';
 
 export const actions = {
 	signin: async ({ locals: { supabase }, url }) => {
@@ -11,12 +12,12 @@ export const actions = {
 		});
 		if (error) return json({ error: error.message }, { status: 500 });
 		if (data.url) {
-			redirect(303, data.url);
+			return redirect(303, data.url);
 		}
 	},
 	signout: async ({ locals: { supabase } }) => {
 		const { error } = await supabase.auth.signOut();
 		if (error) return json({ error: error.message }, { status: 500 });
-		redirect(303, '/');
+		return redirect(303, '/');
 	}
 };

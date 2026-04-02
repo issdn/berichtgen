@@ -2,8 +2,28 @@
 	import type { UserContext } from '$auth/types';
 	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 	import { getContext, setContext } from 'svelte';
+	import { getFlash } from 'sveltekit-flash-message';
+	import { page } from '$app/state';
+	import { toast } from 'svelte-sonner';
 
 	let { data, children } = $props();
+
+	const flash = getFlash(page);
+
+	$effect(() => {
+		if (!$flash) return;
+		switch ($flash.type) {
+			case 'success':
+				toast.success($flash.message);
+				break;
+			case 'error':
+				toast.error($flash.message);
+				break;
+			default:
+				toast.info($flash.message);
+		}
+		flash.set(undefined);
+	});
 
 	let { tokenCount, userMetadata } = $derived(data);
 

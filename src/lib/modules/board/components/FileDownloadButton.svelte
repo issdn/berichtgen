@@ -25,7 +25,6 @@
 	{...restProps}
 	disabled={isLoading || wizardScheduler.isRunning || !wizardScheduler.result}
 	onclick={() => {
-		console.log('Downloading file...');
 		isLoading = true;
 		fn()
 			.catch(() => toast.error('Etwas ist falsch gelaufen 🥲'))

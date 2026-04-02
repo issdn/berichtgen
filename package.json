@@ -99,6 +99,7 @@
 		"svelte-dnd-action": "^0.9.69",
 		"svelte-fsm": "^1.2.0",
 		"svelte-stripe": "^2.0.0",
+		"sveltekit-flash-message": "^2.4.6",
 		"tesseract.js": "^6.0.1",
 		"vite-plugin-node-polyfills": "^0.24.0",
 		"vite-plugin-wasm": "^3.5.0",

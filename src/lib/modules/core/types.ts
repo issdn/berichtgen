@@ -5,3 +5,8 @@ export const ScanReturnValue = Object.freeze({
 
 export type ScanReturnType =
 	(typeof ScanReturnValue)[keyof typeof ScanReturnValue];
+
+export type FlashMessage = {
+	type: 'success' | 'error' | 'info';
+	message: string;
+};

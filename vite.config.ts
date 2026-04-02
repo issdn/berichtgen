@@ -13,7 +13,7 @@ const dirname =
 		: path.dirname(fileURLToPath(import.meta.url));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
 	plugins: [
 		nodePolyfills({
 			include: ['buffer']
@@ -28,6 +28,9 @@ export default defineConfig({
 		}),
 		sveltekit()
 	],
+	esbuild: {
+		drop: mode === 'production' ? ['console', 'debugger'] : []
+	},
 	ssr: {
 		noExternal: ['@lucide/svelte']
 	},
@@ -71,4 +74,4 @@ export default defineConfig({
 			}
 		]
 	}
-});
+}));
