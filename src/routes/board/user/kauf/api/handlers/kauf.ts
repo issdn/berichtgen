@@ -59,12 +59,19 @@ export async function handleCreatePaymentIntent(
 		.executeTakeFirst();
 
 	if (existing) {
-		await db.updateTable('cart').set({ quantity }).where('user_id', '=', userId).execute();
+		await db
+			.updateTable('cart')
+			.set({ quantity })
+			.where('user_id', '=', userId)
+			.execute();
 
 		try {
-			const paymentIntent = await stripe.paymentIntents.update(existing.intent_id, {
-				amount: quantity * PRICE_PER_MILLION_TOKENS_CENTS
-			});
+			const paymentIntent = await stripe.paymentIntents.update(
+				existing.intent_id,
+				{
+					amount: quantity * PRICE_PER_MILLION_TOKENS_CENTS
+				}
+			);
 			return { clientSecret: paymentIntent.client_secret };
 		} catch (err) {
 			Sentry.captureException(err);
@@ -72,7 +79,7 @@ export async function handleCreatePaymentIntent(
 				err instanceof Stripe.errors.StripeError
 					? err.message
 					: 'Unbekannter Fehler bei der Aktualisierung des Zahlungsvorgangs';
-			throwSvelteError(ECommonServerError.STRIPE_ERROR, message);
+			return throwSvelteError(ECommonServerError.STRIPE_ERROR, message);
 		}
 	}
 
@@ -95,6 +102,7 @@ export async function handleCreatePaymentIntent(
 			err instanceof Stripe.errors.StripeError
 				? err.message
 				: 'Unbekannter Fehler bei Erstellung eines Zahlungsvorgangs';
-		throwSvelteError(ECommonServerError.STRIPE_ERROR, message);
+
+		return throwSvelteError(ECommonServerError.STRIPE_ERROR, message);
 	}
 }

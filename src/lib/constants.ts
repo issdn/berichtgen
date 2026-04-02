@@ -1,5 +1,7 @@
 export const LOCALE = 'de-DE';
 
+export const LANGUAGE_CODE = 'de';
+
 /** Price per 1 million tokens in euro cents (used for Stripe amount). */
 export const PRICE_PER_MILLION_TOKENS_CENTS = 500;
 

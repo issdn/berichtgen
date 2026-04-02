@@ -1,117 +1,51 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import {
-		loadStripe,
-		type Stripe,
-		type StripeElements
-	} from '@stripe/stripe-js';
-	import { Elements, Address, PaymentElement } from 'svelte-stripe';
-	import { PUBLIC_STRIPE_KEY } from '$env/static/public';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { toast } from 'svelte-sonner';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Input } from '$lib/components/ui/input';
 	import { debounce } from '$lib/utils';
-	import * as Sentry from '@sentry/sveltekit';
-	import Spinner from '$lib/components/ui/Spinner.svelte';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import { Label } from '$lib/components/ui/label';
-	import { CircleAlert, CreditCard, Package } from '@lucide/svelte';
+	import { CircleAlert, CreditCard, MoveLeft, Package } from '@lucide/svelte';
 	import Stepper from '$lib/components/ui/Stepper.svelte';
 	import { LOCALE, PRICE_PER_MILLION_TOKENS_EUR } from '$lib/constants';
-	import { resolve } from '$app/paths';
 	import { getPaymentIntent, updatePaymentIntent } from './kauf.remote';
+	import StripeElement from '$lib/modules/tokens/components/StripeElement.svelte';
+	import { Spinner } from '$ui/spinner';
+	import { AsyncResource } from '$core/async.svelte';
 
-	// Top-level await — Svelte buffers UI updates until both settle atomically.
-	// The enclosing <svelte:boundary> shows the pending snippet in the meantime.
-	const stripe: Stripe | null = await loadStripe(PUBLIC_STRIPE_KEY, {
-		locale: 'de'
-	});
+	const debouncedFetchPaymentIntent = debounce((quantity: number) => {
+		if (quantity > 0) mutation.execute({ quantity });
+	}, 1000);
+
 	const initial = await getPaymentIntent();
+
+	let mutation = new AsyncResource(updatePaymentIntent, {
+		initialValue: initial,
+		onError(e) {
+			toast.error(e.message, {
+				description: e.cause,
+				duration: 10_000,
+				closeButton: true
+			});
+		}
+	});
 
 	/** Quick-select quantities (multiples of 1 million tokens). */
 	const quantityBadges = [1, 2, 3, 5];
 
 	let quantity: number = $state(initial?.quantity ?? 1);
-	let clientSecret: string | null = $state(initial?.clientSecret ?? null);
-	let elements: StripeElements | undefined = $state(undefined);
-	let processing: boolean = $state(false);
-	let loadingIntent: boolean = $state(false);
+
 	let termsAccepted: boolean = $state(false);
 
 	/** 1 = Paketauswahl, 2 = Zahlungsdetails */
-	let step: 1 | 2 = $state(1);
+	let currentStep: 1 | 2 = $state(1);
 
 	/** Total price in euro for the selected quantity. */
-	const totalEur = $derived(quantity * PRICE_PER_MILLION_TOKENS_EUR);
-
-	/** Calls the remote function to update the PaymentIntent when quantity changes. */
-	async function fetchPaymentIntent(qty: number) {
-		loadingIntent = true;
-		try {
-			const result = await updatePaymentIntent({ quantity: qty });
-			clientSecret = result?.clientSecret ?? null;
-		} catch (e) {
-			Sentry.captureException(e);
-			toast.error(
-				'Stripe-Fehler: ' +
-					(e instanceof Error ? e.message : 'Ursache unbekannt'),
-				{
-					duration: Infinity
-				}
-			);
-		} finally {
-			loadingIntent = false;
-		}
-	}
-
-	async function submit(event: SubmitEvent) {
-		event.preventDefault();
-		if (processing || !elements || !stripe || !clientSecret) return;
-
-		processing = true;
-
-		// elements.submit() must be called before confirmPayment() in the deferred flow.
-		const { error: submitError } = await elements.submit();
-		if (submitError) {
-			processing = false;
-			toast.error(submitError.message ?? 'Fehler beim Vorbereiten der Zahlung');
-			return;
-		}
-
-		const result = await stripe.confirmPayment({
-			elements,
-			clientSecret,
-			confirmParams: {
-				return_url: `${window.location.origin}${resolve('/board')}`
-			}
-		});
-
-		if (result?.error) {
-			processing = false;
-			toast.error(
-				result.error.message ?? 'Unbekannter Fehler beim Zahlungsvorgang',
-				{
-					duration: Infinity
-				}
-			);
-		} else {
-			// Toast fires before navigation — Toaster lives in the layout so it
-			// survives the page transition and is visible on /board.
-			toast.info(
-				'Zahlung wird verarbeitet. Du erhältst deine Tokens sobald die Zahlung bestätigt wurde - lade die Seite dann neu.',
-				{ duration: 10_000 }
-			);
-			goto(resolve('/board'), { replaceState: true, invalidateAll: true });
-		}
-	}
-
-	const debouncedFetchPaymentIntent = debounce((qty: number) => {
-		if (qty > 0) fetchPaymentIntent(qty);
-	}, 500);
+	const total = $derived(quantity * PRICE_PER_MILLION_TOKENS_EUR);
 </script>
 
 <svelte:head>
@@ -121,7 +55,7 @@
 <svelte:boundary>
 	{#snippet pending()}
 		<div class="h-main center-flex">
-			<Spinner size="2xl" />
+			<Spinner />
 		</div>
 	{/snippet}
 
@@ -147,8 +81,17 @@
 			<!-- Step indicator -->
 			<div class="mb-8">
 				<Stepper
-					steps={['Mengenauswahl', 'Zahlungsdetails']}
-					currentStep={step}
+					steps={[
+						{ label: 'Mengenauswahl' },
+						{
+							label: 'Zahlungsdetails',
+							disabled:
+								!termsAccepted ||
+								!mutation.data?.clientSecret ||
+								mutation.loading
+						}
+					]}
+					bind:currentStep
 				/>
 			</div>
 
@@ -156,12 +99,12 @@
 			<div class="flex flex-1 flex-col gap-6 lg:flex-row lg:items-stretch">
 				<!-- Left: step content -->
 				<div class="flex w-full max-w-xl flex-col gap-y-4">
-					{#if step === 1}
+					{#if currentStep === 1}
 						<!-- ── Step 1: Paketauswahl ── -->
 						<div class="flex flex-col gap-y-4">
 							<!-- Quantity picker -->
 							<Card.Root>
-								<Card.Header class="pb-3">
+								<Card.Header>
 									<Card.Title class="flex items-center gap-x-2 text-base">
 										<Package class="size-4" />
 										Menge wählen
@@ -171,16 +114,18 @@
 									>
 								</Card.Header>
 								<Separator />
-								<Card.Content class="pt-4">
+								<Card.Content>
 									<div class="flex flex-row flex-wrap items-center gap-2">
 										{#each quantityBadges as q (q)}
 											<Badge
 												variant={quantity === q ? 'default' : 'secondary'}
 												class="cursor-pointer px-4 py-1.5 text-sm transition-colors"
-												onclick={() => {
-													quantity = q;
-													fetchPaymentIntent(q);
-												}}
+												onclick={mutation.loading
+													? null
+													: () => {
+															quantity = q;
+															mutation.execute({ quantity });
+														}}
 											>
 												{q}x
 											</Badge>
@@ -190,12 +135,12 @@
 												>Manuell:</Label
 											>
 											<Input
+												disabled={mutation.loading}
 												class="h-8 w-20"
 												bind:value={quantity}
 												onchange={(e) =>
 													debouncedFetchPaymentIntent(
-														(e.target as HTMLInputElement)
-															.value as unknown as number
+														parseInt((e.target as HTMLInputElement).value)
 													)}
 												placeholder="1"
 												type="number"
@@ -209,7 +154,7 @@
 
 							<!-- Info -->
 							<Card.Root>
-								<Card.Content class="pt-4">
+								<Card.Content>
 									<p class="text-muted-foreground text-sm">
 										Mit <strong class="text-foreground"
 											>{quantity} Mio. Tokens</strong
@@ -242,7 +187,7 @@
 
 							<!-- Widerrufsrecht -->
 							<Card.Root class="border-border/60">
-								<Card.Content class="pt-4">
+								<Card.Content>
 									<div class="flex flex-row items-start gap-x-3">
 										<Checkbox
 											id="terms-checkbox"
@@ -263,8 +208,8 @@
 							</Card.Root>
 
 							<Button
-								onclick={() => (step = 2)}
-								disabled={!termsAccepted || loadingIntent}
+								onclick={() => (currentStep = 2)}
+								disabled={!termsAccepted || mutation.loading}
 								class="w-full"
 							>
 								Weiter zur Zahlung
@@ -274,52 +219,27 @@
 						<!-- ── Step 2: Zahlungsdetails ── -->
 						<div class="flex flex-col gap-y-4">
 							<Card.Root>
-								<Card.Header class="pb-3">
+								<Card.Header>
 									<Card.Title class="flex items-center gap-x-2 text-base">
 										<CreditCard class="size-4" />
 										Zahlungsdetails
 									</Card.Title>
 								</Card.Header>
 								<Separator />
-								<Card.Content class="pt-4">
-									{#if clientSecret}
-										<Elements
-											locale="de"
-											stripe={stripe!}
-											{clientSecret}
-											appearance={{ theme: 'night', labels: 'floating' }}
-											bind:elements
-										>
-											<form onsubmit={submit} class="flex flex-col gap-y-3">
-												<PaymentElement />
-												<Address mode="billing" />
-												<Button
-													type="submit"
-													disabled={processing || loadingIntent}
-													class="mt-2 w-full"
-												>
-													{#if processing}
-														In Bearbeitung...
-													{:else}
-														{totalEur}€ jetzt bezahlen
-													{/if}
-												</Button>
-											</form>
-										</Elements>
-									{:else}
-										<div class="flex justify-center py-8">
-											<Spinner size="lg" />
-										</div>
-									{/if}
+								<Card.Content>
+									<StripeElement
+										clientSecret={mutation.data!.clientSecret!}
+										{total}
+									/>
 								</Card.Content>
 							</Card.Root>
 
 							<Button
 								variant="ghost"
-								onclick={() => (step = 1)}
+								onclick={() => (currentStep = 1)}
 								class="text-muted-foreground w-full"
 							>
-								← Zurück zur Mengenauswahl
+								<MoveLeft /> Zurück zur Mengenauswahl
 							</Button>
 						</div>
 					{/if}
@@ -328,11 +248,11 @@
 				<!-- Right: persistent summary -->
 				<div class="w-full lg:max-w-xs">
 					<Card.Root class="bg-muted/30">
-						<Card.Header class="pb-3">
+						<Card.Header>
 							<Card.Title class="text-base">Zusammenfassung</Card.Title>
 						</Card.Header>
 						<Separator />
-						<Card.Content class="pt-4">
+						<Card.Content>
 							<div class="flex flex-col gap-y-3 text-sm">
 								<div class="flex justify-between">
 									<span class="text-muted-foreground">Menge</span>
@@ -345,7 +265,7 @@
 								<Separator />
 								<div class="flex justify-between text-base font-semibold">
 									<span>Gesamt</span>
-									<span>{totalEur}€</span>
+									<span>{total}€</span>
 								</div>
 								<p class="text-muted-foreground text-xs">
 									Inkl. gesetzlicher Mehrwertsteuer

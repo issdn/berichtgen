@@ -14,13 +14,13 @@
 		if (!$flash) return;
 		switch ($flash.type) {
 			case 'success':
-				toast.success($flash.message);
+				toast.success($flash.message, $flash.data);
 				break;
 			case 'error':
-				toast.error($flash.message);
+				toast.error($flash.message, $flash.data);
 				break;
 			default:
-				toast.info($flash.message);
+				toast.info($flash.message, $flash.data);
 		}
 		flash.set(undefined);
 	});

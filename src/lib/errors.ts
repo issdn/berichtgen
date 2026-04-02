@@ -101,29 +101,28 @@ export function errorByHttpCode<T extends EnumError>(
  * 2. Native `Error` instance — uses `.message` and falls back to `'INTERNAL_ERROR'` as the code.
  * 3. Anything else — returns a generic German fallback message.
  */
+/** Extracts a structured error body from a plain object, or returns null. */
+function parseRecord(obj: unknown): Omit<AnyErrorValue, 'httpCode'> | null {
+	if (obj === null || typeof obj !== 'object') return null;
+	const { code, message, cause } = obj as Record<string, unknown>;
+	if (typeof code !== 'string' || typeof message !== 'string') return null;
+	return { code, message, cause: typeof cause === 'string' ? cause : undefined };
+}
+
 export function toErrorBody(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
 	if (e !== null && typeof e === 'object') {
-		if ('body' in e && e.body !== null && typeof e.body === 'object') {
-			const body = e.body as Record<string, unknown>;
-			if (typeof body.code === 'string' && typeof body.message === 'string') {
-				return {
-					code: body.code,
-					message: body.message,
-					cause: typeof body.cause === 'string' ? body.cause : undefined
-				};
-			}
-		}
-		if (e instanceof Error) {
-			return {
-				code: 'INTERNAL_ERROR',
-				message: e.message,
-				cause: undefined
-			};
-		}
+		// 1. SvelteKit HttpError: { body: { code, message, cause? } }
+		if ('body' in e) return parseRecord(e.body) ?? parseRecord(e) ?? fallback(e);
+		// 2. Flat structured object or native Error
+		return parseRecord(e) ?? fallback(e);
 	}
+	return fallback(e);
+}
+
+function fallback(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
 	return {
 		code: 'INTERNAL_ERROR',
-		message: 'Ein unbekannter Fehler ist aufgetreten.',
+		message: e instanceof Error ? e.message : 'Ein unbekannter Fehler ist aufgetreten.',
 		cause: undefined
 	};
 }
