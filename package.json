@@ -14,12 +14,12 @@
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
-		"db:seed": "bun ./src/lib/server/db/seed.ts",
 		"test:seed-template": "bun src/test/seed-template.ts",
 		"test:e2e": "playwright test",
 		"test:template": "bun src/test/render-template.ts",
 		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build"
+		"build-storybook": "storybook build",
+		"dev:stripe": "stripe listen --forward-to localhost:5173/webhooks/stripe"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.1",
@@ -32,6 +32,7 @@
 		"@storybook/addon-vitest": "^10.3.3",
 		"@storybook/sveltekit": "^10.3.3",
 		"@sveltejs/adapter-auto": "^6.1.1",
+		"@sveltejs/adapter-node": "^5.5.4",
 		"@sveltejs/kit": "2.55.0",
 		"@sveltejs/vite-plugin-svelte": "^5.1.1",
 		"@tailwindcss/forms": "^0.5.11",
