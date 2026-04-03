@@ -16,6 +16,16 @@ CREATE OR REPLACE FUNCTION uuidv7() RETURNS uuid AS $$
   )::uuid;
 $$ LANGUAGE sql VOLATILE;
 
+-- Enable the pg_cron extension (if not already enabled)
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Schedule the cron job to run every day at midnight
+SELECT cron.schedule(
+  'prune-carts',
+  '0 0 * * *',
+  $$DELETE FROM cart WHERE "createdAt" < NOW() - INTERVAL '7 days'$$
+);
+
 -- ============================================================
 -- Tables
 -- ============================================================
