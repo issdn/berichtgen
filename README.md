@@ -67,30 +67,6 @@ Supabase Studio öffnen unter **http://localhost:54323** → **Authentication �
 
 ## 4. Gemini API-Schlüssel erstellen
 
-1. [console.cloud.google.com](https://console.cloud.google.com) öffnen
-
-   ![](https://codeberg.org/isdn/***REMOVED***/raw/branch/main/tutorials/setup/gcp-dashboard.png)
-
-2. Projekt auswählen oder neu erstellen
-
-   ![](https://codeberg.org/isdn/***REMOVED***/raw/branch/main/tutorials/setup/project-selection.png)
-
-3. Nach „Gemini API" suchen
-
-   ![](https://codeberg.org/isdn/***REMOVED***/raw/branch/main/tutorials/setup/gemini-api-search.png)
-
-4. **Aktivieren** klicken
-
-   ![](https://codeberg.org/isdn/***REMOVED***/raw/branch/main/tutorials/setup/gemini-api-enable.png)
-
-5. Zu **Anmeldedaten** navigieren
-
-   ![](https://codeberg.org/isdn/***REMOVED***/raw/branch/main/tutorials/setup/gemini-api-credentials.png)
-
-6. **Anmeldedaten erstellen → API-Schlüssel**
-
-   ![](https://codeberg.org/isdn/***REMOVED***/raw/branch/main/tutorials/setup/gemini-api-credentials-create.png)
-
 Schlüssel in `GOOGLE_AI_API_KEY` in der `.env` eintragen.
 
 ---
@@ -101,4 +77,4 @@ Schlüssel in `GOOGLE_AI_API_KEY` in der `.env` eintragen.
 pnpm dev
 ```
 
-Unter **http://localhost:5173** öffnen und mit dem in Schritt 3 erstellten Benutzer anmelden.
+Unter **http://localhost:5173** öffnen, mit `pnpm test:test-user` einen Benutzer erstellen und damit einloggen.

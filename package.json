@@ -14,7 +14,7 @@
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
-		"test:seed-template": "bun src/test/seed-template.ts",
+		"test:test-user": "bun src/test/seed-template.ts",
 		"test:e2e": "playwright test",
 		"test:template": "bun src/test/render-template.ts",
 		"storybook": "storybook dev -p 6006",

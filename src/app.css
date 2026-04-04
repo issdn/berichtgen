@@ -150,7 +150,7 @@
 	}
 
 	.h-main {
-		@apply md:h-[calc(100%-5rem)];
+		@apply md:min-h-[calc(100%-5rem)];
 	}
 
 	.w-calendar {
