@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Button } from '$ui/button';
 	import * as Card from '$ui/card';
 	import { getContextPrompt } from '$wizard/completion/prompt';
 	import { Ort } from '$wizard/enums';
-	import { Copy, Pin } from '@lucide/svelte';
+	import { Pin } from '@lucide/svelte';
 	import FilesToConfigModal from './FilesToConfigModal.svelte';
+	import CopyButton from './CopyButton.svelte';
 </script>
 
 <div class="bg-muted h-full w-full overflow-y-hidden">
@@ -26,18 +26,8 @@
 						Ein Prompt das du verwenden kannst:
 					</p>
 					<div class="flex flex-row flex-wrap items-start gap-2 py-4">
-						<Button
-							variant="ghost"
-							onclick={() => {
-								navigator.clipboard.writeText(getContextPrompt(Ort.SCHULE));
-							}}><Copy /> Schule</Button
-						>
-						<Button
-							variant="ghost"
-							onclick={() => {
-								navigator.clipboard.writeText(getContextPrompt(Ort.BETRIEB));
-							}}><Copy /> Betrieb/Unterweisung</Button
-						>
+						<CopyButton text={getContextPrompt(Ort.SCHULE)}>Schule</CopyButton>
+						<CopyButton text={getContextPrompt(Ort.BETRIEB)}>Betrieb/Unterweisung</CopyButton>
 					</div>
 				</Card.Content>
 			</Card.Root>
