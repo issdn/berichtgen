@@ -16,7 +16,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { ECommonServerError } from '$lib/errors';
-import { ETemplateError } from '$lib/modules/board/wizard/errors';
+import { ETemplateError } from '$wizard/errors';
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
 

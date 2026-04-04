@@ -13,7 +13,7 @@
 	import Stepper from '$lib/components/ui/Stepper.svelte';
 	import { LOCALE, PRICE_PER_MILLION_TOKENS_EUR } from '$lib/constants';
 	import { getPaymentIntent, updatePaymentIntent } from './kauf.remote';
-	import StripeElement from '$lib/modules/tokens/components/StripeElement.svelte';
+	import StripeElement from '$tokens/components/StripeElement.svelte';
 	import { Spinner } from '$ui/spinner';
 	import { AsyncResource } from '$core/async.svelte';
 

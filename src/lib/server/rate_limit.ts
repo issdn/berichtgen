@@ -3,7 +3,7 @@ import {
 	UPSTASH_REDIS_REST_URL
 } from '$env/static/private';
 import { throwSvelteError } from '$lib/errors';
-import { ECompletionException } from '$lib/modules/board/wizard/errors';
+import { ECompletionException } from '$wizard/errors';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 

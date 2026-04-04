@@ -4,10 +4,7 @@ import { redirect, type Actions } from '@sveltejs/kit';
 import * as Sentry from '@sentry/sveltekit';
 import { supabaseAdmin } from '$lib/server/admin';
 import db from '$lib/server/db';
-import {
-	profileNameSchema,
-	userMetadataSchema
-} from '$lib/modules/settings/schemas';
+import { profileNameSchema, userMetadataSchema } from '$settings/schemas';
 
 export const load = async ({ parent, locals: { user } }) => {
 	const { tokenCount } = await parent();

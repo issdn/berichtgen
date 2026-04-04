@@ -16,7 +16,7 @@ import type {
 import { Parser } from '$core/parser/parser';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
 import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
-import { ParserError, EParserError } from '$lib/modules/core/parser/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 
 export type DOCXFileData = {
 	images: Map<string, Uint8Array<ArrayBufferLike>>;

@@ -12,13 +12,15 @@ const config = {
 		adapter: adapter({ regions: ['fra1'] }),
 		alias: {
 			$routes: path.resolve('./src/routes'),
-			$templates: path.resolve('./src/lib/modules/board/templates'),
-			$core: path.resolve('./src/lib/modules/core'),
-			$auth: path.resolve('./src/lib/modules/auth'),
-			$wizard: path.resolve('./src/lib/modules/board/wizard'),
-			$board: path.resolve('./src/lib/modules/board'),
+			$templates: path.resolve('./src/lib/features/board/templates'),
+			$core: path.resolve('./src/lib/features/core'),
+			$auth: path.resolve('./src/lib/features/auth'),
+			$wizard: path.resolve('./src/lib/features/board/wizard'),
+			$board: path.resolve('./src/lib/features/board'),
 			$ui: path.resolve('./src/lib/components/ui'),
 			$server: path.resolve('./src/lib/server'),
+			$tokens: path.resolve('./src/lib/features/tokens'),
+			$settings: path.resolve('./src/lib/features/settings'),
 		},
 		experimental: {
 			remoteFunctions: true

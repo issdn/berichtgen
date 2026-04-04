@@ -7,7 +7,7 @@ KI-gestütztes Dokumentengenerierungstool, das hochgeladene Dateien via Google G
 ## Voraussetzungen
 
 - [Node.js](https://nodejs.org/) 20+
-- [pnpm](https://pnpm.io/) (`npm i -g pnpm`)
+- npm/pnpm/bun
 - [Docker](https://www.docker.com/) (wird von Supabase lokal benötigt)
 - [Supabase CLI](https://supabase.com/docs/guides/local-development)
 

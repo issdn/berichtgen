@@ -30,7 +30,7 @@ vi.mock('@sentry/sveltekit', () => ({
 
 // ─── Import SUT after mocks are registered ───────────────────────────────────
 
-import { checkPreferredTemplateExists } from '$lib/modules/board/wizard/api/handlers/wizard';
+import { checkPreferredTemplateExists } from '$wizard/api/handlers/wizard';
 import * as Sentry from '@sentry/sveltekit';
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -44,13 +44,19 @@ describe('checkPreferredTemplateExists', () => {
 	});
 
 	test('returns true when the template row exists', async () => {
-		dbMock.executeTakeFirst.mockResolvedValue({ storage_path: 'templates/foo.docx' });
+		dbMock.executeTakeFirst.mockResolvedValue({
+			storage_path: 'templates/foo.docx'
+		});
 
 		const result = await checkPreferredTemplateExists('templates/foo.docx');
 
 		expect(result).toBe(true);
 		expect(dbMock.selectFrom).toHaveBeenCalledWith('template');
-		expect(dbMock.where).toHaveBeenCalledWith('storage_path', '=', 'templates/foo.docx');
+		expect(dbMock.where).toHaveBeenCalledWith(
+			'storage_path',
+			'=',
+			'templates/foo.docx'
+		);
 	});
 
 	test('returns false when the template row does not exist', async () => {

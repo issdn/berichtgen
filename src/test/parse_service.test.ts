@@ -1,7 +1,7 @@
 import { describe, test, expect, vi } from 'vitest';
 import { okResult, errResult } from '$lib/result';
 import { FileTypes } from '$wizard/enums';
-import { ParserError, EParserError } from '$lib/modules/core/parser/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import type { ResultEntry } from '$wizard/types';
 
 // ─── Module mocks ─────────────────────────────────────────────────────────────
@@ -26,9 +26,13 @@ vi.mock('$core/parser/json_parser', () => ({
 		/** Inherited parse() returns the raw text string. */
 		parse: vi.fn().mockReturnValue('raw json text'),
 		/** toSchema() returns validated ResultEntry[]. */
-		toSchema: vi.fn().mockReturnValue(
-			okResult([{ text: 'Eintrag', datum: '2024-01-01', ort: 'BETRIEB', stunden: 8 }] as ResultEntry[])
-		)
+		toSchema: vi
+			.fn()
+			.mockReturnValue(
+				okResult([
+					{ text: 'Eintrag', datum: '2024-01-01', ort: 'BETRIEB', stunden: 8 }
+				] as ResultEntry[])
+			)
 	}))
 }));
 
@@ -67,7 +71,10 @@ function makeFile(content: string, type: string, name = 'test'): File {
 }
 
 /** Default options: no photos, no AI reword. */
-const DEFAULT_OPTIONS: ParseOptions = { processPhotos: false, rewordJSON: false };
+const DEFAULT_OPTIONS: ParseOptions = {
+	processPhotos: false,
+	rewordJSON: false
+};
 
 /** Stub scheduler — OCR workers are never started in these tests. */
 const SCHEDULER = {} as Scheduler;
@@ -104,10 +111,15 @@ describe('parseFile', () => {
 	describe('JSON', () => {
 		test('validates JSON against schema when rewordJSON=false', async () => {
 			const file = makeFile('[]', FileTypes.JSON, 'data.json');
-			const result = await parseFile(file, new WizardFileContext(file), SCHEDULER, {
-				...DEFAULT_OPTIONS,
-				rewordJSON: false
-			});
+			const result = await parseFile(
+				file,
+				new WizardFileContext(file),
+				SCHEDULER,
+				{
+					...DEFAULT_OPTIONS,
+					rewordJSON: false
+				}
+			);
 			expect(result.ok).toBe(true);
 			// toSchema() was called → returns ResultEntry[]
 			expect(result.ok && Array.isArray(result.data)).toBe(true);
@@ -115,10 +127,15 @@ describe('parseFile', () => {
 
 		test('returns raw text for AI reformatting when rewordJSON=true', async () => {
 			const file = makeFile('[]', FileTypes.JSON, 'data.json');
-			const result = await parseFile(file, new WizardFileContext(file), SCHEDULER, {
-				...DEFAULT_OPTIONS,
-				rewordJSON: true
-			});
+			const result = await parseFile(
+				file,
+				new WizardFileContext(file),
+				SCHEDULER,
+				{
+					...DEFAULT_OPTIONS,
+					rewordJSON: true
+				}
+			);
 			expect(result.ok).toBe(true);
 			// parse() was called → returns raw string
 			expect(result.ok && result.data).toBe('raw json text');
@@ -134,10 +151,15 @@ describe('parseFile', () => {
 			})) as never);
 
 			const file = makeFile('{invalid}', FileTypes.JSON, 'bad.json');
-			const result = await parseFile(file, new WizardFileContext(file), SCHEDULER, {
-				...DEFAULT_OPTIONS,
-				rewordJSON: false
-			});
+			const result = await parseFile(
+				file,
+				new WizardFileContext(file),
+				SCHEDULER,
+				{
+					...DEFAULT_OPTIONS,
+					rewordJSON: false
+				}
+			);
 			expect(result.ok).toBe(false);
 			expect(!result.ok && result.error).toBe(parseError);
 		});
@@ -207,7 +229,9 @@ describe('parseFile', () => {
 				DEFAULT_OPTIONS
 			);
 			expect(result.ok).toBe(false);
-			expect(!result.ok && result.error.apiError).toBe(EParserError.INVALID_FILE);
+			expect(!result.ok && result.error.apiError).toBe(
+				EParserError.INVALID_FILE
+			);
 		});
 
 		test('wraps parser init errors as PARSE_FAILED', async () => {
@@ -225,7 +249,9 @@ describe('parseFile', () => {
 				DEFAULT_OPTIONS
 			);
 			expect(result.ok).toBe(false);
-			expect(!result.ok && result.error.apiError).toBe(EParserError.PARSE_FAILED);
+			expect(!result.ok && result.error.apiError).toBe(
+				EParserError.PARSE_FAILED
+			);
 		});
 	});
 });

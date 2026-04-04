@@ -1,5 +1,5 @@
 import { throwSvelteError } from '$lib/errors.js';
-import { EAuthError } from '$lib/modules/auth/errors';
+import { EAuthError } from '$auth/errors';
 import { redirect } from 'sveltekit-flash-message/server';
 
 export const load = async ({ locals: { supabase }, url, cookies }) => {
