@@ -1,5 +1,3 @@
-import { env } from '$env/dynamic/private';
-import { dev } from '$app/environment';
 import type { RequestHandler } from './$types';
 import {
 	***REMOVED***Error,
@@ -7,7 +5,6 @@ import {
 	throwSvelteError
 } from '$lib/errors';
 import { ECompletionException, EWizardError } from '$wizard/errors';
-// import OpenAI from 'openai';
 import * as genai from '@google/genai';
 import { LocalTokenizer } from '@google/genai/tokenizer';
 import { json } from '@sveltejs/kit';
@@ -17,21 +14,176 @@ import * as Sentry from '@sentry/sveltekit';
 import {
 	batchCompletionApiSchema,
 	completionSchema,
-	type BatchCompletionApiResponse
+	type BatchCompletionApiResponse,
+	type BatchCompletionItem
 } from '$wizard/schemas';
-import { DEFAULT_MODEL } from '$lib/constants';
 import { getContextPrompt } from '$wizard/completion/prompt';
-import type { Ort } from '$wizard/enums';
+import { GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
+import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
 
-// API key from environment
-const apiKey = env.GOOGLE_AI_API_KEY;
+if (!env.GEMINI_MODEL) {
+	console.debug('GEMINI_MODEL not set, defaulting to', DEFAULT_MODEL);
+}
+
+// ─── Handler ──────────────────────────────────────────────────────────────────
+
+export const POST: RequestHandler = async ({ request, locals: { user } }) => {
+	if (!user) return throwSvelteError(ECommonServerError.UNAUTHORIZED);
+
+	const credentials = JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''));
+	if (!credentials) return throwSvelteError(ECompletionException.INTERNAL);
+
+	const body = await request.json();
+	const parsed = batchCompletionApiSchema.safeParse(body);
+	if (!parsed.success)
+		return throwSvelteError(ECommonServerError.VALIDATION_ERROR);
+
+	const model = env.GEMINI_MODEL ?? DEFAULT_MODEL;
+	const modelLocation = env.GEMINI_MODEL_LOCATION ?? MODEL_LOCATION;
+
+	const ai = new genai.GoogleGenAI({
+		vertexai: true,
+		location: modelLocation,
+		project: credentials.project_id,
+		googleAuthOptions: {
+			credentials: {
+				client_email: credentials.client_email,
+				private_key: credentials.private_key
+			},
+			projectId: credentials.project_id
+		}
+	});
+	// TODO: Switch to DEFAULT_MODEL when the 3.1 tokenizer is available
+	const tokenizer = new LocalTokenizer('gemini-2.5-flash-lite');
+
+	const { items } = parsed.data;
+
+	const tokenCounts = await Promise.all(
+		items.map((item) => countItemTokens(item, ai, model, tokenizer))
+	);
+
+	const userBalance = await readUserBalance(user.id);
+	if (!userBalance || userBalance <= 0)
+		return throwSvelteError(ECompletionException.NOT_ENOUGH_TOKENS);
+
+	const budget = selectItemsWithinBudget(tokenCounts, userBalance);
+	if (budget.fittingIndices.length === 0)
+		return throwSvelteError(ECompletionException.NOT_ENOUGH_TOKENS);
+
+	try {
+		await deductUserTokens(user.id, budget.totalTokens);
+	} catch (e) {
+		if (e instanceof ***REMOVED***Error) return throwSvelteError(e.apiError);
+		Sentry.captureException(e);
+		return throwSvelteError(ECompletionException.INTERNAL);
+	}
+
+	const geminiResults = await Promise.allSettled(
+		budget.fittingIndices.map((i) => generateCompletion(items[i], ai, model))
+	);
+
+	if (geminiResults.some((r) => r.status === 'rejected')) {
+		await refundUserTokens(user.id, budget.totalTokens);
+		return throwSvelteError(ECompletionException.UNKNOWN_THIRD_PARTY_ERROR);
+	}
+
+	const { results, parseErrorCount } = parseGeminiResponses(
+		geminiResults as PromiseFulfilledResult<
+			Awaited<ReturnType<typeof generateCompletion>>
+		>[],
+		budget.fittingIndices,
+		items.length
+	);
+
+	if (parseErrorCount > 0) {
+		await refundUserTokens(user.id, budget.totalTokens);
+		return throwSvelteError(EWizardError.INVALID_JSON_FROM_AI);
+	}
+
+	const response: BatchCompletionApiResponse = {
+		results,
+		insufficient_tokens: budget.insufficientTokens
+	};
+
+	return json(response);
+};
+
+// ─── Token helpers ────────────────────────────────────────────────────────────
+
+/**
+ * Counts the tokens for a single completion item.
+ * Text items use the fast local tokenizer; file items call the Gemini API.
+ */
+async function countItemTokens(
+	item: BatchCompletionItem,
+	ai: genai.GoogleGenAI,
+	model: string,
+	localTokenizer: InstanceType<typeof LocalTokenizer>
+): Promise<number> {
+	if (item.type === 'text') {
+		const result = await localTokenizer.countTokens(item.text);
+		return result.totalTokens ?? 0;
+	}
+	const part = itemToContentPart(item);
+	const result = await ai.models.countTokens({
+		model,
+		contents: [{ parts: [part] }]
+	});
+	return result.totalTokens ?? 0;
+}
+
+/**
+ * Reads the user's token balance without a lock.
+ * The real guard against double-spending is inside `deductUserTokens`.
+ */
+async function readUserBalance(userId: string): Promise<number | undefined> {
+	const row = await db
+		.selectFrom('user_token_count')
+		.select('tokens')
+		.where('user_id', '=', userId)
+		.executeTakeFirst();
+	return row?.tokens;
+}
+
+/**
+ * Greedily selects items that fit within the available token budget (preserves order).
+ * Returns the fitting indices, their total token cost, and whether any items were skipped.
+ */
+function selectItemsWithinBudget(
+	tokenCounts: number[],
+	availableTokens: number
+): {
+	fittingIndices: number[];
+	totalTokens: number;
+	insufficientTokens: boolean;
+} {
+	const fittingIndices: number[] = [];
+	let totalTokens = 0;
+	let remaining = availableTokens;
+
+	for (let i = 0; i < tokenCounts.length; i++) {
+		const cost = tokenCounts[i];
+		if (cost && remaining >= cost) {
+			fittingIndices.push(i);
+			totalTokens += cost;
+			remaining -= cost;
+		}
+	}
+
+	return {
+		fittingIndices,
+		totalTokens,
+		insufficientTokens: fittingIndices.length < tokenCounts.length
+	};
+}
 
 /**
  * Deducts tokens from the user inside a serialisable transaction.
- * The SELECT FOR UPDATE prevents concurrent requests from double-spending the same balance.
- * Throws `Error('insufficient_tokens')` if the balance is too low.
+ * SELECT FOR UPDATE prevents concurrent requests from double-spending.
+ * Throws `***REMOVED***Error(NOT_ENOUGH_TOKENS)` if the balance is insufficient.
  */
-async function deductUserTokens(userId: string, amount: number) {
+async function deductUserTokens(userId: string, amount: number): Promise<void> {
 	await db.transaction().execute(async (trx) => {
 		const current = await trx
 			.selectFrom('user_token_count')
@@ -50,13 +202,11 @@ async function deductUserTokens(userId: string, amount: number) {
 			.where('user_id', '=', userId)
 			.execute();
 	});
-
-	return amount;
 }
 
 /**
- * Refunds tokens to the user (best-effort, not transactional).
- * Called when a downstream error occurs after tokens have already been deducted.
+ * Best-effort token refund after a downstream failure.
+ * Not transactional — called only when Gemini or response parsing has already failed.
  */
 async function refundUserTokens(userId: string, amount: number): Promise<void> {
 	if (amount <= 0) return;
@@ -67,101 +217,57 @@ async function refundUserTokens(userId: string, amount: number): Promise<void> {
 		.execute();
 }
 
-export const POST: RequestHandler = async ({ request, locals: { user } }) => {
-	if (!user) return throwSvelteError(ECommonServerError.UNAUTHORIZED);
-	if (!apiKey) return throwSvelteError(ECompletionException.INTERNAL);
+// ─── Gemini helpers ───────────────────────────────────────────────────────────
 
-	const body = await request.json();
-	const parsed = batchCompletionApiSchema.safeParse(body);
-	if (!parsed.success)
-		return throwSvelteError(ECommonServerError.VALIDATION_ERROR);
+/**
+ * Calls the Gemini API for a single completion item.
+ * Builds the appropriate content part based on the item type:
+ * - `text`   → text part
+ * - `inline` → `inlineData` part (base64-encoded bytes)
+ * - `gcs`    → `fileData` part (`gs://` URI — Gemini fetches natively)
+ */
+async function generateCompletion(
+	item: BatchCompletionItem,
+	ai: genai.GoogleGenAI,
+	model: string
+) {
+	return ai.models.generateContent({
+		config: {
+			responseMimeType: 'application/json',
+			systemInstruction: getContextPrompt(item.ort),
+			responseSchema: completionSchema.toJSONSchema()
+		},
+		model,
+		contents: [{ role: 'user', parts: [itemToContentPart(item)] }]
+	});
+}
 
-	if (!env.GEMINI_MODEL) {
-		if (!dev) return throwSvelteError(ECompletionException.INTERNAL);
-		console.warn(`[dev] GEMINI_MODEL not set, defaulting to ${DEFAULT_MODEL}`);
-	}
-	const model = env.GEMINI_MODEL ?? DEFAULT_MODEL;
+/** Maps a `BatchCompletionItem` to its Gemini content part. */
+function itemToContentPart(item: BatchCompletionItem): genai.Part {
+	if (item.type === 'text') return { text: item.text };
+	if (item.type === 'inline')
+		return { inlineData: { data: item.data, mimeType: item.mimeType } };
+	return { fileData: { fileUri: item.fileUri, mimeType: item.mimeType } };
+}
 
-	const { items } = parsed.data;
-
-	// Count tokens locally for all items before any API or DB call
-	// TODO: Switch to DEFAULT_MODEL when the 3.1 tokenizer is availible
-	const tokenizer = new LocalTokenizer('gemini-2.5-flash-lite');
-	const tokenCounts = await Promise.all(
-		items.map(async ({ text }) => {
-			const counted = await tokenizer.countTokens(text);
-			return counted.totalTokens;
-		})
-	);
-
-	// Read user balance without a lock — the real guard is inside deductUserTokens
-	const userBalance = await db
-		.selectFrom('user_token_count')
-		.select('tokens')
-		.where('user_id', '=', user.id)
-		.executeTakeFirst();
-
-	if (!userBalance || userBalance.tokens <= 0) {
-		return throwSvelteError(ECompletionException.NOT_ENOUGH_TOKENS);
-	}
-
-	// Greedily select items that fit within the user's token budget (preserves order)
-	let budgetRemaining = userBalance.tokens;
-	const fittingIndices: number[] = [];
-	const fittingTokenCounts: number[] = [];
-
-	for (let i = 0; i < items.length; i++) {
-		const count = tokenCounts[i];
-		if (count && budgetRemaining >= count) {
-			fittingIndices.push(i);
-			fittingTokenCounts.push(count);
-			budgetRemaining -= count;
-		}
-	}
-
-	const insufficientTokens = fittingIndices.length < items.length;
-
-	if (fittingIndices.length === 0) {
-		return throwSvelteError(ECompletionException.NOT_ENOUGH_TOKENS);
-	}
-
-	const totalDeducted = fittingTokenCounts.reduce((sum, t) => sum + t, 0);
-
-	// Atomically deduct tokens for all fitting items before any Gemini call
-	try {
-		await deductUserTokens(user.id, totalDeducted);
-	} catch (e) {
-		if (e instanceof ***REMOVED***Error) return throwSvelteError(e.apiError);
-		Sentry.captureException(e);
-		return throwSvelteError(ECompletionException.INTERNAL);
-	}
-
-	// Send all fitting items to Gemini in parallel
-	const geminiResults = await Promise.allSettled(
-		fittingIndices.map((i) =>
-			getGeminiCompletion(items[i].text, apiKey, items[i].ort, model)
-		)
-	);
-
-	// If any Gemini call failed, refund everything and report the error
-	const hasApiError = geminiResults.some((r) => r.status === 'rejected');
-	if (hasApiError) {
-		await refundUserTokens(user.id, totalDeducted);
-		return throwSvelteError(ECompletionException.UNKNOWN_THIRD_PARTY_ERROR);
-	}
-
-	// Parse and validate each Gemini response
-	const results: (string[] | null)[] = new Array(items.length).fill(null);
+/**
+ * Validates and maps fulfilled Gemini responses to per-item string arrays.
+ * Reports parse errors to Sentry and returns a count for the caller to act on.
+ */
+function parseGeminiResponses(
+	settled: PromiseFulfilledResult<
+		Awaited<ReturnType<typeof generateCompletion>>
+	>[],
+	fittingIndices: number[],
+	totalItems: number
+): { results: (string[] | null)[]; parseErrorCount: number } {
+	const results: (string[] | null)[] = new Array(totalItems).fill(null);
 	let parseErrorCount = 0;
 
-	for (let fi = 0; fi < fittingIndices.length; fi++) {
-		const originalIndex = fittingIndices[fi];
-		const settled = geminiResults[fi] as PromiseFulfilledResult<
-			Awaited<ReturnType<typeof getGeminiCompletion>>
-		>;
-		const summary = settled.value.text;
+	for (let i = 0; i < fittingIndices.length; i++) {
+		const text = settled[i].value.text;
 
-		if (!summary) {
+		if (!text) {
 			parseErrorCount++;
 			Sentry.captureEvent({
 				message: 'Gemini returned empty text for a batch item',
@@ -170,81 +276,23 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 			continue;
 		}
 
-		let parsedResponse: ReturnType<typeof completionSchema.safeParse>;
+		let parsed: ReturnType<typeof completionSchema.safeParse>;
 		try {
-			parsedResponse = completionSchema.safeParse(summary);
+			parsed = completionSchema.safeParse(text);
 		} catch (e) {
 			parseErrorCount++;
 			Sentry.captureException(e);
 			continue;
 		}
-		if (!parsedResponse.success) {
+
+		if (!parsed.success) {
 			parseErrorCount++;
-			Sentry.captureMessage(parsedResponse.error.message);
+			Sentry.captureMessage(parsed.error.message);
 			continue;
 		}
 
-		results[originalIndex] = parsedResponse.data;
+		results[fittingIndices[i]] = parsed.data;
 	}
 
-	// If any item failed JSON parsing, refund all tokens and error out
-	if (parseErrorCount > 0) {
-		await refundUserTokens(user.id, totalDeducted);
-		return throwSvelteError(EWizardError.INVALID_JSON_FROM_AI);
-	}
-
-	const response: BatchCompletionApiResponse = {
-		results,
-		insufficient_tokens: insufficientTokens
-	};
-
-	return json(response);
-};
-
-async function getGeminiCompletion(
-	text: string,
-	apiKey: string,
-	ort: Ort,
-	model: string
-) {
-	const ai = new genai.GoogleGenAI({ apiKey });
-
-	return ai.models.generateContent({
-		config: {
-			responseMimeType: 'application/json',
-			systemInstruction: getContextPrompt(ort),
-			responseSchema: completionSchema.toJSONSchema()
-		},
-		model,
-		contents: text
-	});
+	return { results, parseErrorCount };
 }
-
-/*
-// OpenAI/DeepSeek completion - commented out
-async function getOpenAICompletion(text: string, token: string, ort: Ort) {
-	const openai = new OpenAI({
-		baseURL: 'https://api.deepseek.com',
-		apiKey: token
-	});
-
-	const completion = await openai.chat.completions.create({
-		messages: [
-			{
-				role: 'system',
-				content: getContextPrompt(ort)
-			},
-			{
-				role: 'user',
-				content: text
-			}
-		],
-		model: 'deepseek-chat',
-		response_format: {
-			type: 'json_object'
-		}
-	});
-
-	return completion.choices[0].message.content;
-}
-*/

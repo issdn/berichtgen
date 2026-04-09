@@ -11,8 +11,8 @@
 	import { resolve } from '$app/paths';
 	import { Elements, Address, PaymentElement } from 'svelte-stripe';
 	import { LANGUAGE_CODE } from '$lib/constants';
-	import ErrorAlert from '$ui/ErrorAlert.svelte';
 	import { AsyncResource } from '$core/async.svelte';
+	import { failed } from '$ui/snippets.svelte';
 
 	let { clientSecret, total }: { clientSecret: string; total: number } =
 		$props();
@@ -57,15 +57,11 @@
 	let elements: StripeElements | undefined = $state(undefined);
 </script>
 
-<svelte:boundary>
+<svelte:boundary {failed}>
 	{#snippet pending()}
 		<div class="flex justify-center py-8">
 			<Spinner size="lg" />
 		</div>
-	{/snippet}
-
-	{#snippet failed(error)}
-		<ErrorAlert {error} />
 	{/snippet}
 
 	<Elements

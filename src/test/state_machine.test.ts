@@ -13,11 +13,14 @@ vi.mock('$lib/stores/berichtgen.svelte', () => ({
 	berichtgenStore: { rewordJSON: false, processPhotos: false, constantHours: 8 }
 }));
 
-// Mock the parse service so the state-machine test only exercises state
-// transitions, not actual file parsing. Parsing correctness is covered by
-// parse_service.test.ts.
-const mockParseFile = vi.hoisted(() => vi.fn());
-vi.mock('$core/parser/parse_service', () => ({ parseFile: mockParseFile }));
+// Mock resolveFileRouting so the state-machine test only exercises state
+// transitions, not actual file routing/parsing/uploading.
+// Routing correctness is covered separately.
+const mockResolveFileRouting = vi.hoisted(() => vi.fn());
+vi.mock('$wizard/services/file_routing', async (importOriginal) => ({
+	...((await importOriginal()) as object),
+	resolveFileRouting: mockResolveFileRouting
+}));
 
 // ---------------------------------------------------------------------------
 // The single behavioral mock: the HTTP completion endpoint
@@ -54,8 +57,10 @@ const AI_RESULT = 'KI: Montag: Programmieren';
 
 describe('State machine full lifecycle', () => {
 	test('INITIALISING → PROCESSING → WAITING → BATCH_PENDING → AI_COMPLETION → TIME_SPREADING → DONE', async () => {
-		// The parse service returns the file content instantly.
-		mockParseFile.mockResolvedValue(okResult(DUMMY_TEXT));
+		// resolveFileRouting returns an inline routing instantly (simulates a small file).
+		mockResolveFileRouting.mockResolvedValue(
+			okResult({ type: 'inline', data: btoa(DUMMY_TEXT), mimeType: 'text/plain' })
+		);
 
 		// The mocked server responds instantly with a prefixed version of the text.
 		mockSendBatch.mockResolvedValue(
@@ -87,9 +92,12 @@ describe('State machine full lifecycle', () => {
 		// 2. Wait for parseFile to resolve (mocked as an instantly-resolving promise).
 		await flush();
 
-		// 3. PROCESSING finished — snapshot holds the decoded file content, machine waits for date config.
+		// 3. PROCESSING finished — snapshot holds the inline routing descriptor, machine waits for date config.
 		expect(currentState).toBe(WizardStep.WAITING);
-		expect(context.snapshot).toBe(DUMMY_TEXT);
+		expect(context.snapshot).toMatchObject({
+			type: 'inline',
+			mimeType: 'text/plain'
+		});
 
 		// 4. Provide real date ranges (real CalendarDate objects for real spreadEntriesAcrossWeeks).
 		context.dateRanges = {

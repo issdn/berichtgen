@@ -1,13 +1,21 @@
 <script lang="ts">
 	import * as Alert from '$lib/components/ui/alert/index.js';
-	import { toErrorBody } from '../../errors';
+	import { ***REMOVED***Error, toErrorBody } from '$lib/errors';
+	import type { WithElementRef } from '$lib/utils';
+	import type { HTMLAttributes } from 'svelte/elements';
 
-	const { error }: { error: unknown } = $props();
+	const {
+		error,
+		...restProps
+	}: { error: unknown } & WithElementRef<HTMLAttributes<HTMLDivElement>> =
+		$props();
 
-	const typeSafeError = $derived(toErrorBody(error));
+	const typeSafeError = $derived(
+		error instanceof ***REMOVED***Error ? error.apiError : toErrorBody(error)
+	);
 </script>
 
-<Alert.Root variant="destructive">
+<Alert.Root {...restProps} variant="destructive">
 	<Alert.Title>{typeSafeError.message}</Alert.Title>
 	{#if typeSafeError.cause}
 		<Alert.Description>

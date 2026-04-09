@@ -1,6 +1,5 @@
 import { ScanReturnValue, type ScanReturnType } from '$core/types';
 import { ParserError, EParserError } from '$core/parser/errors';
-import { getArrayDepth } from '$lib/utils';
 import type { WizardRawDirectories, WizardRawDirectory } from '$wizard/types';
 
 export function getFileListWithPreserverFolderStructure(
@@ -36,33 +35,22 @@ export async function get2DimensionalDirectories(
 async function _get2DimensionalDirectories<T>(
 	items: DataTransferItemList,
 	scanFunction: (item: FileSystemEntry, items?: T[][]) => Promise<T[][]>
-) {
-	const resolvedDirectoriesPromises: Promise<T>[] = [];
-	const topLevelFilesPromises: Promise<T>[] = [];
-	[...items].forEach((item) => {
+): Promise<T[][]> {
+	const entries = [...items].map((item) => {
 		const entry = item.webkitGetAsEntry();
-		if (entry === null)
-			throw new ParserError(EParserError.INVALID_FILE);
-		if (entry.isFile) {
-			topLevelFilesPromises.push(scanFunction(entry) as Promise<T>);
-		} else {
-			resolvedDirectoriesPromises.push(scanFunction(entry) as Promise<T>);
-		}
+		if (entry === null) throw new ParserError(EParserError.INVALID_FILE);
+		return entry;
 	});
-	const resolvedDirectories = await Promise.all(resolvedDirectoriesPromises);
-	const depth = getArrayDepth(resolvedDirectories);
-	const flattenedDirectories = resolvedDirectories.flat(
-		depth > 2 ? depth - 2 : 0
-	) as T[][];
-	const directoriesWithoutAnyEmpty = flattenedDirectories.filter(
-		(directory) => directory.length > 0
-	);
-	if (topLevelFilesPromises.length > 0) {
-		directoriesWithoutAnyEmpty.push(
-			(await Promise.all(topLevelFilesPromises)).flat() as T[]
-		);
-	}
-	return directoriesWithoutAnyEmpty;
+
+	const scannedGroups = await Promise.all(entries.map((entry) => scanFunction(entry)));
+
+	// scanFunction returns T[][] but nesting depth varies with directory structure —
+	// a folder containing both files and subdirectories produces uneven depth.
+	// Flatten each group fully so no files are lost regardless of nesting depth,
+	// then drop any empty groups (e.g. empty directories).
+	return scannedGroups
+		.map((group) => group.flat(Infinity) as T[])
+		.filter((group) => group.length > 0);
 }
 
 async function scanFiles(
@@ -97,10 +85,11 @@ async function scanFiles(
 		return allEntries;
 	} else if (item.isFile) {
 		return [
-			...items,
-			await new Promise<File>((resolve, reject) =>
-				(item as FileSystemFileEntry).file(resolve, reject)
-			)
+			[
+				await new Promise<File>((resolve, reject) =>
+					(item as FileSystemFileEntry).file(resolve, reject)
+				)
+			]
 		] as WizardRawDirectories;
 	}
 	return items;
@@ -137,7 +126,7 @@ async function scanSystemFileEntries(
 
 		return allEntries;
 	} else if (item.isFile) {
-		return [...items, item] as FileSystemFileEntry[][];
+		return [[item as FileSystemFileEntry]];
 	}
 	return items;
 }

@@ -74,7 +74,7 @@
 			>
 		</Dialog.Header>
 		<form method="POST" use:enhance>
-			<div class="max-h-[600px] w-full gap-y-8 overflow-y-auto pt-8">
+			<div class="max-h-150 w-full gap-y-8 overflow-y-auto pt-8">
 				<div
 					class="mb-6 flex w-full flex-row items-center justify-between gap-x-4"
 				>

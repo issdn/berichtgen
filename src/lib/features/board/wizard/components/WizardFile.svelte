@@ -17,6 +17,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import TimeSpreadDialog from './TimeSpreadDialog.svelte';
+	import ErrorAlert from '$ui/ErrorAlert.svelte';
 
 	const {
 		context,
@@ -103,7 +104,7 @@
 							</Badge>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p class="bg-background max-w-96">{context.error!.message}</p>
+							<ErrorAlert class="border-none" error={context.error!} />
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>

@@ -16,4 +16,6 @@ export const BULLETPOINT = '\n- ';
 
 export const DEFAULT_MODEL = 'gemini-3.1-flash-lite-preview';
 
+export const MODEL_LOCATION = 'global';
+
 export const DEFAULT_ANONYM_NAME = 'Anonym';

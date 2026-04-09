@@ -1,9 +1,7 @@
 <script lang="ts">
-	import { LOCALE } from '$lib/constants';
 	import { buttonVariants } from '$ui/button';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import type { DateRangeSchema } from '$wizard/schemas';
-	import { DateFormatter } from '@internationalized/date';
 	import { CalendarIcon } from '@lucide/svelte';
 	import type { SuperForm } from 'sveltekit-superforms';
 	import type { SuperFormData } from 'sveltekit-superforms/client';
@@ -11,6 +9,8 @@
 	import * as Form from '$ui/form';
 	import * as Popover from '$ui/popover';
 	import { RangeCalendar } from '$lib/components/ui/range-calendar/index.js';
+	import { dateFormatter } from '$lib/utils';
+	import { LOCALE, TIMEZONE } from '$lib/constants';
 
 	let {
 		form,
@@ -22,19 +22,17 @@
 		index: number;
 	} = $props();
 
-	const df = new DateFormatter(LOCALE, {
-		dateStyle: 'short'
-	});
-
 	let label = $derived.by(() => {
 		if (!$formData.ranges[index].daterange) return 'Datumbereich wählen';
 		const start = $formData.ranges[index].daterange.start
-			? df.format(
-					$formData.ranges[index].daterange.start.toDate('Europe/Berlin')
+			? dateFormatter.format(
+					$formData.ranges[index].daterange.start.toDate(TIMEZONE)
 				)
 			: 'TT.MM.JJ';
 		const end = $formData.ranges[index].daterange.end
-			? df.format($formData.ranges[index].daterange.end.toDate('Europe/Berlin'))
+			? dateFormatter.format(
+					$formData.ranges[index].daterange.end.toDate(TIMEZONE)
+				)
 			: 'TT.MM.JJ';
 		return `${start} bis ${end}`;
 	});
@@ -83,7 +81,7 @@
 						</Popover.Trigger>
 						<Popover.Content class="w-auto p-0">
 							<RangeCalendar
-								locale="de-DE"
+								locale={LOCALE}
 								bind:value={$formData.ranges[index].daterange}
 								class="w-fit"
 							/>

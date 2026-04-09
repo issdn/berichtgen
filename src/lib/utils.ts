@@ -87,3 +87,7 @@ export function getUserDisplayName(
 
 	return { fullName, shortName };
 }
+
+export const dateFormatter = new DateFormatter(LOCALE, {
+	dateStyle: 'short'
+});

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { pasteStack } from '$lib/stores/paste_stack.svelte';
 	import * as Kbd from '$ui/kbd';
+	import { FileTypes } from '$wizard/enums';
 	import { Clock, FileCheck, FileUp, FileX } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -9,7 +10,7 @@
 		handleFiles,
 		filesNumber = $bindable(null),
 		disabled = false,
-		accept = '.docx,.pdf,.json,.txt,.csv,.png,.jpg,.jpeg'
+		accept = Object.values(FileTypes).join(',')
 	}: {
 		handleFiles: (files: DataTransferItemList | FileList) => Promise<void>;
 		filesNumber?: number | null;
@@ -49,6 +50,7 @@
 		preventDefaults(e);
 		isDraggingIn = true;
 		const items = [...(e.dataTransfer?.items ?? [])];
+
 		const allValid = items.every((item) => accept.includes(item.type));
 		isDraggedInputValid = allValid ? true : false;
 	}

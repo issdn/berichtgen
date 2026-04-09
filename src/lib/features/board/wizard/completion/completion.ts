@@ -1,8 +1,13 @@
 import { WizardError, EWizardError } from '$wizard/errors';
 import { type Result, tryResult } from '$lib/result';
 import type { Ort } from '$wizard/enums';
-import type { BatchCompletionApiResponse } from '$wizard/schemas';
+import type {
+	BatchCompletionApiResponse,
+	BatchCompletionItem
+} from '$wizard/schemas';
 import type { CompletionResult } from '$wizard/types';
+import type { FileRouting } from '$wizard/services/file_routing';
+import { toErrorBody } from '$lib/errors';
 
 /** Maximum total UTF-8 byte size for a single batch request (4 MB). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
@@ -90,23 +95,49 @@ export function createBatchesBySize<T extends { text: string }>(
  * Sends a single batch of completion items to the server endpoint.
  * Returns the raw API response, including `insufficient_tokens` when the user's
  * token budget could not cover all items.
+ *
+ * Each item carries a `FileRouting` descriptor that determines how it is sent:
+ * - `text`   → `{ type: 'text', text, ort }`
+ * - `inline` → `{ type: 'inline', data, mimeType, ort }`
+ * - `gcs`    → `{ type: 'gcs', fileUri, mimeType, ort }`
  */
 export function sendBatchCompletion(
-	items: Array<{ text: string; ort: Ort }>
+	items: Array<{ routing: FileRouting; ort: Ort }>
 ): Promise<Result<BatchCompletionApiResponse>> {
+	const mapped: BatchCompletionItem[] = items.map(({ routing, ort }) => {
+		if (routing.type === 'text') {
+			return { type: 'text', text: routing.text, ort };
+		} else if (routing.type === 'inline') {
+			return {
+				type: 'inline',
+				data: routing.data,
+				mimeType: routing.mimeType,
+				ort
+			};
+		} else {
+			return {
+				type: 'gcs',
+				fileUri: routing.fileUri,
+				mimeType: routing.mimeType,
+				ort
+			};
+		}
+	});
+
 	return tryResult(
 		fetch('/board/user/completion', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ items })
+			body: JSON.stringify({ items: mapped })
 		}).then(async (res) => {
 			const data = await res.json();
 			if (res.status >= 400) {
-				throw new WizardError(EWizardError.INVALID_JSON_FROM_AI);
+				throw WizardError.fromCode(toErrorBody(data).code);
 			}
 			return data as BatchCompletionApiResponse;
 		}),
-		() => new WizardError(EWizardError.INVALID_JSON_FROM_AI)
+		WizardError,
+		EWizardError.INVALID_JSON_FROM_AI
 	);
 }
 

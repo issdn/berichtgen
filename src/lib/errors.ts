@@ -27,16 +27,34 @@ export type AnyErrorValue = {
 
 export type ErrorBody<T extends EnumError> = T[keyof T];
 
+/**
+ * Derives the union of all error value types from a tuple of error enums
+ * produced by {@link buildError}.
+ *
+ * @example
+ * type MyErrors = UnionOf<[typeof EFooError, typeof EBarError]>;
+ */
+export type UnionOf<T extends readonly Record<string, AnyErrorValue>[]> = {
+	[K in keyof T]: T[K][keyof T[K]];
+}[number];
+
 // ---------------------------------------------------------------------------
 // Builder
 // ---------------------------------------------------------------------------
 
-export function buildError<T extends OmitErrorField<EnumError, 'code'>>(error: T) {
+export function buildError<T extends OmitErrorField<EnumError, 'code'>>(
+	error: T
+) {
 	return Object.freeze(
 		Object.fromEntries(
 			Object.entries(error).map(([key, val]) => [key, { ...val, code: key }])
 		)
-	) as { readonly [K in keyof T]: T[K] & { readonly code: K } };
+	) as {
+		readonly [K in keyof T]: Omit<T[K], 'cause'> & {
+			readonly code: K & string;
+			readonly cause?: string;
+		};
+	};
 }
 
 // ---------------------------------------------------------------------------
@@ -88,7 +106,9 @@ export function errorByHttpCode<T extends EnumError>(
 	error: T,
 	httpCode: number
 ): T[keyof T] | null {
-	const entry = Object.entries(error).find(([_, val]) => val.httpCode === httpCode);
+	const entry = Object.entries(error).find(
+		([_, val]) => val.httpCode === httpCode
+	);
 	return entry ? (entry[1] as T[keyof T]) : null;
 }
 
@@ -106,13 +126,18 @@ function parseRecord(obj: unknown): Omit<AnyErrorValue, 'httpCode'> | null {
 	if (obj === null || typeof obj !== 'object') return null;
 	const { code, message, cause } = obj as Record<string, unknown>;
 	if (typeof code !== 'string' || typeof message !== 'string') return null;
-	return { code, message, cause: typeof cause === 'string' ? cause : undefined };
+	return {
+		code,
+		message,
+		cause: typeof cause === 'string' ? cause : undefined
+	};
 }
 
 export function toErrorBody(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
 	if (e !== null && typeof e === 'object') {
 		// 1. SvelteKit HttpError: { body: { code, message, cause? } }
-		if ('body' in e) return parseRecord(e.body) ?? parseRecord(e) ?? fallback(e);
+		if ('body' in e)
+			return parseRecord(e.body) ?? parseRecord(e) ?? fallback(e);
 		// 2. Flat structured object or native Error
 		return parseRecord(e) ?? fallback(e);
 	}
@@ -122,7 +147,10 @@ export function toErrorBody(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
 function fallback(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
 	return {
 		code: 'INTERNAL_ERROR',
-		message: e instanceof Error ? e.message : 'Ein unbekannter Fehler ist aufgetreten.',
+		message:
+			e instanceof Error
+				? e.message
+				: 'Ein unbekannter Fehler ist aufgetreten.',
 		cause: undefined
 	};
 }

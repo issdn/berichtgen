@@ -11,7 +11,8 @@ export function readCsvConfig(file: File): Promise<Result<CSVConfig>> {
 			const text = new TextDecoder().decode(buffer);
 			return readCsvConfigFromText(text);
 		}),
-		() => new ParserError(EParserError.PARSE_FAILED)
+		ParserError,
+		EParserError.PARSE_FAILED
 	);
 }
 

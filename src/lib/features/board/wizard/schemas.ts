@@ -79,15 +79,59 @@ export const completionApiSchema = z.object({
 
 // ------------------------------------------------
 
-/** One item in a batch completion request. */
-export const batchCompletionItemSchema = z.object({
+const ortEnum = z.enum([
+	Ort.SCHULE,
+	Ort.BETRIEB,
+	Ort.UNTERWEISUNG,
+	Ort['SCHULE/BETRIEB']
+]);
+
+/** Completion item carrying parsed text (fallback for > 50 MB files). */
+const textItemSchema = z.object({
+	type: z.literal('text'),
 	text: z.string().nonempty(),
-	ort: z.enum([Ort.SCHULE, Ort.BETRIEB])
+	ort: ortEnum
 });
+
+/** Completion item carrying a base64-encoded file (≤ 1 MB). */
+const inlineItemSchema = z.object({
+	type: z.literal('inline'),
+	/** Base64-encoded file content. */
+	data: z.string().nonempty(),
+	mimeType: z.string().nonempty(),
+	ort: ortEnum
+});
+
+/** Completion item referencing a file already uploaded to Google Cloud Storage. */
+const gcsItemSchema = z.object({
+	type: z.literal('gcs'),
+	/** GCS object URI, e.g. `gs://bucket/path/file.pdf`. */
+	fileUri: z.string().startsWith('gs://'),
+	mimeType: z.string().nonempty(),
+	ort: ortEnum
+});
+
+/** One item in a batch completion request — text, inline file, or GCS-backed file. */
+export const batchCompletionItemSchema = z.discriminatedUnion('type', [
+	textItemSchema,
+	inlineItemSchema,
+	gcsItemSchema
+]);
+
+export type BatchCompletionItem = z.infer<typeof batchCompletionItemSchema>;
 
 /** Schema for the batch completion endpoint request body. */
 export const batchCompletionApiSchema = z.object({
 	items: z.array(batchCompletionItemSchema).min(1)
+});
+
+// ------------------------------------------------
+
+/** Request body for `POST /board/user/upload-url`. */
+export const uploadUrlRequestSchema = z.object({
+	fileName: z.string().nonempty(),
+	contentType: z.string().nonempty(),
+	fileSize: z.number().int().positive()
 });
 
 /**

@@ -1,7 +1,7 @@
 import type { Scheduler } from 'tesseract.js';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
 import { ParserError, EParserError } from '$core/parser/errors';
-import { type Result, okResult, errResult, tryResult } from '$lib/result';
+import { type Result, errResult, tryResult } from '$lib/result';
 import type { ResultEntry } from '$wizard/types';
 import { FileTypes } from '$wizard/enums';
 
@@ -55,7 +55,13 @@ export async function parseFile(
 ): Promise<Result<string | ResultEntry[]>> {
 	const fileResult = await readFile(file);
 	if (!fileResult.ok) return fileResult;
-	return dispatchParser(file.type, fileResult.data, context, scheduler, options);
+	return dispatchParser(
+		file.type,
+		fileResult.data,
+		context,
+		scheduler,
+		options
+	);
 }
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
@@ -69,7 +75,8 @@ export async function parseFile(
 function readFile(file: File): Promise<Result<Uint8Array>> {
 	return tryResult(
 		file.arrayBuffer().then((buf) => new Uint8Array(buf)),
-		() => new ParserError(EParserError.INVALID_FILE)
+		ParserError,
+		EParserError.INVALID_FILE
 	);
 }
 
@@ -105,7 +112,7 @@ function dispatchParser(
 			return loadDocx(data, context, scheduler, options.processPhotos);
 
 		default:
-			return Promise.resolve(errResult(new ParserError(EParserError.INVALID_FILE)));
+			return Promise.resolve(errResult(ParserError, EParserError.INVALID_FILE));
 	}
 }
 
@@ -123,7 +130,8 @@ function loadImage(
 			await parser.init(data);
 			return parser.parse();
 		}),
-		() => new ParserError(EParserError.PARSE_FAILED)
+		ParserError,
+		EParserError.PARSE_FAILED
 	);
 }
 
@@ -141,7 +149,8 @@ function loadText(
 			await parser.init(data);
 			return parser.parse();
 		}),
-		() => new ParserError(EParserError.PARSE_FAILED)
+		ParserError,
+		EParserError.PARSE_FAILED
 	);
 }
 
@@ -165,7 +174,8 @@ function loadJson(
 			if (!schemaResult.ok) throw schemaResult.error;
 			return schemaResult.data as string | ResultEntry[];
 		}),
-		() => new ParserError(EParserError.PARSE_FAILED)
+		ParserError,
+		EParserError.PARSE_FAILED
 	);
 }
 
@@ -181,11 +191,17 @@ function loadPdf(
 ): Promise<Result<string>> {
 	return tryResult(
 		import('$core/parser/pdf_parser').then(async ({ PDFParser }) => {
-			const parser = new PDFParser(context, scheduler, createOffscreenCanvas, processPhotos);
+			const parser = new PDFParser(
+				context,
+				scheduler,
+				createOffscreenCanvas,
+				processPhotos
+			);
 			await parser.init(data);
 			return parser.parse();
 		}),
-		() => new ParserError(EParserError.PARSE_FAILED)
+		ParserError,
+		EParserError.PARSE_FAILED
 	);
 }
 
@@ -205,7 +221,8 @@ function loadDocx(
 			await parser.init(data);
 			return parser.parse();
 		}),
-		() => new ParserError(EParserError.PARSE_FAILED)
+		ParserError,
+		EParserError.PARSE_FAILED
 	);
 }
 

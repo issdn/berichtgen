@@ -21,16 +21,18 @@ import {
 	splitTextIntoChunks,
 	stringsToEntries
 } from '$wizard/completion/completion';
+import type { FileRouting } from './file_routing';
 import type { DateRangeSchema } from '$wizard/schemas';
 
 /**
- * Internal representation of one text chunk that will be sent to the AI.
- * A single file produces one chunk unless its text exceeds MAX_BATCH_BYTES,
- * in which case it is split into equal-sized chunks.
+ * Internal representation of one routed file chunk that will be sent to the AI.
+ *
+ * - Text files may be split into multiple chunks when they exceed MAX_BATCH_BYTES.
+ * - Inline and GCS files are always a single chunk (chunkIndex is always 0).
  */
 type ChunkDescriptor = {
 	file: WizardProcessStateMachine;
-	text: string;
+	routing: FileRouting;
 	ort: Ort;
 	/** Index of the originating file within the pending list (stable across batches). */
 	fileIndex: number;
@@ -158,8 +160,11 @@ export class WizardScheduler {
 
 	/**
 	 * Expands a list of pending files into `ChunkDescriptor` entries.
-	 * Files whose sanitised text exceeds `MAX_BATCH_BYTES` are split into
-	 * equal-sized chunks so that each chunk fits within one batch.
+	 *
+	 * - `text` routings are sanitised and split into equal-sized chunks when they
+	 *   exceed `MAX_BATCH_BYTES`, so each chunk fits within a single batch.
+	 * - `inline` and `gcs` routings are never split — they always produce exactly
+	 *   one descriptor since their sizes are already bounded by the routing decision.
 	 */
 	private expandIntoChunks(
 		pendingList: WizardProcessStateMachine[]
@@ -167,16 +172,25 @@ export class WizardScheduler {
 		const chunks: ChunkDescriptor[] = [];
 		for (let fi = 0; fi < pendingList.length; fi++) {
 			const file = pendingList[fi];
-			const raw = sanitizeToTwoByteUTF8(file.context.snapshot as string);
-			const textChunks = splitTextIntoChunks(raw, MAX_BATCH_BYTES);
-			for (let ci = 0; ci < textChunks.length; ci++) {
-				chunks.push({
-					file,
-					text: textChunks[ci],
-					ort: file.context.dateRanges!.ort,
-					fileIndex: fi,
-					chunkIndex: ci
-				});
+			const routing = file.context.snapshot as FileRouting;
+			const ort = file.context.dateRanges!.ort;
+
+			if (routing.type === 'text') {
+				// Text files may be large — sanitise and split as before.
+				const sanitised = sanitizeToTwoByteUTF8(routing.text);
+				const textChunks = splitTextIntoChunks(sanitised, MAX_BATCH_BYTES);
+				for (let ci = 0; ci < textChunks.length; ci++) {
+					chunks.push({
+						file,
+						routing: { type: 'text', text: textChunks[ci] },
+						ort,
+						fileIndex: fi,
+						chunkIndex: ci
+					});
+				}
+			} else {
+				// Inline and GCS files are already size-bounded — one chunk per file.
+				chunks.push({ file, routing, ort, fileIndex: fi, chunkIndex: 0 });
 			}
 		}
 		return chunks;
@@ -203,7 +217,20 @@ export class WizardScheduler {
 			(id) => this.schedule!.find((f) => f.id === id)!
 		);
 		const allChunks = this.expandIntoChunks(pendingList);
-		const batches = createBatchesBySize(allChunks, MAX_BATCH_BYTES);
+		// For batching purposes, provide a `text` proxy so `createBatchesBySize` can
+		// measure byte sizes: text chunks use their actual content; inline items use
+		// the decoded byte size; GCS items contribute 0 bytes (Vercel never sees them).
+		const chunksWithSize = allChunks.map((c) => ({
+			...c,
+			text:
+				c.routing.type === 'text'
+					? c.routing.text
+					: c.routing.type === 'inline'
+						? // Approximate decoded size from base64 length.
+							'x'.repeat(Math.ceil((c.routing.data.length * 3) / 4))
+						: '' // GCS: 0 bytes from Vercel's perspective
+		}));
+		const batches = createBatchesBySize(chunksWithSize, MAX_BATCH_BYTES);
 
 		// chunkResults[fileIndex][chunkIndex] = AI string[] for that chunk
 		const chunkResults = new SvelteMap<number, SvelteMap<number, string[]>>();
@@ -223,7 +250,7 @@ export class WizardScheduler {
 				}
 			}
 
-			const items = batch.map(({ text, ort }) => ({ text, ort }));
+			const items = batch.map(({ routing, ort }) => ({ routing, ort }));
 			const result = await sendBatchCompletion(items);
 
 			if (!result.ok) {

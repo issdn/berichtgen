@@ -31,6 +31,7 @@
 		reportTemplate
 	} from '../api/templates.remote';
 	import DocxPreview from './DocxPreview.svelte';
+	import { LOCALE } from '$lib/constants';
 
 	type TemplateItem = Awaited<
 		ReturnType<typeof getTemplates>
@@ -51,7 +52,9 @@
 	} = $props();
 
 	const { user } = getContext<UserContext>('user')();
-	const mutation = getContext<{ start(): void; end(): void }>('templatesMutation');
+	const mutation = getContext<{ start(): void; end(): void }>(
+		'templatesMutation'
+	);
 
 	let reportDialogOpen = $state(false);
 
@@ -231,8 +234,8 @@
 					<Dialog.Description>
 						{profile.full_name ?? 'Anonym'} · Hochgeladen am {new Date(
 							template.created_at
-						).toLocaleDateString('de-DE')}{template.updated_at
-							? ` · Zuletzt geändert ${new Date(template.updated_at).toLocaleDateString('de-DE')}`
+						).toLocaleDateString(LOCALE)}{template.updated_at
+							? ` · Zuletzt geändert ${new Date(template.updated_at).toLocaleDateString(LOCALE)}`
 							: ''}
 					</Dialog.Description>
 				</Dialog.Header>

@@ -73,7 +73,12 @@ vi.mock('@google/genai/tokenizer', () => ({
 
 vi.mock('@google/genai', () => ({
 	GoogleGenAI: vi.fn().mockImplementation(() => ({
-		models: { generateContent: mockGenerateContent }
+		models: {
+			generateContent: mockGenerateContent,
+			// countTokens is used for inline/gcs items; not exercised in these tests
+			// (all test items are text-type, which use the local tokenizer)
+			countTokens: vi.fn().mockResolvedValue({ totalTokens: 100 })
+		}
 	})),
 	ApiError: class ApiError extends Error {
 		status: number;
@@ -123,8 +128,8 @@ function makeEvent(body: unknown, userId = 'user-1'): any {
 }
 
 const validItems = [
-	{ text: 'Montag: Programmieren', ort: 'BETRIEB' },
-	{ text: 'Dienstag: Testen', ort: 'SCHULE' }
+	{ type: 'text' as const, text: 'Montag: Programmieren', ort: 'BETRIEB' },
+	{ type: 'text' as const, text: 'Dienstag: Testen', ort: 'SCHULE' }
 ];
 
 // ---------------------------------------------------------------------------

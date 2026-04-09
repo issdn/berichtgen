@@ -1,4 +1,4 @@
-import { ***REMOVED***Error } from '$lib/errors';
+import { ***REMOVED***Error, toErrorBody, type AnyErrorValue } from '$lib/errors';
 
 export type Result<T> =
 	| { ok: true; data: T }
@@ -8,8 +8,18 @@ export function okResult<T>(data: T): Result<T> {
 	return { ok: true, data };
 }
 
-export function errResult(error: ***REMOVED***Error): Result<never> {
-	return { ok: false, error };
+export function errResult(
+	errorClass: typeof ***REMOVED***Error,
+	apiError: AnyErrorValue,
+	error?: unknown
+): Result<never> {
+	return {
+		ok: false,
+		error:
+			error instanceof ***REMOVED***Error
+				? error
+				: new errorClass({ ...apiError, cause: toErrorBody(error).message })
+	};
 }
 
 /**
@@ -19,11 +29,12 @@ export function errResult(error: ***REMOVED***Error): Result<never> {
  */
 export async function tryResult<T>(
 	promise: Promise<T>,
-	mapError: (e: unknown) => ***REMOVED***Error
+	errorClass: typeof ***REMOVED***Error,
+	apiError: AnyErrorValue
 ): Promise<Result<T>> {
 	try {
 		return okResult(await promise);
 	} catch (e) {
-		return errResult(e instanceof ***REMOVED***Error ? e : mapError(e));
+		return errResult(errorClass, apiError, e);
 	}
 }

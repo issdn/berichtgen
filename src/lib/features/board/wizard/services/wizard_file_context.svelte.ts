@@ -1,11 +1,12 @@
 import type { Entry, ResultEntry } from '../types';
 import type { DateRangeSchema } from '../schemas';
-import { ***REMOVED***Error } from '$lib/errors';
 import { FileTypes } from '../enums';
 import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+import type { FileRouting } from './file_routing';
+import type { ***REMOVED***Error } from '$lib/errors';
 
 export class WizardFileContext {
-	snapshot: string | Entry[] | ResultEntry[] | undefined;
+	snapshot: FileRouting | Entry[] | ResultEntry[] | undefined;
 
 	finished: ResultEntry[] | null = null;
 

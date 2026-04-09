@@ -59,7 +59,11 @@
       "Bash(npx tsc:*)",
       "Bash(npx shadcn-svelte@latest add empty)",
       "Bash(printf \"y\\\\nn\\\\n\")",
-      "mcp__plugin_context-mode_context-mode__ctx_stats"
+      "mcp__plugin_context-mode_context-mode__ctx_stats",
+      "Bash(pnpm test:unit --run)",
+      "Read(//c/Users/isdnb/Documents/code/berichtgen/**)",
+      "Bash(pnpm vitest:*)",
+      "Bash(pnpm list:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

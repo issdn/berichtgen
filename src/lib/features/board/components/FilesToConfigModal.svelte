@@ -12,6 +12,7 @@
 	import { Button } from '$ui/button';
 	import { SvelteMap } from 'svelte/reactivity';
 	import Dropzone from './Dropzone.svelte';
+	import { buildConfigMap } from './config_generator';
 
 	let resultFiles = $state<SvelteMap<string, string> | null>(null);
 
@@ -25,20 +26,9 @@
 						items,
 						ScanReturnValue.DATA_TRANSFER_ITEM
 					)) as FileSystemFileEntry[][]);
-		filesNumber = directories.flat().length;
-		const texts = new SvelteMap<string, string>();
-		for (const file of directories.flat()) {
-			const parent =
-				(file instanceof File ? file.webkitRelativePath : file.fullPath)
-					.split('/')
-					.at(-2) ?? '';
-			texts.set(
-				parent,
-				(texts.get(parent) || '') +
-					`SCHULE,"${file.name}",YYYY-MM-DD;YYYY-MM-DD;40\n`
-			);
-		}
-		resultFiles = texts;
+		const allFiles = directories.flat();
+		filesNumber = allFiles.length;
+		resultFiles = new SvelteMap(buildConfigMap(allFiles));
 	}
 
 	function getFilenameLeading(key: string) {

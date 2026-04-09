@@ -2,12 +2,15 @@ import fsm from 'svelte-fsm';
 import type { WizardFileContext } from './wizard_file_context.svelte';
 import { invalidate } from '$app/navigation';
 import type { WizardScheduler } from './wizard_scheduler.svelte';
-import { WizardError, EWizardError } from '$wizard/errors';
-import type { Entry, ResultEntry, WizardProcessStateMachine } from '$wizard/types';
+import type {
+	Entry,
+	ResultEntry,
+	WizardProcessStateMachine
+} from '$wizard/types';
 import { WizardStep } from '$wizard/enums';
 import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
-import { parseFile } from '$core/parser/parse_service';
+import { resolveFileRouting } from './file_routing';
 
 export function createStateMachineForContext(
 	context: WizardFileContext,
@@ -26,7 +29,7 @@ export function createStateMachineForContext(
 					return;
 				}
 
-				parseFile(context.file, context, scheduler.scheduler!, {
+				resolveFileRouting(context.file, context, scheduler.scheduler!, {
 					processPhotos: berichtgenStore.processPhotos,
 					rewordJSON: berichtgenStore.rewordJSON
 				}).then((result) => {
@@ -108,16 +111,11 @@ export function createStateMachineForContext(
 					this.cancel();
 					return;
 				}
-				try {
-					context.snapshot = spreadEntriesAcrossWeeks(
-						context.snapshot as Entry[],
-						context.dateRanges!
-					);
-					this.next();
-				} catch (e) {
-					context.error = new WizardError(EWizardError.SPREAD_FAILED);
-					this.error();
-				}
+				context.snapshot = spreadEntriesAcrossWeeks(
+					context.snapshot as Entry[],
+					context.dateRanges!
+				);
+				this.next();
 			},
 			next: () => WizardStep.DONE,
 			error: () => WizardStep.ERROR,

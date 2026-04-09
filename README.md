@@ -70,7 +70,7 @@ Supabase Studio öffnen unter **http://localhost:54323** → **Authentication �
 Schlüssel in `GOOGLE_AI_API_KEY` in der `.env` eintragen.
 
 ---
-
+w
 ## 5. App starten
 
 ```bash
@@ -78,3 +78,9 @@ pnpm dev
 ```
 
 Unter **http://localhost:5173** öffnen, mit `pnpm test:test-user` einen Benutzer erstellen und damit einloggen.
+
+# Data Privacy
+### GCP
+Files above 1MB are stored on a GCP Bucket for the duration of the process and deleted after. Deleted files are deleted permamently (no soft deletion).
+### Supabase
+### Vercel (AWS)

@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { Button } from '$ui/button';
+	import * as Command from '$lib/components/ui/command/index.js';
+	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { Check, ChevronsUpDown } from '@lucide/svelte';
-	import { Button, Command, Popover } from 'bits-ui';
 	import { tick } from 'svelte';
 	import { cn } from 'tailwind-variants';
 
@@ -39,10 +41,10 @@
 <Popover.Root bind:open>
 	<Popover.Trigger class="w-calendar justify-between" bind:ref={triggerRef}>
 		{#snippet child({ props })}
-			<Button.Root variant="outline" {...props} role="combobox" aria-expanded={open}>
+			<Button variant="outline" {...props} role="combobox" aria-expanded={open}>
 				{value}
 				<ChevronsUpDown class="opacity-50" />
-			</Button.Root>
+			</Button>
 		{/snippet}
 	</Popover.Trigger>
 	<Popover.Content class="w-calendar p-0">

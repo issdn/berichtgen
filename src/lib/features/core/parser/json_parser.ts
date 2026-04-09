@@ -18,9 +18,9 @@ export class JSONParser extends TXTParser {
 			if (success) {
 				return okResult(data as ResultEntry[]);
 			}
-			return errResult(new ParserError(EParserError.PARSE_FAILED));
+			return errResult(ParserError, EParserError.PARSE_FAILED);
 		} catch {
-			return errResult(new ParserError(EParserError.PARSE_FAILED));
+			return errResult(ParserError, EParserError.PARSE_FAILED);
 		}
 	}
 }
