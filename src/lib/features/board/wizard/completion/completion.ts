@@ -8,6 +8,7 @@ import type {
 import type { CompletionResult } from '$wizard/types';
 import type { FileRouting } from '$wizard/services/file_routing';
 import { toErrorBody } from '$lib/errors';
+import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 
 /** Maximum total UTF-8 byte size for a single batch request (4 MB). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
@@ -99,7 +100,7 @@ export function createBatchesBySize<T extends { text: string }>(
  * Each item carries a `FileRouting` descriptor that determines how it is sent:
  * - `text`   → `{ type: 'text', text, ort }`
  * - `inline` → `{ type: 'inline', data, mimeType, ort }`
- * - `gcs`    → `{ type: 'gcs', fileUri, mimeType, ort }`
+ * - `file`   → `{ type: 'file', fileUri, mimeType, ort }`
  */
 export function sendBatchCompletion(
 	items: Array<{ routing: FileRouting; ort: Ort }>
@@ -116,7 +117,7 @@ export function sendBatchCompletion(
 			};
 		} else {
 			return {
-				type: 'gcs',
+				type: 'file',
 				fileUri: routing.fileUri,
 				mimeType: routing.mimeType,
 				ort
@@ -124,8 +125,12 @@ export function sendBatchCompletion(
 		}
 	});
 
+	const endpoint = berichtgenStore.useDevEndpoint
+		? '/board/dev/completion'
+		: '/board/user/completion';
+
 	return tryResult(
-		fetch('/board/user/completion', {
+		fetch(endpoint, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ items: mapped })

@@ -102,20 +102,20 @@ const inlineItemSchema = z.object({
 	ort: ortEnum
 });
 
-/** Completion item referencing a file already uploaded to Google Cloud Storage. */
-const gcsItemSchema = z.object({
-	type: z.literal('gcs'),
-	/** GCS object URI, e.g. `gs://bucket/path/file.pdf`. */
-	fileUri: z.string().startsWith('gs://'),
+/** Completion item referencing a file uploaded to the Gemini Files API. */
+const fileApiItemSchema = z.object({
+	type: z.literal('file'),
+	/** Gemini Files API URI returned after a resumable upload. */
+	fileUri: z.string().url(),
 	mimeType: z.string().nonempty(),
 	ort: ortEnum
 });
 
-/** One item in a batch completion request — text, inline file, or GCS-backed file. */
+/** One item in a batch completion request — text, inline file, or Files API-backed file. */
 export const batchCompletionItemSchema = z.discriminatedUnion('type', [
 	textItemSchema,
 	inlineItemSchema,
-	gcsItemSchema
+	fileApiItemSchema
 ]);
 
 export type BatchCompletionItem = z.infer<typeof batchCompletionItemSchema>;

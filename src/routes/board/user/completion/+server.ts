@@ -13,11 +13,10 @@ import { sql } from 'kysely';
 import * as Sentry from '@sentry/sveltekit';
 import {
 	batchCompletionApiSchema,
-	completionSchema,
 	type BatchCompletionApiResponse,
 	type BatchCompletionItem
 } from '$wizard/schemas';
-import { getContextPrompt } from '$wizard/completion/prompt';
+import { itemToContentPart, runCompletion } from '$wizard/completion/gemini';
 import { GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
@@ -80,7 +79,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	}
 
 	const geminiResults = await Promise.allSettled(
-		budget.fittingIndices.map((i) => generateCompletion(items[i], ai, model))
+		budget.fittingIndices.map((i) => runCompletion(items[i], ai, model))
 	);
 
 	if (geminiResults.some((r) => r.status === 'rejected')) {
@@ -89,9 +88,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	}
 
 	const { results, parseErrorCount } = parseGeminiResponses(
-		geminiResults as PromiseFulfilledResult<
-			Awaited<ReturnType<typeof generateCompletion>>
-		>[],
+		geminiResults as PromiseFulfilledResult<string[] | null>[],
 		budget.fittingIndices,
 		items.length
 	);
@@ -220,44 +217,11 @@ async function refundUserTokens(userId: string, amount: number): Promise<void> {
 // ─── Gemini helpers ───────────────────────────────────────────────────────────
 
 /**
- * Calls the Gemini API for a single completion item.
- * Builds the appropriate content part based on the item type:
- * - `text`   → text part
- * - `inline` → `inlineData` part (base64-encoded bytes)
- * - `gcs`    → `fileData` part (`gs://` URI — Gemini fetches natively)
- */
-async function generateCompletion(
-	item: BatchCompletionItem,
-	ai: genai.GoogleGenAI,
-	model: string
-) {
-	return ai.models.generateContent({
-		config: {
-			responseMimeType: 'application/json',
-			systemInstruction: getContextPrompt(item.ort),
-			responseSchema: completionSchema.toJSONSchema()
-		},
-		model,
-		contents: [{ role: 'user', parts: [itemToContentPart(item)] }]
-	});
-}
-
-/** Maps a `BatchCompletionItem` to its Gemini content part. */
-function itemToContentPart(item: BatchCompletionItem): genai.Part {
-	if (item.type === 'text') return { text: item.text };
-	if (item.type === 'inline')
-		return { inlineData: { data: item.data, mimeType: item.mimeType } };
-	return { fileData: { fileUri: item.fileUri, mimeType: item.mimeType } };
-}
-
-/**
- * Validates and maps fulfilled Gemini responses to per-item string arrays.
- * Reports parse errors to Sentry and returns a count for the caller to act on.
+ * Builds a sparse result array from fulfilled `runCompletion` results.
+ * Reports unparseable responses to Sentry and counts them for the caller.
  */
 function parseGeminiResponses(
-	settled: PromiseFulfilledResult<
-		Awaited<ReturnType<typeof generateCompletion>>
-	>[],
+	settled: PromiseFulfilledResult<string[] | null>[],
 	fittingIndices: number[],
 	totalItems: number
 ): { results: (string[] | null)[]; parseErrorCount: number } {
@@ -265,33 +229,13 @@ function parseGeminiResponses(
 	let parseErrorCount = 0;
 
 	for (let i = 0; i < fittingIndices.length; i++) {
-		const text = settled[i].value.text;
-
-		if (!text) {
+		const parsed = settled[i].value;
+		if (parsed === null) {
 			parseErrorCount++;
-			Sentry.captureEvent({
-				message: 'Gemini returned empty text for a batch item',
-				level: 'error'
-			});
+			Sentry.captureMessage('Gemini response could not be parsed for a batch item');
 			continue;
 		}
-
-		let parsed: ReturnType<typeof completionSchema.safeParse>;
-		try {
-			parsed = completionSchema.safeParse(text);
-		} catch (e) {
-			parseErrorCount++;
-			Sentry.captureException(e);
-			continue;
-		}
-
-		if (!parsed.success) {
-			parseErrorCount++;
-			Sentry.captureMessage(parsed.error.message);
-			continue;
-		}
-
-		results[fittingIndices[i]] = parsed.data;
+		results[fittingIndices[i]] = parsed;
 	}
 
 	return { results, parseErrorCount };

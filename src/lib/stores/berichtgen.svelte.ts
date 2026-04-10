@@ -5,6 +5,8 @@ class ***REMOVED***Store {
 
 	_constantHours = $state(false);
 
+	_useDevEndpoint = $state(false);
+
 	_preferedTemplatePath = $state<string | null>(null);
 
 	get processPhotos() {
@@ -32,6 +34,14 @@ class ***REMOVED***Store {
 	set constantHours(value: boolean) {
 		localStorage.setItem('constantHours', JSON.stringify(value));
 		this._constantHours = value;
+	}
+
+	get useDevEndpoint() {
+		return this._useDevEndpoint;
+	}
+
+	set useDevEndpoint(value: boolean) {
+		this._useDevEndpoint = value;
 	}
 
 	get preferedTemplatePath() {
