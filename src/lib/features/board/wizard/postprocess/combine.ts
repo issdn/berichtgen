@@ -1,5 +1,4 @@
 import type { ResultEntry } from '$wizard/types';
-import { BULLETPOINT } from '$lib/constants';
 import { Ort } from '$wizard/enums';
 import { parseDate } from '@internationalized/date';
 
@@ -20,15 +19,11 @@ export function combineJSONs(
 	return Array.from(byDateMap.entries())
 		.map(([_, entries]) => {
 			const combinedEntry = entries.reduce(
-				(acc, entry) => {
-					acc.text += BULLETPOINT + entry.text;
-					acc.stunden += entry.stunden;
-					acc.ort = entry.ort;
-					acc.datum = entry.datum;
-					acc.endDatum = entry.endDatum;
-					acc.ausbildungsjahr = entry.ausbildungsjahr;
-					return acc;
-				},
+				(acc, entry) => ({
+					...acc,
+					text: acc.text + `\n\n${entry.text}`,
+					stunden: acc.stunden + entry.stunden
+				}),
 				{
 					text: '',
 					datum: '',
