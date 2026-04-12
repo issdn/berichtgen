@@ -40,7 +40,13 @@ export type WizardRawDirectories = File[][];
 
 export type WizardRawDirectory = WizardRawDirectories[number];
 
-export type WizardDirectory = { file: File; config?: DateRangeSchema }[];
+export type WizardFileEntry = { file: File; config?: DateRangeSchema };
+
+export type WizardUrlEntry = { url: string; config?: DateRangeSchema };
+
+export type WizardDirectoryEntry = WizardFileEntry | WizardUrlEntry;
+
+export type WizardDirectory = WizardDirectoryEntry[];
 
 export type WizardDirectories = WizardDirectory[];
 

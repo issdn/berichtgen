@@ -81,6 +81,16 @@
 	}
 
 	async function handlePaste(e: ClipboardEvent) {
+		// URL paste: wrap as a text/uri-list File so the wizard treats it like a URL entry.
+		// Pass dt.files (FileList) rather than dt so getFileListWithPreserverFolderStructure
+		// is used — webkitGetAsEntry() returns null for programmatically-added files.
+		const text = e.clipboardData?.getData('text/plain')?.trim();
+		if (text && URL.canParse(text)) {
+			const dt = new DataTransfer();
+			dt.items.add(new File([text], text, { type: 'text/uri-list' }));
+			await extractAndHandleFiles(dt.files);
+			return;
+		}
 		if (!e.clipboardData?.files.length) return;
 		await extractAndHandleFiles(e.clipboardData);
 	}

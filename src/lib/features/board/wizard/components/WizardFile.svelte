@@ -57,7 +57,7 @@
 >
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
 		<span data-testid="wizard-file-name" class="truncate overflow-hidden"
-			>{context.file.name}</span
+			>{typeof context.file === 'string' ? context.file : context.file.name}</span
 		>
 		<div class="flex flex-row gap-x-2">
 			{#if $machine === WizardStep.WAITING}

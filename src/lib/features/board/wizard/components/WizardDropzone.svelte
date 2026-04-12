@@ -1,7 +1,10 @@
 <script lang="ts">
 	import type { UserContext } from '$auth/types';
 	import type {
+		CSVConfigFile,
 		WizardDirectory,
+		WizardDirectoryEntry,
+		WizardFileEntry,
 		WizardRawDirectories,
 		WizardRawDirectory
 	} from '$wizard/types';
@@ -38,8 +41,6 @@
 				.flat()
 				.find((f) => f.type !== FileTypes.JSON);
 			if (loggedIn) {
-				// Note: userTokens check would need to be passed from parent or context
-				// For now, we proceed with the processing
 				init(directories);
 			} else {
 				if (anyNonJsonFiles) {
@@ -71,46 +72,63 @@
 		files: WizardRawDirectory
 	): Promise<WizardDirectory> {
 		const configFile =
-			files.find((file) => CONFIG_FILENAME_REGEX.test(file.name)) || null;
-		const otherFiles = files.reduce((directory, file) => {
-			if (!CONFIG_FILENAME_REGEX.test(file.name)) {
-				return [{ file }, ...directory];
-			} else {
-				return directory;
-			}
-		}, [] as WizardDirectory);
-		if (configFile == null) {
-			return otherFiles;
-		}
+			files.find((f) => CONFIG_FILENAME_REGEX.test(f.name)) ?? null;
+		const dataFiles = files.filter((f) => !CONFIG_FILENAME_REGEX.test(f.name));
+		const entries: WizardDirectory = dataFiles.map(fileToEntry);
+
+		if (configFile === null) return entries;
+
 		const config = await readCsvConfig(configFile);
 		if (!config.ok) {
 			toast.error(
 				`Fehler beim Lesen der Konfiguration: ${config.error.message || 'Unbekannter Fehler'}`
 			);
-			return otherFiles;
+			return entries;
 		}
-		const notFoundFiles: string[] = [];
-		const nameToFileMap = new Map(otherFiles.map((f) => [f.file.name, f]));
-		config.data.forEach(({ file, ort, ranges }) => {
-			const wizardFile = nameToFileMap.get(file);
-			if (wizardFile) {
-				wizardFile.config = {
-					ranges: ranges.map((obj, i) => ({ ...obj, id: i })),
-					ort
-				};
+
+		return applyConfig(entries, config.data);
+	}
+
+	function fileToEntry(file: File): WizardDirectoryEntry {
+		if (file.type === 'text/uri-list') return { url: file.name };
+		return { file };
+	}
+
+	function applyConfig(
+		entries: WizardDirectory,
+		configRows: CSVConfigFile[]
+	): WizardDirectory {
+		const fileEntries = new Map(
+			entries
+				.filter((e): e is WizardFileEntry => 'file' in e)
+				.map((e) => [e.file.name, e])
+		);
+		const notFound: string[] = [];
+
+		for (const { file, ort, ranges } of configRows) {
+			const config = { ranges: ranges.map((r, i) => ({ ...r, id: i })), ort };
+			if (URL.canParse(file)) {
+				entries.push({ url: file, config });
+			} else if (fileEntries.has(file)) {
+				fileEntries.get(file)!.config = config;
 			} else {
-				notFoundFiles.push(file);
+				notFound.push(file);
 			}
-		});
-		if (config.data.length < otherFiles.length) {
+		}
+
+		const configuredFileCount = configRows.filter(
+			({ file }) => !URL.canParse(file)
+		).length;
+		if (configuredFileCount < fileEntries.size) {
 			toast('Nicht alle Dateien in der Konfiguration gefunden.');
 		}
-		if (notFoundFiles.length > 0) {
+		if (notFound.length > 0) {
 			toast.error(
-				`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${notFoundFiles.join(', ')}`
+				`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${notFound.join(', ')}`
 			);
 		}
-		return otherFiles;
+
+		return entries;
 	}
 </script>
 

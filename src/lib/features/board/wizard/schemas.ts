@@ -106,16 +106,24 @@ const inlineItemSchema = z.object({
 const fileApiItemSchema = z.object({
 	type: z.literal('file'),
 	/** Gemini Files API URI returned after a resumable upload. */
-	fileUri: z.string().url(),
+	fileUri: z.url(),
 	mimeType: z.string().nonempty(),
 	ort: ortEnum
 });
 
-/** One item in a batch completion request — text, inline file, or Files API-backed file. */
+/** Completion item referencing a web URL — Gemini fetches it via Google Search grounding. */
+const urlItemSchema = z.object({
+	type: z.literal('url'),
+	url: z.url(),
+	ort: ortEnum
+});
+
+/** One item in a batch completion request — text, inline file, Files API file, or URL. */
 export const batchCompletionItemSchema = z.discriminatedUnion('type', [
 	textItemSchema,
 	inlineItemSchema,
-	fileApiItemSchema
+	fileApiItemSchema,
+	urlItemSchema
 ]);
 
 export type BatchCompletionItem = z.infer<typeof batchCompletionItemSchema>;

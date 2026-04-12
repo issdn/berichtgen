@@ -56,8 +56,17 @@ export type GcsRouting = {
 	mimeType: string;
 };
 
+/**
+ * A web URL pasted by the user or specified in the config file.
+ * Gemini fetches it at inference time via Google Search grounding.
+ */
+export type UrlRouting = {
+	type: 'url';
+	url: string;
+};
+
 /** Discriminated union of all possible file routing strategies. */
-export type FileRouting = TextRouting | InlineRouting | GcsRouting;
+export type FileRouting = TextRouting | InlineRouting | GcsRouting | UrlRouting;
 
 // ─── Response types ───────────────────────────────────────────────────────────
 

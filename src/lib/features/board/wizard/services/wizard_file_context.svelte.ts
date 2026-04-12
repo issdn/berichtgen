@@ -14,16 +14,20 @@ export class WizardFileContext {
 
 	error?: ***REMOVED***Error;
 
-	file: File;
+	file: File | string;
 
 	cancelled: boolean = false;
 
 	get shouldSkip() {
-		return this.file.type === FileTypes.JSON && !berichtgenStore.rewordJSON;
+		return (
+			typeof this.file !== 'string' &&
+			this.file.type === FileTypes.JSON &&
+			!berichtgenStore.rewordJSON
+		);
 	}
 
 	constructor(
-		file: File,
+		file: File | string,
 		dateRanges: DateRangeSchema | null | undefined = null
 	) {
 		this.file = file;

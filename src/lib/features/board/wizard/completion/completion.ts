@@ -115,6 +115,8 @@ export function sendBatchCompletion(
 				mimeType: routing.mimeType,
 				ort
 			};
+		} else if (routing.type === 'url') {
+			return { type: 'url', url: routing.url, ort };
 		} else {
 			return {
 				type: 'file',

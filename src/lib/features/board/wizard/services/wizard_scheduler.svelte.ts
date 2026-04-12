@@ -9,6 +9,7 @@ import type {
 	Entry,
 	ResultEntry,
 	WizardDirectories,
+	WizardDirectoryEntry,
 	WizardProcessStateMachine
 } from '$wizard/types';
 import type { Ort } from '$wizard/enums';
@@ -22,7 +23,6 @@ import {
 	stringsToEntries
 } from '$wizard/completion/completion';
 import type { FileRouting } from './file_routing';
-import type { DateRangeSchema } from '$wizard/schemas';
 
 /**
  * Internal representation of one routed file chunk that will be sent to the AI.
@@ -189,7 +189,7 @@ export class WizardScheduler {
 					});
 				}
 			} else {
-				// Inline and GCS files are already size-bounded — one chunk per file.
+				// Inline, Files API, and URL items are already size-bounded — one chunk each.
 				chunks.push({ file, routing, ort, fileIndex: fi, chunkIndex: 0 });
 			}
 		}
@@ -305,15 +305,10 @@ export class WizardScheduler {
 		}
 	};
 
-	createProcessStateMachine = ({
-		file,
-		config = null
-	}: {
-		file: File;
-		config?: DateRangeSchema | null | undefined;
-	}) => {
+	createProcessStateMachine = (entry: WizardDirectoryEntry) => {
 		const id = crypto.randomUUID();
-		const context = new WizardFileContext(file, config);
+		const fileOrUrl = 'file' in entry ? entry.file : entry.url;
+		const context = new WizardFileContext(fileOrUrl, entry.config ?? null);
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const scheduler = this;
 

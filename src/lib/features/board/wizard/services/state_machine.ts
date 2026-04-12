@@ -29,7 +29,14 @@ export function createStateMachineForContext(
 					return;
 				}
 
-				resolveFileRouting(context.file, context, scheduler.scheduler!, {
+				const file = context.file;
+				if (typeof file === 'string') {
+					context.snapshot = { type: 'url' as const, url: file };
+					this.next();
+					return;
+				}
+
+				resolveFileRouting(file, context, scheduler.scheduler!, {
 					processPhotos: berichtgenStore.processPhotos,
 					rewordJSON: berichtgenStore.rewordJSON
 				}).then((result) => {
