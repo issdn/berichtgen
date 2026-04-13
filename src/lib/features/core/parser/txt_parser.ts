@@ -1,5 +1,5 @@
 import { Parser } from '$core/parser/parser';
-import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
+import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
 
 export class TXTParser extends Parser {

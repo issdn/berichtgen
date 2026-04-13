@@ -1,5 +1,5 @@
 import { clamp } from '$lib/utils';
-import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
+import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import { wizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
 import type { Scheduler } from 'tesseract.js';
 

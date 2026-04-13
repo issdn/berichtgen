@@ -141,7 +141,9 @@
 				fn={async () => {
 					const path = berichtgenStore.preferedTemplatePath;
 					if (!path) return;
-					const { exists } = await checkPreferredTemplate({ storagePath: path });
+					const { exists } = await checkPreferredTemplate({
+						storagePath: path
+					});
 					if (!exists) {
 						berichtgenStore.preferedTemplatePath = null;
 						toast.info(

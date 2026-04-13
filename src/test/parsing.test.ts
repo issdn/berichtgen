@@ -10,7 +10,7 @@ import { DOCXParser } from '$core/parser/docx_parser';
 import { PDFParser } from '$core/parser/pdf_parser';
 import { expect, test } from 'vitest';
 import * as fs from 'node:fs';
-import { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
+import { WizardFileContext } from '$wizard/services/wizard_file_context';
 
 const hasDocxFixture = fs.existsSync('./src/test/text_img.docx');
 const hasPdfFixture = fs.existsSync('./src/test/text_img.pdf');

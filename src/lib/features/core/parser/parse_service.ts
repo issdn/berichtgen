@@ -1,5 +1,5 @@
 import type { Scheduler } from 'tesseract.js';
-import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
+import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import { ParserError, EParserError } from '$core/parser/errors';
 import { type Result, errResult, tryResult } from '$lib/result';
 import type { ResultEntry } from '$wizard/types';

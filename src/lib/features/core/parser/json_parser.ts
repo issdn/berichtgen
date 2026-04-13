@@ -1,5 +1,5 @@
 import { TXTParser } from './txt_parser';
-import { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
+import { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
 import { fullResultSchema } from '$wizard/schemas';
 import { okResult, errResult, type Result } from '$lib/result';

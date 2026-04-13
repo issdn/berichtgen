@@ -3,7 +3,7 @@ import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 import { createStateMachineForContext } from './state_machine';
 import { ***REMOVED***Error } from '$lib/errors';
 import { WizardError, EWizardError } from '$wizard/errors';
-import { WizardFileContext } from './wizard_file_context.svelte';
+import { WizardFileContext } from './wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
 import type {
 	Entry,
@@ -86,6 +86,16 @@ export class WizardScheduler {
 		if (this.queue.length <= this.batchSize) {
 			this.queue.at(-1)!.machine.next();
 		}
+	};
+
+	onFileErrored = () => {
+		this.filesUnfinished += 1;
+		this.dequeue();
+	};
+
+	onFileCancelled = () => {
+		this.filesUnfinished += 1;
+		this.dequeue();
 	};
 
 	dequeue = (): WizardProcessStateMachine | undefined => {
@@ -291,8 +301,7 @@ export class WizardScheduler {
 
 			if (!allPresent) {
 				file.context.error =
-					errorCause ??
-					new WizardError(EWizardError.COMPLETION_FAILED);
+					errorCause ?? new WizardError(EWizardError.COMPLETION_FAILED);
 				file.machine.error();
 			} else {
 				const combined = fileChunks.flatMap(
@@ -321,7 +330,26 @@ export class WizardScheduler {
 		machine.start;
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		machine.error;
-		return { context, machine, id };
+
+		const process: WizardProcessStateMachine = {
+			context,
+			machine,
+			id,
+			cancel() {
+				context.cancelled = true;
+				machine.cancel();
+			},
+			restart() {
+				context.cancelled = false;
+				machine.next(process);
+			},
+			confirmDateRanges() {
+				if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
+					machine.next();
+				}
+			}
+		};
+		return process;
 	};
 }
 

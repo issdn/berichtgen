@@ -1,7 +1,7 @@
 import type { Ort } from '$wizard/enums';
 import type { DateRangeSchema } from '$wizard/schemas';
 import type { StateMachineSignature } from '$wizard/services/state_machine';
-import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
+import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { DateValue } from '@internationalized/date';
 
 export interface Entry {
@@ -54,6 +54,12 @@ export type WizardProcessStateMachine = {
 	context: WizardFileContext;
 	machine: ReturnType<StateMachineSignature>;
 	id: ReturnType<typeof crypto.randomUUID>;
+	/** Sets cancelled and advances the machine — call instead of mutating context directly. */
+	cancel: () => void;
+	/** Clears cancelled and re-enqueues the machine — call instead of mutating context directly. */
+	restart: () => void;
+	/** Advances the machine when the user has confirmed their date ranges. */
+	confirmDateRanges: () => void;
 };
 
 export type CompletionResult = Entry[];

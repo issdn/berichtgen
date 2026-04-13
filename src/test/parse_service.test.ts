@@ -60,7 +60,7 @@ vi.mock('$core/parser/docx_parser', () => ({
 // ─── Imports (after mocks) ────────────────────────────────────────────────────
 
 import { parseFile, type ParseOptions } from '$core/parser/parse_service';
-import { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
+import { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

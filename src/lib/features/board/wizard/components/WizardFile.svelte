@@ -22,7 +22,10 @@
 	const {
 		context,
 		machine,
-		id
+		id,
+		cancel,
+		restart,
+		confirmDateRanges
 	}: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
 
 	function statusFromStep(step: WizardStep) {
@@ -57,37 +60,23 @@
 >
 	<div class="flex h-full w-full flex-row items-center justify-between gap-x-4">
 		<span data-testid="wizard-file-name" class="truncate overflow-hidden"
-			>{typeof context.file === 'string' ? context.file : context.file.name}</span
+			>{typeof context.file === 'string'
+				? context.file
+				: context.file.name}</span
 		>
 		<div class="flex flex-row gap-x-2">
 			{#if $machine === WizardStep.WAITING}
 				<TimeSpreadDialog
 					{id}
-					onClose={() => {
-						if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
-							machine.next();
-						}
-					}}
+					onClose={confirmDateRanges}
 					onValidChange={(data) => (context.dateRanges = data)}
 				/>
 			{/if}
 			{#if $machine === WizardStep.WAITING || $machine === WizardStep.INITIALISING}
-				<Button
-					variant="destructive"
-					onclick={() => {
-						context.cancelled = true;
-						machine.next();
-					}}><XIcon /></Button
-				>
+				<Button variant="destructive" onclick={cancel}><XIcon /></Button>
 			{/if}
 			{#if $machine === WizardStep.CANCELLED}
-				<Button
-					variant="default"
-					onclick={() => {
-						context.cancelled = false;
-						machine.next({ context, machine, id });
-					}}><RotateCcw /></Button
-				>
+				<Button variant="default" onclick={restart}><RotateCcw /></Button>
 			{/if}
 		</div>
 	</div>

@@ -14,7 +14,7 @@ import type {
 	DocxTable
 } from '$core/parser/docx_ast';
 import { Parser } from '$core/parser/parser';
-import type { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
+import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 import { ParserError, EParserError } from '$core/parser/errors';
 

@@ -1,5 +1,5 @@
 import type { Scheduler } from 'tesseract.js';
-import type { WizardFileContext } from './wizard_file_context.svelte';
+import type { WizardFileContext } from './wizard_file_context';
 import type { ParseOptions } from '$core/parser/parse_service';
 import { parseFile } from '$core/parser/parse_service';
 import { WizardError, EFileRoutingError, EGCSError } from '$wizard/errors';
@@ -115,7 +115,9 @@ export async function resolveFileRouting(
 		return file
 			.bytes()
 			.then((buf) => buf.toBase64())
-			.then((data) => okResult<FileRouting>({ type: 'inline', data, mimeType }));
+			.then((data) =>
+				okResult<FileRouting>({ type: 'inline', data, mimeType })
+			);
 	}
 
 	// Large files (> 50 MB): fall back to the existing text parsers.

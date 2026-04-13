@@ -1,7 +1,5 @@
 import type { Entry, ResultEntry } from '../types';
 import type { DateRangeSchema } from '../schemas';
-import { FileTypes } from '../enums';
-import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 import type { FileRouting } from './file_routing';
 import type { ***REMOVED***Error } from '$lib/errors';
 
@@ -10,21 +8,13 @@ export class WizardFileContext {
 
 	finished: ResultEntry[] | null = null;
 
-	dateRanges: DateRangeSchema | null = $state(null);
+	dateRanges: DateRangeSchema | null = null;
 
 	error?: ***REMOVED***Error;
 
 	file: File | string;
 
 	cancelled: boolean = false;
-
-	get shouldSkip() {
-		return (
-			typeof this.file !== 'string' &&
-			this.file.type === FileTypes.JSON &&
-			!berichtgenStore.rewordJSON
-		);
-	}
 
 	constructor(
 		file: File | string,

@@ -1,5 +1,5 @@
 import { Parser } from './parser';
-import { WizardFileContext } from '$wizard/services/wizard_file_context.svelte';
+import { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { Scheduler, ImageLike } from 'tesseract.js';
 import { ParserError, EParserError } from '$core/parser/errors';
 import { XMLParser } from 'fast-xml-parser';
