@@ -12,7 +12,6 @@
 	} from '@lucide/svelte';
 
 	import Authed from '$auth/components/Authed.svelte';
-	import type { UserContext } from '$auth/types';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { toErrorBody } from '$lib/errors';
 	import type { KyselyDatabase } from '$lib/schema';
@@ -22,7 +21,6 @@
 	import { Button } from '$ui/button';
 	import * as Dialog from '$ui/dialog';
 	import * as AlertDialog from '$ui/alert-dialog';
-	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		deleteReport,
@@ -30,8 +28,10 @@
 		getTemplates,
 		reportTemplate
 	} from '../api/templates.remote';
+	import { getTemplatesMutationContext } from '../contexts';
 	import DocxPreview from './DocxPreview.svelte';
 	import { LOCALE } from '$lib/constants';
+	import { page } from '$app/state';
 
 	type TemplateItem = Awaited<
 		ReturnType<typeof getTemplates>
@@ -51,10 +51,7 @@
 		query: ReturnType<typeof getTemplates>;
 	} = $props();
 
-	const { user } = getContext<UserContext>('user')();
-	const mutation = getContext<{ start(): void; end(): void }>(
-		'templatesMutation'
-	);
+	const mutation = getTemplatesMutationContext();
 
 	let reportDialogOpen = $state(false);
 
@@ -70,13 +67,13 @@
 
 	const isReportedByMe = $derived(
 		template.template_report?.some(
-			(r) => user && r.reporter_user_id === user.id
+			(r) => page.data.user && r.reporter_user_id === page.data.user.id
 		) ?? false
 	);
 
 	const isSafe = $derived(template.safe_marked_at !== null);
 
-	const isOwnTemplate = $derived(user?.id === template.user_id);
+	const isOwnTemplate = $derived(page.data.user?.id === template.user_id);
 
 	const { name, filepath } = $derived.by(() => {
 		const name = template.storage_path
@@ -101,10 +98,10 @@
 										{
 											id: 'optimistic',
 											template_id: template.id,
-											reporter_user_id: user!.id,
+											reporter_user_id: page.data.user!.id,
 											message: null,
 											created_at: new Date().toISOString(),
-											user_id: user!.id,
+											user_id: page.data.user!.id,
 											storage_path: '',
 											safe_marked_at: null,
 											updated_at: null

@@ -8,11 +8,11 @@
 	import TemplateUpload from './TemplateUpload.svelte';
 	import { Toggle } from '$ui/toggle';
 	import { debounce } from '$lib/utils';
-	import { setContext } from 'svelte';
+	import { setTemplatesMutationContext } from '../contexts';
 
 	/** Counts in-flight mutations (delete / report / unreport / upload). Read by TemplateList. */
 	let mutationCount = $state(0);
-	setContext('templatesMutation', {
+	setTemplatesMutationContext({
 		start: () => mutationCount++,
 		end: () => mutationCount--
 	});

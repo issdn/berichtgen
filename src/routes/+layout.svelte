@@ -6,7 +6,7 @@
 	import { goto, invalidate } from '$app/navigation';
 	import { navigating } from '$app/state';
 	import DarkMode from '../lib/components/ui/DarkMode.svelte';
-	import { onMount, setContext } from 'svelte';
+	import { onMount } from 'svelte';
 	import Logo from '$ui/svg/Logo.svelte';
 	import { resolve } from '$app/paths';
 	import SettingsPopover from '$auth/components/SettingsPopover.svelte';
@@ -14,28 +14,13 @@
 
 	let { data, children } = $props();
 
-	let { user, supabase, loggedIn, session, profile } = $derived({
-		supabase: data.supabase,
-		user: data.user,
-		loggedIn: data.user !== null,
-		session: data.session,
-		profile: data.profile
-	});
-
-	setContext('user', () => ({
-		user,
-		loggedIn,
-		supabase: supabase,
-		profile: profile
-	}));
-
 	onMount(() => {
-		const { data } = supabase.auth.onAuthStateChange((_, newSession) => {
-			if (newSession?.expires_at !== session?.expires_at) {
+		const { data: authData } = data.supabase.auth.onAuthStateChange((_, newSession) => {
+			if (newSession?.expires_at !== data.session?.expires_at) {
 				invalidate('supabase:auth');
 			}
 		});
-		return () => data.subscription.unsubscribe();
+		return () => authData.subscription.unsubscribe();
 	});
 </script>
 

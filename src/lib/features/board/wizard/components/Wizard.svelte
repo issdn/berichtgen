@@ -8,20 +8,19 @@
 	import { handleDOCXDownload } from '$wizard/write/write_docx';
 	import { handleJSONDownload } from '$wizard/write/write_json';
 	import { FileCheck2, FileClock, FileJson, FileType } from '@lucide/svelte';
-	import { getContext, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { flip } from 'svelte/animate';
 	import WizardFile from './WizardFile.svelte';
 	import WizardSettingsPopover from './WizardSettingsPopover.svelte';
 	import type { WizardProcessStateMachine } from '$wizard/types';
-	import type { UserContext } from '$auth/types';
-	import type { UserBoardContext } from '$board/types';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import Docx from '$ui/svg/DOCX.svelte';
 	import Pdf from '$ui/svg/PDF.svelte';
 	import Png from '$ui/svg/PNG.svelte';
+	import { page } from '$app/state';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -39,10 +38,6 @@
 				);
 		}
 	});
-
-	let { supabase } = $derived(getContext<UserContext>('user')());
-
-	let { userMetadata } = $derived(getContext<UserBoardContext>('board')());
 
 	let dialogOpen = $state(false);
 
@@ -152,7 +147,7 @@
 						);
 						return;
 					}
-					const templateResult = await supabase.storage
+					const templateResult = await page.data.supabase.storage
 						.from('templates')
 						.download(path!);
 					if (!templateResult.data) {
@@ -167,7 +162,7 @@
 					await handleDOCXDownload({
 						entries: wizardScheduler.result!,
 						template: uintarray,
-						userMetadata: userMetadata ?? undefined
+						userMetadata: page.data.userMetadata
 					});
 				}}
 				download="bericht.docx"

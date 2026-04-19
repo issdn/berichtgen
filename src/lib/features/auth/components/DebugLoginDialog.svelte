@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { debugLoginSchema } from '$auth/schemas';
-	import type { UserContext } from '$auth/types';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$ui/input';
 	import { Bug } from '@lucide/svelte';
-	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
@@ -20,8 +19,6 @@
 	 * so no server action is required.
 	 */
 
-	let { supabase } = $derived(getContext<UserContext>('user')());
-
 	let open = $state(false);
 
 	const form = superForm(defaults(zod4(debugLoginSchema)), {
@@ -30,7 +27,7 @@
 		validationMethod: 'oninput',
 		async onUpdate({ form }) {
 			if (!form.valid) return;
-			const { error } = await supabase.auth.signInWithPassword({
+			const { error } = await page.data.supabase.auth.signInWithPassword({
 				email: form.data.email,
 				password: form.data.password
 			});

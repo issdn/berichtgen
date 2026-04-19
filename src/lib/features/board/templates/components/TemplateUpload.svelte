@@ -9,9 +9,9 @@
 	import { FileTypes } from '$wizard/enums';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { toast } from 'svelte-sonner';
-	import { getContext } from 'svelte';
+	import { getTemplatesMutationContext } from '../contexts';
 
-	const mutation = getContext<{ start(): void; end(): void }>('templatesMutation');
+	const mutation = getTemplatesMutationContext();
 
 	const {
 		query

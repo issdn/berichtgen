@@ -25,14 +25,14 @@
 			</div>
 			<div class="flex flex-col gap-y-1 text-base">
 				<p class="text-xl font-medium">
-					<b class="text-4xl font-bold text-blue-300">5€</b> / ~700 Seiten
+					<b class="text-4xl font-bold text-queer-blue">5€</b> / ~700 Seiten
 				</p>
 				<p class="text-md opacity-80">
 					oder <a
 						href="https://codeberg.org/isdn/***REMOVED***"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="font-semibold text-blue-300 underline underline-offset-2 transition-opacity hover:opacity-80"
+						class="font-semibold text-queer-blue underline underline-offset-2 transition-opacity hover:opacity-80"
 						>kostenlos</a
 					> selbst gehostet
 				</p>

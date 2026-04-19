@@ -45,5 +45,5 @@ export const load = async ({
 				}
 			);
 
-	return { supabase, session, user, profile };
+	return { supabase, session, user, profile, loggedIn: !!user };
 };

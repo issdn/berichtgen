@@ -5,15 +5,15 @@
 	 *
 	 *  1. A `Dialog.Root` ancestor — `Dialog.Content` is rendered by the
 	 *     component itself, so the root must come from outside.
-	 *  2. The `'user'` Svelte context — consumed by `Authed` and `Template`.
+	 *  2. The user context — consumed by `Authed` and `Template`.
 	 *
 	 * Props control whether the simulated session is authenticated and,
 	 * optionally, which user ID owns the "own" templates in the story.
 	 */
 
-	import type { UserContext } from '$auth/types';
+	import { setUserContext } from '$auth/contexts';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { setContext, type Snippet } from 'svelte';
+	import { type Snippet } from 'svelte';
 
 	const {
 		children,
@@ -27,7 +27,7 @@
 		userId?: string;
 	} = $props();
 
-	setContext<UserContext>('user', () => ({
+	setUserContext({
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		user: loggedIn ? ({ id: userId, email: 'max@example.de' } as any) : null,
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,7 +35,7 @@
 		loggedIn,
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		supabase: {} as any
-	}));
+	});
 </script>
 
 <Dialog.Root open={true}>

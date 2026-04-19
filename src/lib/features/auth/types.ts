@@ -1,7 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import type { KyselyDatabase } from '$lib/schema';
 
-export type UserContext = () => {
+export type UserContext = {
 	user: User | null;
 	profile: KyselyDatabase['profile'] | null;
 	loggedIn: boolean;

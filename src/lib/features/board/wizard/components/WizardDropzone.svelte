@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { UserContext } from '$auth/types';
 	import type {
 		CSVConfigFile,
 		WizardDirectory,
@@ -18,14 +17,12 @@
 	} from '$core/scan/file_scan';
 	import { FileTypes } from '$wizard/enums';
 	import { wizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
-	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
-
-	let { loggedIn } = getContext<UserContext>('user')();
+	import { page } from '$app/state';
 
 	let filesNumber = $state(0);
 
-	let accept = $derived(loggedIn ? undefined : '.json');
+	let accept = $derived(page.data.loggedIn ? undefined : '.json');
 
 	async function handleFiles(items: DataTransferItemList | FileList) {
 		try {
@@ -40,7 +37,7 @@
 			const anyNonJsonFiles = directories
 				.flat()
 				.find((f) => f.type !== FileTypes.JSON);
-			if (loggedIn) {
+			if (page.data.loggedIn) {
 				init(directories);
 			} else {
 				if (anyNonJsonFiles) {

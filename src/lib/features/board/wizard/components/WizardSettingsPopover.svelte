@@ -1,17 +1,12 @@
 <script lang="ts">
-	import type { UserContext } from '$auth/types';
 	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 	import LabeledSwitch from '$ui/LabeledSwitch.svelte';
 	import { Settings } from '@lucide/svelte';
-	import { getContext } from 'svelte';
 	import { dev } from '$app/environment';
 	import * as Popover from '$ui/popover';
 	import * as Tooltip from '$ui/tooltip';
 	import { Separator } from '$ui/separator';
-
-	let getUser = getContext<UserContext>('user');
-
-	let { loggedIn } = $derived(getUser());
+	import { page } from '$app/state';
 </script>
 
 <Popover.Root>
@@ -21,7 +16,7 @@
 			<div class="flex flex-col gap-y-4">
 				<h4 class="leading-none font-medium">Wizard Einstellungen</h4>
 				<Separator />
-				{#if loggedIn}
+				{#if page.data.loggedIn}
 					<LabeledSwitch
 						bind:checked={berichtgenStore.processPhotos}
 						id="terms-switch"

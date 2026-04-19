@@ -1,5 +1,5 @@
 // Available only when user is logged in and only on board routes
-export type UserBoardContext = () => {
+export type UserBoardContext = {
 	tokenCount: number;
 	setTokenCount: (count: number) => void;
 	userMetadata: {

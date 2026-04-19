@@ -2,10 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { emailSchema } from '$auth/schemas';
-	import type { UserContext } from '$auth/types';
 	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
 	import { getUserDisplayName } from '$lib/utils';
-	import { getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zod4 } from 'sveltekit-superforms/adapters';
@@ -32,23 +30,21 @@
 	import { Input } from '$ui/input';
 	import Debug from './Debug.svelte';
 
-	let { user, loggedIn, supabase, profile } = $derived(
-		getContext<UserContext>('user')()
-	);
-
 	let otpDialogOpen = $state(false);
 
 	let token = $state('');
 
 	let loading = $state(false);
 
-	let { fullName, shortName } = $derived(getUserDisplayName(profile, user));
+	let { fullName, shortName } = $derived(
+		getUserDisplayName(page.data.userProfile, page.data.user)
+	);
 
 	$effect(() => {
 		if (token.length >= 6) {
 			if (berichtgenStore.tempEmailContainer) {
 				loading = true;
-				supabase.auth
+				page.data.supabase.auth
 					.verifyOtp({
 						type: 'email',
 						token,
@@ -81,7 +77,7 @@
 			async onUpdate({ form }) {
 				if (form.valid) {
 					loading = true;
-					const { error } = await supabase.auth.signInWithOtp({
+					const { error } = await page.data.supabase.auth.signInWithOtp({
 						email: form.data.mail!,
 						options: {
 							emailRedirectTo: page.url.origin + '/board'
@@ -108,13 +104,13 @@
 			<Label class="cursor-pointer">{fullName}</Label>
 
 			<Avatar.Root>
-				<Avatar.Image src={user?.user_metadata.image} alt="Avatar" />
+				<Avatar.Image src={page.data.user?.user_metadata.image} alt="Avatar" />
 				<Avatar.Fallback>{shortName}</Avatar.Fallback>
 			</Avatar.Root>
 		</div>
 	</Popover.Trigger>
 	<Popover.Content class="flex w-56 flex-col gap-y-2">
-		{#if loggedIn}
+		{#if page.data.loggedIn}
 			<Button
 				variant="outline"
 				onclick={() => goto(resolve('/board/user/kauf'))}
@@ -133,7 +129,7 @@
 				</Button>
 			</div>
 		{/if}
-		{#if loggedIn}
+		{#if page.data.loggedIn}
 			<form method="POST" action="/auth?/signout">
 				<input type="hidden" name="redirectTo" value="/" />
 				<Button type="submit" class="w-full"><LogOut />Abmelden</Button>
