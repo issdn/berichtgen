@@ -92,7 +92,8 @@ const rateLimit: Handle = async ({ event, resolve }) => {
 
 Sentry.init({
 	dsn: 'https://0bf253098410971***REMOVED***721601bcddda16@o4509192225816576.ingest.de.sentry.io/4509192227258448',
-	tracesSampleRate: 1
+	tracesSampleRate: 1,
+	sendDefaultPii: false,
 });
 
 export const handleError = Sentry.handleErrorWithSentry();
