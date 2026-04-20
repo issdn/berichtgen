@@ -1,6 +1,7 @@
 <script lang="ts">
-	import FileDownloadButton from '$board/components/FileDownloadButton.svelte';
+	import { AsyncResource } from '$core/async.svelte';
 	import berichtgenStore from '$lib/stores/berichtgen.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
@@ -63,6 +64,68 @@
 	) {
 		wizardScheduler.schedule = e.detail.items;
 	}
+
+	const downloadJSON = new AsyncResource(
+		async () => {
+			await handleJSONDownload(wizardScheduler.result!);
+		},
+		{
+			onError: (error) => {
+				toast.error('JSON konnte nicht heruntergeladen werden.', {
+					description: error.cause ?? error.message
+				});
+			}
+		}
+	);
+
+	const downloadDOCX = new AsyncResource(
+		async () => {
+			const path = berichtgenStore.get('preferredTemplatePath');
+			if (!path) {
+				toast.error(
+					'Keine bevorzugte Vorlage ausgew\u00e4hlt. Bitte w\u00e4hle eine Vorlage aus den Einstellungen aus.'
+				);
+				return;
+			}
+			const { exists } = await checkPreferredTemplate({
+				storagePath: path
+			});
+			if (!exists) {
+				berichtgenStore.set('preferredTemplatePath', null);
+				toast.info(
+					'Deine bevorzugte Vorlage wurde gel\u00f6scht. Bitte w\u00e4hle eine neue Vorlage aus.',
+					{ closeButton: true, dismissable: true }
+				);
+				return;
+			}
+			const templateResult = await page.data.supabase.storage
+				.from('templates')
+				.download(path);
+			if (!templateResult.data) {
+				toast.error(
+					'Vorlage existiert nicht. Bitte w\u00e4hle eine andere Vorlage aus.'
+				);
+				return;
+			}
+			const uintarray = new Uint8Array(await templateResult.data.arrayBuffer());
+			await handleDOCXDownload({
+				entries: wizardScheduler.result!,
+				template: uintarray,
+				userMetadata: page.data.userMetadata
+			});
+		},
+		{
+			onError: (error) => {
+				toast.error('DOCX konnte nicht heruntergeladen werden.', {
+					description: error.cause ?? error.message
+				});
+			}
+		}
+	);
+
+	const downloadDisabled = $derived(
+		wizardScheduler.isRunning || !wizardScheduler.result
+	);
 </script>
 
 <div
@@ -126,48 +189,27 @@
 	</Dialog.Header>
 	<div class="flex w-full flex-col items-center py-4">
 		<div class="flex w-fit flex-col gap-y-2">
-			<FileDownloadButton
-				fn={() => handleJSONDownload(wizardScheduler.result!)}
-				download="bericht.json"
+			<Button
+				onclick={downloadJSON.execute}
+				disabled={downloadDisabled || downloadJSON.loading}
 				data-testid="wizard-json-download"
-				><FileJson />Als JSON herunterladen</FileDownloadButton
 			>
-			<FileDownloadButton
-				fn={async () => {
-					const path = berichtgenStore.get('preferredTemplatePath');
-					if (!path) return;
-					const { exists } = await checkPreferredTemplate({
-						storagePath: path
-					});
-					if (!exists) {
-						berichtgenStore.set('preferredTemplatePath', null);
-						toast.info(
-							'Deine bevorzugte Vorlage wurde gelöscht. Bitte wähle eine neue Vorlage aus.',
-							{ duration: Infinity, closeButton: true, dismissable: true }
-						);
-						return;
-					}
-					const templateResult = await page.data.supabase.storage
-						.from('templates')
-						.download(path!);
-					if (!templateResult.data) {
-						toast.error(
-							'Vorlage existiert nicht. Bitte wähle eine andere Vorlage aus.'
-						);
-						return;
-					}
-					const uintarray = new Uint8Array(
-						await templateResult.data!.arrayBuffer()
-					);
-					await handleDOCXDownload({
-						entries: wizardScheduler.result!,
-						template: uintarray,
-						userMetadata: page.data.userMetadata
-					});
-				}}
-				download="bericht.docx"
-				><FileType />Als DOCX herunterladen</FileDownloadButton
+				{#if downloadJSON.loading}
+					<Spinner size="sm" />
+				{:else}
+					<FileJson />Als JSON herunterladen
+				{/if}
+			</Button>
+			<Button
+				onclick={downloadDOCX.execute}
+				disabled={downloadDisabled || downloadDOCX.loading}
 			>
+				{#if downloadDOCX.loading}
+					<Spinner size="sm" />
+				{:else}
+					<FileType />Als DOCX herunterladen
+				{/if}
+			</Button>
 		</div>
 	</div>
 {/snippet}
@@ -177,5 +219,3 @@
 	<Docx class="absolute -top-32 left-[calc(50%)] -z-10 -translate-x-1/2" />
 	<Pdf class="absolute -top-32 left-[calc(50%+75px)] -z-10 -translate-x-1/2" />
 {/snippet}
-
-

@@ -1,5 +1,4 @@
 import type { ResultEntry } from '$wizard/types';
-import { Ort } from '$wizard/enums';
 import { parseDate } from '@internationalized/date';
 
 export function combineJSONs(
@@ -18,20 +17,14 @@ export function combineJSONs(
 	});
 	return Array.from(byDateMap.entries())
 		.map(([_, entries]) => {
-			const combinedEntry = entries.reduce(
+			const [firstEntry, ...restEntries] = entries;
+			const combinedEntry = restEntries.reduce(
 				(acc, entry) => ({
 					...acc,
 					text: acc.text + `\n\n${entry.text}`,
 					stunden: acc.stunden + entry.stunden
 				}),
-				{
-					text: '',
-					datum: '',
-					endDatum: '',
-					ausbildungsjahr: 0,
-					stunden: 0,
-					ort: Ort.BETRIEB as Ort
-				}
+				firstEntry
 			);
 			combinedEntry.text = combinedEntry.text.trim();
 			combinedEntry.stunden = constantHours ? 40 : combinedEntry.stunden;

@@ -1,4 +1,5 @@
 import { downloadBlob } from '$lib/utils';
+import { FileTypes } from '$wizard/enums';
 import type { ResultEntry } from '$wizard/types';
 
 export async function handleJSONDownload(
@@ -6,7 +7,7 @@ export async function handleJSONDownload(
 	download: string = 'bericht.json'
 ) {
 	const blob = new Blob([JSON.stringify(await entries)], {
-		type: 'application/json'
+		type: FileTypes.JSON
 	});
 	downloadBlob(blob, download);
 }
