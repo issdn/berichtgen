@@ -29,7 +29,7 @@
 		reportTemplate
 	} from '../api/templates.remote';
 	import { getTemplatesMutationContext } from '../contexts';
-	import DocxPreview from './DocxPreview.svelte';
+	import TemplateDocxPreviewDialog from './TemplateDocxPreviewDialog.svelte';
 	import { LOCALE } from '$lib/constants';
 	import { page } from '$app/state';
 
@@ -183,7 +183,7 @@
 	<FileBox class={isPreferred ? 'text-primary' : 'text-muted'} />
 	<div class="flex min-w-0 flex-1 flex-col">
 		<span class="flex items-center gap-1.5 text-sm font-medium">
-			<span class="truncate" title={name}>
+			<span class="truncate" title={name ?? 'Template'}>
 				{name}
 			</span>
 			{#if hasPendingReport}
@@ -220,63 +220,23 @@
 			</Button>
 		{/if}
 
-		<Dialog.Root>
-			<Dialog.Trigger>
+		<TemplateDocxPreviewDialog
+			title={name ?? 'Template'}
+			description={`${profile.full_name ?? 'Anonym'} - Hochgeladen am ${new Date(
+				template.created_at
+			).toLocaleDateString(LOCALE)}${
+				template.updated_at
+					? ` - Zuletzt geaendert ${new Date(template.updated_at).toLocaleDateString(LOCALE)}`
+					: ''
+			}`}
+			fileUrl={filepath}
+		>
+			{#snippet trigger()}
 				<Button variant="ghost" size="icon" title="Vorschau">
 					<View size={16} />
 				</Button>
-			</Dialog.Trigger>
-			<Dialog.Content
-				class="flex h-[calc(100%-6rem)] flex-col overflow-hidden sm:max-w-[calc(100%-6rem)]"
-			>
-				<Dialog.Header class="shrink-0">
-					<Dialog.Title>{name}</Dialog.Title>
-					<Dialog.Description>
-						{profile.full_name ?? 'Anonym'} · Hochgeladen am {new Date(
-							template.created_at
-						).toLocaleDateString(LOCALE)}{template.updated_at
-							? ` · Zuletzt geändert ${new Date(template.updated_at).toLocaleDateString(LOCALE)}`
-							: ''}
-					</Dialog.Description>
-				</Dialog.Header>
-				<div class="min-h-0 flex-1 overflow-y-scroll pt-2">
-					<svelte:boundary>
-						<DocxPreview fileUrl={filepath} />
-						{#snippet pending()}
-							<div class="flex h-full items-center justify-center">
-								<div class="text-muted-foreground animate-pulse text-sm">
-									Dokument wird geladen…
-								</div>
-							</div>
-						{/snippet}
-						{#snippet failed(error)}
-							<div class="flex h-full items-center justify-center">
-								<div class="text-destructive text-sm">
-									Fehler beim Laden: {error instanceof Error
-										? error.message
-										: String(error)}
-								</div>
-							</div>
-						{/snippet}
-					</svelte:boundary>
-				</div>
-				<!-- Note: preview is best-effort; full fidelity needs Word. -->
-				<div
-					class="text-muted-foreground shrink-0 border-t px-6 py-2 text-center text-xs"
-				>
-					Die Vorschau gibt das Dokument möglicherweise nicht vollständig
-					wieder. Für eine genaue Darstellung öffne die Datei in
-					<a
-						href="https://docs.google.com/viewer?url={encodeURIComponent(
-							filepath
-						)}"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="underline">Microsoft Word Online</a
-					>.
-				</div>
-			</Dialog.Content>
-		</Dialog.Root>
+			{/snippet}
+		</TemplateDocxPreviewDialog>
 
 		<!-- Open in Microsoft Word Online -->
 		<a
@@ -409,5 +369,6 @@
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
+
 
 

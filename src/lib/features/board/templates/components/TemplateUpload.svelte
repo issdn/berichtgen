@@ -1,15 +1,19 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import Dropzone from '$board/components/Dropzone.svelte';
 	import { extractFilesSimple } from '$core/scan/file_scan';
-	import { toErrorBody } from '$lib/errors';
+	import { AsyncResource } from '$core/async.svelte';
+	import { page } from '$app/state';
 	import {
 		getTemplates,
 		uploadTemplate
 	} from '$templates/api/templates.remote';
 	import { FileTypes } from '$wizard/enums';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+	import type { ResultEntry } from '$wizard/types';
+	import { renderDocxBlob } from '$wizard/write/write_docx';
 	import { toast } from 'svelte-sonner';
 	import { getTemplatesMutationContext } from '../contexts';
+	import TemplateDocxPreviewDialog from './TemplateDocxPreviewDialog.svelte';
 
 	const mutation = getTemplatesMutationContext();
 
@@ -19,9 +23,102 @@
 		query: ReturnType<typeof getTemplates>;
 	} = $props();
 
-	let isPending = $state(false);
+	/** Minimal sample data used to render uploaded templates before submitting them. */
+	const TEMPLATE_PREVIEW_ENTRIES: ResultEntry[] = [
+		{
+			text: 'Beispiel: Tätigkeiten dokumentiert und Arbeitsablauf reflektiert.',
+			datum: '2025-01-06',
+			endDatum: '2025-01-12',
+			ort: 'BETRIEB',
+			stunden: 40,
+			ausbildungsjahr: 2
+		}
+	];
+
 	let pendingFile = $state<File | null>(null);
-	let confirmOpen = $state(false);
+	let pendingFileBytes = $state<Uint8Array<ArrayBuffer> | null>(null);
+	let pendingPreviewUrl = $state<string | null>(null);
+	let pendingReplace = $state(false);
+	let previewOpen = $state(false);
+
+	const preparePreview = new AsyncResource(
+		async (file: File) => {
+			const bytes: Uint8Array<ArrayBuffer> = new Uint8Array(
+				await file.arrayBuffer()
+			);
+			const previewBlob = await renderDocxBlob({
+				template: bytes,
+				entries: Promise.resolve(TEMPLATE_PREVIEW_ENTRIES),
+				userMetadata: page.data.userMetadata
+			});
+
+			const isDuplicate = query.current?.templates
+				.filter((t) => t.is_mine)
+				.some((t) => t.storage_path.endsWith(`/${file.name}`));
+
+			return {
+				file,
+				bytes,
+				previewUrl: URL.createObjectURL(previewBlob),
+				isDuplicate: Boolean(isDuplicate)
+			};
+		},
+		{
+			onError: (error) => {
+				toast.error('Vorschau konnte nicht erstellt werden.', {
+					description: error.message
+				});
+			}
+		}
+	);
+
+	const uploadMutation = new AsyncResource(
+		async (params: {
+			name: string;
+			type: string;
+			data: Uint8Array<ArrayBuffer>;
+		}) => {
+			mutation?.start();
+			try {
+				await uploadTemplate(params).updates(query);
+				return true;
+			} finally {
+				mutation?.end();
+			}
+		},
+		{
+			onSuccess: () => {
+				toast.success('Datei erfolgreich hochgeladen.');
+			},
+			onError: (error) => {
+				toast.error('Fehler beim Hochladen der Datei.', {
+					description: error.cause ?? error.message
+				});
+			}
+		}
+	);
+
+	const isPending = $derived(preparePreview.loading || uploadMutation.loading);
+
+	function clearPendingPreview() {
+		if (pendingPreviewUrl) {
+			URL.revokeObjectURL(pendingPreviewUrl);
+		}
+		pendingFile = null;
+		pendingFileBytes = null;
+		pendingPreviewUrl = null;
+		pendingReplace = false;
+	}
+
+	onDestroy(() => {
+		clearPendingPreview();
+	});
+
+	$effect(() => {
+		if (!previewOpen && pendingFile !== null) {
+			clearPendingPreview();
+		}
+	});
 
 	async function handleFiles(input: FileList | DataTransferItemList) {
 		const files = extractFilesSimple(input);
@@ -38,40 +135,29 @@
 			return;
 		}
 
-		const isDuplicate = query.current?.templates
-			.filter((t) => t.is_mine)
-			.some((t) => t.storage_path.endsWith(`/${firstFile.name}`));
+		const prepared = await preparePreview.execute(firstFile);
+		if (!prepared) return;
 
-		if (isDuplicate) {
-			pendingFile = firstFile;
-			confirmOpen = true;
-			return;
-		}
-
-		await doUpload(firstFile);
+		clearPendingPreview();
+		pendingFile = prepared.file;
+		pendingFileBytes = prepared.bytes;
+		pendingPreviewUrl = prepared.previewUrl;
+		pendingReplace = prepared.isDuplicate;
+		previewOpen = true;
 	}
 
-	async function doUpload(file: File) {
-		isPending = true;
-		mutation?.start();
-		try {
-			const data = new Uint8Array(await file.arrayBuffer());
-			await uploadTemplate({
-				name: file.name,
-				type: file.type,
-				data
-			}).updates(query);
-			toast.success('Datei erfolgreich hochgeladen.');
-		} catch (e) {
-			toast.error('Fehler beim Hochladen der Datei.', {
-				description: toErrorBody(e).cause
-			});
-		} finally {
-			isPending = false;
-			pendingFile = null;
-			confirmOpen = false;
-			mutation?.end();
-		}
+	async function submitUpload(): Promise<boolean> {
+		if (!pendingFile || !pendingFileBytes) return false;
+
+		const uploaded = await uploadMutation.execute({
+			name: pendingFile.name,
+			type: pendingFile.type,
+			data: pendingFileBytes
+		});
+
+		if (!uploaded) return false;
+		clearPendingPreview();
+		return true;
 	}
 </script>
 
@@ -79,22 +165,16 @@
 	<Dropzone disabled={isPending} {handleFiles} />
 </div>
 
-<AlertDialog.Root bind:open={confirmOpen}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Template ersetzen?</AlertDialog.Title>
-			<AlertDialog.Description>
-				„{pendingFile?.name}" existiert bereits und wird unwiderruflich
-				überschrieben.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel onclick={() => (pendingFile = null)}
-				>Abbrechen</AlertDialog.Cancel
-			>
-			<AlertDialog.Action onclick={() => doUpload(pendingFile!)}
-				>Ersetzen</AlertDialog.Action
-			>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+{#if pendingPreviewUrl}
+	<TemplateDocxPreviewDialog
+		bind:open={previewOpen}
+		title="Template vor dem Upload prüfen"
+		description={pendingReplace
+			? `„${pendingFile?.name}" existiert bereits und wird beim Upload überschrieben.`
+			: 'Prüfe die gerenderte Beispielausgabe und bestätige danach den Upload.'}
+		fileUrl={pendingPreviewUrl}
+		confirmLabel={pendingReplace ? 'Ersetzen' : 'Hochladen'}
+		confirmDisabled={isPending}
+		onConfirm={submitUpload}
+	/>
+{/if}

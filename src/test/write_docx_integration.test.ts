@@ -7,9 +7,10 @@ import { describe, test, expect } from 'vitest';
 import { getQuickJS } from 'quickjs-emscripten';
 import { generateReportBytes } from '$wizard/write/write_docx';
 import { Ort } from '$wizard/enums';
-import type { ResultEntry, UserMetadata } from '$wizard/types';
+import type { ResultEntry } from '$wizard/types';
 import * as fs from 'node:fs';
 import JSZip from 'jszip';
+import type { KyselyDatabase } from '$lib/schema';
 
 const TEMPLATE_PATH = './src/test/template.docx';
 
@@ -23,8 +24,8 @@ const entries = [
 	}
 ];
 
-const userMetadata: UserMetadata = {
-	fullName: 'Max Mustermann',
+const userMetadata: KyselyDatabase['user_metadata'] = {
+	full_name: 'Max Mustermann',
 	ausbildungsberuf: 'Fachinformatiker',
 	abteilung: 'IT'
 };

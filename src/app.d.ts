@@ -25,6 +25,7 @@ declare global {
 		}
 		interface PageData {
 			session: Session | null;
+			userMetadata?: KyselyDatabase['user_metadata'];
 			flash?: import('$core/types').FlashMessage;
 		}
 

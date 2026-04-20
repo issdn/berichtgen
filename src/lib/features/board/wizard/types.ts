@@ -63,13 +63,3 @@ export type WizardProcessStateMachine = {
 };
 
 export type CompletionResult = Entry[];
-
-/**
- * User metadata that can be used in the DOCX template. All fields are optional and can be null.
- * It can be set in the settings.
- */
-export type UserMetadata = {
-	fullName?: string | null;
-	ausbildungsberuf?: string | null;
-	abteilung?: string | null;
-};

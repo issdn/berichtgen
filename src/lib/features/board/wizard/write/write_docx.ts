@@ -1,9 +1,10 @@
 import { createReport } from 'docx-templates';
 import type { QuickJSContext } from 'quickjs-emscripten';
 import { getQuickJS } from 'quickjs-emscripten';
-import type { ResultEntry, UserMetadata, Entry } from '$wizard/types';
+import type { ResultEntry, Entry } from '$wizard/types';
 import { downloadBlob } from '$lib/utils';
 import { FileTypes } from '$wizard/enums';
+import type { KyselyDatabase } from '$lib/schema';
 
 export type SandBox = Parameters<
 	NonNullable<Parameters<typeof createReport>[0]['runJs']>
@@ -11,6 +12,51 @@ export type SandBox = Parameters<
 
 /** Maximum milliseconds a single template JS expression may run before being interrupted. */
 const JS_EXECUTION_TIMEOUT_MS = 5_000;
+
+async function withQuickJsContext<T>(
+	run: (vm: QuickJSContext, injected: Map<string, string>) => Promise<T>
+): Promise<T> {
+	const QuickJS = await getQuickJS();
+	const vm = QuickJS.newContext();
+
+	const deadline = Date.now() + JS_EXECUTION_TIMEOUT_MS;
+	vm.runtime.setInterruptHandler(() => Date.now() > deadline);
+
+	const injected = new Map<string, string>();
+	try {
+		return await run(vm, injected);
+	} finally {
+		// Fix vuln-1: dispose AFTER createReport completes, not inside the per-expression callback
+		vm.dispose();
+	}
+}
+
+function toDocxBlob(bytes: Uint8Array<ArrayBufferLike>): Blob {
+	return new Blob([Uint8Array.from(bytes)], {
+		type: FileTypes.DOCX
+	});
+}
+
+export async function renderDocxBlob({
+	template,
+	entries,
+	userMetadata
+}: {
+	template: Uint8Array<ArrayBufferLike>;
+	entries: Promise<Required<Entry>[]>;
+	userMetadata?: KyselyDatabase['user_metadata'];
+}): Promise<Blob> {
+	return withQuickJsContext(async (vm, injected) => {
+		const bytes = await generateReportBytes(
+			template,
+			entries,
+			userMetadata,
+			injected,
+			vm
+		);
+		return toDocxBlob(bytes);
+	});
+}
 
 /**
  * Builds the `runJs` callback that docx-templates calls for each `{{ }}` expression.
@@ -59,41 +105,17 @@ export async function handleDOCXDownload({
 }: {
 	template: Uint8Array<ArrayBufferLike>;
 	entries: Promise<ResultEntry[]>;
-	userMetadata?: UserMetadata;
+	userMetadata?: KyselyDatabase['user_metadata'];
 	filename?: string;
 }) {
-	const QuickJS = await getQuickJS();
-	const vm = QuickJS.newContext();
-
-	// Fix vuln-2: interrupt any expression that exceeds the timeout (prevents DoS via infinite loops)
-	const deadline = Date.now() + JS_EXECUTION_TIMEOUT_MS;
-	vm.runtime.setInterruptHandler(() => Date.now() > deadline);
-
-	const injected = new Map<string, string>();
-	try {
-		const blob = await generateReportBytes(
-			template,
-			entries,
-			userMetadata,
-			injected,
-			vm
-		);
-		downloadBlob(
-			new Blob([Uint8Array.from(blob)], {
-				type: FileTypes.DOCX
-			}),
-			filename
-		);
-	} finally {
-		// Fix vuln-1: dispose AFTER createReport completes, not inside the per-expression callback
-		vm.dispose();
-	}
+	const blob = await renderDocxBlob({ template, entries, userMetadata });
+	downloadBlob(blob, filename);
 }
 
 export async function generateReportBytes(
 	template: Uint8Array<ArrayBufferLike>,
 	entries: Promise<Required<Entry>[]>,
-	userMetadata: UserMetadata | undefined,
+	userMetadata: KyselyDatabase['user_metadata'] | undefined,
 	injected: Map<string, string>,
 	vm: QuickJSContext
 ) {
@@ -105,7 +127,7 @@ export async function generateReportBytes(
 		noSandbox: true,
 		data: {
 			berichte,
-			fullName: userMetadata?.fullName ?? '',
+			fullName: userMetadata?.full_name ?? '',
 			ausbildungsberuf: userMetadata?.ausbildungsberuf ?? '',
 			abteilung: userMetadata?.abteilung ?? ''
 		},
