@@ -1,5 +1,5 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+import berichtgenStore from '$lib/stores/berichtgen.svelte';
 import { createStateMachineForContext } from './state_machine';
 import { ***REMOVED***Error } from '$lib/errors';
 import { WizardError, EWizardError } from '$wizard/errors';
@@ -136,7 +136,7 @@ export class WizardScheduler {
 			this.scheduler = null;
 			const combined = combineJSONs(
 				finishedDirectories,
-				berichtgenStore.constantHours
+				berichtgenStore.get('constantHours')
 			);
 			this.isRunning = false;
 			return combined;
@@ -355,3 +355,5 @@ export class WizardScheduler {
 
 // eslint-disable-next-line prefer-const
 export let wizardScheduler = new WizardScheduler();
+
+

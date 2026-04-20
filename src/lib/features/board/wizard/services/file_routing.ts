@@ -6,7 +6,7 @@ import { WizardError, EFileRoutingError, EGCSError } from '$wizard/errors';
 import { errorByHttpCode } from '$lib/errors';
 import { type Result, okResult, tryResult } from '$lib/result';
 import { FileTypes } from '$wizard/enums';
-import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+import berichtgenStore from '$lib/stores/berichtgen.svelte';
 
 /** Maps a GCS HTTP response status to the matching {@link EGCSError} entry. */
 function gcsErrorFromStatus(status: number): WizardError {
@@ -111,7 +111,7 @@ export async function resolveFileRouting(
 
 	// Dev endpoint: send the whole file inline regardless of size — the standard
 	// Gemini API (GOOGLE_AI_API_KEY) does not support gs:// or Files API URIs.
-	if (berichtgenStore.useDevEndpoint) {
+	if (berichtgenStore.get('useDevEndpoint')) {
 		return file
 			.bytes()
 			.then((buf) => buf.toBase64())
@@ -211,3 +211,5 @@ function requestGcsUpload(
 		EFileRoutingError.GCS_UPLOAD_URL_FAILED
 	);
 }
+
+

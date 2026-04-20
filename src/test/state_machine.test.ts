@@ -10,7 +10,20 @@ import type { Scheduler } from 'tesseract.js';
 
 vi.mock('$app/navigation', () => ({ invalidate: vi.fn() }));
 vi.mock('$lib/stores/berichtgen.svelte', () => ({
-	berichtgenStore: { rewordJSON: false, processPhotos: false, constantHours: 8 }
+	default: {
+		get: (key: keyof App.***REMOVED***Settings) => {
+			const values: App.***REMOVED***Settings = {
+				rewordJSON: false,
+				processPhotos: false,
+				constantHours: false,
+				useDevEndpoint: false,
+				preferredTemplatePath: null,
+				tempEmailContainer: null
+			};
+			return values[key];
+		},
+		set: vi.fn()
+	}
 }));
 
 // Mock resolveFileRouting so the state-machine test only exercises state

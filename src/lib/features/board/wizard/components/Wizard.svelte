@@ -1,6 +1,6 @@
 <script lang="ts">
 	import FileDownloadButton from '$board/components/FileDownloadButton.svelte';
-	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+	import berichtgenStore from '$lib/stores/berichtgen.svelte';
 	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
@@ -134,13 +134,13 @@
 			>
 			<FileDownloadButton
 				fn={async () => {
-					const path = berichtgenStore.preferedTemplatePath;
+					const path = berichtgenStore.get('preferredTemplatePath');
 					if (!path) return;
 					const { exists } = await checkPreferredTemplate({
 						storagePath: path
 					});
 					if (!exists) {
-						berichtgenStore.preferedTemplatePath = null;
+						berichtgenStore.set('preferredTemplatePath', null);
 						toast.info(
 							'Deine bevorzugte Vorlage wurde gelöscht. Bitte wähle eine neue Vorlage aus.',
 							{ duration: Infinity, closeButton: true, dismissable: true }
@@ -177,3 +177,5 @@
 	<Docx class="absolute -top-32 left-[calc(50%)] -z-10 -translate-x-1/2" />
 	<Pdf class="absolute -top-32 left-[calc(50%+75px)] -z-10 -translate-x-1/2" />
 {/snippet}
+
+

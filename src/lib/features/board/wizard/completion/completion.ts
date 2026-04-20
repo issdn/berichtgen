@@ -8,7 +8,7 @@ import type {
 import type { CompletionResult } from '$wizard/types';
 import type { FileRouting } from '$wizard/services/file_routing';
 import { toErrorBody } from '$lib/errors';
-import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+import berichtgenStore from '$lib/stores/berichtgen.svelte';
 
 /** Maximum total UTF-8 byte size for a single batch request (4 MB). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
@@ -127,7 +127,7 @@ export function sendBatchCompletion(
 		}
 	});
 
-	const endpoint = berichtgenStore.useDevEndpoint
+	const endpoint = berichtgenStore.get('useDevEndpoint')
 		? '/board/dev/completion'
 		: '/board/user/completion';
 
@@ -155,3 +155,5 @@ export function sendBatchCompletion(
 export function stringsToEntries(strings: string[]): CompletionResult {
 	return strings.map((text) => ({ text }));
 }
+
+

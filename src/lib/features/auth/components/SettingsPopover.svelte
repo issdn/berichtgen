@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { emailSchema } from '$auth/schemas';
-	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+	import berichtgenStore from '$lib/stores/berichtgen.svelte';
 	import { getUserDisplayName } from '$lib/utils';
 	import { toast } from 'svelte-sonner';
 	import { defaults, superForm } from 'sveltekit-superforms';
@@ -42,22 +42,24 @@
 
 	$effect(() => {
 		if (token.length >= 6) {
-			if (berichtgenStore.tempEmailContainer) {
+			const tempEmailContainer = berichtgenStore.get('tempEmailContainer');
+			if (tempEmailContainer) {
 				loading = true;
 				page.data.supabase.auth
 					.verifyOtp({
 						type: 'email',
 						token,
-						email: berichtgenStore.tempEmailContainer
+						email: tempEmailContainer
 					})
-					.then(({ error }) => {
+					.then((result: { error: { message: string } | null }) => {
+						const { error } = result;
 						token = '';
 						loading = false;
 						if (error) {
 							toast.error(error.message);
 						} else {
 							toast.success('OTP erfolgreich verifiziert');
-							berichtgenStore.tempEmailContainer = '';
+							berichtgenStore.set('tempEmailContainer', '');
 							otpDialogOpen = false;
 							goto(resolve('/board'), {
 								replaceState: true,
@@ -70,7 +72,10 @@
 	});
 
 	const form = superForm(
-		defaults({ mail: berichtgenStore.tempEmailContainer }, zod4(emailSchema)),
+		defaults(
+			{ mail: berichtgenStore.get('tempEmailContainer') },
+			zod4(emailSchema)
+		),
 		{
 			SPA: true,
 			validators: zod4(emailSchema),
@@ -87,7 +92,7 @@
 					if (error) {
 						toast.error(error.message);
 					} else {
-						berichtgenStore.tempEmailContainer = form.data.mail!;
+						berichtgenStore.set('tempEmailContainer', form.data.mail!);
 						toast.success('Magic-Link gesendet');
 					}
 				}
@@ -212,3 +217,5 @@
 		</Dialog.Header>
 	</Dialog.Content>
 </Dialog.Root>
+
+

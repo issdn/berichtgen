@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+	import berichtgenStore from '$lib/stores/berichtgen.svelte';
 	import type { getTemplates } from '$templates/api/templates.remote';
 	import ErrorAlert from '$ui/ErrorAlert.svelte';
 	import { Skeleton } from '$ui/skeleton';
@@ -157,7 +157,7 @@
 					{#await pageQuery then { templates }}
 						{#each templates as template (template.id)}
 							{@const isPreferred =
-								berichtgenStore.preferedTemplatePath === template.storage_path}
+								berichtgenStore.get('preferredTemplatePath') === template.storage_path}
 							{@const hasPendingReport = (template.template_report?.length ?? 0) > 0}
 							<Template
 								profile={template.profile!}
@@ -179,3 +179,5 @@
 		</ScrollArea>
 	{/if}
 </div>
+
+

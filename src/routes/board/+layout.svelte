@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+	import berichtgenStore from '$lib/stores/berichtgen.svelte';
 	import { getFlash } from 'sveltekit-flash-message';
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
@@ -24,19 +24,12 @@
 	});
 
 	$effect.pre(() => {
-		berichtgenStore.processPhotos = JSON.parse(
-			localStorage.getItem('processPhotos') ?? 'false'
-		);
-		berichtgenStore.rewordJSON = page.data.loggedIn
-			? JSON.parse(localStorage.getItem('rewordJSON') ?? 'false')
-			: false;
-		berichtgenStore.constantHours = JSON.parse(
-			localStorage.getItem('constantHours') ?? 'false'
-		);
-		berichtgenStore.preferedTemplatePath = JSON.parse(
-			localStorage.getItem('preferedTemplatePath') ?? 'null'
-		);
+		if (!page.data.loggedIn) {
+			berichtgenStore.set('rewordJSON', false);
+		}
 	});
 </script>
 
 {@render children()}
+
+

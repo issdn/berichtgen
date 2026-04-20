@@ -15,7 +15,7 @@
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { toErrorBody } from '$lib/errors';
 	import type { KyselyDatabase } from '$lib/schema';
-	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+	import berichtgenStore from '$lib/stores/berichtgen.svelte';
 	import { getUserDisplayName } from '$lib/utils';
 	import { Badge } from '$ui/badge';
 	import { Button } from '$ui/button';
@@ -209,7 +209,10 @@
 					if (hasPendingReport) {
 						confirmSelectOpen = true;
 					} else {
-						berichtgenStore.preferedTemplatePath = template.storage_path;
+						berichtgenStore.set(
+							'preferredTemplatePath',
+							template.storage_path
+						);
 					}
 				}}
 			>
@@ -379,7 +382,10 @@
 			<AlertDialog.Cancel>Abbrechen</AlertDialog.Cancel>
 			<AlertDialog.Action
 				onclick={() => {
-					berichtgenStore.preferedTemplatePath = template.storage_path;
+					berichtgenStore.set(
+						'preferredTemplatePath',
+						template.storage_path
+					);
 					confirmSelectOpen = false;
 				}}
 			>
@@ -403,3 +409,5 @@
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
+
+

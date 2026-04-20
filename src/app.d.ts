@@ -5,6 +5,15 @@ import type { KyselyDatabase } from './lib/schema';
 declare global {
 	namespace App {
 		// interface Error {}
+		interface ***REMOVED***Settings {
+			processPhotos: boolean;
+			rewordJSON: boolean;
+			constantHours: boolean;
+			useDevEndpoint: boolean;
+			preferredTemplatePath: string | null;
+			tempEmailContainer: string | null;
+		}
+
 		interface Locals {
 			supabase: SupabaseClient<KyselyDatabase>;
 			safeGetSession: () => Promise<{

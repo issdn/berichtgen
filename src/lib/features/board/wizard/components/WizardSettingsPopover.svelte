@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+	import berichtgenStore from '$lib/stores/berichtgen.svelte';
 	import LabeledSwitch from '$ui/LabeledSwitch.svelte';
 	import { Settings } from '@lucide/svelte';
 	import { dev } from '$app/environment';
@@ -7,6 +7,12 @@
 	import * as Tooltip from '$ui/tooltip';
 	import { Separator } from '$ui/separator';
 	import { page } from '$app/state';
+
+	type BooleanSettingKey = {
+		[K in keyof App.***REMOVED***Settings]: App.***REMOVED***Settings[K] extends boolean
+			? K
+			: never;
+	}[keyof App.***REMOVED***Settings];
 </script>
 
 <Popover.Root>
@@ -17,35 +23,52 @@
 				<h4 class="leading-none font-medium">Wizard Einstellungen</h4>
 				<Separator />
 				{#if page.data.loggedIn}
-					<LabeledSwitch
-						bind:checked={berichtgenStore.processPhotos}
-						id="terms-switch"
-						label="Bilder verarbeiten"
-						description="Die Bilder aus Word/PDF Dateien extrahieren und mit einem Text ML Model lesen."
-					/>
-					<LabeledSwitch
-						bind:checked={berichtgenStore.rewordJSON}
-						id="reword-json-switch"
-						label="JSON-Dateien umformulieren"
-						description="Du kannst schon vorhandene JSON-Dateien mit dem ***REMOVED***-Format datieren lassen. Aktiviere diese Option, um die JSON-Dateien wie alle andere doch umzuschreiben."
-					/>
+					{@render settingSwitch(
+						'processPhotos',
+						'terms-switch',
+						'Bilder verarbeiten',
+						'Die Bilder aus Word/PDF Dateien extrahieren und mit einem Text ML Model lesen.'
+					)}
+					{@render settingSwitch(
+						'rewordJSON',
+						'reword-json-switch',
+						'JSON-Dateien umformulieren',
+						'Du kannst schon vorhandene JSON-Dateien mit dem ***REMOVED***-Format datieren lassen. Aktiviere diese Option, um die JSON-Dateien wie alle andere doch umzuschreiben.'
+					)}
 				{/if}
-				<LabeledSwitch
-					bind:checked={berichtgenStore.constantHours}
-					id="constant-stunden-switch"
-					label="Feste Arbeitsstunden"
-					description="Pro Woche werden 40 Stunden angenommen."
-				/>
+				{@render settingSwitch(
+					'constantHours',
+					'constant-stunden-switch',
+					'Feste Arbeitsstunden',
+					'Pro Woche werden 40 Stunden angenommen.'
+				)}
 				{#if dev}
 					<Separator />
-					<LabeledSwitch
-						bind:checked={berichtgenStore.useDevEndpoint}
-						id="dev-endpoint-switch"
-						label="Dev-Endpoint"
-						description="Sendet Anfragen an /board/dev/completion (kein Token-Abzug, kein Vertex AI)."
-					/>
+					{@render settingSwitch(
+						'useDevEndpoint',
+						'dev-endpoint-switch',
+						'Dev-Endpoint',
+						'Sendet Anfragen an /board/dev/completion (kein Token-Abzug, kein Vertex AI).'
+					)}
 				{/if}
 			</div>
 		</Tooltip.Provider>
 	</Popover.Content>
 </Popover.Root>
+
+{#snippet settingSwitch(
+	key: BooleanSettingKey,
+	id: string,
+	label: string,
+	description: string
+)}
+	<LabeledSwitch
+		checked={berichtgenStore.get(key)}
+		onchange={(value) => berichtgenStore.set(key, value)}
+		{id}
+		{label}
+		{description}
+	/>
+{/snippet}
+
+

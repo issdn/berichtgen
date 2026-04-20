@@ -8,7 +8,7 @@ import type {
 	WizardProcessStateMachine
 } from '$wizard/types';
 import { WizardStep, FileTypes } from '$wizard/enums';
-import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+import berichtgenStore from '$lib/stores/berichtgen.svelte';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
 import { resolveFileRouting } from './file_routing';
 
@@ -16,7 +16,7 @@ function shouldSkipAiCompletion(context: WizardFileContext): boolean {
 	return (
 		typeof context.file !== 'string' &&
 		context.file.type === FileTypes.JSON &&
-		!berichtgenStore.rewordJSON
+		!berichtgenStore.get('rewordJSON')
 	);
 }
 
@@ -39,8 +39,8 @@ export function createStateMachineForContext(
 				}
 
 				resolveFileRouting(file, context, scheduler.scheduler!, {
-					processPhotos: berichtgenStore.processPhotos,
-					rewordJSON: berichtgenStore.rewordJSON
+					processPhotos: berichtgenStore.get('processPhotos'),
+					rewordJSON: berichtgenStore.get('rewordJSON')
 				}).then((result) => {
 					if (result.ok) {
 						context.snapshot = result.data;
@@ -150,3 +150,5 @@ export function createStateMachineForContext(
 }
 
 export type StateMachineSignature = typeof createStateMachineForContext;
+
+

@@ -15,7 +15,7 @@ import type {
 } from '$core/parser/docx_ast';
 import { Parser } from '$core/parser/parser';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context';
-import { berichtgenStore } from '$lib/stores/berichtgen.svelte';
+import berichtgenStore from '$lib/stores/berichtgen.svelte';
 import { ParserError, EParserError } from '$core/parser/errors';
 
 export type DOCXFileData = {
@@ -43,7 +43,7 @@ export class DOCXParser extends Parser {
 	constructor(
 		context: WizardFileContext,
 		scheduler: Scheduler,
-		withImages: boolean = berichtgenStore.processPhotos
+		withImages: boolean = berichtgenStore.get('processPhotos')
 	) {
 		super(context, scheduler, withImages);
 	}
@@ -745,3 +745,5 @@ function findBlipEmbed(drawing: Record<string, unknown>): string | undefined {
 	}
 	return undefined;
 }
+
+
