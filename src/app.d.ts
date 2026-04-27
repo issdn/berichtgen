@@ -1,8 +1,9 @@
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import type { AnyErrorValue } from '$src/lib/errors';
 import type { KyselyDatabase } from './lib/schema';
-
 declare global {
+	const __APP_VERSION__: string;
+
 	namespace App {
 		// interface Error {}
 		interface ***REMOVED***Settings {

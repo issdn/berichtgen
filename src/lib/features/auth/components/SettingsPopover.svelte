@@ -13,6 +13,7 @@
 	import * as InputOTP from '$ui/input-otp';
 	import * as Dialog from '$ui/dialog';
 	import { Button } from '$ui/button';
+	import Checkbox from '$ui/checkbox/checkbox.svelte';
 	import {
 		CircleHelp,
 		HandCoins,
@@ -20,6 +21,7 @@
 		Lock,
 		LogOut,
 		Mail,
+		Milestone,
 		Settings
 	} from '@lucide/svelte';
 	import { Label } from '$ui/label';
@@ -29,15 +31,18 @@
 	import { page } from '$app/state';
 	import { Input } from '$ui/input';
 	import Debug from './Debug.svelte';
+	import { Separator } from '$ui/separator';
+	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
 
 	let otpDialogOpen = $state(false);
 
 	let token = $state('');
 
 	let loading = $state(false);
+	let privacyAccepted = $state(false);
 
 	let { fullName, shortName } = $derived(
-		getUserDisplayName(page.data.userProfile, page.data.user)
+		getUserDisplayName(page.data.profile, page.data.user)
 	);
 
 	$effect(() => {
@@ -70,6 +75,17 @@
 			}
 		}
 	});
+
+	function handleOtpPaste(e: ClipboardEvent) {
+		if (!otpDialogOpen || loading) return;
+
+		const pastedText = e.clipboardData?.getData('text/plain') ?? '';
+		const otp = pastedText.replace(/\D/g, '').slice(0, 6);
+		if (!otp) return;
+
+		e.preventDefault();
+		token = otp;
+	}
 
 	const form = superForm(
 		defaults(
@@ -121,9 +137,7 @@
 				onclick={() => goto(resolve('/board/user/kauf'))}
 				><HandCoins />Tokens kaufen</Button
 			>
-			<div
-				class="mb-1 flex flex-row items-center gap-x-4 border-b border-dashed pb-3"
-			>
+			<div class="flex flex-row items-center gap-x-4">
 				<Button
 					onclick={() => goto(resolve('/board/user/settings'))}
 					variant="outline"
@@ -135,26 +149,46 @@
 			</div>
 		{/if}
 		{#if page.data.loggedIn}
+			<Separator />
 			<form method="POST" action="/auth?/signout">
 				<input type="hidden" name="redirectTo" value="/" />
 				<Button type="submit" class="w-full"><LogOut />Abmelden</Button>
 			</form>
 		{:else}
-			<Label class="text-xs">Anmeldung derzeit deaktiviert</Label>
+			<div class="flex items-center gap-x-2">
+				<Checkbox
+					id="privacy-checkbox"
+					bind:checked={privacyAccepted}
+					class="shrink-0"
+				/>
+				<Label
+					for="privacy-checkbox"
+					class="block flex-1 text-left text-sm leading-snug"
+				>
+					Ich akzeptiere die
+					<a
+						class="block text-left underline"
+						href={resolve('/datenschutz')}
+						target="_blank"
+						rel="noopener noreferrer">Datenschutzerklärung</a
+					>
+				</Label>
+			</div>
 			<form method="POST" action="/auth?/signin" use:enhance>
 				<input type="hidden" name="providerId" value="google" />
 				<input type="hidden" name="redirectTo" value="/board" />
-				<Button type="submit" class="w-full"
+				<Button type="submit" class="w-full" disabled={!privacyAccepted}
 					><Google />Anmelden mit Google</Button
 				>
 			</form>
-			<Button disabled={true} onclick={() => (otpDialogOpen = true)}
+			<Button onclick={() => (otpDialogOpen = true)} disabled={!privacyAccepted}
 				><KeyRound />OTP Anmeldung</Button
 			>
 			<Debug>
 				<DebugLoginDialog />
 			</Debug>
 		{/if}
+		<Separator />
 		<Button variant="outline" href="/impressum"><CircleHelp />Impressum</Button>
 		<Button variant="outline" href="/datenschutz"
 			><Lock />Datenschutzerklärung</Button
@@ -162,7 +196,8 @@
 		<div
 			class="text-muted-foreground flex flex-row items-center justify-center gap-x-1"
 		>
-			<p>v1.0.0</p>
+			<Milestone size={16} />
+			<span>{__APP_VERSION__}</span>
 		</div>
 	</Popover.Content>
 </Popover.Root>
@@ -171,7 +206,8 @@
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>OTP Anmeldung</Dialog.Title>
-			<div class="py-4">
+			<GlobalPasteHandler handlePaste={handleOtpPaste} enabled={otpDialogOpen}>
+				<div class="py-4">
 				<form method="POST" use:mailInputEnhance>
 					<Form.Field {form} name="mail">
 						<Form.Control>
@@ -213,9 +249,8 @@
 						{/snippet}
 					</InputOTP.Root>
 				</div>
-			</div>
+				</div>
+			</GlobalPasteHandler>
 		</Dialog.Header>
 	</Dialog.Content>
 </Dialog.Root>
-
-
