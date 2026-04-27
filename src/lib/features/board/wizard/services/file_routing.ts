@@ -72,7 +72,7 @@ export type FileRouting = TextRouting | InlineRouting | GcsRouting | UrlRouting;
 
 /** Response body from `POST /board/user/upload-url`. */
 export type UploadUrlResponse = {
-	signedUrl: string;
+	signedUrl?: string;
 	fileUri: string;
 };
 
@@ -166,6 +166,7 @@ async function uploadToGcs(file: File): Promise<Result<FileRouting>> {
 	// Step 1: request a signed URL from the Vercel function.
 	const uploadUrlResult = await requestGcsUpload(
 		file.name,
+		file.webkitRelativePath || file.name,
 		file.type,
 		file.size
 	);
@@ -173,13 +174,30 @@ async function uploadToGcs(file: File): Promise<Result<FileRouting>> {
 
 	const { signedUrl, fileUri } = uploadUrlResult.data;
 
+	// If no signed URL is returned, the object already exists and can be reused.
+	if (!signedUrl) {
+		return okResult<FileRouting>({
+			type: 'gcs',
+			fileUri,
+			mimeType: file.type
+		});
+	}
+
 	// Step 2: PUT the file directly to GCS (Vercel never sees the bytes).
 	return tryResult(
 		fetch(signedUrl, {
 			method: 'PUT',
-			headers: { 'Content-Type': file.type },
+			headers: {
+				'Content-Type': file.type,
+				'x-goog-if-generation-match': '0'
+			},
 			body: file
 		}).then((res) => {
+			if (res.status === 412) {
+				// Object already exists from a previous failed completion run.
+				// Reuse it instead of failing the flow.
+				return { type: 'gcs' as const, fileUri, mimeType: file.type };
+			}
 			if (!res.ok) throw gcsErrorFromStatus(res.status);
 			return { type: 'gcs' as const, fileUri, mimeType: file.type };
 		}),
@@ -195,6 +213,7 @@ async function uploadToGcs(file: File): Promise<Result<FileRouting>> {
  */
 function requestGcsUpload(
 	fileName: string,
+	fullFilePath: string,
 	contentType: string,
 	fileSize: number
 ): Promise<Result<UploadUrlResponse>> {
@@ -202,7 +221,7 @@ function requestGcsUpload(
 		fetch('/board/user/upload-url', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ fileName, contentType, fileSize })
+			body: JSON.stringify({ fileName, fullFilePath, contentType, fileSize })
 		}).then(async (res) => {
 			if (!res.ok) throw gcsErrorFromStatus(res.status);
 			return res.json() as Promise<UploadUrlResponse>;

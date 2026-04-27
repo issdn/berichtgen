@@ -9,6 +9,9 @@ import {
 import { EGCSError } from '$wizard/errors';
 import { uploadUrlRequestSchema } from '$wizard/schemas';
 import { Storage } from '@google-cloud/storage';
+import { createHash } from 'node:crypto';
+import { errResult, okResult, tryResult, type Result } from '$lib/result';
+import { WizardError } from '$wizard/errors';
 
 /**
  * Creates a Google Cloud Storage client authenticated with the service account
@@ -22,14 +25,58 @@ function createStorageClient(): Storage {
 	return new Storage({ credentials });
 }
 
+async function createSignedUploadResult({
+	storage,
+	objectPath,
+	contentType,
+	fileUri
+}: {
+	storage: Storage;
+	objectPath: string;
+	contentType: string;
+	fileUri: string;
+}): Promise<Result<{ signedUrl?: string; fileUri: string }>> {
+	try {
+		const file = storage.bucket(GCS_BUCKET_NAME).file(objectPath);
+		const [exists] = await file.exists();
+		if (exists) {
+			return okResult({ fileUri });
+		}
+
+		const [signedUrl] = await file.getSignedUrl({
+			version: 'v4',
+			action: 'write',
+			expires: Date.now() + 5 * 60 * 1000, // 5 minutes
+			contentType,
+			extensionHeaders: {
+				'x-goog-if-generation-match': '0'
+			}
+		});
+		return okResult({ signedUrl, fileUri });
+	} catch (e) {
+		const httpCode =
+			e !== null && typeof e === 'object' && 'code' in e
+				? Number((e as { code: unknown }).code)
+				: 500;
+
+		if (httpCode === 412) {
+			return okResult({ fileUri });
+		}
+
+		const gcsError =
+			errorByHttpCode(EGCSError, httpCode) ?? EGCSError.INTERNAL_SERVER_ERROR;
+		return errResult(WizardError, gcsError, e);
+	}
+}
+
 /**
  * `POST /board/user/upload-url`
  *
- * Generates a short-lived (15-minute) signed PUT URL so the client can upload
+ * Generates a short-lived (5-minute) signed PUT URL so the client can upload
  * a file directly to Google Cloud Storage without passing through Vercel.
  *
- * Request body: `{ fileName: string, contentType: string, fileSize: number }`
- * Response:     `{ signedUrl: string, fileUri: string }`
+ * Request body: `{ fileName: string, fullFilePath: string, contentType: string, fileSize: number }`
+ * Response:     `{ signedUrl?: string, fileUri: string }`
  *
  * The `fileUri` is a `gs://` URI that can be passed directly to the Gemini API.
  */
@@ -44,40 +91,35 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	if (!parsed.success)
 		return throwSvelteError(ECommonServerError.VALIDATION_ERROR);
 
-	const { fileName, contentType, fileSize: _fileSize } = parsed.data;
+	const {
+		fileName: _fileName,
+		fullFilePath,
+		contentType,
+		fileSize: _fileSize
+	} = parsed.data;
 
-	// Use a per-user, UUID-namespaced path to avoid collisions and allow
-	// coarse-grained IAM policies scoped to `uploads/{userId}/`.
-	const objectPath = `uploads/${user.id}/${crypto.randomUUID()}/${fileName}`;
+	// Deterministic per-user object key so retries can reuse previously uploaded
+	// files when completion failed and the object is still present.
+	const normalizedFullPath = fullFilePath.replace(/\\/g, '/');
+	const hash = createHash('sha256').update(normalizedFullPath).digest('hex');
+	const objectPath = `${user.id}/${hash}`;
+	const fileUri = `gs://${GCS_BUCKET_NAME}/${objectPath}`;
 
-	let storage: Storage;
-	try {
-		storage = createStorageClient();
-	} catch {
-		return throwSvelteError(ECommonServerError.INTERNAL_ERROR);
-	}
+	const storageResult = await tryResult(
+		Promise.resolve(createStorageClient()),
+		WizardError,
+		ECommonServerError.INTERNAL_ERROR
+	);
+	if (!storageResult.ok) return throwSvelteError(storageResult.error.apiError);
 
-	try {
-		const [signedUrl] = await storage
-			.bucket(GCS_BUCKET_NAME)
-			.file(objectPath)
-			.getSignedUrl({
-				version: 'v4',
-				action: 'write',
-				expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-				contentType
-			});
-		const fileUri = `gs://${GCS_BUCKET_NAME}/${objectPath}`;
-		return json({ signedUrl, fileUri });
-	} catch (e) {
-		// The GCS SDK sets `code` to the HTTP status of the failed API call.
-		const httpCode =
-			e !== null && typeof e === 'object' && 'code' in e
-				? Number((e as { code: unknown }).code)
-				: 500;
+	const signedUploadResult = await createSignedUploadResult({
+		storage: storageResult.data,
+		objectPath,
+		contentType,
+		fileUri
+	});
+	if (!signedUploadResult.ok)
+		return throwSvelteError(signedUploadResult.error.apiError);
 
-		const gcsError =
-			errorByHttpCode(EGCSError, httpCode) ?? EGCSError.INTERNAL_SERVER_ERROR;
-		return throwSvelteError(gcsError);
-	}
+	return json(signedUploadResult.data);
 };

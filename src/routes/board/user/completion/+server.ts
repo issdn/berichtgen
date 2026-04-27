@@ -20,6 +20,8 @@ import { itemToContentPart, runCompletion } from '$wizard/completion/gemini';
 import { GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
+import { Storage } from '@google-cloud/storage';
+import { tryResult } from '$lib/result';
 
 if (!env.GEMINI_MODEL) {
 	console.debug('GEMINI_MODEL not set, defaulting to', DEFAULT_MODEL);
@@ -30,8 +32,14 @@ if (!env.GEMINI_MODEL) {
 export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	if (!user) return throwSvelteError(ECommonServerError.UNAUTHORIZED);
 
-	const credentials = JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''));
-	if (!credentials) return throwSvelteError(ECompletionException.INTERNAL);
+	const credentialsResult = await tryResult(
+		Promise.resolve(JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''))),
+		***REMOVED***Error,
+		ECompletionException.INTERNAL
+	);
+	if (!credentialsResult.ok)
+		return throwSvelteError(credentialsResult.error.apiError);
+	const credentials = credentialsResult.data;
 
 	const body = await request.json();
 	const parsed = batchCompletionApiSchema.safeParse(body);
@@ -70,13 +78,12 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	if (budget.fittingIndices.length === 0)
 		return throwSvelteError(ECompletionException.NOT_ENOUGH_TOKENS);
 
-	try {
-		await deductUserTokens(user.id, budget.totalTokens);
-	} catch (e) {
-		if (e instanceof ***REMOVED***Error) return throwSvelteError(e.apiError);
-		Sentry.captureException(e);
-		return throwSvelteError(ECompletionException.INTERNAL);
-	}
+	const deductResult = await tryResult(
+		deductUserTokens(user.id, budget.totalTokens),
+		***REMOVED***Error,
+		ECompletionException.INTERNAL
+	);
+	if (!deductResult.ok) return throwSvelteError(deductResult.error.apiError);
 
 	const geminiResults = await Promise.allSettled(
 		budget.fittingIndices.map((i) => runCompletion(items[i], ai, model))
@@ -102,6 +109,8 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 		results,
 		insufficient_tokens: budget.insufficientTokens
 	};
+
+	await deleteProcessedGcsFilesBestEffort(items, budget.fittingIndices, user.id);
 
 	return json(response);
 };
@@ -239,4 +248,62 @@ function parseGeminiResponses(
 	}
 
 	return { results, parseErrorCount };
+}
+
+function parseGsUri(fileUri: string): { bucket: string; objectPath: string } | null {
+	const match = /^gs:\/\/([^/]+)\/(.+)$/.exec(fileUri);
+	if (!match) return null;
+	return { bucket: match[1], objectPath: match[2] };
+}
+
+async function deleteProcessedGcsFilesBestEffort(
+	items: BatchCompletionItem[],
+	fittingIndices: number[],
+	userId: string
+): Promise<void> {
+	const gcsUris = new Set<string>();
+	for (const index of fittingIndices) {
+		const item = items[index];
+		if (item?.type !== 'file') continue;
+		gcsUris.add(item.fileUri);
+	}
+	if (gcsUris.size === 0) return;
+
+	let credentials: { client_email: string; private_key: string } & {
+		project_id: string;
+	};
+	try {
+		credentials = JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''));
+	} catch (e) {
+		Sentry.captureException(e);
+		return;
+	}
+
+	const storage = new Storage({ credentials });
+
+	await Promise.all(
+		[...gcsUris].map(async (uri) => {
+			const parsed = parseGsUri(uri);
+			if (!parsed) {
+				Sentry.captureMessage('Invalid gs:// URI in completion request', {
+					extra: { uri }
+				});
+				return;
+			}
+
+			// Only delete objects belonging to the current user namespace.
+			if (!parsed.objectPath.startsWith(`${userId}/`)) return;
+
+			try {
+				await storage
+					.bucket(parsed.bucket)
+					.file(parsed.objectPath)
+					.delete({ ignoreNotFound: true });
+			} catch (e) {
+				Sentry.captureException(e, {
+					extra: { uri, objectPath: parsed.objectPath }
+				});
+			}
+		})
+	);
 }
