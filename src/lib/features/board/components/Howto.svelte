@@ -5,6 +5,7 @@
 	import { Pin } from '@lucide/svelte';
 	import FilesToConfigModal from './FilesToConfigModal.svelte';
 	import CopyButton from './CopyButton.svelte';
+	import Button from '$ui/button/button.svelte';
 </script>
 
 <div class="bg-muted h-full w-full overflow-y-hidden">
@@ -13,7 +14,7 @@
 			<Card.Root class="relative inline-block w-full">
 				<Pin class="absolute -top-1 -right-1 rotate-45 " />
 				<Card.Header>
-					<Card.Title>💵 Berichte kostenlos generieren</Card.Title>
+					<Card.Title>Berichte kostenlos generieren</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					<p>
@@ -27,14 +28,16 @@
 					</p>
 					<div class="flex flex-row flex-wrap items-start gap-2 py-4">
 						<CopyButton text={getContextPrompt(Ort.SCHULE)}>Schule</CopyButton>
-						<CopyButton text={getContextPrompt(Ort.BETRIEB)}>Betrieb/Unterweisung</CopyButton>
+						<CopyButton text={getContextPrompt(Ort.BETRIEB)}
+							>Betrieb/Unterweisung</CopyButton
+						>
 					</div>
 				</Card.Content>
 			</Card.Root>
 			<Card.Root class="relative inline-block w-full">
 				<Pin class="absolute -top-1 -right-1 rotate-45 " />
 				<Card.Header>
-					<Card.Title>📄 CSV Konfig</Card.Title>
+					<Card.Title>CSV Konfig</Card.Title>
 				</Card.Header>
 				<Card.Content>
 					<p>
@@ -64,6 +67,25 @@
 					<div class="flex flex-row pt-4">
 						<FilesToConfigModal />
 					</div>
+				</Card.Content>
+			</Card.Root>
+			<Card.Root class="relative inline-block w-full">
+				<Pin class="absolute -top-1 -right-1 rotate-45 " />
+				<Card.Header>
+					<Card.Title>Kostenlose Version (Self-Host)</Card.Title>
+				</Card.Header>
+				<Card.Content class="flex flex-row flex-wrap">
+					Lade die App herunter und hoste sie selbst!:
+					<Button
+						target="_blank"
+						variant="link"
+						href="https://codeberg.org/isdn/***REMOVED***">Codeberg</Button
+					>
+					<Button
+						target="_blank"
+						variant="link"
+						href="https://github.com/issdn/***REMOVED***">GitHub</Button
+					>
 				</Card.Content>
 			</Card.Root>
 		</div>
