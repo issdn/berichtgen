@@ -17,11 +17,13 @@
 	<title>***REMOVED***</title>
 </svelte:head>
 
-<div
-	class="h-main flex w-full flex-col gap-x-8 gap-y-8 px-8 pb-8 md:grid md:grid-cols-2 md:grid-rows-2"
->
-	<div class="flex h-full flex-col gap-y-2 md:row-span-2">
-		<div class="w-full flex-row items-center gap-x-16">
+<div class="h-main flex w-full flex-col gap-4 px-4 pb-4 md:flex-row">
+	<div class="flex w-full flex-col gap-y-4">
+		<WizardDropzone />
+		<Wizard />
+	</div>
+	<div class="flex w-full flex-col gap-y-2">
+		<div class="h-min w-full flex-row items-center gap-x-16">
 			{#if tokenCount !== null}
 				<Button
 					onclick={() => goto(resolve('/board/user/kauf'))}
@@ -34,6 +36,4 @@
 		</div>
 		<Howto />
 	</div>
-	<WizardDropzone />
-	<Wizard />
 </div>

@@ -8,7 +8,7 @@
 	import Button from '$ui/button/button.svelte';
 </script>
 
-<div class="bg-muted h-full w-full overflow-y-hidden">
+<div class="bg-muted h-full max-h-240 w-full overflow-y-hidden">
 	<div class="h-full w-full overflow-y-auto">
 		<div class="columns-1 gap-4 space-y-4 rounded-md p-4 xl:columns-2">
 			<Card.Root class="relative inline-block w-full">
