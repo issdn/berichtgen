@@ -9,6 +9,7 @@
 	import { Toggle } from '$ui/toggle';
 	import { debounce } from '$lib/utils';
 	import { setTemplatesMutationContext } from '../contexts';
+	import { Separator } from '$ui/separator';
 
 	/** Counts in-flight mutations (delete / report / unreport / upload). Read by TemplateList. */
 	let mutationCount = $state(0);
@@ -104,6 +105,8 @@
 		</div>
 
 		<TemplateList {pages} onLoadMore={handleLoadMore} {mutationCount} />
+
+		<Separator />
 
 		<Authed>
 			<!--

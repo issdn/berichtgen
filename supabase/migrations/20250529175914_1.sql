@@ -62,6 +62,7 @@ CREATE TABLE template (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
     user_id uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     storage_path text NOT NULL,
+    is_public boolean NOT NULL DEFAULT false,
     safe_marked_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz

@@ -77,6 +77,7 @@ function makeRow(overrides: Partial<TemplateRow> = {}): TemplateRow {
 		id: 'row-1',
 		user_id: 'user-1',
 		storage_path: 'user-1/file.docx',
+		is_public: false,
 		safe_marked_at: null,
 		created_at: '2024-01-01T00:00:00Z',
 		updated_at: null,

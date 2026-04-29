@@ -10,6 +10,7 @@ export interface TemplateTable {
 	id: Generated<string>;
 	user_id: string;
 	storage_path: string;
+	is_public: Generated<boolean>;
 	safe_marked_at: string | null;
 	created_at: Generated<string>;
 	updated_at: string | null;

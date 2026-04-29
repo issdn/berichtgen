@@ -1,7 +1,7 @@
 <script lang="ts">
 	import berichtgenStore from '$lib/stores/berichtgen.svelte';
 	import type { getTemplates } from '$templates/api/templates.remote';
-	import ErrorAlert from '$ui/ErrorAlert.svelte';
+	import EmptyError from '$ui/EmptyError.svelte';
 	import { Skeleton } from '$ui/skeleton';
 	import { Spinner } from '$ui/spinner';
 	import Template from './Template.svelte';
@@ -10,7 +10,9 @@
 	import * as Empty from '$ui/empty';
 
 	/** Resolved type of a single template row. */
-	type TemplateItem = Awaited<ReturnType<typeof getTemplates>>['templates'][number];
+	type TemplateItem = Awaited<
+		ReturnType<typeof getTemplates>
+	>['templates'][number];
 
 	/** Resolved page data shape. */
 	type PageData = Awaited<ReturnType<typeof getTemplates>>;
@@ -69,7 +71,8 @@
 		isListLoading = true;
 		// Capture now — `pages` may change again before the promise settles.
 		const snapshot = pages;
-		pages.at(-1)!
+		pages
+			.at(-1)!
 			.then((data) => {
 				displayPages = snapshot;
 				lastPageSnapshot = { ok: true, data };
@@ -95,7 +98,9 @@
 		lastScrollY = el.scrollTop;
 
 		if (near && down && lastPageSnapshot.data.hasMore && !pendingLoadMore) {
-			const afterId = (lastPageSnapshot.data.templates as TemplateItem[]).at(-1)?.id;
+			const afterId = (lastPageSnapshot.data.templates as TemplateItem[]).at(
+				-1
+			)?.id;
 			if (afterId) {
 				pendingLoadMore = true;
 				onLoadMore(afterId);
@@ -111,7 +116,10 @@
 		<!-- First mount: synchronous skeleton, no boundary or async needed. -->
 		<div class="flex flex-col">
 			{#each { length: 4 } as _item, i (i)}
-				<div data-testid="templates-skeleton" class="flex items-center gap-3 px-2 py-1.5">
+				<div
+					data-testid="templates-skeleton"
+					class="flex items-center gap-3 px-2 py-1.5"
+				>
 					<Skeleton class="size-8 shrink-0 rounded-full" />
 					<div class="flex flex-1 flex-col gap-1.5">
 						<Skeleton class="h-3.5 w-40 rounded" />
@@ -122,20 +130,25 @@
 			{/each}
 		</div>
 	{:else if !lastPageSnapshot.ok}
-		<div class="flex h-48 items-center justify-center">
-			<ErrorAlert error={lastPageSnapshot.error} />
-		</div>
+		<EmptyError error={lastPageSnapshot.error} />
 	{:else if lastPageSnapshot.data.templates.length === 0 && pages.length === 1 && !isListLoading}
 		<div class="flex h-48 items-center justify-center">
 			<Empty.Root>
 				<Empty.Header>
 					<Empty.Title>Keine Templates gefunden</Empty.Title>
-					<Empty.Description>Lade ein Template hoch, um loszulegen.</Empty.Description>
+					<Empty.Description
+						>Lade ein Template hoch, um loszulegen.</Empty.Description
+					>
 				</Empty.Header>
 			</Empty.Root>
 		</div>
 	{:else}
-		<ScrollArea type="auto" orientation="vertical" onscroll={handleScroll} class="h-48 w-full">
+		<ScrollArea
+			type="auto"
+			orientation="vertical"
+			onscroll={handleScroll}
+			class="h-48 w-full"
+		>
 			<!--
 				Always rendered from displayPages — the same query objects that pages
 				currently holds, but only swapped in after they resolve. This means:
@@ -157,8 +170,10 @@
 					{#await pageQuery then { templates }}
 						{#each templates as template (template.id)}
 							{@const isPreferred =
-								berichtgenStore.get('preferredTemplatePath') === template.storage_path}
-							{@const hasPendingReport = (template.template_report?.length ?? 0) > 0}
+								berichtgenStore.get('preferredTemplatePath') ===
+								template.storage_path}
+							{@const hasPendingReport =
+								(template.template_report?.length ?? 0) > 0}
 							<Template
 								profile={template.profile!}
 								{isPreferred}
@@ -179,5 +194,3 @@
 		</ScrollArea>
 	{/if}
 </div>
-
-

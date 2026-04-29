@@ -14,6 +14,8 @@
 	import { toast } from 'svelte-sonner';
 	import { getTemplatesMutationContext } from '../contexts';
 	import TemplateDocxPreviewDialog from './TemplateDocxPreviewDialog.svelte';
+	import Checkbox from '$ui/checkbox/checkbox.svelte';
+	import { Label } from '$ui/label';
 
 	const mutation = getTemplatesMutationContext();
 
@@ -40,6 +42,7 @@
 	let pendingPreviewUrl = $state<string | null>(null);
 	let pendingReplace = $state(false);
 	let previewOpen = $state(false);
+	let isPublic = $state(false);
 
 	const preparePreview = new AsyncResource(
 		async (file: File) => {
@@ -77,6 +80,7 @@
 			name: string;
 			type: string;
 			data: Uint8Array<ArrayBuffer>;
+			isPublic: boolean;
 		}) => {
 			mutation?.start();
 			try {
@@ -152,7 +156,8 @@
 		const uploaded = await uploadMutation.execute({
 			name: pendingFile.name,
 			type: pendingFile.type,
-			data: pendingFileBytes
+			data: pendingFileBytes,
+			isPublic
 		});
 
 		if (!uploaded) return false;
@@ -161,8 +166,14 @@
 	}
 </script>
 
-<div class="h-full w-full">
-	<Dropzone disabled={isPending} {handleFiles} />
+<div class="flex h-full w-full flex-col gap-y-2">
+	<div class="flex items-center gap-x-2">
+		<Checkbox id="template-public" bind:checked={isPublic} />
+		<Label for="template-public" class="text-sm">
+			Template für andere Nutzer öffentlich machen
+		</Label>
+	</div>
+	<Dropzone disabled={isPending} {handleFiles} class="min-h-48" />
 </div>
 
 {#if pendingPreviewUrl}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
+	import { cn } from '$lib/utils';
 	import * as Kbd from '$ui/kbd';
 	import { FileTypes } from '$wizard/enums';
 	import { Clock, FileCheck, FileUp, FileX } from '@lucide/svelte';
@@ -9,12 +10,14 @@
 		handleFiles,
 		filesNumber = $bindable(null),
 		disabled = false,
-		accept = Object.values(FileTypes).join(',')
+		accept = Object.values(FileTypes).join(','),
+		class: className
 	}: {
 		handleFiles: (files: DataTransferItemList | FileList) => Promise<void>;
 		filesNumber?: number | null;
 		disabled?: boolean;
 		accept?: string;
+		class?: string;
 	} = $props();
 
 	let input = $state<HTMLInputElement>();
@@ -93,7 +96,6 @@
 		if (!e.clipboardData?.files.length) return;
 		await extractAndHandleFiles(e.clipboardData);
 	}
-
 </script>
 
 <GlobalPasteHandler {handlePaste}>
@@ -102,37 +104,43 @@
 		data-testid="dropzone"
 		data-dragging={isDraggingIn}
 		data-valid={isDraggedInputValid}
-		class="text-border hover:border-primary hover:text-primary data-[dragging=true]:border-primary data-[dragging=true]:text-primary data-[valid=false]:border-destructive data-[valid=false]:text-destructive relative flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed
-	         text-sm font-medium transition-colors duration-300"
+		class={cn(
+			'text-border hover:border-primary hover:text-primary',
+			'data-[dragging=true]:border-primary data-[dragging=true]:text-primary',
+			'data-[valid=false]:border-destructive data-[valid=false]:text-destructive',
+			'relative flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed',
+			'text-sm font-medium transition-colors duration-300',
+			className
+		)}
 		ondragenter={handleDragEnter}
 		ondragleave={handleDragLeave}
 		ondragover={handleDragOver}
 		ondrop={handleDrop}
 		onchange={handleChange}
 	>
-	<Kbd.Group class="absolute bottom-2 left-2">
-		<Kbd.Root>Strg</Kbd.Root>
-		<span>+</span>
-		<Kbd.Root>V</Kbd.Root>
-	</Kbd.Group>
-	<input
-		data-testid="dropzone-input"
-		{accept}
-		bind:this={input}
-		type="file"
-		multiple
-		style="display:none"
-		{disabled}
-	/>
-	{#if filesNumber && filesNumber > 0}
-		<FileCheck size={48} />
-		{filesNumber ? filesNumber : ''} Dateien ausgewählt
-	{:else if disabled}
-		<Clock size={48} />
-	{:else if isDraggedInputValid === false}
-		<FileX size={48} />Ungültige Datei(en) erkannt
-	{:else}
-		<FileUp size={48} />Dateien hier droppen
-	{/if}
+		<Kbd.Group class="absolute bottom-2 left-2">
+			<Kbd.Root>Strg</Kbd.Root>
+			<span>+</span>
+			<Kbd.Root>V</Kbd.Root>
+		</Kbd.Group>
+		<input
+			data-testid="dropzone-input"
+			{accept}
+			bind:this={input}
+			type="file"
+			multiple
+			style="display:none"
+			{disabled}
+		/>
+		{#if filesNumber && filesNumber > 0}
+			<FileCheck size={48} />
+			{filesNumber ? filesNumber : ''} Dateien ausgewählt
+		{:else if disabled}
+			<Clock size={48} />
+		{:else if isDraggedInputValid === false}
+			<FileX size={48} />Ungültige Datei(en) erkannt
+		{:else}
+			<FileUp size={48} />Dateien hier droppen
+		{/if}
 	</label>
 </GlobalPasteHandler>

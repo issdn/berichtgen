@@ -40,7 +40,8 @@ export const uploadTemplate = guardedCommand(
 	z.object({
 		name: z.string().min(1),
 		type: z.string().min(1),
-		data: z.instanceof(Uint8Array)
+		data: z.instanceof(Uint8Array),
+		isPublic: z.boolean().default(false)
 	}),
 	async (params) => {
 		const {

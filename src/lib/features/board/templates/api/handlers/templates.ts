@@ -41,6 +41,7 @@ export type TemplateRow = {
 	id: string;
 	user_id: string;
 	storage_path: string;
+	is_public: boolean;
 	safe_marked_at: string | null;
 	created_at: string;
 	updated_at: string | null;
@@ -156,7 +157,7 @@ export async function fetchTemplates(
 				FROM template t
 				LEFT JOIN profile p ON p.id = t.user_id
 				LEFT JOIN template_report tr ON tr.template_id = t.id
-				WHERE t.user_id != ${userId} ${searchCond} ${afterIdCond} ${hideReportedCond}
+				WHERE t.user_id != ${userId} AND t.is_public = true ${searchCond} ${afterIdCond} ${hideReportedCond}
 				GROUP BY t.id, p.id
 				ORDER BY t.id DESC
 				LIMIT ${PAGE_SIZE + 1}
@@ -172,7 +173,7 @@ export async function fetchTemplates(
 			FROM template t
 			LEFT JOIN profile p ON p.id = t.user_id
 			LEFT JOIN template_report tr ON tr.template_id = t.id
-			WHERE true ${searchCond} ${afterIdCond} ${hideReportedCond}
+			WHERE t.is_public = true ${searchCond} ${afterIdCond} ${hideReportedCond}
 			GROUP BY t.id, p.id
 			ORDER BY t.id DESC
 			LIMIT ${PAGE_SIZE + 1}
@@ -190,7 +191,12 @@ export async function fetchTemplates(
  * @param userId  Authenticated user — the file is namespaced under their ID.
  */
 export async function uploadTemplateFile(
-	params: { name: string; type: string; data: Uint8Array },
+	params: {
+		name: string;
+		type: string;
+		data: Uint8Array;
+		isPublic: boolean;
+	},
 	userId: string
 ): Promise<void> {
 	const storagePath = `${userId}/${params.name}`;
@@ -213,13 +219,20 @@ export async function uploadTemplateFile(
 	if (existing) {
 		await db
 			.updateTable('template')
-			.set({ updated_at: new Date().toISOString() })
+			.set({
+				is_public: params.isPublic,
+				updated_at: new Date().toISOString()
+			})
 			.where('storage_path', '=', storagePath)
 			.execute();
 	} else {
 		await db
 			.insertInto('template')
-			.values({ user_id: userId, storage_path: storagePath })
+			.values({
+				user_id: userId,
+				storage_path: storagePath,
+				is_public: params.isPublic
+			})
 			.execute();
 	}
 }
