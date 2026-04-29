@@ -37,3 +37,6 @@ __snapshots__/
 
 *storybook.log
 storybook-static
+
+**/supabase/.branches
+**/supabase/.temp

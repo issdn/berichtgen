@@ -5,7 +5,10 @@ import pg from 'pg';
 
 const db = new Kysely<KyselyDatabase>({
 	dialect: new PostgresDialect({
-		pool: new pg.Pool({ connectionString: DATABASE_URL })
+		pool: new pg.Pool({
+			connectionString: DATABASE_URL,
+			ssl: { rejectUnauthorized: true, ca: process.env.SUPABASE_CA }
+		})
 	})
 });
 

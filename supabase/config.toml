@@ -9,13 +9,12 @@ secret = "env(AUTH_GOOGLE_SECRET)"
 redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
 
 [auth.email.smtp]
-host = "***REMOVED***"        # Or your mail server
-port = ***REMOVED***
-user = "***REMOVED***"
-pass = "MxUnD8TRXIqeOZI5"
-sender_name = "***REMOVED***"
-admin_email = "***REMOVED***"
-# sender = "***REMOVED***"
+host = "env(HOST)"
+port = "env(PORT)"
+user = "env(USER)"
+pass = "env(PASS)"
+sender_name = "env(SENDER_NAME)"
+admin_email = "env(ADMIN_EMAIL)"
 
 [db.pooler]
 enabled = true
