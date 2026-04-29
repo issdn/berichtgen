@@ -6,7 +6,6 @@ import {
 	PUBLIC_SUPABASE_URL,
 	PUBLIC_SUPABASE_PUBLISHABLE_KEY
 } from '$env/static/public';
-import { checkRateLimit } from '$server/rate_limit';
 import type { KyselyDatabase } from '$lib/schema';
 
 const supabase: Handle = async ({ event, resolve }) => {
@@ -83,13 +82,6 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-const rateLimit: Handle = async ({ event, resolve }) => {
-	if (event.locals.user) {
-		await checkRateLimit(event.locals.user.id, event.url.pathname);
-	}
-	return resolve(event);
-};
-
 Sentry.init({
 	dsn: 'https://0bf253098410971***REMOVED***721601bcddda16@o4509192225816576.ingest.de.sentry.io/4509192227258448',
 	tracesSampleRate: 1,
@@ -100,6 +92,5 @@ export const handleError = Sentry.handleErrorWithSentry();
 export const handle = sequence(
 	Sentry.sentryHandle(),
 	supabase,
-	authGuard,
-	rateLimit
+	authGuard
 );
