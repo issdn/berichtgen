@@ -1,7 +1,7 @@
 import { browser, dev } from '$app/environment';
 import { SvelteMap } from 'svelte/reactivity';
 
-const DEFAULT_SETTINGS: App.***REMOVED***Settings = {
+const DEFAULT_SETTINGS: App.BerichtgenSettings = {
 	processPhotos: false,
 	rewordJSON: false,
 	constantHours: false,
@@ -11,26 +11,26 @@ const DEFAULT_SETTINGS: App.***REMOVED***Settings = {
 };
 
 const settings = new SvelteMap<
-	keyof App.***REMOVED***Settings,
-	App.***REMOVED***Settings[keyof App.***REMOVED***Settings]
->(Object.entries(DEFAULT_SETTINGS) as [keyof App.***REMOVED***Settings, App.***REMOVED***Settings[keyof App.***REMOVED***Settings]][]);
+	keyof App.BerichtgenSettings,
+	App.BerichtgenSettings[keyof App.BerichtgenSettings]
+>(Object.entries(DEFAULT_SETTINGS) as [keyof App.BerichtgenSettings, App.BerichtgenSettings[keyof App.BerichtgenSettings]][]);
 
 let hydrated = false;
 
-function parseStoredSetting<K extends keyof App.***REMOVED***Settings>(
+function parseStoredSetting<K extends keyof App.BerichtgenSettings>(
 	key: K
-): App.***REMOVED***Settings[K] | null {
+): App.BerichtgenSettings[K] | null {
 	if (!browser) return null;
 	const raw = localStorage.getItem(key);
 	if (raw === null) return null;
 	try {
-		return JSON.parse(raw) as App.***REMOVED***Settings[K];
+		return JSON.parse(raw) as App.BerichtgenSettings[K];
 	} catch {
 		return null;
 	}
 }
 
-function shouldPersistKey(key: keyof App.***REMOVED***Settings): boolean {
+function shouldPersistKey(key: keyof App.BerichtgenSettings): boolean {
 	if (key !== 'useDevEndpoint') return true;
 	return dev;
 }
@@ -38,7 +38,7 @@ function shouldPersistKey(key: keyof App.***REMOVED***Settings): boolean {
 function ensureHydrated() {
 	if (!browser || hydrated) return;
 	(
-		Object.keys(DEFAULT_SETTINGS) as Array<keyof App.***REMOVED***Settings>
+		Object.keys(DEFAULT_SETTINGS) as Array<keyof App.BerichtgenSettings>
 	).forEach((key) => {
 		const parsed = parseStoredSetting(key);
 		if (parsed !== null) {
@@ -48,16 +48,16 @@ function ensureHydrated() {
 	hydrated = true;
 }
 
-function get<K extends keyof App.***REMOVED***Settings>(
+function get<K extends keyof App.BerichtgenSettings>(
 	key: K
-): App.***REMOVED***Settings[K] {
+): App.BerichtgenSettings[K] {
 	ensureHydrated();
-	return settings.get(key)! as App.***REMOVED***Settings[K];
+	return settings.get(key)! as App.BerichtgenSettings[K];
 }
 
-function set<K extends keyof App.***REMOVED***Settings>(
+function set<K extends keyof App.BerichtgenSettings>(
 	key: K,
-	value: App.***REMOVED***Settings[K]
+	value: App.BerichtgenSettings[K]
 ) {
 	ensureHydrated();
 	settings.set(key, value);

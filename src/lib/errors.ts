@@ -77,16 +77,16 @@ export const ECommonServerError = buildError({
 // Base error class
 // ---------------------------------------------------------------------------
 
-export class ***REMOVED***Error extends Error {
+export class BerichtgenError extends Error {
 	constructor(public readonly apiError: AnyErrorValue) {
 		super(apiError.message);
 	}
 
-	static fromCode(code: string): ***REMOVED***Error {
+	static fromCode(code: string): BerichtgenError {
 		const match = (Object.values(ECommonServerError) as AnyErrorValue[]).find(
 			(e) => e.code === code
 		);
-		return new ***REMOVED***Error(match ?? ECommonServerError.INTERNAL_ERROR);
+		return new BerichtgenError(match ?? ECommonServerError.INTERNAL_ERROR);
 	}
 }
 

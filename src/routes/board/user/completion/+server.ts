@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
 import {
-	***REMOVED***Error,
+	BerichtgenError,
 	ECommonServerError,
 	throwSvelteError
 } from '$lib/errors';
@@ -34,7 +34,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 	const credentialsResult = await tryResult(
 		Promise.resolve(JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''))),
-		***REMOVED***Error,
+		BerichtgenError,
 		ECompletionException.INTERNAL
 	);
 	if (!credentialsResult.ok)
@@ -80,7 +80,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 	const deductResult = await tryResult(
 		deductUserTokens(user.id, budget.totalTokens),
-		***REMOVED***Error,
+		BerichtgenError,
 		ECompletionException.INTERNAL
 	);
 	if (!deductResult.ok) return throwSvelteError(deductResult.error.apiError);
@@ -187,7 +187,7 @@ function selectItemsWithinBudget(
 /**
  * Deducts tokens from the user inside a serialisable transaction.
  * SELECT FOR UPDATE prevents concurrent requests from double-spending.
- * Throws `***REMOVED***Error(NOT_ENOUGH_TOKENS)` if the balance is insufficient.
+ * Throws `BerichtgenError(NOT_ENOUGH_TOKENS)` if the balance is insufficient.
  */
 async function deductUserTokens(userId: string, amount: number): Promise<void> {
 	await db.transaction().execute(async (trx) => {
@@ -199,7 +199,7 @@ async function deductUserTokens(userId: string, amount: number): Promise<void> {
 			.executeTakeFirst();
 
 		if (!current || current.tokens < amount) {
-			throw new ***REMOVED***Error(ECompletionException.NOT_ENOUGH_TOKENS);
+			throw new BerichtgenError(ECompletionException.NOT_ENOUGH_TOKENS);
 		}
 
 		await trx

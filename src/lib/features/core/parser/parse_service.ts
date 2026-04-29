@@ -32,7 +32,7 @@ export type ParseOptions = {
  *
  * Reads the file bytes, selects the appropriate parser by MIME type, and
  * dynamically loads only that parser's module (tree-shaking / lazy-loading).
- * All errors are wrapped in {@link ***REMOVED***Error} and returned as
+ * All errors are wrapped in {@link BerichtgenError} and returned as
  * `Result` failures — no exceptions escape.
  *
  * Supported MIME types (via {@link FileTypes}):

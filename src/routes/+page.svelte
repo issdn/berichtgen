@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-	<title>***REMOVED***</title>
+	<title>Berichtgen</title>
 </svelte:head>
 
 <div
@@ -29,7 +29,7 @@
 				</p>
 				<p class="text-md opacity-80">
 					oder <a
-						href="https://codeberg.org/isdn/***REMOVED***"
+						href="https://codeberg.org/isdn/Berichtgen"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="font-semibold text-queer-blue underline underline-offset-2 transition-opacity hover:opacity-80"

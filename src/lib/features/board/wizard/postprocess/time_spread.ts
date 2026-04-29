@@ -4,7 +4,7 @@ import {
 	startOfYear
 } from '@internationalized/date';
 import type { Entry, ResultEntry } from '$wizard/types';
-import type { Valid***REMOVED***DateRanges } from '$wizard/schemas';
+import type { ValidBerichtgenDateRanges } from '$wizard/schemas';
 import { Ort } from '$wizard/enums';
 import { LOCALE } from '$lib/constants';
 
@@ -17,7 +17,7 @@ import { LOCALE } from '$lib/constants';
  */
 export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
-	{ ranges, ort }: Valid***REMOVED***DateRanges
+	{ ranges, ort }: ValidBerichtgenDateRanges
 ): Required<Entry>[] {
 	const stundenSum = ranges.reduce(
 		(prev, { daterange, stunden }) =>

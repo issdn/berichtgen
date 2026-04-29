@@ -1,7 +1,7 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import berichtgenStore from '$lib/stores/berichtgen.svelte';
 import { createStateMachineForContext } from './state_machine';
-import { ***REMOVED***Error } from '$lib/errors';
+import { BerichtgenError } from '$lib/errors';
 import { WizardError, EWizardError } from '$wizard/errors';
 import { WizardFileContext } from './wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
@@ -246,7 +246,7 @@ export class WizardScheduler {
 		const chunkResults = new SvelteMap<number, SvelteMap<number, string[]>>();
 		const startedFileIndices = new SvelteSet<number>();
 
-		let errorCause: ***REMOVED***Error | null = null;
+		let errorCause: BerichtgenError | null = null;
 		let batchHalted = false;
 
 		for (const batch of batches) {

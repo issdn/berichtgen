@@ -11,8 +11,8 @@ import type { Scheduler } from 'tesseract.js';
 vi.mock('$app/navigation', () => ({ invalidate: vi.fn() }));
 vi.mock('$lib/stores/berichtgen.svelte', () => ({
 	default: {
-		get: (key: keyof App.***REMOVED***Settings) => {
-			const values: App.***REMOVED***Settings = {
+		get: (key: keyof App.BerichtgenSettings) => {
+			const values: App.BerichtgenSettings = {
 				rewordJSON: false,
 				processPhotos: false,
 				constantHours: false,

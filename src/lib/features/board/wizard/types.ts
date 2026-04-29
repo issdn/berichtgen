@@ -15,7 +15,7 @@ export interface Entry {
 
 export type ResultEntry = Required<Entry>;
 
-export interface ***REMOVED***WeightedDateRange {
+export interface BerichtgenWeightedDateRange {
 	daterange: {
 		start: DateValue;
 		end: DateValue;
@@ -31,7 +31,7 @@ export interface ***REMOVED***WeightedDateRange {
 export type CSVConfigFile = {
 	ort: Ort;
 	file: string;
-	ranges: ***REMOVED***WeightedDateRange[];
+	ranges: BerichtgenWeightedDateRange[];
 };
 
 export type CSVConfig = CSVConfigFile[];

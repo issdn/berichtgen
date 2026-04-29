@@ -1,4 +1,4 @@
-import { ***REMOVED***Error, buildError } from '$lib/errors';
+import { BerichtgenError, buildError } from '$lib/errors';
 
 export const EAuthError = buildError({
 	NO_CODE: { httpCode: 500, message: 'Kein Code erhalten.' },
@@ -7,7 +7,7 @@ export const EAuthError = buildError({
 
 type AuthErrorValue = (typeof EAuthError)[keyof typeof EAuthError];
 
-export class AuthError extends ***REMOVED***Error {
+export class AuthError extends BerichtgenError {
 	declare readonly apiError: AuthErrorValue;
 
 	constructor(apiError: AuthErrorValue) {

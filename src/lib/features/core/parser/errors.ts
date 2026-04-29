@@ -1,4 +1,4 @@
-import { ***REMOVED***Error, buildError } from '$lib/errors';
+import { BerichtgenError, buildError } from '$lib/errors';
 
 export const EParserError = buildError({
 	INVALID_FILE: { httpCode: 400, message: 'Ungültige Datei.' },
@@ -10,7 +10,7 @@ export const EParserError = buildError({
 
 type ParserErrorValue = (typeof EParserError)[keyof typeof EParserError];
 
-export class ParserError extends ***REMOVED***Error {
+export class ParserError extends BerichtgenError {
 	declare readonly apiError: ParserErrorValue;
 
 	constructor(apiError: ParserErrorValue) {

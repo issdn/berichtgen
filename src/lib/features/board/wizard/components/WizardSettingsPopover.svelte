@@ -9,10 +9,10 @@
 	import { page } from '$app/state';
 
 	type BooleanSettingKey = {
-		[K in keyof App.***REMOVED***Settings]: App.***REMOVED***Settings[K] extends boolean
+		[K in keyof App.BerichtgenSettings]: App.BerichtgenSettings[K] extends boolean
 			? K
 			: never;
-	}[keyof App.***REMOVED***Settings];
+	}[keyof App.BerichtgenSettings];
 </script>
 
 <Popover.Root>
@@ -33,7 +33,7 @@
 						'rewordJSON',
 						'reword-json-switch',
 						'JSON-Dateien umformulieren',
-						'Du kannst schon vorhandene JSON-Dateien mit dem ***REMOVED***-Format datieren lassen. Aktiviere diese Option, um die JSON-Dateien wie alle andere doch umzuschreiben.'
+						'Du kannst schon vorhandene JSON-Dateien mit dem Berichtgen-Format datieren lassen. Aktiviere diese Option, um die JSON-Dateien wie alle andere doch umzuschreiben.'
 					)}
 				{/if}
 				{@render settingSwitch(

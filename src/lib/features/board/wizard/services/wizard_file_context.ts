@@ -1,7 +1,7 @@
 import type { Entry, ResultEntry } from '../types';
 import type { DateRangeSchema } from '../schemas';
 import type { FileRouting } from './file_routing';
-import type { ***REMOVED***Error } from '$lib/errors';
+import type { BerichtgenError } from '$lib/errors';
 
 export class WizardFileContext {
 	snapshot: FileRouting | Entry[] | ResultEntry[] | undefined;
@@ -10,7 +10,7 @@ export class WizardFileContext {
 
 	dateRanges: DateRangeSchema | null = null;
 
-	error?: ***REMOVED***Error;
+	error?: BerichtgenError;
 
 	file: File | string;
 

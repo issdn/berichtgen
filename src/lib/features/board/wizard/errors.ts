@@ -1,4 +1,4 @@
-import { ***REMOVED***Error, buildError, type UnionOf } from '$lib/errors';
+import { BerichtgenError, buildError, type UnionOf } from '$lib/errors';
 
 export const EFileRoutingError = buildError({
 	FILE_READ_FAILED: {
@@ -146,7 +146,7 @@ type WizardErrorValue = UnionOf<[
 	typeof EGCSError
 ]>;
 
-export class WizardError extends ***REMOVED***Error {
+export class WizardError extends BerichtgenError {
 	declare readonly apiError: WizardErrorValue;
 
 	constructor(apiError: WizardErrorValue) {

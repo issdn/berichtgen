@@ -30,7 +30,7 @@ export const dateRangeSchema = z.object({
 	ranges: z
 		.object({
 			id: z.number().int().min(0),
-			daterange: z.custom<***REMOVED***DateRange>(
+			daterange: z.custom<BerichtgenDateRange>(
 				(data) => {
 					if (typeof data !== 'object' || data === null) return false;
 					const { start, end } = data as { start: unknown; end: unknown };
@@ -59,12 +59,12 @@ type RemoveUndefined<T> = {
 	[K in keyof T]: Exclude<T[K], undefined>;
 };
 
-export type ***REMOVED***DateRange = Pick<RemoveUndefined<DateRange>, 'end'> &
+export type BerichtgenDateRange = Pick<RemoveUndefined<DateRange>, 'end'> &
 	Pick<DateRange, 'start'>;
 
-export type Valid***REMOVED***DateRanges = {
+export type ValidBerichtgenDateRanges = {
 	ranges: {
-		daterange: ***REMOVED***DateRange;
+		daterange: BerichtgenDateRange;
 		stunden?: number | null;
 	}[];
 	ort: Ort;

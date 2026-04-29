@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-	<title>***REMOVED***</title>
+	<title>Berichtgen</title>
 </svelte:head>
 
 <div class="h-main flex w-full flex-col gap-4 px-4 pb-4 md:flex-row">

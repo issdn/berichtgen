@@ -6,7 +6,7 @@ declare global {
 
 	namespace App {
 		// interface Error {}
-		interface ***REMOVED***Settings {
+		interface BerichtgenSettings {
 			processPhotos: boolean;
 			rewordJSON: boolean;
 			constantHours: boolean;

@@ -79,12 +79,12 @@
 					<Button
 						target="_blank"
 						variant="link"
-						href="https://codeberg.org/isdn/***REMOVED***">Codeberg</Button
+						href="https://codeberg.org/isdn/Berichtgen">Codeberg</Button
 					>
 					<Button
 						target="_blank"
 						variant="link"
-						href="https://github.com/issdn/***REMOVED***">GitHub</Button
+						href="https://github.com/issdn/Berichtgen">GitHub</Button
 					>
 				</Card.Content>
 			</Card.Root>
