@@ -109,17 +109,6 @@ export async function resolveFileRouting(
 
 	const { size, type: mimeType } = file;
 
-	// Dev endpoint: send the whole file inline regardless of size — the standard
-	// Gemini API (GOOGLE_AI_API_KEY) does not support gs:// or Files API URIs.
-	if (berichtgenStore.get('useDevEndpoint')) {
-		return file
-			.bytes()
-			.then((buf) => buf.toBase64())
-			.then((data) =>
-				okResult<FileRouting>({ type: 'inline', data, mimeType })
-			);
-	}
-
 	// Large files (> 50 MB): fall back to the existing text parsers.
 	// If no parser exists for the MIME type, `parseFile` will return an error.
 	if (size > GCS_MAX_BYTES) {
@@ -230,5 +219,6 @@ function requestGcsUpload(
 		EFileRoutingError.GCS_UPLOAD_URL_FAILED
 	);
 }
+
 
 

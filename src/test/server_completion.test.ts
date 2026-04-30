@@ -90,7 +90,7 @@ vi.mock('@google/genai', () => ({
 }));
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { GOOGLE_AI_API_KEY: 'test-key', GEMINI_MODEL: 'gemini-test' }
+	env: { GEMINI_MODEL: 'gemini-test' }
 }));
 vi.mock('$app/environment', () => ({ dev: false }));
 vi.mock('@sentry/sveltekit', () => ({

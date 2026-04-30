@@ -10,7 +10,6 @@ declare global {
 			processPhotos: boolean;
 			rewordJSON: boolean;
 			constantHours: boolean;
-			useDevEndpoint: boolean;
 			preferredTemplatePath: string | null;
 			tempEmailContainer: string | null;
 		}

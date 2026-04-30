@@ -16,7 +16,6 @@ vi.mock('$lib/stores/berichtgen.svelte', () => ({
 				rewordJSON: false,
 				processPhotos: false,
 				constantHours: false,
-				useDevEndpoint: false,
 				preferredTemplatePath: null,
 				tempEmailContainer: null
 			};

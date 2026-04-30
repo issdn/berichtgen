@@ -1,11 +1,10 @@
-import { browser, dev } from '$app/environment';
+import { browser } from '$app/environment';
 import { SvelteMap } from 'svelte/reactivity';
 
 const DEFAULT_SETTINGS: App.BerichtgenSettings = {
 	processPhotos: false,
 	rewordJSON: false,
 	constantHours: false,
-	useDevEndpoint: false,
 	preferredTemplatePath: null,
 	tempEmailContainer: null
 };
@@ -28,11 +27,6 @@ function parseStoredSetting<K extends keyof App.BerichtgenSettings>(
 	} catch {
 		return null;
 	}
-}
-
-function shouldPersistKey(key: keyof App.BerichtgenSettings): boolean {
-	if (key !== 'useDevEndpoint') return true;
-	return dev;
 }
 
 function ensureHydrated() {
@@ -61,7 +55,7 @@ function set<K extends keyof App.BerichtgenSettings>(
 ) {
 	ensureHydrated();
 	settings.set(key, value);
-	if (browser && shouldPersistKey(key)) {
+	if (browser) {
 		localStorage.setItem(key, JSON.stringify(value));
 	}
 }

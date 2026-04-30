@@ -3,7 +3,6 @@
 |---|---|---|
 | `AUTH_GOOGLE_ID` | Ja | Google OAuth Client ID |
 | `AUTH_GOOGLE_SECRET` | Ja | Google OAuth Client Secret |
-| `GOOGLE_AI_API_KEY` | Ja | Gemini API Key |
 | `GCS_BUCKET_NAME` | Ja | Name des GCS Buckets |
 | `GCS_SERVICE_ACCOUNT_KEY` | Ja | Service Account JSON (als String) |
 | `PUBLIC_SUPABASE_URL` | Ja | Aus `supabase start` Ausgabe |

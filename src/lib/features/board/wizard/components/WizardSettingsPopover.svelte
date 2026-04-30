@@ -2,7 +2,6 @@
 	import berichtgenStore from '$lib/stores/berichtgen.svelte';
 	import LabeledSwitch from '$ui/LabeledSwitch.svelte';
 	import { Settings } from '@lucide/svelte';
-	import { dev } from '$app/environment';
 	import * as Popover from '$ui/popover';
 	import * as Tooltip from '$ui/tooltip';
 	import { Separator } from '$ui/separator';
@@ -42,15 +41,6 @@
 					'Feste Arbeitsstunden',
 					'Pro Woche werden 40 Stunden angenommen.'
 				)}
-				{#if dev}
-					<Separator />
-					{@render settingSwitch(
-						'useDevEndpoint',
-						'dev-endpoint-switch',
-						'Dev-Endpoint',
-						'Sendet Anfragen an /board/dev/completion (kein Token-Abzug, kein Vertex AI).'
-					)}
-				{/if}
 			</div>
 		</Tooltip.Provider>
 	</Popover.Content>
