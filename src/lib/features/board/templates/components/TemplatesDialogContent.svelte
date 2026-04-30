@@ -106,14 +106,13 @@
 
 		<TemplateList {pages} onLoadMore={handleLoadMore} {mutationCount} />
 
-		<Separator />
-
 		<Authed>
 			<!--
-					pages[0] always contains the user's own templates (they're fetched
-					regardless of pagination), so it's safe to use for duplicate-name
-					checks and post-upload refresh.
+				pages[0] always contains the user's own templates (they're fetched
+				regardless of pagination), so it's safe to use for duplicate-name
+				checks and post-upload refresh.
 				-->
+			<Separator />
 			<TemplateUpload query={pages[0]} />
 		</Authed>
 	</div>

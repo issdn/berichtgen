@@ -17,6 +17,7 @@
 		"test:test-user": "bun src/test/seed-template.ts",
 		"test:e2e": "playwright test",
 		"test:template": "bun src/test/render-template.ts",
+		"types:supabase": "supabase gen types typescript --local --schema private > src/lib/supabase.database.ts",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build",
 		"dev:stripe": "stripe listen --forward-to localhost:5173/webhooks/stripe"
@@ -91,6 +92,7 @@
 		"fast-xml-parser": "^5.4.2",
 		"jszip": "^3.10.1",
 		"kysely": "^0.28.13",
+		"kysely-supabase": "^0.2.1",
 		"mode-watcher": "^1.1.0",
 		"openai": "^5.23.2",
 		"pdfjs-dist": "5.3.31",

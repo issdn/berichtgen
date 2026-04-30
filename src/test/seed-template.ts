@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import type { SupabaseDatabase } from '$lib/schema';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -24,13 +25,19 @@ const id = Math.random().toString(36).slice(2, 8);
 const TEST_EMAIL = `test-seed-${id}@berichtgen.local`;
 const TEST_PASSWORD = `seed-${id}-password!`;
 
-const supabase = createClient(SUPABASE_URL, ANON_KEY, {
-	auth: { autoRefreshToken: false, persistSession: false }
+const supabase = createClient<SupabaseDatabase, 'private'>(SUPABASE_URL, ANON_KEY, {
+	auth: { autoRefreshToken: false, persistSession: false },
+	db: { schema: 'private' }
 });
 
-const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-	auth: { autoRefreshToken: false, persistSession: false }
-});
+const admin = createClient<SupabaseDatabase, 'private'>(
+	SUPABASE_URL,
+	SERVICE_ROLE_KEY,
+	{
+		auth: { autoRefreshToken: false, persistSession: false },
+		db: { schema: 'private' }
+	}
+);
 
 // 1. Sign up a fresh random user
 console.log(`Creating user ${TEST_EMAIL}…`);

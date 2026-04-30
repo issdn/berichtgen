@@ -1,5 +1,7 @@
+CREATE SCHEMA IF NOT EXISTS private;
+
 -- UUIDv7 generator: timestamp-ordered, no extension required (works on PG17+)
-CREATE OR REPLACE FUNCTION uuidv7() RETURNS uuid AS $$
+CREATE OR REPLACE FUNCTION private.uuidv7() RETURNS uuid AS $$
   SELECT encode(
     set_bit(
       set_bit(
@@ -23,44 +25,44 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 SELECT cron.schedule(
   'prune-carts',
   '0 0 * * *',
-  $$DELETE FROM cart WHERE "createdAt" < NOW() - INTERVAL '7 days'$$
+  $$DELETE FROM private.cart WHERE created_at < NOW() - INTERVAL '7 days'$$
 );
 
 -- ============================================================
 -- Tables
 -- ============================================================
 
-CREATE TABLE profile (
+CREATE TABLE private.profile (
     id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     full_name text,
     avatar_url text
 );
 
-CREATE TABLE user_token_count (
-    user_id uuid PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+CREATE TABLE private.user_token_count (
+    user_id uuid PRIMARY KEY REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     tokens bigint DEFAULT 0 NOT NULL
 );
 
-CREATE TABLE cart (
-    user_id uuid PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+CREATE TABLE private.cart (
+    user_id uuid PRIMARY KEY REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     intent_id text NOT NULL,
     quantity integer DEFAULT 1 NOT NULL,
     created_at timestamp DEFAULT now()
 );
 
-CREATE TABLE purchase (
+CREATE TABLE private.purchase (
     id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     stripe_event_id text UNIQUE NOT NULL,
     stripe_intent_id text NOT NULL,
-    user_id         uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    user_id         uuid NOT NULL REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     quantity        integer NOT NULL,
     tokens_credited bigint NOT NULL,
     created_at      timestamptz DEFAULT now()
 );
 
-CREATE TABLE template (
-    id uuid PRIMARY KEY DEFAULT uuidv7(),
-    user_id uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+CREATE TABLE private.template (
+    id uuid PRIMARY KEY DEFAULT private.uuidv7(),
+    user_id uuid NOT NULL REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     storage_path text NOT NULL,
     is_public boolean NOT NULL DEFAULT false,
     safe_marked_at timestamptz,
@@ -68,24 +70,24 @@ CREATE TABLE template (
     updated_at timestamptz
 );
 
-CREATE INDEX IF NOT EXISTS template_user_id_idx ON template (user_id);
+CREATE INDEX IF NOT EXISTS template_user_id_idx ON private.template (user_id);
 
-CREATE TABLE user_metadata (
-    user_id uuid PRIMARY KEY REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    full_name text NOT NULL,
+CREATE TABLE private.user_metadata (
+    user_id uuid PRIMARY KEY REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    full_name text,
     ausbildungsberuf text,
     abteilung text
 );
 
-CREATE TABLE template_report (
-    id uuid PRIMARY KEY DEFAULT uuidv7(),
-    template_id uuid NOT NULL REFERENCES template(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    reporter_user_id uuid NOT NULL REFERENCES profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+CREATE TABLE private.template_report (
+    id uuid PRIMARY KEY DEFAULT private.uuidv7(),
+    template_id uuid NOT NULL REFERENCES private.template(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    reporter_user_id uuid NOT NULL REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     message text,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX template_report_template_id_idx ON template_report (template_id);
+CREATE INDEX template_report_template_id_idx ON private.template_report (template_id);
 
 -- ============================================================
 -- Storage buckets
@@ -111,15 +113,15 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================
 
 -- Keeps profile in sync with auth.users metadata
-CREATE OR REPLACE FUNCTION public.sync_profile_from_auth()
+CREATE OR REPLACE FUNCTION private.sync_profile_from_auth()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = private
 AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO profile (id, full_name, avatar_url)
+        INSERT INTO private.profile (id, full_name, avatar_url)
         VALUES (
             NEW.id,
             COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
@@ -128,7 +130,7 @@ BEGIN
         ON CONFLICT (id) DO NOTHING;
         RETURN NEW;
     ELSIF TG_OP = 'UPDATE' THEN
-        UPDATE profile SET
+        UPDATE private.profile SET
             full_name = COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
             avatar_url = COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture')
         WHERE id = NEW.id;
@@ -144,17 +146,18 @@ $$;
 
 CREATE TRIGGER on_auth_user_change_sync_profile
     AFTER INSERT OR UPDATE ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION public.sync_profile_from_auth();
+    FOR EACH ROW EXECUTE FUNCTION private.sync_profile_from_auth();
 
 -- ============================================================
 -- RLS — tables are locked down; only service_role has access.
 -- service_role bypasses RLS entirely.
 -- ============================================================
 
-GRANT ALL ON public.profile          TO service_role;
-GRANT ALL ON public.cart             TO service_role;
-GRANT ALL ON public.user_token_count TO service_role;
-GRANT ALL ON public.template         TO service_role;
-GRANT ALL ON public.user_metadata    TO service_role;
-GRANT ALL ON public.template_report  TO service_role;
-GRANT ALL ON public.purchase         TO service_role;
+GRANT USAGE ON SCHEMA private TO service_role;
+GRANT ALL ON private.profile          TO service_role;
+GRANT ALL ON private.cart             TO service_role;
+GRANT ALL ON private.user_token_count TO service_role;
+GRANT ALL ON private.template         TO service_role;
+GRANT ALL ON private.user_metadata    TO service_role;
+GRANT ALL ON private.template_report  TO service_role;
+GRANT ALL ON private.purchase         TO service_role;

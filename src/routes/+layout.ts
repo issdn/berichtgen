@@ -7,7 +7,7 @@ import {
 	PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 	PUBLIC_SUPABASE_URL
 } from '$env/static/public';
-import { type KyselyDatabase } from '$lib/schema.js';
+import type { SupabaseDatabase } from '$lib/schema.js';
 
 export const load = async ({
 	data: { profile, user, cookies, session },
@@ -21,19 +21,21 @@ export const load = async ({
 	depends('supabase:auth');
 
 	const supabase = isBrowser()
-		? createBrowserClient<KyselyDatabase>(
+		? createBrowserClient<SupabaseDatabase, 'private'>(
 				PUBLIC_SUPABASE_URL,
 				PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 				{
+					db: { schema: 'private' },
 					global: {
 						fetch
 					}
 				}
 			)
-		: createServerClient<KyselyDatabase>(
+		: createServerClient<SupabaseDatabase, 'private'>(
 				PUBLIC_SUPABASE_URL,
 				PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 				{
+					db: { schema: 'private' },
 					global: {
 						fetch
 					},

@@ -6,7 +6,7 @@ import {
 	PUBLIC_SUPABASE_URL,
 	PUBLIC_SUPABASE_PUBLISHABLE_KEY
 } from '$env/static/public';
-import type { KyselyDatabase } from '$lib/schema';
+import type { SupabaseDatabase } from '$lib/schema';
 
 const supabase: Handle = async ({ event, resolve }) => {
 	/**
@@ -14,10 +14,11 @@ const supabase: Handle = async ({ event, resolve }) => {
 	 *
 	 * The Supabase client gets the Auth token from the request cookies.
 	 */
-	event.locals.supabase = createServerClient<KyselyDatabase>(
+	event.locals.supabase = createServerClient<SupabaseDatabase, 'private'>(
 		PUBLIC_SUPABASE_URL,
 		PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 		{
+			db: { schema: 'private' },
 			cookies: {
 				getAll: () => event.cookies.getAll(),
 				/**

@@ -1,6 +1,6 @@
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import type { AnyErrorValue } from '$src/lib/errors';
-import type { KyselyDatabase } from './lib/schema';
+import type { KyselyDatabase, SupabaseDatabase } from './lib/schema';
 declare global {
 	const __APP_VERSION__: string;
 
@@ -16,7 +16,7 @@ declare global {
 		}
 
 		interface Locals {
-			supabase: SupabaseClient<KyselyDatabase>;
+			supabase: SupabaseClient<SupabaseDatabase, 'private'>;
 			safeGetSession: () => Promise<{
 				session: Session | null;
 				user: User | null;

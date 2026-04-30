@@ -1,9 +1,12 @@
 import { SUPABASE_SECRET } from '$env/static/private';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import type { KyselyDatabase } from '$lib/schema';
+import type { SupabaseDatabase } from '$lib/schema';
 import { createClient } from '@supabase/supabase-js';
 
-export const supabaseAdmin = createClient<KyselyDatabase>(
+export const supabaseAdmin = createClient<SupabaseDatabase, 'private'>(
 	PUBLIC_SUPABASE_URL,
-	SUPABASE_SECRET
+	SUPABASE_SECRET,
+	{
+		db: { schema: 'private' }
+	}
 );
