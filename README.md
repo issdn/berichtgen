@@ -1,16 +1,27 @@
-### ENVs
+﻿### ENVs
 | Variable | Benötigt | Beschreibung |
 |---|---|---|
+| `AUTH_GOOGLE_ID` | Ja | Google OAuth Client ID |
+| `AUTH_GOOGLE_SECRET` | Ja | Google OAuth Client Secret |
+| `GOOGLE_AI_API_KEY` | Ja | Gemini API Key |
+| `GCS_BUCKET_NAME` | Ja | Name des GCS Buckets |
+| `GCS_SERVICE_ACCOUNT_KEY` | Ja | Service Account JSON (als String) |
 | `PUBLIC_SUPABASE_URL` | Ja | Aus `supabase start` Ausgabe |
-| `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Ja | `publishable key` aus `supabase start` |
-| `SUPABASE_SECRET` | Ja | `secret` aus `supabase start` |
-| `GOOGLE_AI_API_KEY` | Ja | Siehe Abschnitt unten |
-| `GEMINI_MODEL` | Ja | z.B. `gemini-2.0-flash` |
-| `PUBLIC_COMPLETION_MAX_CHARACTERS` | Ja | z.B. `500000` |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Nein | Nur für Google OAuth im Prod-Betrieb |
-| Stripe-Variablen | Nein | Nur für Token-Käufe |
-| Sentry / QStash / Upstash / Redis | Nein | Monitoring, Hintergrundjobs, Rate-Limiting |
-
+| `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Ja | Publishable Key aus `supabase start` |
+| `SUPABASE_SECRET` | Ja | Secret Key aus `supabase start` |
+| `DATABASE_URL` | Ja | Postgres Connection String |
+| `SUPABASE_CA` | Ja | CA Zertifikat für DB SSL |
+| `SENTRY_AUTH_TOKEN` | Ja | Sentry Auth Token |
+| `PUBLIC_STRIPE_KEY` | Ja | Public Stripe Key |
+| `PUBLIC_STRIPE_PUBLISHABLE_KEY` | Ja | Stripe Publishable Key |
+| `STRIPE_SECRET_KEY` | Ja | Stripe Secret Key |
+| `STRIPE_WEBHOOK_SECRET` | Ja | Stripe Webhook Secret |
+| `SMTP_HOST` | Ja | SMTP Host |
+| `SMTP_PORT` | Ja | SMTP Port |
+| `SMTP_USER` | Ja | SMTP User |
+| `SMTP_PASS` | Ja | SMTP Passwort |
+| `SMTP_SENDER_NAME` | Ja | SMTP Sender Name |
+| `SMTP_ADMIN_EMAIL` | Ja | SMTP Admin E-Mail |
 # Cost breakdown (GCP + Vercel)
 A PDF file with a single page full of text is around 30KB. It's also 560 LLM tokens flat using Google's models.
 A txt file with the same amount of text is 5KB and around 1000 LLM tokens (dynamically calculated).
@@ -48,3 +59,4 @@ Stripe, Sentry, Supabase, Vercel
 
 ### Sentry
 https://sentry.io/astro-assets/resources/legal/how-to-comply-with-gdpr-october-2024.pdf
+
