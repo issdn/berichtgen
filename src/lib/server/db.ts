@@ -5,15 +5,12 @@ import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
 
 const ca = process.env.SUPABASE_CA;
-const ssl_deactivated = !dev && !ca;
 
-if (ssl_deactivated) {
+if (!dev && !ca) {
 	console.warn('SUPABASE_CA is not set.');
 }
 
-const ssl = ssl_deactivated
-	? undefined
-	: { rejectUnauthorized: true, ca: process.env.SUPABASE_CA };
+const ssl = ca ? { rejectUnauthorized: true, ca } : undefined;
 
 const db = new Kysely<KyselyQueryDatabase>({
 	dialect: new PostgresDialect({

@@ -33,51 +33,55 @@
 	import Debug from './Debug.svelte';
 	import { Separator } from '$ui/separator';
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
+	import { AsyncResource } from '$core/async.svelte';
 
 	let otpDialogOpen = $state(false);
 
 	let token = $state('');
 
-	let loading = $state(false);
 	let privacyAccepted = $state(false);
 
 	let { fullName, shortName } = $derived(
 		getUserDisplayName(page.data.profile, page.data.user)
 	);
 
-	$effect(() => {
-		if (token.length >= 6) {
-			const tempEmailContainer = berichtgenStore.get('tempEmailContainer');
-			if (tempEmailContainer) {
-				loading = true;
-				page.data.supabase.auth
-					.verifyOtp({
-						type: 'email',
-						token,
-						email: tempEmailContainer
-					})
-					.then((result: { error: { message: string } | null }) => {
-						const { error } = result;
-						token = '';
-						loading = false;
-						if (error) {
-							toast.error(error.message);
-						} else {
-							toast.success('OTP erfolgreich verifiziert');
-							berichtgenStore.set('tempEmailContainer', '');
-							otpDialogOpen = false;
-							goto(resolve('/board'), {
-								replaceState: true,
-								invalidateAll: true
-							});
-						}
-					});
+	const verifyOtpResource = new AsyncResource(
+		async (params: { token: string; email: string }) => {
+			const { error } = await page.data.supabase.auth.verifyOtp({
+				type: 'email',
+				token: params.token,
+				email: params.email
+			});
+			if (error) throw error;
+		},
+		{
+			onSuccess: () => {
+				token = '';
+				toast.success('OTP erfolgreich verifiziert');
+				berichtgenStore.set('tempEmailContainer', '');
+				otpDialogOpen = false;
+				goto(resolve('/board'), {
+					replaceState: true,
+					invalidateAll: true
+				});
+			},
+			onError: (e) => {
+				token = '';
+				toast.error(e.message);
 			}
 		}
+	);
+
+	$effect(() => {
+		if (token.length < 6) return;
+		if (verifyOtpResource.loading) return;
+		const tempEmailContainer = berichtgenStore.get('tempEmailContainer');
+		if (!tempEmailContainer) return;
+		void verifyOtpResource.execute({ token, email: tempEmailContainer });
 	});
 
 	function handleOtpPaste(e: ClipboardEvent) {
-		if (!otpDialogOpen || loading) return;
+		if (!otpDialogOpen || verifyOtpResource.loading || $submitting) return;
 
 		const pastedText = e.clipboardData?.getData('text/plain') ?? '';
 		const otp = pastedText.replace(/\D/g, '').slice(0, 6);
@@ -97,14 +101,12 @@
 			validators: zod4(emailSchema),
 			async onUpdate({ form }) {
 				if (form.valid) {
-					loading = true;
 					const { error } = await page.data.supabase.auth.signInWithOtp({
 						email: form.data.mail!,
 						options: {
 							emailRedirectTo: page.url.origin + '/board'
 						}
 					});
-					loading = false;
 					if (error) {
 						toast.error(error.message);
 					} else {
@@ -116,7 +118,7 @@
 		}
 	);
 
-	const { form: formData, enhance: mailInputEnhance } = form;
+	const { form: formData, enhance: mailInputEnhance, submitting } = form;
 </script>
 
 <Popover.Root>
@@ -202,53 +204,60 @@
 	</Popover.Content>
 </Popover.Root>
 
-<Dialog.Root open={otpDialogOpen}>
+<Dialog.Root bind:open={otpDialogOpen}>
 	<Dialog.Content>
 		<Dialog.Header>
 			<Dialog.Title>OTP Anmeldung</Dialog.Title>
 			<GlobalPasteHandler handlePaste={handleOtpPaste} enabled={otpDialogOpen}>
 				<div class="py-4">
-				<form method="POST" use:mailInputEnhance>
-					<Form.Field {form} name="mail">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label>Magic-Link an deine Email senden</Form.Label>
-								<div class="flex flex-row gap-x-2">
-									<Input
-										type="email"
-										autocomplete="on"
-										{...props}
-										bind:value={$formData.mail}
-									/>
-									<Button disabled={loading} type="submit">
-										<Mail />
-									</Button>
-								</div>
+					<form method="POST" use:mailInputEnhance>
+						<Form.Field {form} name="mail">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>Magic-Link an deine Email senden</Form.Label>
+									<div class="flex flex-row gap-x-2">
+										<Input
+											type="email"
+											autocomplete="on"
+											{...props}
+											bind:value={$formData.mail}
+										/>
+										<Button
+											disabled={$submitting || verifyOtpResource.loading}
+											type="submit"
+										>
+											<Mail />
+										</Button>
+									</div>
+								{/snippet}
+							</Form.Control>
+							<Form.FieldErrors />
+						</Form.Field>
+					</form>
+					<p class="mt-8 mb-4 w-full text-center">
+						folge den Link aus deiner Email oder gebe den OTP-Code ein
+					</p>
+					<div class="flex flex-row justify-center">
+						<InputOTP.Root
+							disabled={$submitting || verifyOtpResource.loading}
+							bind:value={token}
+							maxlength={6}
+						>
+							{#snippet children({ cells })}
+								<InputOTP.Group>
+									{#each cells.slice(0, 3) as cell (cell)}
+										<InputOTP.Slot {cell} />
+									{/each}
+								</InputOTP.Group>
+								<InputOTP.Separator />
+								<InputOTP.Group>
+									{#each cells.slice(3, 6) as cell (cell)}
+										<InputOTP.Slot {cell} />
+									{/each}
+								</InputOTP.Group>
 							{/snippet}
-						</Form.Control>
-						<Form.FieldErrors />
-					</Form.Field>
-				</form>
-				<p class="mt-8 mb-4 w-full text-center">
-					folge den Link aus deiner Email oder gebe den OTP-Code ein
-				</p>
-				<div class="flex flex-row justify-center">
-					<InputOTP.Root disabled={loading} bind:value={token} maxlength={6}>
-						{#snippet children({ cells })}
-							<InputOTP.Group>
-								{#each cells.slice(0, 3) as cell (cell)}
-									<InputOTP.Slot {cell} />
-								{/each}
-							</InputOTP.Group>
-							<InputOTP.Separator />
-							<InputOTP.Group>
-								{#each cells.slice(3, 6) as cell (cell)}
-									<InputOTP.Slot {cell} />
-								{/each}
-							</InputOTP.Group>
-						{/snippet}
-					</InputOTP.Root>
-				</div>
+						</InputOTP.Root>
+					</div>
 				</div>
 			</GlobalPasteHandler>
 		</Dialog.Header>
