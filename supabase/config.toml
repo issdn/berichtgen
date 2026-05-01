@@ -9,8 +9,9 @@ secret = "env(AUTH_GOOGLE_SECRET)"
 redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
 
 [auth.email.smtp]
-host = "env(SMTP_HOST)"
-port = "env(SMTP_PORT)"
+enabled = true
+host = "mail.smtp2go.com"
+port = 465
 user = "env(SMTP_USER)"
 pass = "env(SMTP_PASS)"
 sender_name = "env(SMTP_SENDER_NAME)"

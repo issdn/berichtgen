@@ -69,6 +69,9 @@
 }
 
 @theme inline {
+	--font-sans: 'Karla', ui-sans-serif, system-ui, sans-serif;
+	--font-serif: 'Cormorant', ui-serif, Georgia, serif;
+
 	/* Radius (for rounded-*) */
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
@@ -171,27 +174,191 @@
 @font-face {
 	font-family: 'Cormorant';
 	font-style: normal;
-	font-weight: lighter;
+	font-weight: 300;
+	font-display: swap;
 	src: url('/fonts/Cormorant-Light.ttf') format('truetype');
 }
 
 @font-face {
 	font-family: 'Cormorant';
-	font-style: normal;
-	font-weight: normal;
-	src: url('/fonts/Cormorant-Regular.ttf') format('truetype');
+	font-style: italic;
+	font-weight: 300;
+	font-display: swap;
+	src: url('/fonts/Cormorant-LightItalic.ttf') format('truetype');
 }
 
 @font-face {
 	font-family: 'Cormorant';
 	font-style: normal;
-	font-weight: bold;
-	src: url('/fonts/Cormorant-Bold.ttf') format('truetype');
+	font-weight: 400;
+	font-display: swap;
+	src: url('/fonts/Cormorant-Regular.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Cormorant';
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url('/fonts/Cormorant-Italic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Cormorant';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('/fonts/Cormorant-Medium.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Cormorant';
+	font-style: italic;
+	font-weight: 500;
+	font-display: swap;
+	src: url('/fonts/Cormorant-MediumItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Cormorant';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('/fonts/Cormorant-SemiBold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Cormorant';
+	font-style: italic;
+	font-weight: 600;
+	font-display: swap;
+	src: url('/fonts/Cormorant-SemiBoldItalic.ttf') format('truetype');
 }
 
 @font-face {
 	font-family: 'Cormorant';
 	font-style: normal;
 	font-weight: 700;
-	src: url('/fonts/Cormorant-Medium.ttf') format('truetype');
+	font-display: swap;
+	src: url('/fonts/Cormorant-Bold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Cormorant';
+	font-style: italic;
+	font-weight: 700;
+	font-display: swap;
+	src: url('/fonts/Cormorant-BoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: normal;
+	font-weight: 200;
+	font-display: swap;
+	src: url('/fonts/Karla-ExtraLight.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: italic;
+	font-weight: 200;
+	font-display: swap;
+	src: url('/fonts/Karla-ExtraLightItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: normal;
+	font-weight: 300;
+	font-display: swap;
+	src: url('/fonts/Karla-Light.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: italic;
+	font-weight: 300;
+	font-display: swap;
+	src: url('/fonts/Karla-LightItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('/fonts/Karla-Regular.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url('/fonts/Karla-Italic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('/fonts/Karla-Medium.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: italic;
+	font-weight: 500;
+	font-display: swap;
+	src: url('/fonts/Karla-MediumItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('/fonts/Karla-SemiBold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: italic;
+	font-weight: 600;
+	font-display: swap;
+	src: url('/fonts/Karla-SemiBoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('/fonts/Karla-Bold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: italic;
+	font-weight: 700;
+	font-display: swap;
+	src: url('/fonts/Karla-BoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: normal;
+	font-weight: 800;
+	font-display: swap;
+	src: url('/fonts/Karla-ExtraBold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Karla';
+	font-style: italic;
+	font-weight: 800;
+	font-display: swap;
+	src: url('/fonts/Karla-ExtraBoldItalic.ttf') format('truetype');
 }
