@@ -36,8 +36,9 @@
 	import { AsyncResource } from '$core/async.svelte';
 
 	let otpDialogOpen = $state(false);
-
 	let token = $state('');
+	let otpCooldownSeconds = $state(0);
+	let otpCooldownTimer: ReturnType<typeof setInterval> | null = null;
 
 	let privacyAccepted = $state(false);
 
@@ -75,10 +76,22 @@
 	$effect(() => {
 		if (token.length < 6) return;
 		if (verifyOtpResource.loading) return;
-		const tempEmailContainer = berichtgenStore.get('tempEmailContainer');
-		if (!tempEmailContainer) return;
-		void verifyOtpResource.execute({ token, email: tempEmailContainer });
+		const email = $formData.mail ?? berichtgenStore.get('tempEmailContainer');
+		if (!email) return;
+		void verifyOtpResource.execute({ token, email });
 	});
+
+	function startOtpCooldown() {
+		otpCooldownSeconds = 60;
+		if (otpCooldownTimer) clearInterval(otpCooldownTimer);
+		otpCooldownTimer = setInterval(() => {
+			otpCooldownSeconds = Math.max(0, otpCooldownSeconds - 1);
+			if (otpCooldownSeconds === 0 && otpCooldownTimer) {
+				clearInterval(otpCooldownTimer);
+				otpCooldownTimer = null;
+			}
+		}, 1000);
+	}
 
 	function handleOtpPaste(e: ClipboardEvent) {
 		if (!otpDialogOpen || verifyOtpResource.loading || $submitting) return;
@@ -101,6 +114,12 @@
 			validators: zod4(emailSchema),
 			async onUpdate({ form }) {
 				if (form.valid) {
+					if (otpCooldownSeconds > 0) {
+						toast.info(
+							`Bitte warte ${otpCooldownSeconds}s bevor du erneut einen OTP-Code anforderst.`
+						);
+						return;
+					}
 					const { error } = await page.data.supabase.auth.signInWithOtp({
 						email: form.data.mail!,
 						options: {
@@ -112,6 +131,7 @@
 					} else {
 						berichtgenStore.set('tempEmailContainer', form.data.mail!);
 						toast.success('Magic-Link gesendet');
+						startOtpCooldown();
 					}
 				}
 			}
@@ -223,12 +243,19 @@
 											bind:value={$formData.mail}
 										/>
 										<Button
-											disabled={$submitting || verifyOtpResource.loading}
+											disabled={$submitting ||
+												verifyOtpResource.loading ||
+												otpCooldownSeconds > 0}
 											type="submit"
 										>
 											<Mail />
 										</Button>
 									</div>
+									{#if otpCooldownSeconds > 0}
+										<p class="text-muted-foreground mt-2 text-xs">
+											Neuer OTP-Code in {otpCooldownSeconds}s verfugbar.
+										</p>
+									{/if}
 								{/snippet}
 							</Form.Control>
 							<Form.FieldErrors />
