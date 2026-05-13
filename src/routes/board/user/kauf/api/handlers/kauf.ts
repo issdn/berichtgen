@@ -12,8 +12,13 @@ import Stripe from 'stripe';
 import { STRIPE_SECRET_KEY } from '$env/static/private';
 import * as Sentry from '@sentry/sveltekit';
 import db from '$lib/server/db';
-import { ECommonServerError, throwSvelteError } from '$lib/errors';
+import {
+	BerichtgenError,
+	ECommonServerError,
+	throwSvelteError
+} from '$lib/errors';
 import { PRICE_PER_MILLION_TOKENS_CENTS } from '$lib/constants';
+import { tryResultAsync } from '$lib/result';
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
@@ -65,44 +70,46 @@ export async function handleCreatePaymentIntent(
 			.where('user_id', '=', userId)
 			.execute();
 
-		try {
-			const paymentIntent = await stripe.paymentIntents.update(
-				existing.intent_id,
-				{
-					amount: quantity * PRICE_PER_MILLION_TOKENS_CENTS
-				}
-			);
+		const paymentIntentResult = await tryResultAsync(
+			stripe.paymentIntents.update(existing.intent_id, {
+				amount: quantity * PRICE_PER_MILLION_TOKENS_CENTS
+			}),
+			BerichtgenError,
+			ECommonServerError.STRIPE_ERROR
+		);
+		if (paymentIntentResult.ok) {
+			const paymentIntent = paymentIntentResult.data;
 			return { clientSecret: paymentIntent.client_secret };
-		} catch (err) {
-			Sentry.captureException(err);
-			const message =
-				err instanceof Stripe.errors.StripeError
-					? err.message
-					: 'Unbekannter Fehler bei der Aktualisierung des Zahlungsvorgangs';
-			return throwSvelteError(ECommonServerError.STRIPE_ERROR, message);
 		}
+		Sentry.captureException(paymentIntentResult.error);
+		return throwSvelteError(
+			ECommonServerError.STRIPE_ERROR,
+			paymentIntentResult.error.message
+		);
 	}
 
-	try {
-		const paymentIntent = await stripe.paymentIntents.create({
+	const paymentIntentResult = await tryResultAsync(
+		stripe.paymentIntents.create({
 			amount: quantity * PRICE_PER_MILLION_TOKENS_CENTS,
 			currency: 'eur',
 			payment_method_types: ['card']
-		});
-
-		await db
-			.insertInto('cart')
-			.values({ intent_id: paymentIntent.id, user_id: userId, quantity })
-			.execute();
-
-		return { clientSecret: paymentIntent.client_secret };
-	} catch (err) {
-		Sentry.captureException(err);
-		const message =
-			err instanceof Stripe.errors.StripeError
-				? err.message
-				: 'Unbekannter Fehler bei Erstellung eines Zahlungsvorgangs';
-
-		return throwSvelteError(ECommonServerError.STRIPE_ERROR, message);
+		}),
+		BerichtgenError,
+		ECommonServerError.STRIPE_ERROR
+	);
+	if (!paymentIntentResult.ok) {
+		Sentry.captureException(paymentIntentResult.error);
+		return throwSvelteError(
+			ECommonServerError.STRIPE_ERROR,
+			paymentIntentResult.error.message
+		);
 	}
+	const paymentIntent = paymentIntentResult.data;
+
+	await db
+		.insertInto('cart')
+		.values({ intent_id: paymentIntent.id, user_id: userId, quantity })
+		.execute();
+
+	return { clientSecret: paymentIntent.client_secret };
 }

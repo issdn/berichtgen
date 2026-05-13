@@ -21,7 +21,7 @@ import { GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
 import { Storage } from '@google-cloud/storage';
-import { tryResult } from '$lib/result';
+import { tryResult, tryResultAsync } from '$lib/result';
 
 if (!env.GEMINI_MODEL) {
 	console.debug('GEMINI_MODEL not set, defaulting to', DEFAULT_MODEL);
@@ -32,7 +32,7 @@ if (!env.GEMINI_MODEL) {
 export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	if (!user) return throwSvelteError(ECommonServerError.UNAUTHORIZED);
 
-	const credentialsResult = await tryResult(
+	const credentialsResult = await tryResultAsync(
 		Promise.resolve(JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''))),
 		BerichtgenError,
 		ECompletionException.INTERNAL
@@ -78,7 +78,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	if (budget.fittingIndices.length === 0)
 		return throwSvelteError(ECompletionException.NOT_ENOUGH_TOKENS);
 
-	const deductResult = await tryResult(
+	const deductResult = await tryResultAsync(
 		deductUserTokens(user.id, budget.totalTokens),
 		BerichtgenError,
 		ECompletionException.INTERNAL
@@ -272,12 +272,16 @@ async function deleteProcessedGcsFilesBestEffort(
 	let credentials: { client_email: string; private_key: string } & {
 		project_id: string;
 	};
-	try {
-		credentials = JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''));
-	} catch (e) {
-		Sentry.captureException(e);
+	const credentialsResult = tryResult(
+		() => JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, '')),
+		BerichtgenError,
+		ECompletionException.INTERNAL
+	);
+	if (!credentialsResult.ok) {
+		Sentry.captureException(credentialsResult.error);
 		return;
 	}
+	credentials = credentialsResult.data;
 
 	const storage = new Storage({ credentials });
 
@@ -294,16 +298,20 @@ async function deleteProcessedGcsFilesBestEffort(
 			// Only delete objects belonging to the current user namespace.
 			if (!parsed.objectPath.startsWith(`${userId}/`)) return;
 
-			try {
-				await storage
+			const deleteResult = await tryResultAsync(
+				storage
 					.bucket(parsed.bucket)
 					.file(parsed.objectPath)
-					.delete({ ignoreNotFound: true });
-			} catch (e) {
-				Sentry.captureException(e, {
+					.delete({ ignoreNotFound: true }),
+				BerichtgenError,
+				ECompletionException.INTERNAL
+			);
+			if (!deleteResult.ok) {
+				Sentry.captureException(deleteResult.error, {
 					extra: { uri, objectPath: parsed.objectPath }
 				});
 			}
 		})
 	);
 }
+

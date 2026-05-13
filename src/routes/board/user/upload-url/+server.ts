@@ -10,7 +10,8 @@ import { EGCSError } from '$wizard/errors';
 import { uploadUrlRequestSchema } from '$wizard/schemas';
 import { Storage } from '@google-cloud/storage';
 import { createHash } from 'node:crypto';
-import { errResult, okResult, tryResult, type Result } from '$lib/result';
+import { BerichtgenError } from '$lib/errors';
+import { errResult, okResult, tryResultAsync, type Result } from '$lib/result';
 import { WizardError } from '$wizard/errors';
 
 /**
@@ -25,6 +26,37 @@ function createStorageClient(): Storage {
 	return new Storage({ credentials });
 }
 
+/**
+ * Creates (or reuses) a signed upload target for a deterministic GCS object path.
+ * Returns `fileUri` only when the object already exists.
+ */
+async function createSignedUploadPayload({
+	storage,
+	objectPath,
+	contentType,
+	fileUri
+}: {
+	storage: Storage;
+	objectPath: string;
+	contentType: string;
+	fileUri: string;
+}): Promise<{ signedUrl?: string; fileUri: string }> {
+	const file = storage.bucket(GCS_BUCKET_NAME).file(objectPath);
+	const [exists] = await file.exists();
+	if (exists) return { fileUri };
+
+	const [signedUrl] = await file.getSignedUrl({
+		version: 'v4',
+		action: 'write',
+		expires: Date.now() + 5 * 60 * 1000,
+		contentType,
+		extensionHeaders: {
+			'x-goog-if-generation-match': '0'
+		}
+	});
+	return { signedUrl, fileUri };
+}
+
 async function createSignedUploadResult({
 	storage,
 	objectPath,
@@ -36,24 +68,13 @@ async function createSignedUploadResult({
 	contentType: string;
 	fileUri: string;
 }): Promise<Result<{ signedUrl?: string; fileUri: string }>> {
-	try {
-		const file = storage.bucket(GCS_BUCKET_NAME).file(objectPath);
-		const [exists] = await file.exists();
-		if (exists) {
-			return okResult({ fileUri });
-		}
-
-		const [signedUrl] = await file.getSignedUrl({
-			version: 'v4',
-			action: 'write',
-			expires: Date.now() + 5 * 60 * 1000, // 5 minutes
-			contentType,
-			extensionHeaders: {
-				'x-goog-if-generation-match': '0'
-			}
-		});
-		return okResult({ signedUrl, fileUri });
-	} catch (e) {
+	const signedResult = await tryResultAsync(
+		createSignedUploadPayload({ storage, objectPath, contentType, fileUri }),
+		BerichtgenError,
+		EGCSError.INTERNAL_SERVER_ERROR
+	);
+	if (!signedResult.ok) {
+		const e = signedResult.error.cause;
 		const httpCode =
 			e !== null && typeof e === 'object' && 'code' in e
 				? Number((e as { code: unknown }).code)
@@ -65,8 +86,9 @@ async function createSignedUploadResult({
 
 		const gcsError =
 			errorByHttpCode(EGCSError, httpCode) ?? EGCSError.INTERNAL_SERVER_ERROR;
-		return errResult(WizardError, gcsError, e);
+		return errResult(WizardError, gcsError, signedResult.error);
 	}
+	return okResult(signedResult.data);
 }
 
 /**
@@ -105,7 +127,7 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 	const objectPath = `${user.id}/${hash}`;
 	const fileUri = `gs://${GCS_BUCKET_NAME}/${objectPath}`;
 
-	const storageResult = await tryResult(
+	const storageResult = await tryResultAsync(
 		Promise.resolve(createStorageClient()),
 		WizardError,
 		ECommonServerError.INTERNAL_ERROR
@@ -123,3 +145,4 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 	return json(signedUploadResult.data);
 };
+

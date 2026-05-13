@@ -4,7 +4,7 @@ import type { ParseOptions } from '$core/parser/parse_service';
 import { parseFile } from '$core/parser/parse_service';
 import { WizardError, EFileRoutingError, EGCSError } from '$wizard/errors';
 import { errorByHttpCode } from '$lib/errors';
-import { type Result, okResult, tryResult } from '$lib/result';
+import { type Result, okResult, tryResultAsync } from '$lib/result';
 import { FileTypes } from '$wizard/enums';
 import berichtgenStore from '$lib/stores/berichtgen.svelte';
 
@@ -173,7 +173,7 @@ async function uploadToGcs(file: File): Promise<Result<FileRouting>> {
 	}
 
 	// Step 2: PUT the file directly to GCS (Vercel never sees the bytes).
-	return tryResult(
+	return tryResultAsync(
 		fetch(signedUrl, {
 			method: 'PUT',
 			headers: {
@@ -206,7 +206,7 @@ function requestGcsUpload(
 	contentType: string,
 	fileSize: number
 ): Promise<Result<UploadUrlResponse>> {
-	return tryResult(
+	return tryResultAsync(
 		fetch('/board/user/upload-url', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -219,6 +219,7 @@ function requestGcsUpload(
 		EFileRoutingError.GCS_UPLOAD_URL_FAILED
 	);
 }
+
 
 
 

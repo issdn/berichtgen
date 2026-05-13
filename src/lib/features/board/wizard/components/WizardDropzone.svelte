@@ -16,42 +16,61 @@
 		getFileListWithPreserverFolderStructure
 	} from '$core/scan/file_scan';
 	import { FileTypes } from '$wizard/enums';
+	import { BerichtgenError, ECommonServerError } from '$lib/errors';
+	import { tryResultAsync } from '$lib/result';
 	import { wizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
 
 	let filesNumber = $state(0);
-
 	let accept = $derived(page.data.loggedIn ? undefined : '.json');
 
-	async function handleFiles(items: DataTransferItemList | FileList) {
-		try {
-			const directories =
-				items instanceof FileList
-					? getFileListWithPreserverFolderStructure(items)
-					: ((await get2DimensionalDirectories(
-							items,
-							ScanReturnValue.FILE
-						)) as WizardRawDirectories);
-			filesNumber = directories.flat().length;
-			const anyNonJsonFiles = directories
-				.flat()
-				.find((f) => f.type !== FileTypes.JSON);
-			if (page.data.loggedIn) {
-				init(directories);
-			} else {
-				if (anyNonJsonFiles) {
-					toast.error(
-						'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.'
-					);
-					wizardScheduler.schedule = null;
-				} else {
-					init(directories);
-				}
-			}
-		} catch (error) {
-			toast.error('Fehler beim Scannen der Dateien: ' + error);
+	/**
+	 * Normalizes dropped/selected input items to wizard raw directories.
+	 */
+	async function scanDirectories(
+		items: DataTransferItemList | FileList
+	): Promise<WizardRawDirectories> {
+		if (items instanceof FileList) {
+			return getFileListWithPreserverFolderStructure(items);
 		}
+		return (await get2DimensionalDirectories(
+			items,
+			ScanReturnValue.FILE
+		)) as WizardRawDirectories;
+	}
+
+	async function handleFiles(items: DataTransferItemList | FileList) {
+		const scanResult = await tryResultAsync(
+			scanDirectories(items),
+			BerichtgenError,
+			ECommonServerError.INTERNAL_ERROR
+		);
+		if (!scanResult.ok) {
+			toast.error('Fehler beim Scannen der Dateien: ' + scanResult.error.message);
+			return;
+		}
+
+		const directories = scanResult.data;
+		filesNumber = directories.flat().length;
+		const anyNonJsonFiles = directories
+			.flat()
+			.find((f) => f.type !== FileTypes.JSON);
+
+		if (page.data.loggedIn) {
+			init(directories);
+			return;
+		}
+
+		if (anyNonJsonFiles) {
+			toast.error(
+				'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.'
+			);
+			wizardScheduler.schedule = null;
+			return;
+		}
+
+		init(directories);
 	}
 
 	function init(directories: WizardRawDirectories) {

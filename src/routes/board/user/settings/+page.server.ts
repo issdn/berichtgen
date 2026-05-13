@@ -2,9 +2,11 @@ import { fail, message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { redirect, type Actions } from '@sveltejs/kit';
 import * as Sentry from '@sentry/sveltekit';
+import { BerichtgenError, ECommonServerError } from '$lib/errors';
 import { supabaseAdmin } from '$lib/server/admin';
 import db from '$lib/server/db';
 import { profileNameSchema, userMetadataSchema } from '$settings/schemas';
+import { tryResultAsync } from '$lib/result';
 
 export const load = async ({ parent, locals: { user } }) => {
 	const { tokenCount } = await parent();
@@ -60,14 +62,17 @@ export const actions: Actions = {
 			return message(form, 'Daten sind ungültig.', { status: 400 });
 		}
 
-		try {
-			await db
+		const updateProfileResult = await tryResultAsync(
+			db
 				.updateTable('profile')
 				.set({ full_name: form.data.fullName || null })
 				.where('id', '=', user!.id)
-				.execute();
-		} catch (e) {
-			Sentry.captureException(e);
+				.execute(),
+			BerichtgenError,
+			ECommonServerError.DATABASE_ERROR
+		);
+		if (!updateProfileResult.ok) {
+			Sentry.captureException(updateProfileResult.error);
 			return message(form, 'Fehler beim Speichern.', { status: 500 });
 		}
 
@@ -80,8 +85,8 @@ export const actions: Actions = {
 			return message(form, 'Daten sind ungültig.', { status: 400 });
 		}
 
-		try {
-			await db
+		const updateMetadataResult = await tryResultAsync(
+			db
 				.insertInto('user_metadata')
 				.values({
 					user_id: user!.id,
@@ -96,9 +101,12 @@ export const actions: Actions = {
 						abteilung: form.data.abteilung || null
 					})
 				)
-				.execute();
-		} catch (e) {
-			Sentry.captureException(e);
+				.execute(),
+			BerichtgenError,
+			ECommonServerError.DATABASE_ERROR
+		);
+		if (!updateMetadataResult.ok) {
+			Sentry.captureException(updateMetadataResult.error);
 			return message(form, 'Fehler beim Speichern der Daten.', { status: 500 });
 		}
 

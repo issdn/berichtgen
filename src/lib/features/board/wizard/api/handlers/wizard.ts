@@ -10,6 +10,8 @@
 
 import db from '$lib/server/db';
 import * as Sentry from '@sentry/sveltekit';
+import { BerichtgenError, ECommonServerError } from '$lib/errors';
+import { tryResultAsync } from '$lib/result';
 
 /**
  * Checks whether a template with the given storage path still exists in the database.
@@ -20,16 +22,18 @@ import * as Sentry from '@sentry/sveltekit';
 export async function checkPreferredTemplateExists(
 	storagePath: string
 ): Promise<boolean> {
-	try {
-		const template = await db
+	const templateResult = await tryResultAsync(
+		db
 			.selectFrom('template')
 			.select('storage_path')
 			.where('storage_path', '=', storagePath)
-			.executeTakeFirst();
-
-		return template !== undefined;
-	} catch (error) {
-		Sentry.captureException(error);
+			.executeTakeFirst(),
+		BerichtgenError,
+		ECommonServerError.DATABASE_ERROR
+	);
+	if (!templateResult.ok) {
+		Sentry.captureException(templateResult.error);
 		return false;
 	}
+	return templateResult.data !== undefined;
 }

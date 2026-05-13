@@ -1,5 +1,5 @@
 import { WizardError, EWizardError } from '$wizard/errors';
-import { type Result, tryResult } from '$lib/result';
+import { type Result, tryResultAsync } from '$lib/result';
 import type { Ort } from '$wizard/enums';
 import type {
 	BatchCompletionApiResponse,
@@ -126,7 +126,7 @@ export function sendBatchCompletion(
 		}
 	});
 
-	return tryResult(
+	return tryResultAsync(
 		fetch('/board/user/completion', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -150,5 +150,6 @@ export function sendBatchCompletion(
 export function stringsToEntries(strings: string[]): CompletionResult {
 	return strings.map((text) => ({ text }));
 }
+
 
 

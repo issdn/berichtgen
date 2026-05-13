@@ -22,12 +22,19 @@ export function errResult(
 	};
 }
 
-/**
- * Runs an async operation inside a try/catch and returns a Result<T>.
- * If the thrown value is already a BerichtgenError, wraps it directly.
- * Otherwise calls mapError to convert the unknown error.
- */
-export async function tryResult<T>(
+export function tryResult<T>(
+	run: () => T,
+	errorClass: typeof BerichtgenError,
+	apiError: AnyErrorValue
+): Result<T> {
+	try {
+		return okResult(run());
+	} catch (e) {
+		return errResult(errorClass, apiError, e);
+	}
+}
+
+export async function tryResultAsync<T>(
 	promise: Promise<T>,
 	errorClass: typeof BerichtgenError,
 	apiError: AnyErrorValue

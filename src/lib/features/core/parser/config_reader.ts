@@ -1,12 +1,12 @@
 import { ParserError, EParserError } from '$core/parser/errors';
-import { type Result, tryResult } from '$lib/result';
+import { type Result, tryResultAsync } from '$lib/result';
 import type { CSVConfig } from '$wizard/types';
 import { Ort } from '$wizard/enums';
 import { csvConfigSchema } from '$wizard/schemas';
 import { parseDate } from '@internationalized/date';
 
 export function readCsvConfig(file: File): Promise<Result<CSVConfig>> {
-	return tryResult(
+	return tryResultAsync(
 		file.arrayBuffer().then((buffer) => {
 			const text = new TextDecoder().decode(buffer);
 			return readCsvConfigFromText(text);
@@ -45,3 +45,4 @@ export function readCsvConfigFromText(text: string): CSVConfig {
 
 	return csvConfigSchema.parse(data);
 }
+

@@ -1,7 +1,9 @@
 import * as Sentry from '@sentry/sveltekit';
+import { BerichtgenError, ECommonServerError } from '$lib/errors';
 import db from '$server/db';
 import type { LayoutServerLoad } from './$types';
 import { loadFlash } from 'sveltekit-flash-message/server';
+import { tryResultAsync } from '$lib/result';
 
 export const load: LayoutServerLoad = loadFlash(
 	async ({ locals: { user, session }, depends }) => {
@@ -25,16 +27,20 @@ export const load: LayoutServerLoad = loadFlash(
 		if (tokenRow) {
 			tokenCount = tokenRow.tokens;
 		} else {
-			try {
-				const inserted = await db
+			const insertedResult = await tryResultAsync(
+				db
 					.insertInto('user_token_count')
 					.values({ user_id: user.id, tokens: 0 })
 					.onConflict((oc) => oc.column('user_id').doNothing())
 					.returning('tokens')
-					.executeTakeFirst();
-				tokenCount = inserted?.tokens ?? 0;
-			} catch (e) {
-				Sentry.captureException(e);
+					.executeTakeFirst(),
+				BerichtgenError,
+				ECommonServerError.DATABASE_ERROR
+			);
+			if (insertedResult.ok) {
+				tokenCount = insertedResult.data?.tokens ?? 0;
+			} else {
+				Sentry.captureException(insertedResult.error);
 			}
 		}
 

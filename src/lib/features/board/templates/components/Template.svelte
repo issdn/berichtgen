@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import {
 		Check,
 		Download,
@@ -13,7 +13,12 @@
 
 	import Authed from '$auth/components/Authed.svelte';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-	import { toErrorBody } from '$lib/errors';
+	import {
+		BerichtgenError,
+		ECommonServerError,
+		toErrorBody
+	} from '$lib/errors';
+	import { tryResultAsync } from '$lib/result';
 	import type { KyselyDatabase } from '$lib/schema';
 	import berichtgenStore from '$lib/stores/berichtgen.svelte';
 	import { getUserDisplayName } from '$lib/utils';
@@ -116,62 +121,69 @@
 
 	async function undoReport() {
 		mutation?.start();
-		try {
-			await deleteReport({ templateId: template.id }).updates(
-				reportOverride(false)
-			);
+		const result = await tryResultAsync(
+			deleteReport({ templateId: template.id }).updates(reportOverride(false)),
+			BerichtgenError,
+			ECommonServerError.INTERNAL_ERROR
+		);
+		if (result.ok) {
 			toast.success('Meldung zurückgezogen.');
-		} catch (e) {
+		} else {
 			toast.error('Fehler beim Zurückziehen.', {
-				description: toErrorBody(e).message
+				description: toErrorBody(result.error).message
 			});
-		} finally {
-			mutation?.end();
 		}
+		mutation?.end();
 	}
 
 	async function submitDelete() {
 		deletePending = true;
 		mutation?.start();
-		try {
-			await deleteTemplate({ storagePath: template.storage_path }).updates(
+		const result = await tryResultAsync(
+			deleteTemplate({ storagePath: template.storage_path }).updates(
 				query.withOverride((result) => ({
 					...result,
 					templates: result.templates.filter((t) => t.id !== template.id)
 				}))
-			);
+			),
+			BerichtgenError,
+			ECommonServerError.INTERNAL_ERROR
+		);
+		if (result.ok) {
 			toast.success('Datei erfolgreich gelöscht.');
-		} catch (e) {
+		} else {
 			toast.error('Fehler beim Löschen der Datei.', {
-				description: toErrorBody(e).message
+				description: toErrorBody(result.error).message
 			});
-		} finally {
-			deletePending = false;
-			mutation?.end();
 		}
+		deletePending = false;
+		mutation?.end();
 	}
 
 	async function submitReport() {
 		reportPending = true;
 		mutation?.start();
-		try {
-			await reportTemplate({
+		const result = await tryResultAsync(
+			reportTemplate({
 				templateId: template.id,
 				message: reportMessage || undefined
-			}).updates(reportOverride(true));
+			}).updates(reportOverride(true)),
+			BerichtgenError,
+			ECommonServerError.INTERNAL_ERROR
+		);
+		if (result.ok) {
 			reportDialogOpen = false;
 			reportMessage = '';
 			toast.success('Template gemeldet.', {
 				action: { label: 'Rückgängig', onClick: undoReport }
 			});
-		} catch (e) {
+		} else {
 			toast.error('Fehler beim Melden.', {
-				description: toErrorBody(e).message
+				description: toErrorBody(result.error).message
 			});
-		} finally {
-			reportPending = false;
-			mutation?.end();
 		}
+		reportPending = false;
+		mutation?.end();
 	}
 </script>
 
@@ -369,6 +381,7 @@
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
+
 
 
 

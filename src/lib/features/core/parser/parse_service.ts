@@ -1,7 +1,7 @@
 import type { Scheduler } from 'tesseract.js';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import { ParserError, EParserError } from '$core/parser/errors';
-import { type Result, errResult, tryResult } from '$lib/result';
+import { type Result, errResult, tryResultAsync } from '$lib/result';
 import type { ResultEntry } from '$wizard/types';
 import { FileTypes } from '$wizard/enums';
 
@@ -73,7 +73,7 @@ export async function parseFile(
  *   error if the browser could not read the file.
  */
 function readFile(file: File): Promise<Result<Uint8Array>> {
-	return tryResult(
+	return tryResultAsync(
 		file.arrayBuffer().then((buf) => new Uint8Array(buf)),
 		ParserError,
 		EParserError.INVALID_FILE
@@ -124,7 +124,7 @@ function loadImage(
 	context: WizardFileContext,
 	scheduler: Scheduler
 ): Promise<Result<string>> {
-	return tryResult(
+	return tryResultAsync(
 		import('$core/parser/img_parser').then(async ({ IMGParser }) => {
 			const parser = new IMGParser(context, scheduler);
 			await parser.init(data);
@@ -143,7 +143,7 @@ function loadText(
 	context: WizardFileContext,
 	scheduler: Scheduler
 ): Promise<Result<string>> {
-	return tryResult(
+	return tryResultAsync(
 		import('$core/parser/txt_parser').then(async ({ TXTParser }) => {
 			const parser = new TXTParser(context, scheduler);
 			await parser.init(data);
@@ -165,7 +165,7 @@ function loadJson(
 	scheduler: Scheduler,
 	rewordJSON: boolean
 ): Promise<Result<string | ResultEntry[]>> {
-	return tryResult(
+	return tryResultAsync(
 		import('$core/parser/json_parser').then(async ({ JSONParser }) => {
 			const parser = new JSONParser(context, scheduler);
 			await parser.init(data);
@@ -189,7 +189,7 @@ function loadPdf(
 	scheduler: Scheduler,
 	processPhotos: boolean
 ): Promise<Result<string>> {
-	return tryResult(
+	return tryResultAsync(
 		import('$core/parser/pdf_parser').then(async ({ PDFParser }) => {
 			const parser = new PDFParser(
 				context,
@@ -215,7 +215,7 @@ function loadDocx(
 	scheduler: Scheduler,
 	processPhotos: boolean
 ): Promise<Result<string>> {
-	return tryResult(
+	return tryResultAsync(
 		import('$core/parser/docx_parser').then(async ({ DOCXParser }) => {
 			const parser = new DOCXParser(context, scheduler, processPhotos);
 			await parser.init(data);
@@ -239,3 +239,4 @@ function createOffscreenCanvas(
 	const context = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D;
 	return { canvas, context };
 }
+

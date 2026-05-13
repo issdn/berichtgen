@@ -1,4 +1,6 @@
 import { browser } from '$app/environment';
+import { BerichtgenError, ECommonServerError } from '$lib/errors';
+import { tryResult } from '$lib/result';
 import { SvelteMap } from 'svelte/reactivity';
 
 const DEFAULT_SETTINGS: App.BerichtgenSettings = {
@@ -22,11 +24,12 @@ function parseStoredSetting<K extends keyof App.BerichtgenSettings>(
 	if (!browser) return null;
 	const raw = localStorage.getItem(key);
 	if (raw === null) return null;
-	try {
-		return JSON.parse(raw) as App.BerichtgenSettings[K];
-	} catch {
-		return null;
-	}
+	const parsed = tryResult(
+		() => JSON.parse(raw) as App.BerichtgenSettings[K],
+		BerichtgenError,
+		ECommonServerError.INTERNAL_ERROR
+	);
+	return parsed.ok ? parsed.data : null;
 }
 
 function ensureHydrated() {
