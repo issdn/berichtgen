@@ -1,27 +1,38 @@
+<script>
+	import CopyButton from '$board/components/CopyButton.svelte';
+	import { Button } from '$ui/button';
+</script>
+
 <div class="h-main flex w-full flex-col items-center justify-center">
 	<div class="flex flex-col gap-y-2">
 		<h1 class="text-xl">Impressum</h1>
 		<div>
-			<p><strong>Angaben gemäß § 5 TMG:</strong></p>
-			<p>Karol Bielski</p>
+			<p class="text-muted-foreground">Anbieter</p>
+			<p>Karol Bielski Software</p>
 			<p>Auf der Lieth 174</p>
 			<p>33100 Paderborn</p>
-			<p>Deutschland</p>
 		</div>
 
 		<div>
-			<p><strong>Telefon:</strong> 176 45809457</p>
-			<p><strong>E-Mail:</strong> karol.bielski@gmx.de</p>
-		</div>
-
-		<div>
+			<p class="text-muted-foreground">Kontakt</p>
 			<p>
-				<strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV:</strong>
+				<strong>Telefon:</strong><Button
+					variant="link"
+					href="tel:+4917645809457">+49 176 45809457</Button
+				>
 			</p>
-			<p>Karol Bielski</p>
-			<p>Auf der Lieth 174</p>
-			<p>33100 Paderborn</p>
-			<p>Deutschland</p>
+			<p>
+				<strong>E-Mail:</strong><Button
+					variant="link"
+					href="mailto:contact@karolbielski.com"
+					>contact@karolbielski.com</Button
+				>
+			</p>
 		</div>
+		<CopyButton
+			// eslint-disable-next-line svelte/no-useless-mustaches
+			text={'Karol Bielski Software\nAuf der Lieth 174\n33100 Paderborn\n+49 176 45809457\ncontact@karolbielski.com'}
+			>Kopieren</CopyButton
+		>
 	</div>
 </div>
