@@ -16,6 +16,7 @@
 	import Checkbox from '$ui/checkbox/checkbox.svelte';
 	import {
 		CircleHelp,
+		MessageSquare,
 		HandCoins,
 		KeyRound,
 		Lock,
@@ -34,9 +35,16 @@
 	import { Separator } from '$ui/separator';
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
 	import { AsyncResource } from '$core/async.svelte';
+	import { submitUserFeedback } from '$auth/api/feedback.remote';
+	import { BerichtgenError, ECommonServerError, toErrorBody } from '$lib/errors';
+	import { tryResultAsync } from '$lib/result';
+	import { Textarea } from '$ui/textarea';
 
 	let otpDialogOpen = $state(false);
+	let feedbackDialogOpen = $state(false);
 	let token = $state('');
+	let feedbackMessage = $state('');
+	let feedbackPending = $state(false);
 	let otpCooldownSeconds = $state(0);
 	let otpCooldownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -139,6 +147,25 @@
 	);
 
 	const { form: formData, enhance: mailInputEnhance, submitting } = form;
+
+	async function submitFeedback() {
+		feedbackPending = true;
+		const result = await tryResultAsync(
+			submitUserFeedback({ message: feedbackMessage }),
+			BerichtgenError,
+			ECommonServerError.INTERNAL_ERROR
+		);
+		if (result.ok) {
+			feedbackMessage = '';
+			feedbackDialogOpen = false;
+			toast.success('Feedback gesendet.');
+		} else {
+			toast.error('Feedback konnte nicht gesendet werden.', {
+				description: toErrorBody(result.error).message
+			});
+		}
+		feedbackPending = false;
+	}
 </script>
 
 <Popover.Root>
@@ -169,6 +196,10 @@
 					Einstellungen
 				</Button>
 			</div>
+			<Button variant="outline" onclick={() => (feedbackDialogOpen = true)}>
+				<MessageSquare />
+				Feedback
+			</Button>
 		{/if}
 		{#if page.data.loggedIn}
 			<Separator />
@@ -288,5 +319,45 @@
 				</div>
 			</GlobalPasteHandler>
 		</Dialog.Header>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={feedbackDialogOpen}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>Feedback senden</Dialog.Title>
+			<Dialog.Description>
+				Teile dein Feedback mit uns.
+			</Dialog.Description>
+		</Dialog.Header>
+		<div class="flex flex-col gap-3 py-2">
+			<Textarea
+				bind:value={feedbackMessage}
+				placeholder="Dein Feedback..."
+				maxlength={1000}
+				minlength={1}
+				disabled={feedbackPending}
+			/>
+			<Dialog.Footer>
+				<Button
+					variant="outline"
+					disabled={feedbackPending}
+					onclick={() => {
+						feedbackDialogOpen = false;
+						feedbackMessage = '';
+					}}>Abbrechen</Button
+				>
+				<Button
+					disabled={feedbackPending || feedbackMessage.trim().length === 0}
+					onclick={submitFeedback}
+				>
+					{#if feedbackPending}
+						Wird gesendet...
+					{:else}
+						Senden
+					{/if}
+				</Button>
+			</Dialog.Footer>
+		</div>
 	</Dialog.Content>
 </Dialog.Root>

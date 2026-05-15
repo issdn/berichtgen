@@ -217,6 +217,35 @@ export type Database = {
 					}
 				];
 			};
+			user_feedback: {
+				Row: {
+					created_at: string;
+					id: string;
+					message: string;
+					user_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					message: string;
+					user_id: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					message?: string;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'user_feedback_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'profile';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			user_token_count: {
 				Row: {
 					tokens: number;

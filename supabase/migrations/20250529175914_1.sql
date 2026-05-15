@@ -79,6 +79,15 @@ CREATE TABLE private.user_metadata (
     abteilung text
 );
 
+CREATE TABLE private.user_feedback (
+    id uuid PRIMARY KEY DEFAULT private.uuidv7(),
+    user_id uuid NOT NULL REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    message text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX user_feedback_user_id_idx ON private.user_feedback (user_id);
+
 CREATE TABLE private.template_report (
     id uuid PRIMARY KEY DEFAULT private.uuidv7(),
     template_id uuid NOT NULL REFERENCES private.template(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -159,5 +168,6 @@ GRANT ALL ON private.cart             TO service_role;
 GRANT ALL ON private.user_token_count TO service_role;
 GRANT ALL ON private.template         TO service_role;
 GRANT ALL ON private.user_metadata    TO service_role;
+GRANT ALL ON private.user_feedback    TO service_role;
 GRANT ALL ON private.template_report  TO service_role;
 GRANT ALL ON private.purchase         TO service_role;
