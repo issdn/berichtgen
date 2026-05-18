@@ -14,6 +14,7 @@ const config = {
 			$routes: path.resolve('./src/routes'),
 			$templates: path.resolve('./src/lib/features/board/templates'),
 			$core: path.resolve('./src/lib/features/core'),
+			$persistence: path.resolve('./src/lib/features/persistence'),
 			$auth: path.resolve('./src/lib/features/auth'),
 			$wizard: path.resolve('./src/lib/features/board/wizard'),
 			$board: path.resolve('./src/lib/features/board'),

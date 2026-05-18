@@ -14,8 +14,8 @@ import { resolveFileRouting } from './file_routing';
 
 function shouldSkipAiCompletion(context: WizardFileContext): boolean {
 	return (
-		typeof context.file !== 'string' &&
-		context.file.type === FileTypes.JSON &&
+		'file' in context.file &&
+		context.file.file.type === FileTypes.JSON &&
 		!berichtgenStore.get('rewordJSON')
 	);
 }
@@ -23,38 +23,50 @@ function shouldSkipAiCompletion(context: WizardFileContext): boolean {
 export function createStateMachineForContext(
 	context: WizardFileContext,
 	scheduler: WizardScheduler,
-	id: string
+	id: string,
+	initialStep: WizardStep = WizardStep.INITIALISING
 ) {
-	return fsm(WizardStep.INITIALISING, {
+	return fsm(initialStep, {
 		[WizardStep.INITIALISING]: {
 			next: WizardStep.PROCESSING
 		},
 
 		[WizardStep.PROCESSING]: {
 			_enter() {
-				const file = context.file;
-				if (typeof file === 'string') {
-					context.snapshot = { type: 'url' as const, url: file };
+				if ('url' in context.file) {
+					context.snapshot = { type: 'url' as const, url: context.file.url };
+					scheduler.persistSoon();
 					return void this.next();
 				}
 
-				resolveFileRouting(file, context, scheduler.scheduler!, {
+				resolveFileRouting(context.file.file, context, scheduler.scheduler!, {
 					processPhotos: berichtgenStore.get('processPhotos'),
 					rewordJSON: berichtgenStore.get('rewordJSON')
 				}).then((result) => {
 					if (result.ok) {
 						context.snapshot = result.data;
+						scheduler.persistSoon();
 						return void this.next();
 					} else {
 						context.error = result.error;
+						scheduler.persistSoon();
 						return void this.error();
 					}
 				});
 			},
 			/** Parsed successfully — move to WAITING for user date-range input. */
-			next: () => WizardStep.WAITING,
-			error: () => WizardStep.ERROR,
-			cancel: () => WizardStep.CANCELLED
+			next: () => {
+				scheduler.persistSoon();
+				return WizardStep.WAITING;
+			},
+			error: () => {
+				scheduler.persistSoon();
+				return WizardStep.ERROR;
+			},
+			cancel: () => {
+				scheduler.persistSoon();
+				return WizardStep.CANCELLED;
+			}
 		},
 
 		[WizardStep.WAITING]: {
@@ -69,9 +81,13 @@ export function createStateMachineForContext(
 						? WizardStep.DONE
 						: WizardStep.TIME_SPREADING;
 				}
+				scheduler.persistSoon();
 				return WizardStep.BATCH_PENDING;
 			},
-			cancel: () => WizardStep.CANCELLED
+			cancel: () => {
+				scheduler.persistSoon();
+				return WizardStep.CANCELLED;
+			}
 		},
 
 		/**
@@ -85,10 +101,19 @@ export function createStateMachineForContext(
 				scheduler.onFileBatchPending(id);
 			},
 			/** Called by the scheduler just before it sends this file's batch to the API. */
-			start: () => WizardStep.AI_COMPLETION,
+			start: () => {
+				scheduler.persistSoon();
+				return WizardStep.AI_COMPLETION;
+			},
 			/** Called by the scheduler if the file must be errored before the batch starts. */
-			error: () => WizardStep.ERROR,
-			cancel: () => WizardStep.CANCELLED
+			error: () => {
+				scheduler.persistSoon();
+				return WizardStep.ERROR;
+			},
+			cancel: () => {
+				scheduler.persistSoon();
+				return WizardStep.CANCELLED;
+			}
 		},
 
 		/**
@@ -103,11 +128,18 @@ export function createStateMachineForContext(
 			next(entries: Entry[]) {
 				context.snapshot = entries;
 				invalidate('user:tokenCount');
+				scheduler.persistSoon();
 				return WizardStep.TIME_SPREADING;
 			},
 			/** Called by the scheduler when the batch failed (API error, token shortage, etc.). */
-			error: () => WizardStep.ERROR,
-			cancel: () => WizardStep.CANCELLED
+			error: () => {
+				scheduler.persistSoon();
+				return WizardStep.ERROR;
+			},
+			cancel: () => {
+				scheduler.persistSoon();
+				return WizardStep.CANCELLED;
+			}
 		},
 
 		[WizardStep.TIME_SPREADING]: {
@@ -116,35 +148,43 @@ export function createStateMachineForContext(
 					context.snapshot as Entry[],
 					context.dateRanges!
 				);
+				scheduler.persistSoon();
 				return void this.next();
 			},
-			next: () => WizardStep.DONE
+			next: () => {
+				scheduler.persistSoon();
+				return WizardStep.DONE;
+			}
 		},
 
 		[WizardStep.DONE]: {
 			_enter: () => {
 				context.finished = context.snapshot as ResultEntry[];
+				scheduler.persistSoon();
 				scheduler.dequeue();
 			}
 		},
 
 		[WizardStep.ERROR]: {
 			_enter() {
+				scheduler.persistSoon();
 				scheduler.onFileErrored();
 			}
 		},
 
 		[WizardStep.CANCELLED]: {
 			_enter() {
+				scheduler.persistSoon();
 				scheduler.onFileCancelled();
 			},
 			next(process: WizardProcessStateMachine) {
-				scheduler.filesUnfinished -= 1;
-				scheduler.filesReady -= 1;
 				this.init();
 				scheduler.enqueue(process);
 			},
-			init: () => WizardStep.INITIALISING
+			init: () => {
+				scheduler.persistSoon();
+				return WizardStep.INITIALISING;
+			}
 		}
 	});
 }

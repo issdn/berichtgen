@@ -53,7 +53,7 @@ export type WizardDirectories = WizardDirectory[];
 export type WizardProcessStateMachine = {
 	context: WizardFileContext;
 	machine: ReturnType<StateMachineSignature>;
-	id: ReturnType<typeof crypto.randomUUID>;
+	id: string;
 	/** Sets cancelled and advances the machine — call instead of mutating context directly. */
 	cancel: () => void;
 	/** Clears cancelled and re-enqueues the machine — call instead of mutating context directly. */

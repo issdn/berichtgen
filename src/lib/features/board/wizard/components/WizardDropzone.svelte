@@ -67,6 +67,7 @@
 				'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.'
 			);
 			wizardScheduler.schedule = null;
+			void wizardScheduler.clearPersistedSession();
 			return;
 		}
 
@@ -75,6 +76,7 @@
 
 	function init(directories: WizardRawDirectories) {
 		wizardScheduler.processInit = (async () => {
+			await wizardScheduler.clearPersistedSession();
 			await wizardScheduler.init();
 			const resolvedDirectories = await Promise.all(
 				directories.map(resolveDirectory)

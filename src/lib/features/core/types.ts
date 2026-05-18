@@ -20,3 +20,14 @@ export type FlashMessage = {
 	message: string;
 	data?: ExternalToast | undefined;
 };
+
+export type NonFunctionKeys<T> = {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+	[K in keyof T]: T[K] extends Function ? never : K;
+}[keyof T];
+
+export type Attributes<T> = Pick<T, NonFunctionKeys<T>>;
+
+export type ReplaceAttr<T, K extends keyof T, V> = Omit<T, K> & {
+	[P in K]: V;
+};

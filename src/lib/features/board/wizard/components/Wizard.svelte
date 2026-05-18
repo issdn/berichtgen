@@ -22,6 +22,8 @@
 	import Pdf from '$ui/svg/PDF.svelte';
 	import Png from '$ui/svg/PNG.svelte';
 	import { page } from '$app/state';
+import * as AlertDialog from '$ui/alert-dialog';
+	import type { WizardPersistedSession } from '$wizard/services/types';
 
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
@@ -41,17 +43,28 @@
 	});
 
 	let dialogOpen = $state(false);
+	let restoreDismissed = $state(false);
+
+	wizardScheduler.setUserKey(page.data.user?.id);
+	const persistedSessionPromise = wizardScheduler.loadPersistedSession();
 
 	let result = $derived(wizardScheduler.result);
 
 	$effect(() => {
-		if (
-			result !== null &&
-			wizardScheduler.filesReady - wizardScheduler.filesUnfinished > 0
-		) {
+		if (result !== null && wizardScheduler.isDone) {
 			dialogOpen = true;
 		}
 	});
+
+	async function discardRestoredSession() {
+		restoreDismissed = true;
+		await wizardScheduler.clearPersistedSession();
+	}
+
+	function restoreSession(session: WizardPersistedSession) {
+		wizardScheduler.processInit = wizardScheduler.init(session);
+		restoreDismissed = true;
+	}
 
 	function handleDndConsider(
 		e: CustomEvent<DndEvent<WizardProcessStateMachine>>
@@ -213,6 +226,34 @@
 		</div>
 	</div>
 {/snippet}
+
+<svelte:boundary>
+	{@const persistedSession = await persistedSessionPromise}
+	{#if persistedSession !== null && !restoreDismissed}
+		<AlertDialog.Root open={true}>
+			<AlertDialog.Content>
+				<AlertDialog.Header>
+					<AlertDialog.Title>Vorherige Sitzung gefunden</AlertDialog.Title>
+					<AlertDialog.Description>
+						{persistedSession.files.length} Dateien, zuletzt gespeichert am&nbsp;
+						{new Date(persistedSession.updatedAt).toLocaleString()}.
+					</AlertDialog.Description>
+				</AlertDialog.Header>
+				<AlertDialog.Footer>
+					<AlertDialog.Cancel onclick={discardRestoredSession}>
+						Verwerfen
+					</AlertDialog.Cancel>
+					<AlertDialog.Action onclick={() => restoreSession(persistedSession)}
+						>Fortsetzen</AlertDialog.Action
+					>
+				</AlertDialog.Footer>
+			</AlertDialog.Content>
+		</AlertDialog.Root>
+	{/if}
+	{#snippet pending()}
+		<!-- no-op pending UI for initial persisted-session lookup -->
+	{/snippet}
+</svelte:boundary>
 
 {#snippet childrenBehind()}
 	<Png class="absolute -top-32 left-[calc(50%-75px)] -z-10 -translate-x-1/2" />

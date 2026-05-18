@@ -9,11 +9,11 @@ import type {
 	Entry,
 	ResultEntry,
 	WizardDirectories,
-	WizardDirectoryEntry,
 	WizardProcessStateMachine
 } from '$wizard/types';
 import type { Ort } from '$wizard/enums';
 import { combineJSONs } from '$wizard/postprocess/combine';
+import { WizardStep } from '$wizard/enums';
 import {
 	createBatchesBySize,
 	MAX_BATCH_BYTES,
@@ -23,6 +23,17 @@ import {
 	stringsToEntries
 } from '$wizard/completion/completion';
 import type { FileRouting } from './file_routing';
+import {
+	type WizardPersistedFile,
+	type WizardPersistedSession
+} from './types';
+import {
+	WIZARD_PERSISTENCE_STORE,
+	WIZARD_PERSISTENCE_TTL_MS,
+	WIZARD_PERSISTENCE_VERSION
+} from '$lib/constants';
+import Persistence from '$persistence';
+import { get } from 'svelte/store';
 
 /**
  * Internal representation of one routed file chunk that will be sent to the AI.
@@ -50,9 +61,15 @@ export class WizardScheduler {
 		return this.schedule.length;
 	});
 
-	filesReady = $state(0);
-
-	filesUnfinished = $state(0);
+	filesReady = $derived.by(() => {
+		if (this.schedule === null) return 0;
+		return this.schedule.filter(
+			(process) =>
+				process.context.finished !== null ||
+				process.context.error !== undefined ||
+				process.context.cancelled
+		).length;
+	});
 
 	scheduler: Scheduler | null = null;
 
@@ -60,11 +77,22 @@ export class WizardScheduler {
 
 	processInit = $state<Promise<void> | null>(null);
 
-	isRunning = $state(false);
+	isRunning = $derived.by(() => {
+		if (this.batchPendingFiles === null) return false;
+		return this.batchPendingFiles.size > 0;
+	});
 
 	workersInUse = 0;
 
 	workersNr = 0;
+
+	userKey: string = 'anon';
+
+	sessionId: string = crypto.randomUUID();
+
+	private persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+	private persistDebounceMs = 250;
 
 	/**
 	 * Files that have been parsed, dated, and are waiting to be grouped into
@@ -74,56 +102,106 @@ export class WizardScheduler {
 		new SvelteMap();
 
 	get isDone() {
-		return this.schedule !== null && this.filesReady === this.numberOfFiles;
+		return (
+			!this.isRunning &&
+			this.schedule !== null &&
+			this.filesReady === this.numberOfFiles
+		);
 	}
 
 	get batchSize() {
 		return 5;
 	}
 
+	setUserKey(userId: string | null | undefined) {
+		this.userKey = userId ? `user:${userId}` : 'anon';
+	}
+
+	persistSoon = () => {
+		if (this.persistTimer) clearTimeout(this.persistTimer);
+		this.persistTimer = setTimeout(() => {
+			void this.persistNow();
+		}, this.persistDebounceMs);
+	};
+
+	async persistNow() {
+		await Persistence.save(
+			WIZARD_PERSISTENCE_STORE,
+			this.userKey,
+			this.exportSnapshot(),
+			WIZARD_PERSISTENCE_VERSION
+		);
+	}
+
+	async clearPersistedSession() {
+		await Persistence.clear(WIZARD_PERSISTENCE_STORE, this.userKey);
+	}
+
+	async loadPersistedSession(): Promise<WizardPersistedSession | null> {
+		return Persistence.load<WizardPersistedSession>(
+			WIZARD_PERSISTENCE_STORE,
+			this.userKey,
+			WIZARD_PERSISTENCE_VERSION,
+			WIZARD_PERSISTENCE_TTL_MS
+		);
+	}
+
+	private resetRuntimeState() {
+		this.queue = [];
+		this.result = null;
+		this.batchPendingFiles.clear();
+	}
+
 	enqueue = (item: WizardProcessStateMachine) => {
 		this.queue.push(item);
+		this.persistSoon();
 		if (this.queue.length <= this.batchSize) {
 			this.queue.at(-1)!.machine.next();
 		}
 	};
 
 	onFileErrored = () => {
-		this.filesUnfinished += 1;
+		this.persistSoon();
 		this.dequeue();
 	};
 
 	onFileCancelled = () => {
-		this.filesUnfinished += 1;
+		this.persistSoon();
 		this.dequeue();
 	};
 
 	dequeue = (): WizardProcessStateMachine | undefined => {
 		const shifted = this.queue.shift();
-		this.filesReady += 1;
 		this.queue.at(this.batchSize)?.machine.next();
 		if (this.isDone) {
 			this.finish();
 		}
 		this.checkBatchReady();
+		this.persistSoon();
 		return shifted;
 	};
 
-	init = async () => {
-		this.isRunning = true;
+	init = async (session: WizardPersistedSession | null = null) => {
 		if (this.scheduler === null) {
 			const { createScheduler } = await import('tesseract.js');
 			this.scheduler = createScheduler();
 		}
-		this.queue = [];
-		this.result = null;
-		this.filesReady = 0;
-		this.filesUnfinished = 0;
-		this.batchPendingFiles.clear();
+		this.resetRuntimeState();
+		if (session) {
+			this.rehydrateFromSnapshot(session);
+			return;
+		}
+		this.sessionId = crypto.randomUUID();
+		this.persistSoon();
 	};
 
 	createSchedule = (directories: WizardDirectories) => {
-		this.schedule = [...directories].flat().map(this.createProcessStateMachine);
+		this.schedule = [...directories]
+			.flat()
+			.map((entry) =>
+				this.createProcessStateMachine(new WizardFileContext(entry))
+			);
+		this.persistSoon();
 	};
 
 	finish = () => {
@@ -138,7 +216,7 @@ export class WizardScheduler {
 				finishedDirectories,
 				berichtgenStore.get('constantHours')
 			);
-			this.isRunning = false;
+			await this.clearPersistedSession();
 			return combined;
 		})();
 	};
@@ -152,6 +230,7 @@ export class WizardScheduler {
 		if (!file) return;
 		this.batchPendingFiles.set(id, file);
 		this.checkBatchReady();
+		this.persistSoon();
 	};
 
 	/**
@@ -222,6 +301,7 @@ export class WizardScheduler {
 		// rather than iterating SvelteMap values, which can double-proxy the machine objects
 		const pendingIds = [...this.batchPendingFiles.keys()];
 		this.batchPendingFiles.clear();
+		this.persistSoon();
 
 		const pendingList = pendingIds.map(
 			(id) => this.schedule!.find((f) => f.id === id)!
@@ -311,17 +391,24 @@ export class WizardScheduler {
 				file.context.snapshot = entries;
 				file.machine.next(entries);
 			}
+			this.persistSoon();
 		}
 	};
 
-	createProcessStateMachine = (entry: WizardDirectoryEntry) => {
-		const id = crypto.randomUUID();
-		const fileOrUrl = 'file' in entry ? entry.file : entry.url;
-		const context = new WizardFileContext(fileOrUrl, entry.config ?? null);
+	createProcessStateMachine = (
+		context: WizardFileContext,
+		id: string = crypto.randomUUID(),
+		initialStep: WizardStep = WizardStep.INITIALISING
+	) => {
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const scheduler = this;
 
-		const machine = createStateMachineForContext(context, scheduler, id);
+		const machine = createStateMachineForContext(
+			context,
+			scheduler,
+			id,
+			initialStep
+		);
 		// Svelte 5 deep-proxies objects stored in $state — accessing methods here
 		// prevents the proxy from hiding them when the machine is retrieved later
 		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -351,9 +438,61 @@ export class WizardScheduler {
 		};
 		return process;
 	};
+
+	exportSnapshot(): WizardPersistedSession {
+		const files: WizardPersistedFile[] = (this.schedule ?? []).map(
+			(process) => ({
+				id: process.id,
+				step: get(process.machine),
+				...process.context,
+				error: process.context.error?.apiError
+			})
+		);
+
+		return {
+			sessionId: this.sessionId,
+			updatedAt: Date.now(),
+			isRunning: this.isRunning,
+			filesReady: this.filesReady,
+			files
+		};
+	}
+
+	private rehydrateFromSnapshot(snapshot: WizardPersistedSession): void {
+		this.sessionId = snapshot.sessionId;
+		this.resetRuntimeState();
+
+		const restored: WizardProcessStateMachine[] = [];
+		for (const file of snapshot.files) {
+			const restoredStep =
+				file.step === WizardStep.AI_COMPLETION
+					? WizardStep.BATCH_PENDING
+					: file.step;
+			const context = WizardFileContext.rehydrate(file);
+			const process = this.createProcessStateMachine(
+				context,
+				file.id,
+				restoredStep
+			);
+
+			restored.push(process);
+		}
+
+		this.schedule = restored;
+
+		for (const process of restored) {
+			if (get(process.machine) === WizardStep.BATCH_PENDING) {
+				this.batchPendingFiles.set(process.id, process);
+			}
+		}
+		if (this.isDone) {
+			this.finish();
+		} else {
+			this.checkBatchReady();
+		}
+		this.persistSoon();
+	}
 }
 
 // eslint-disable-next-line prefer-const
 export let wizardScheduler = new WizardScheduler();
-
-
