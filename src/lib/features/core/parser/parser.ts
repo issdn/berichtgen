@@ -1,6 +1,6 @@
 import { clamp } from '$lib/utils';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context';
-import { wizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
+import { wizardMediator } from '$wizard/services/wizard_mediator.svelte';
 import type { Scheduler } from 'tesseract.js';
 
 export class Parser {
@@ -27,18 +27,18 @@ export class Parser {
 		const { createWorker } = await import('tesseract.js');
 		this.batchSize = clamp(nrImages * 0.1, 1, 25);
 		if (
-			wizardScheduler.workersInUse + this.batchSize >
-			wizardScheduler.workersNr
+			wizardMediator.workersInUse + this.batchSize >
+			wizardMediator.workersNr
 		) {
-			wizardScheduler.workersNr += this.batchSize;
+			wizardMediator.workersNr += this.batchSize;
 		}
-		wizardScheduler.workersInUse += this.batchSize;
+		wizardMediator.workersInUse += this.batchSize;
 		for (let i = 0; i < this.batchSize; i++) {
 			this.scheduler!.addWorker(await createWorker('deu'));
 		}
 	}
 
 	async freeWorkers() {
-		wizardScheduler.workersInUse -= this.batchSize;
+		wizardMediator.workersInUse -= this.batchSize;
 	}
 }

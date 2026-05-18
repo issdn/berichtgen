@@ -1,6 +1,6 @@
-<script lang="ts">
+	<script lang="ts">
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { wizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
+	import { wizardMediator } from '$wizard/services/wizard_mediator.svelte';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
@@ -25,7 +25,7 @@
 			<Switch
 				bind:checked
 				{id}
-				disabled={wizardScheduler.isRunning}
+				disabled={wizardMediator.isRunning}
 				onCheckedChange={onchange}
 			/>
 			<Label

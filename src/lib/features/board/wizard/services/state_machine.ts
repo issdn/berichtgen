@@ -1,7 +1,7 @@
 import fsm from 'svelte-fsm';
 import type { WizardFileContext } from './wizard_file_context';
 import { invalidate } from '$app/navigation';
-import type { WizardScheduler } from './wizard_scheduler.svelte';
+import type { WizardMediator } from './wizard_mediator.svelte';
 import type {
 	Entry,
 	ResultEntry,
@@ -22,7 +22,7 @@ function shouldSkipAiCompletion(context: WizardFileContext): boolean {
 
 export function createStateMachineForContext(
 	context: WizardFileContext,
-	scheduler: WizardScheduler,
+	scheduler: WizardMediator,
 	id: string,
 	initialStep: WizardStep = WizardStep.INITIALISING
 ) {
@@ -161,7 +161,7 @@ export function createStateMachineForContext(
 			_enter: () => {
 				context.finished = context.snapshot as ResultEntry[];
 				scheduler.persistSoon();
-				scheduler.dequeue();
+				scheduler.queue.dequeue();
 			}
 		},
 
@@ -179,7 +179,7 @@ export function createStateMachineForContext(
 			},
 			next(process: WizardProcessStateMachine) {
 				this.init();
-				scheduler.enqueue(process);
+				scheduler.queue.enqueue(process);
 			},
 			init: () => {
 				scheduler.persistSoon();

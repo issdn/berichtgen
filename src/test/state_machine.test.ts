@@ -49,7 +49,7 @@ vi.mock('$wizard/completion/completion', async (importOriginal) => ({
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
-import { WizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
+import { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
 import type { DateRangeSchema } from '$wizard/schemas';
 
 // ---------------------------------------------------------------------------
@@ -79,8 +79,8 @@ describe('State machine full lifecycle', () => {
 			okResult({ results: [[AI_RESULT]], insufficient_tokens: false })
 		);
 
-		// Real WizardScheduler — parse_service is mocked so no OCR workers needed.
-		const scheduler = new WizardScheduler();
+		// Real wizardMediator — parse_service is mocked so no OCR workers needed.
+		const scheduler = WizardMediator.createDefault();
 		scheduler.scheduler = {
 			terminate: () => Promise.resolve()
 		} as unknown as Scheduler;
@@ -99,7 +99,7 @@ describe('State machine full lifecycle', () => {
 
 		// 1. Kick off: INITIALISING → PROCESSING
 		expect(currentState).toBe(WizardStep.INITIALISING);
-		scheduler.enqueue(scheduler.schedule![0]);
+		scheduler.queue.enqueue(scheduler.schedule![0]);
 
 		// 2. Wait for parseFile to resolve (mocked as an instantly-resolving promise).
 		await flush();

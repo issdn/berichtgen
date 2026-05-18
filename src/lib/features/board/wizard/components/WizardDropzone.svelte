@@ -18,7 +18,7 @@
 	import { FileTypes } from '$wizard/enums';
 	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
-	import { wizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
+	import { wizardMediator } from '$wizard/services/wizard_mediator.svelte';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
 
@@ -66,8 +66,8 @@
 			toast.error(
 				'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.'
 			);
-			wizardScheduler.schedule = null;
-			void wizardScheduler.clearPersistedSession();
+			wizardMediator.schedule = null;
+			void wizardMediator.clearPersistedSession();
 			return;
 		}
 
@@ -75,14 +75,16 @@
 	}
 
 	function init(directories: WizardRawDirectories) {
-		wizardScheduler.processInit = (async () => {
-			await wizardScheduler.clearPersistedSession();
-			await wizardScheduler.init();
+		wizardMediator.processInit = (async () => {
+			await wizardMediator.clearPersistedSession();
+			await wizardMediator.init();
 			const resolvedDirectories = await Promise.all(
 				directories.map(resolveDirectory)
 			);
-			wizardScheduler.createSchedule(resolvedDirectories);
-			wizardScheduler.schedule?.forEach(wizardScheduler.enqueue);
+			wizardMediator.createSchedule(resolvedDirectories);
+			wizardMediator.schedule?.forEach((process) =>
+				wizardMediator.queue.enqueue(process)
+			);
 		})();
 	}
 

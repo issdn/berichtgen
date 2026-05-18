@@ -9,8 +9,8 @@ import type { ResultEntry } from '$wizard/types';
 // Each mock provides a constructor that returns a test double with the minimal
 // surface the service exercises: init() and parse() / toSchema().
 
-vi.mock('$wizard/services/wizard_scheduler.svelte', () => ({
-	wizardScheduler: { workersInUse: 0, workersNr: 0 }
+vi.mock('$wizard/services/wizard_mediator.svelte', () => ({
+	wizardMediator: { workersInUse: 0, workersNr: 0 }
 }));
 
 vi.mock('$core/parser/txt_parser', () => ({

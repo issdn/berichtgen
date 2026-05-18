@@ -5,7 +5,7 @@
 	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
-	import { wizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
+	import { wizardMediator } from '$wizard/services/wizard_mediator.svelte';
 	import { handleDOCXDownload } from '$wizard/write/write_docx';
 	import { handleJSONDownload } from '$wizard/write/write_json';
 	import { FileCheck2, FileClock, FileJson, FileType } from '@lucide/svelte';
@@ -45,42 +45,42 @@ import * as AlertDialog from '$ui/alert-dialog';
 	let dialogOpen = $state(false);
 	let restoreDismissed = $state(false);
 
-	wizardScheduler.setUserKey(page.data.user?.id);
-	const persistedSessionPromise = wizardScheduler.loadPersistedSession();
+	wizardMediator.setUserKey(page.data.user?.id);
+	const persistedSessionPromise = wizardMediator.loadPersistedSession();
 
-	let result = $derived(wizardScheduler.result);
+	let result = $derived(wizardMediator.result);
 
 	$effect(() => {
-		if (result !== null && wizardScheduler.isDone) {
+		if (result !== null && wizardMediator.isDone) {
 			dialogOpen = true;
 		}
 	});
 
 	async function discardRestoredSession() {
 		restoreDismissed = true;
-		await wizardScheduler.clearPersistedSession();
+		await wizardMediator.clearPersistedSession();
 	}
 
 	function restoreSession(session: WizardPersistedSession) {
-		wizardScheduler.processInit = wizardScheduler.init(session);
+		wizardMediator.processInit = wizardMediator.init(session);
 		restoreDismissed = true;
 	}
 
 	function handleDndConsider(
 		e: CustomEvent<DndEvent<WizardProcessStateMachine>>
 	) {
-		wizardScheduler.schedule = e.detail.items;
+		wizardMediator.schedule = e.detail.items;
 	}
 
 	function handleDndFinalize(
 		e: CustomEvent<DndEvent<WizardProcessStateMachine>>
 	) {
-		wizardScheduler.schedule = e.detail.items;
+		wizardMediator.schedule = e.detail.items;
 	}
 
 	const downloadJSON = new AsyncResource(
 		async () => {
-			await handleJSONDownload(wizardScheduler.result!);
+			await handleJSONDownload(wizardMediator.result!);
 		},
 		{
 			onError: (error) => {
@@ -122,7 +122,7 @@ import * as AlertDialog from '$ui/alert-dialog';
 			}
 			const uintarray = new Uint8Array(await templateResult.data.arrayBuffer());
 			await handleDOCXDownload({
-				entries: wizardScheduler.result!,
+				entries: wizardMediator.result!,
 				template: uintarray,
 				userMetadata: page.data.userMetadata
 			});
@@ -137,7 +137,7 @@ import * as AlertDialog from '$ui/alert-dialog';
 	);
 
 	const downloadDisabled = $derived(
-		wizardScheduler.isRunning || !wizardScheduler.result
+		wizardMediator.isRunning || !wizardMediator.result
 	);
 </script>
 
@@ -166,13 +166,13 @@ import * as AlertDialog from '$ui/alert-dialog';
 		class="h-full overflow-x-hidden overflow-y-auto"
 	>
 		<div class="relative h-full p-4">
-			{#if wizardScheduler.schedule !== null && wizardScheduler.processInit !== null}
-				{#await wizardScheduler.processInit}
+			{#if wizardMediator.schedule !== null && wizardMediator.processInit !== null}
+				{#await wizardMediator.processInit}
 					<div data-testid="wizard-loading" class="center-absolute">
 						<Spinner />
 					</div>
 				{:then}
-					{@const items = wizardScheduler.schedule.flat()}
+					{@const items = wizardMediator.schedule.flat()}
 					<div
 						class="flex h-full w-full flex-col gap-y-2"
 						use:dndzone={{ items, flipDurationMs: 300, dropTargetStyle: {} }}

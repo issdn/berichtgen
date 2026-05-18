@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Spinner } from '$ui/spinner';
 	import { WizardStep } from '$wizard/enums';
-	import type { WizardScheduler } from '$wizard/services/wizard_scheduler.svelte';
+	import type { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
 	import {
 		Binary,
 		Bug,
@@ -26,7 +26,7 @@
 		cancel,
 		restart,
 		confirmDateRanges
-	}: ReturnType<WizardScheduler['createProcessStateMachine']> = $props();
+	}: ReturnType<WizardMediator['createProcessStateMachine']> = $props();
 
 	function statusFromStep(step: WizardStep) {
 		switch (step) {
