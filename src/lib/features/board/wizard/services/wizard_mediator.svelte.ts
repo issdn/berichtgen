@@ -6,7 +6,6 @@ import { WizardError, EWizardError } from '$wizard/errors';
 import { WizardFileContext } from './wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
 import type {
-	Entry,
 	ResultEntry,
 	WizardDirectories,
 	WizardProcessStateMachine
@@ -274,7 +273,11 @@ export class WizardMediator {
 			);
 			if (!result.ok) return result.error;
 
-			this.collectChunkResults(batch, result.data.results, chunkResults);
+			this.chunker.collectChunkResults(
+				batch,
+				result.data.results,
+				chunkResults
+			);
 			if (result.data.insufficient_tokens) {
 				errorCause = new WizardError(EWizardError.COMPLETION_FAILED);
 				break;
@@ -296,36 +299,17 @@ export class WizardMediator {
 		}
 	}
 
-	private collectChunkResults(
-		batch: ChunkDescriptor[],
-		results: (string[] | null)[],
-		chunkResults: SvelteMap<number, SvelteMap<number, string[]>>
-	) {
-		for (let i = 0; i < batch.length; i++) {
-			const { fileIndex, chunkIndex } = batch[i];
-			const chunkResult = results[i];
-			if (chunkResult == null) continue;
-			if (!chunkResults.has(fileIndex)) {
-				chunkResults.set(fileIndex, new SvelteMap());
-			}
-			chunkResults.get(fileIndex)!.set(chunkIndex, chunkResult);
-		}
-	}
-
 	private applyChunkResults(
 		pendingList: WizardProcessStateMachine[],
 		allChunks: ChunkDescriptor[],
 		chunkResults: SvelteMap<number, SvelteMap<number, string[]>>,
 		errorCause: BerichtgenError | null
 	) {
-		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
-			const process = pendingList[fileIndex];
-			const entries = this.chunker.reassembleFileResult(
-				fileIndex,
-				allChunks,
-				chunkResults
-			);
-
+		for (const { process, entries } of this.chunker.applyChunkResults(
+			pendingList,
+			allChunks,
+			chunkResults
+		)) {
 			if (entries === null) {
 				process.context.error =
 					errorCause ?? new WizardError(EWizardError.COMPLETION_FAILED);

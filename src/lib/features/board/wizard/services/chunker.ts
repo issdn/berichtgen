@@ -1,6 +1,6 @@
 import { SvelteMap } from 'svelte/reactivity';
 import type { Ort } from '$wizard/enums';
-import type { WizardProcessStateMachine } from '$wizard/types';
+import type { Entry, WizardProcessStateMachine } from '$wizard/types';
 import type { FileRouting } from './file_routing';
 import {
 	MAX_BATCH_BYTES,
@@ -18,6 +18,11 @@ export type ChunkDescriptor = {
 };
 
 type ChunkWithSize = ChunkDescriptor & { text: string };
+
+export type FileChunkOutcome = {
+	process: WizardProcessStateMachine;
+	entries: Entry[] | null;
+};
 
 export class Chunker {
 	/**
@@ -88,6 +93,40 @@ export class Chunker {
 			(chunk) => perFileChunkResults!.get(chunk.chunkIndex)!
 		);
 		return stringsToEntries(merged);
+	}
+
+	collectChunkResults(
+		batch: ChunkDescriptor[],
+		results: (string[] | null)[],
+		chunkResults: SvelteMap<number, SvelteMap<number, string[]>>
+	) {
+		for (let i = 0; i < batch.length; i++) {
+			const { fileIndex, chunkIndex } = batch[i];
+			const chunkResult = results[i];
+			if (chunkResult == null) continue;
+			if (!chunkResults.has(fileIndex)) {
+				chunkResults.set(fileIndex, new SvelteMap());
+			}
+			chunkResults.get(fileIndex)!.set(chunkIndex, chunkResult);
+		}
+	}
+
+	applyChunkResults(
+		pendingList: WizardProcessStateMachine[],
+		allChunks: ChunkDescriptor[],
+		chunkResults: SvelteMap<number, SvelteMap<number, string[]>>
+	): FileChunkOutcome[] {
+		const outcomes: FileChunkOutcome[] = [];
+		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
+			const process = pendingList[fileIndex];
+			const entries = this.reassembleFileResult(
+				fileIndex,
+				allChunks,
+				chunkResults
+			);
+			outcomes.push({ process, entries });
+		}
+		return outcomes;
 	}
 
 	private toSizeProxyText(routing: FileRouting): string {
