@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { okResult, errResult } from '$lib/result';
+import { okResult } from '$lib/result';
 import { FileTypes } from '$wizard/enums';
 import { ParserError, EParserError } from '$core/parser/errors';
 import type { ResultEntry } from '$wizard/types';
@@ -14,47 +14,53 @@ vi.mock('$wizard/services/wizard_mediator.svelte', () => ({
 }));
 
 vi.mock('$core/parser/txt_parser', () => ({
-	TXTParser: vi.fn().mockImplementation(() => ({
-		init: vi.fn().mockResolvedValue(undefined),
-		parse: vi.fn().mockReturnValue('decoded text')
-	}))
+	TXTParser: vi.fn(function () {
+		return {
+			init: vi.fn().mockResolvedValue(undefined),
+			parse: vi.fn().mockReturnValue('decoded text')
+		};
+	})
 }));
 
 vi.mock('$core/parser/json_parser', () => ({
-	JSONParser: vi.fn().mockImplementation(() => ({
-		init: vi.fn().mockResolvedValue(undefined),
-		/** Inherited parse() returns the raw text string. */
-		parse: vi.fn().mockReturnValue('raw json text'),
-		/** toSchema() returns validated ResultEntry[]. */
-		toSchema: vi
-			.fn()
-			.mockReturnValue(
+	JSONParser: vi.fn(function () {
+		return {
+			init: vi.fn().mockResolvedValue(undefined),
+			parse: vi.fn().mockReturnValue('raw json text'),
+			toSchema: vi.fn().mockReturnValue(
 				okResult([
 					{ text: 'Eintrag', datum: '2024-01-01', ort: 'BETRIEB', stunden: 8 }
 				] as ResultEntry[])
 			)
-	}))
+		};
+	})
 }));
 
 vi.mock('$core/parser/img_parser', () => ({
-	IMGParser: vi.fn().mockImplementation(() => ({
-		init: vi.fn().mockResolvedValue(undefined),
-		parse: vi.fn().mockResolvedValue('ocr ergebnis')
-	}))
+	IMGParser: vi.fn(function () {
+		return {
+			init: vi.fn().mockResolvedValue(undefined),
+			parse: vi.fn().mockResolvedValue('ocr ergebnis')
+		};
+	})
 }));
 
 vi.mock('$core/parser/pdf_parser', () => ({
-	PDFParser: vi.fn().mockImplementation(() => ({
-		init: vi.fn().mockResolvedValue(undefined),
-		parse: vi.fn().mockResolvedValue('pdf text')
-	}))
+	PDFParser: vi.fn(function () {
+		return {
+			init: vi.fn().mockResolvedValue(undefined),
+			parse: vi.fn().mockResolvedValue('pdf text')
+		};
+	})
 }));
 
 vi.mock('$core/parser/docx_parser', () => ({
-	DOCXParser: vi.fn().mockImplementation(() => ({
-		init: vi.fn().mockResolvedValue(undefined),
-		parse: vi.fn().mockResolvedValue('docx text')
-	}))
+	DOCXParser: vi.fn(function () {
+		return {
+			init: vi.fn().mockResolvedValue(undefined),
+			parse: vi.fn().mockResolvedValue('docx text')
+		};
+	})
 }));
 
 // ─── Imports (after mocks) ────────────────────────────────────────────────────
@@ -144,11 +150,13 @@ describe('parseFile', () => {
 		test('propagates toSchema() errors', async () => {
 			const { JSONParser } = await import('$core/parser/json_parser');
 			const parseError = new ParserError(EParserError.PARSE_FAILED);
-			vi.mocked(JSONParser).mockImplementationOnce((() => ({
-				init: vi.fn().mockResolvedValue(undefined),
-				parse: vi.fn().mockReturnValue('raw'),
-				toSchema: vi.fn().mockReturnValue(errResult(parseError))
-			})) as never);
+			vi.mocked(JSONParser).mockImplementationOnce(function () {
+				return {
+					init: vi.fn().mockResolvedValue(undefined),
+					parse: vi.fn().mockReturnValue('raw'),
+					toSchema: vi.fn().mockReturnValue({ ok: false, error: parseError })
+				};
+			} as never);
 
 			const file = makeFile('{invalid}', FileTypes.JSON, 'bad.json');
 			const result = await parseFile(
@@ -229,17 +237,19 @@ describe('parseFile', () => {
 				DEFAULT_OPTIONS
 			);
 			expect(result.ok).toBe(false);
-			expect(!result.ok && result.error.apiError).toBe(
-				EParserError.INVALID_FILE
+			expect(!result.ok && result.error.apiError.code).toBe(
+				EParserError.INVALID_FILE.code
 			);
 		});
 
 		test('wraps parser init errors as PARSE_FAILED', async () => {
 			const { TXTParser } = await import('$core/parser/txt_parser');
-			vi.mocked(TXTParser).mockImplementationOnce((() => ({
-				init: vi.fn().mockRejectedValue(new Error('Lesefehler')),
-				parse: vi.fn()
-			})) as never);
+			vi.mocked(TXTParser).mockImplementationOnce(function () {
+				return {
+					init: vi.fn().mockRejectedValue(new Error('Lesefehler')),
+					parse: vi.fn()
+				};
+			} as never);
 
 			const file = makeFile('data', FileTypes.TXT, 'fail.txt');
 			const result = await parseFile(
@@ -249,8 +259,8 @@ describe('parseFile', () => {
 				DEFAULT_OPTIONS
 			);
 			expect(result.ok).toBe(false);
-			expect(!result.ok && result.error.apiError).toBe(
-				EParserError.PARSE_FAILED
+			expect(!result.ok && result.error.apiError.code).toBe(
+				EParserError.PARSE_FAILED.code
 			);
 		});
 	});

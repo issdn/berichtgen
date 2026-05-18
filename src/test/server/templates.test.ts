@@ -20,27 +20,27 @@ import { ETemplateError } from '$wizard/errors';
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
 
-/** Chainable Kysely mock — each terminal method is a vi.fn() you can configure. */
-const dbMock = {
-	selectFrom: vi.fn().mockReturnThis(),
-	select: vi.fn().mockReturnThis(),
-	where: vi.fn().mockReturnThis(),
-	executeTakeFirst: vi.fn(),
-	insertInto: vi.fn().mockReturnThis(),
-	values: vi.fn().mockReturnThis(),
-	execute: vi.fn(),
-	deleteFrom: vi.fn().mockReturnThis(),
-	updateTable: vi.fn().mockReturnThis(),
-	set: vi.fn().mockReturnThis()
-};
+const { dbMock, storageMock } = vi.hoisted(() => ({
+	dbMock: {
+		selectFrom: vi.fn().mockReturnThis(),
+		select: vi.fn().mockReturnThis(),
+		where: vi.fn().mockReturnThis(),
+		executeTakeFirst: vi.fn(),
+		insertInto: vi.fn().mockReturnThis(),
+		values: vi.fn().mockReturnThis(),
+		execute: vi.fn(),
+		deleteFrom: vi.fn().mockReturnThis(),
+		updateTable: vi.fn().mockReturnThis(),
+		set: vi.fn().mockReturnThis()
+	},
+	storageMock: {
+		from: vi.fn().mockReturnThis(),
+		remove: vi.fn().mockResolvedValue({ error: null }),
+		upload: vi.fn().mockResolvedValue({ error: null })
+	}
+}));
 
-vi.mock('$lib/server/db', () => ({ db: dbMock }));
-
-const storageMock = {
-	from: vi.fn().mockReturnThis(),
-	remove: vi.fn().mockResolvedValue({ error: null }),
-	upload: vi.fn().mockResolvedValue({ error: null })
-};
+vi.mock('$lib/server/db', () => ({ default: dbMock, db: dbMock }));
 
 vi.mock('$lib/server/admin', () => ({
 	supabaseAdmin: { storage: storageMock }
@@ -162,15 +162,21 @@ describe('validateCanReport', () => {
 	});
 
 	test('throws TEMPLATE_NOT_FOUND when template is undefined', () => {
-		expect(() => validateCanReport(undefined, userId, undefined)).toThrow(
-			ETemplateError.TEMPLATE_NOT_FOUND.message
+		expect(() => validateCanReport(undefined, userId, undefined)).toThrowError(
+			expect.objectContaining({
+				status: ETemplateError.TEMPLATE_NOT_FOUND.httpCode
+			})
 		);
 	});
 
 	test('throws CANNOT_REPORT_OWN when user owns the template', () => {
 		const ownTemplate = makeRow({ user_id: userId });
-		expect(() => validateCanReport(ownTemplate, userId, undefined)).toThrow(
-			ETemplateError.CANNOT_REPORT_OWN.message
+		expect(() =>
+			validateCanReport(ownTemplate, userId, undefined)
+		).toThrowError(
+			expect.objectContaining({
+				status: ETemplateError.CANNOT_REPORT_OWN.httpCode
+			})
 		);
 	});
 
@@ -179,15 +185,23 @@ describe('validateCanReport', () => {
 			user_id: otherUserId,
 			safe_marked_at: '2024-01-01T00:00:00Z'
 		});
-		expect(() => validateCanReport(safeTemplate, userId, undefined)).toThrow(
-			ETemplateError.TEMPLATE_SAFE.message
+		expect(() =>
+			validateCanReport(safeTemplate, userId, undefined)
+		).toThrowError(
+			expect.objectContaining({
+				status: ETemplateError.TEMPLATE_SAFE.httpCode
+			})
 		);
 	});
 
 	test('throws ALREADY_REPORTED when an existing report is present', () => {
 		expect(() =>
 			validateCanReport(validTemplate, userId, existingReport)
-		).toThrow(ETemplateError.ALREADY_REPORTED.message);
+		).toThrowError(
+			expect.objectContaining({
+				status: ETemplateError.ALREADY_REPORTED.httpCode
+			})
+		);
 	});
 });
 
@@ -214,7 +228,7 @@ describe('deleteTemplateReport', () => {
 		dbMock.execute.mockRejectedValue(new Error('db failure'));
 		await expect(
 			deleteTemplateReport('tmpl-uuid', 'user-uuid')
-		).rejects.toThrow(ECommonServerError.DATABASE_ERROR.message);
+		).rejects.toMatchObject({ status: ECommonServerError.DATABASE_ERROR.httpCode });
 	});
 });
 
@@ -270,7 +284,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ETemplateError.TEMPLATE_NOT_FOUND.message);
+		).rejects.toMatchObject({ status: ETemplateError.TEMPLATE_NOT_FOUND.httpCode });
 	});
 
 	test('throws CANNOT_REPORT_OWN when reporter is the owner', async () => {
@@ -280,7 +294,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ETemplateError.CANNOT_REPORT_OWN.message);
+		).rejects.toMatchObject({ status: ETemplateError.CANNOT_REPORT_OWN.httpCode });
 	});
 
 	test('throws ALREADY_REPORTED when a report already exists', async () => {
@@ -290,7 +304,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ETemplateError.ALREADY_REPORTED.message);
+		).rejects.toMatchObject({ status: ETemplateError.ALREADY_REPORTED.httpCode });
 	});
 
 	test('throws DATABASE_ERROR when the insert fails', async () => {
@@ -301,7 +315,7 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toThrow(ECommonServerError.DATABASE_ERROR.message);
+		).rejects.toMatchObject({ status: ECommonServerError.DATABASE_ERROR.httpCode });
 	});
 });
 

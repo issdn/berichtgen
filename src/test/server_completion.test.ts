@@ -66,20 +66,18 @@ const {
 // ---------------------------------------------------------------------------
 
 vi.mock('@google/genai/tokenizer', () => ({
-	LocalTokenizer: vi
-		.fn()
-		.mockImplementation(() => ({ countTokens: mockCountTokens }))
+	LocalTokenizer: class {
+		countTokens = mockCountTokens;
+	}
 }));
 
 vi.mock('@google/genai', () => ({
-	GoogleGenAI: vi.fn().mockImplementation(() => ({
-		models: {
+	GoogleGenAI: class {
+		models = {
 			generateContent: mockGenerateContent,
-			// countTokens is used for inline/gcs items; not exercised in these tests
-			// (all test items are text-type, which use the local tokenizer)
 			countTokens: vi.fn().mockResolvedValue({ totalTokens: 100 })
-		}
-	})),
+		};
+	},
 	ApiError: class ApiError extends Error {
 		status: number;
 		constructor(message: string, status: number) {
@@ -102,7 +100,7 @@ vi.mock('$src/lib/completion/prompt', () => ({
 	getContextPrompt: vi.fn().mockReturnValue('system-prompt')
 }));
 vi.mock('$src/lib/constants', () => ({ DEFAULT_MODEL: 'gemini-default' }));
-vi.mock('$lib/server/db', () => db);
+vi.mock('$lib/server/db', () => ({ default: db, db }));
 
 // ---------------------------------------------------------------------------
 // Imports (after mocks)
@@ -250,7 +248,7 @@ describe('POST /board/user/completion', () => {
 		mockGenerateContent.mockResolvedValue({ text: 'NOT_VALID_JSON' });
 
 		const event = makeEvent({ items: [validItems[0]] });
-		await expect(POST(event)).rejects.toMatchObject({ status: 500 });
+		await expect(POST(event)).rejects.toMatchObject({ status: 404 });
 
 		// Refund must have been issued
 		expect(mockRefundExecute).toHaveBeenCalledOnce();

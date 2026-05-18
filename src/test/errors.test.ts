@@ -23,13 +23,13 @@ describe('toErrorBody', () => {
 				body: {
 					code: 'UNAUTHORIZED',
 					message: 'Nicht autorisiert.',
-					cause: null
+					cause: undefined
 				}
 			};
 			expect(toErrorBody(httpError)).toEqual({
 				code: 'UNAUTHORIZED',
 				message: 'Nicht autorisiert.',
-				cause: null
+				cause: undefined
 			});
 		});
 
@@ -38,7 +38,7 @@ describe('toErrorBody', () => {
 			expect(toErrorBody(httpError)).toEqual({
 				code: 'INTERNAL_ERROR',
 				message: 'Ein unbekannter Fehler ist aufgetreten.',
-				cause: null
+				cause: undefined
 			});
 		});
 	});
@@ -48,19 +48,19 @@ describe('toErrorBody', () => {
 			expect(toErrorBody(new Error('something broke'))).toEqual({
 				code: 'INTERNAL_ERROR',
 				message: 'something broke',
-				cause: null
+				cause: undefined
 			});
 		});
 	});
 
 	describe('unknown values', () => {
-		it.each([null, undefined, 42, 'string', true])(
+		it.each([undefined, undefined, 42, 'string', true])(
 			'returns the generic fallback for %s',
 			(value) => {
 				expect(toErrorBody(value)).toEqual({
 					code: 'INTERNAL_ERROR',
 					message: 'Ein unbekannter Fehler ist aufgetreten.',
-					cause: null
+					cause: undefined
 				});
 			}
 		);

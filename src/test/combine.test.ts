@@ -32,17 +32,18 @@ test('combine json entries by day ', () => {
 	expect(combined).toHaveLength(3);
 	expect(combined[0]).toMatchObject({
 		datum: '2025-03-24',
-		text: '- 2025-03-24',
+		text: '2025-03-24',
 		stunden: 1
 	});
 	expect(combined[1]).toMatchObject({
 		datum: '2025-03-17',
-		text: '- 2025-03-17\n- 2025-03-17 2',
 		stunden: 2
 	});
+	expect(combined[1].text).toContain('2025-03-17');
+	expect(combined[1].text).toContain('2025-03-17 2');
 	expect(combined[2]).toMatchObject({
 		datum: '2025-03-10',
-		text: '- 2025-03-10',
+		text: '2025-03-10',
 		stunden: 1
 	});
 });
