@@ -104,7 +104,7 @@ const inlineItemSchema = z.object({
 
 /** Completion item referencing a file uploaded to the Gemini Files API. */
 const fileApiItemSchema = z.object({
-	type: z.literal('file'),
+	type: z.literal('gcs'),
 	/** Gemini Files API URI returned after a resumable upload. */
 	fileUri: z.url(),
 	mimeType: z.string().nonempty(),

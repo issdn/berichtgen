@@ -268,9 +268,7 @@ export class WizardMediator {
 
 		for (const batch of batches) {
 			this.startBatchFiles(batch, pendingList, startedFileIndices);
-			const result = await sendBatchCompletion(
-				batch.map(({ routing, ort }) => ({ routing, ort }))
-			);
+			const result = await sendBatchCompletion(batch);
 			if (!result.ok) return result.error;
 
 			this.chunker.collectChunkResults(

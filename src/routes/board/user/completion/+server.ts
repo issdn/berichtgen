@@ -110,7 +110,11 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 		insufficient_tokens: budget.insufficientTokens
 	};
 
-	await deleteProcessedGcsFilesBestEffort(items, budget.fittingIndices, user.id);
+	await deleteProcessedGcsFilesBestEffort(
+		items,
+		budget.fittingIndices,
+		user.id
+	);
 
 	return json(response);
 };
@@ -241,7 +245,9 @@ function parseGeminiResponses(
 		const parsed = settled[i].value;
 		if (parsed === null) {
 			parseErrorCount++;
-			Sentry.captureMessage('Gemini response could not be parsed for a batch item');
+			Sentry.captureMessage(
+				'Gemini response could not be parsed for a batch item'
+			);
 			continue;
 		}
 		results[fittingIndices[i]] = parsed;
@@ -250,7 +256,9 @@ function parseGeminiResponses(
 	return { results, parseErrorCount };
 }
 
-function parseGsUri(fileUri: string): { bucket: string; objectPath: string } | null {
+function parseGsUri(
+	fileUri: string
+): { bucket: string; objectPath: string } | null {
 	const match = /^gs:\/\/([^/]+)\/(.+)$/.exec(fileUri);
 	if (!match) return null;
 	return { bucket: match[1], objectPath: match[2] };
@@ -264,7 +272,7 @@ async function deleteProcessedGcsFilesBestEffort(
 	const gcsUris = new Set<string>();
 	for (const index of fittingIndices) {
 		const item = items[index];
-		if (item?.type !== 'file') continue;
+		if (item?.type !== 'gcs') continue;
 		gcsUris.add(item.fileUri);
 	}
 	if (gcsUris.size === 0) return;
@@ -314,4 +322,3 @@ async function deleteProcessedGcsFilesBestEffort(
 		})
 	);
 }
-

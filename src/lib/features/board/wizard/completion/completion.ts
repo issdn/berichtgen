@@ -99,32 +99,15 @@ export function createBatchesBySize<T extends { text: string }>(
  * Each item carries a `FileRouting` descriptor that determines how it is sent:
  * - `text`   → `{ type: 'text', text, ort }`
  * - `inline` → `{ type: 'inline', data, mimeType, ort }`
- * - `file`   → `{ type: 'file', fileUri, mimeType, ort }`
+ * - `gcs`    → `{ type: 'gcs', fileUri, mimeType, ort }`
  */
 export function sendBatchCompletion(
 	items: Array<{ routing: FileRouting; ort: Ort }>
 ): Promise<Result<BatchCompletionApiResponse>> {
-	const mapped: BatchCompletionItem[] = items.map(({ routing, ort }) => {
-		if (routing.type === 'text') {
-			return { type: 'text', text: routing.text, ort };
-		} else if (routing.type === 'inline') {
-			return {
-				type: 'inline',
-				data: routing.data,
-				mimeType: routing.mimeType,
-				ort
-			};
-		} else if (routing.type === 'url') {
-			return { type: 'url', url: routing.url, ort };
-		} else {
-			return {
-				type: 'file',
-				fileUri: routing.fileUri,
-				mimeType: routing.mimeType,
-				ort
-			};
-		}
-	});
+	const mapped: BatchCompletionItem[] = items.map(({ routing, ort }) => ({
+		ort,
+		...routing
+	}));
 
 	return tryResultAsync(
 		fetch('/board/user/completion', {
@@ -150,6 +133,3 @@ export function sendBatchCompletion(
 export function stringsToEntries(strings: string[]): CompletionResult {
 	return strings.map((text) => ({ text }));
 }
-
-
-

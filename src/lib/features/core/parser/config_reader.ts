@@ -45,4 +45,3 @@ export function readCsvConfigFromText(text: string): CSVConfig {
 
 	return csvConfigSchema.parse(data);
 }
-
