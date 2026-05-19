@@ -1,8 +1,8 @@
 /**
- * Standalone bun script: renders template.docx from this directory and writes
- * the output to out.docx next to it.
+ * Standalone bun script: renders fixtures/template.docx and writes
+ * fixtures/out.docx.
  *
- * Usage: bun src/test/render-template.ts
+ * Usage: bun src/test/scripts/render-template.ts
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -36,8 +36,8 @@ const userMetadata = {
 // Main
 // ---------------------------------------------------------------------------
 
-const templatePath = join(import.meta.dir, 'template.docx');
-const outputPath = join(import.meta.dir, 'out.docx');
+const templatePath = join(import.meta.dir, '..', 'fixtures', 'template.docx');
+const outputPath = join(import.meta.dir, '..', 'fixtures', 'out.docx');
 
 console.log(`Reading template: ${templatePath}`);
 const template = new Uint8Array(readFileSync(templatePath));

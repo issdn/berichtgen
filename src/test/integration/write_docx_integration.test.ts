@@ -12,7 +12,7 @@ import * as fs from 'node:fs';
 import JSZip from 'jszip';
 import type { KyselyDatabase } from '$lib/schema';
 
-const TEMPLATE_PATH = './src/test/template.docx';
+const TEMPLATE_PATH = './src/test/fixtures/template.docx';
 
 const entries = [
 	{

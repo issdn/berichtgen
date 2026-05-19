@@ -1,8 +1,8 @@
 /**
- * Creates a test user and uploads src/test/template.docx to their storage subfolder.
+ * Creates a test user and uploads src/test/fixtures/template.docx to their storage subfolder.
  * Also inserts the template metadata row directly (trigger removed).
  *
- * Usage: bun src/test/seed-template.ts
+ * Usage: bun src/test/scripts/seed-template.ts
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -64,7 +64,7 @@ console.log('Signed in as:', user.id);
 const templateName = `template-${id}.docx`;
 
 // 2. Upload the template file using the admin client (storage policies removed)
-const templatePath = join((import.meta as any).dir, 'template.docx');
+const templatePath = join((import.meta as any).dir, '..', 'fixtures', 'template.docx');
 const fileBytes = readFileSync(templatePath);
 const file = new File([fileBytes], templateName, {
 	type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

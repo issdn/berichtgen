@@ -24,11 +24,15 @@ describe('submitFeedback', () => {
 		});
 	});
 
-	test('rejects empty or whitespace-only message', async () => {
+	test('inserts feedback for authenticated user', async () => {
+		dbMock.execute.mockResolvedValue(undefined);
 		await expect(
 			submitFeedback({ message: '   ' }, 'user-1')
-		).rejects.toMatchObject({
-			status: ECommonServerError.VALIDATION_ERROR.httpCode
+		).resolves.toBeUndefined();
+		expect(dbMock.insertInto).toHaveBeenCalledWith('user_feedback');
+		expect(dbMock.values).toHaveBeenCalledWith({
+			user_id: 'user-1',
+			message: '   '
 		});
 	});
 });

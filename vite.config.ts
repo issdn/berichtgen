@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => ({
 			{
 				extends: true,
 				test: {
-					include: ['./src/test/**/*.test.ts'],
+					include: ['./src/**/*.test.ts'],
 					alias: {
 						canvas: new URL('./src/test/__mocks__/canvas.ts', import.meta.url)
 							.pathname

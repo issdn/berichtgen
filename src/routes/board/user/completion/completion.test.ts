@@ -106,7 +106,7 @@ vi.mock('$lib/server/db', () => ({ default: db, db }));
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
-import { POST } from '../routes/board/user/completion/+server';
+import { POST } from './+server';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // ---------------------------------------------------------------------------
