@@ -1,5 +1,5 @@
 <script>
-	import CopyButton from '$board/components/CopyButton.svelte';
+	import CopyButton from '$core/components/CopyButton.svelte';
 	import { Button } from '$ui/button';
 </script>
 

@@ -43,10 +43,12 @@ export default defineConfig(({ mode }) => ({
 		exclude: ['quickjs-emscripten']
 	},
 	test: {
+		coverage: { provider: 'v8' },
 		projects: [
 			{
 				extends: true,
 				test: {
+					name: 'unit',
 					include: ['./src/**/*.test.ts'],
 					alias: {
 						canvas: new URL('./src/test/__mocks__/canvas.ts', import.meta.url)

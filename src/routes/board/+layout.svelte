@@ -1,5 +1,5 @@
 <script lang="ts">
-	import berichtgenStore from '$lib/stores/berichtgen.svelte';
+	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import { getFlash } from 'sveltekit-flash-message';
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
@@ -31,5 +31,3 @@
 </script>
 
 {@render children()}
-
-

@@ -2,6 +2,7 @@ test-results
 e2e/.auth
 node_modules
 .test/
+coverage/
 
 # Output
 .output

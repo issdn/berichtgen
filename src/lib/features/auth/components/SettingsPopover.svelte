@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { emailSchema } from '$auth/schemas';
-	import berichtgenStore from '$lib/stores/berichtgen.svelte';
+	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import { getUserDisplayName } from '$lib/utils';
 	import { toast } from 'svelte-sonner';
 	import { defaults, superForm } from 'sveltekit-superforms';
@@ -36,7 +36,11 @@
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
 	import { AsyncResource } from '$core/async.svelte';
 	import { submitUserFeedback } from '$auth/api/feedback.remote';
-	import { BerichtgenError, ECommonServerError, toErrorBody } from '$lib/errors';
+	import {
+		BerichtgenError,
+		ECommonServerError,
+		toErrorBody
+	} from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
 	import { Textarea } from '$ui/textarea';
 
@@ -326,9 +330,7 @@
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Feedback senden</Dialog.Title>
-			<Dialog.Description>
-				Teile dein Feedback mit uns.
-			</Dialog.Description>
+			<Dialog.Description>Teile dein Feedback mit uns.</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex flex-col gap-3 py-2">
 			<Textarea

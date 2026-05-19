@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { pasteStack } from '$lib/stores/paste_stack.svelte';
+	import { pasteStack } from '$core/stores/paste_stack.svelte';
 
 	let {
 		handlePaste,

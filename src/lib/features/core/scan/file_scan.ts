@@ -1,5 +1,5 @@
 import { ScanReturnValue, type ScanReturnType } from '$core/types';
-import { ParserError, EParserError } from '$core/parser/errors';
+import { ParserError, EParserError } from '$parser/errors';
 import type { WizardRawDirectories, WizardRawDirectory } from '$wizard/types';
 
 export function getFileListWithPreserverFolderStructure(
@@ -42,7 +42,9 @@ async function _get2DimensionalDirectories<T>(
 		return entry;
 	});
 
-	const scannedGroups = await Promise.all(entries.map((entry) => scanFunction(entry)));
+	const scannedGroups = await Promise.all(
+		entries.map((entry) => scanFunction(entry))
+	);
 
 	// scanFunction returns T[][] but nesting depth varies with directory structure —
 	// a folder containing both files and subdirectories produces uneven depth.
