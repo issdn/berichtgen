@@ -2,11 +2,11 @@ import type { Scheduler } from 'tesseract.js';
 import type { WizardFileContext } from './wizard_file_context';
 import type { ParseOptions } from '$parser/parse_service';
 import { parseFile } from '$parser/parse_service';
+import { requestGcsUploadCommand } from '$wizard/api/wizard.remote';
 import { WizardError, EFileRoutingError, EGCSError } from '$wizard/errors';
 import { errorByHttpCode } from '$lib/errors';
 import { type Result, okResult, tryResultAsync } from '$lib/result';
 import { FileTypes } from '$wizard/enums';
-import berichtgenStore from '$core/stores/berichtgen.svelte';
 
 /** Maps a GCS HTTP response status to the matching {@link EGCSError} entry. */
 function gcsErrorFromStatus(status: number): WizardError {
@@ -152,12 +152,16 @@ export async function resolveFileRouting(
  * @returns `GcsRouting` with the `gs://` URI on success.
  */
 async function uploadToGcs(file: File): Promise<Result<FileRouting>> {
-	// Step 1: request a signed URL from the Vercel function.
-	const uploadUrlResult = await requestGcsUpload(
-		file.name,
-		file.webkitRelativePath || file.name,
-		file.type,
-		file.size
+	// Step 1: request a signed URL via remote command.
+	const uploadUrlResult = await tryResultAsync(
+		requestGcsUploadCommand({
+			fileName: file.name,
+			fullFilePath: file.webkitRelativePath || file.name,
+			contentType: file.type,
+			fileSize: file.size
+		}),
+		WizardError,
+		EFileRoutingError.GCS_UPLOAD_URL_FAILED
 	);
 	if (!uploadUrlResult.ok) return uploadUrlResult;
 
@@ -192,30 +196,5 @@ async function uploadToGcs(file: File): Promise<Result<FileRouting>> {
 		}),
 		WizardError,
 		EFileRoutingError.GCS_UPLOAD_FAILED
-	);
-}
-
-/**
- * Asks the server to generate a signed GCS upload URL.
- *
- * @returns The signed PUT URL and the `gs://` object URI.
- */
-function requestGcsUpload(
-	fileName: string,
-	fullFilePath: string,
-	contentType: string,
-	fileSize: number
-): Promise<Result<UploadUrlResponse>> {
-	return tryResultAsync(
-		fetch('/board/user/upload-url', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ fileName, fullFilePath, contentType, fileSize })
-		}).then(async (res) => {
-			if (!res.ok) throw gcsErrorFromStatus(res.status);
-			return res.json() as Promise<UploadUrlResponse>;
-		}),
-		WizardError,
-		EFileRoutingError.GCS_UPLOAD_URL_FAILED
 	);
 }

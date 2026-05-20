@@ -7,7 +7,7 @@ import type {
 } from '$wizard/schemas';
 import type { CompletionResult } from '$wizard/types';
 import type { FileRouting } from '$wizard/services/file_routing';
-import { toErrorBody } from '$lib/errors';
+import { submitBatchCompletionCommand } from '$wizard/api/wizard.remote';
 
 /** Maximum total UTF-8 byte size for a single batch request (4 MB). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
@@ -110,17 +110,7 @@ export function sendBatchCompletion(
 	}));
 
 	return tryResultAsync(
-		fetch('/board/user/completion', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ items: mapped })
-		}).then(async (res) => {
-			const data = await res.json();
-			if (res.status >= 400) {
-				throw WizardError.fromCode(toErrorBody(data).code);
-			}
-			return data as BatchCompletionApiResponse;
-		}),
+		submitBatchCompletionCommand({ items: mapped }),
 		WizardError,
 		EWizardError.INVALID_JSON_FROM_AI
 	);

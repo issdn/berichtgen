@@ -5,81 +5,95 @@
 		DocxInline,
 		DocxParagraph
 	} from '$lib/features/parser/docx_ast';
-	import { untrack } from 'svelte';
+	import ErrorAlert from '$lib/components/ui/ErrorAlert.svelte';
+	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	const { fileUrl }: { fileUrl: string } = $props();
 
-	// Explicitly capture the initial prop value before the first await.
-	// fileUrl won't change while the dialog is open, so untrack() is intentional.
-	const url = untrack(() => fileUrl);
+	type LoadedDocx = {
+		doc: DocxDocument;
+		imageUrls: SvelteMap<string, string>;
+		pages: DocxDocument['body'][];
+		pageStyle: string;
+	};
 
-	// Async component — suspends until the document is parsed.
-	const res = await fetch(url);
-	if (!res.ok) throw new Error(`HTTP ${res.status}`);
-	const bytes = new Uint8Array(await res.arrayBuffer());
+	async function loadDocx(fileUrl: string): Promise<LoadedDocx> {
+		const res = await fetch(fileUrl);
+		if (!res.ok) throw new Error(`HTTP ${res.status}`);
+		const bytes = new Uint8Array(await res.arrayBuffer());
 
-	const parser = new DOCXParser(
-		{ cancelled: false } as never,
-		null as never,
-		false
-	);
-	await parser.init(bytes);
-	const doc: DocxDocument = parser.parseAST();
-
-	/** Object-URL map built from embedded images. */
-	const imageUrls = new SvelteMap<string, string>();
-	for (const [filename, imgBytes] of doc.images) {
-		imageUrls.set(
-			filename,
-			URL.createObjectURL(new Blob([imgBytes as Uint8Array<ArrayBuffer>]))
+		const parser = new DOCXParser(
+			{ cancelled: false } as never,
+			null as never,
+			false
 		);
+		await parser.init(bytes);
+		const doc: DocxDocument = parser.parseAST();
+
+		/** Object-URL map built from embedded images. */
+		const imageUrls = new SvelteMap<string, string>();
+		for (const [filename, imgBytes] of doc.images) {
+			imageUrls.set(
+				filename,
+				URL.createObjectURL(new Blob([imgBytes as Uint8Array<ArrayBuffer>]))
+			);
+		}
+
+		/**
+		 * Split body nodes into pages at each page-break node.
+		 * Header/footer are rendered above/below each page slice.
+		 */
+		const pages = (() => {
+			const result: (typeof doc.body)[] = [];
+			let cur: typeof doc.body = [];
+			for (const node of doc.body) {
+				if (node.type === 'page-break') {
+					result.push(cur);
+					cur = [];
+				} else {
+					cur.push(node);
+				}
+			}
+			result.push(cur);
+			return result;
+		})();
+
+		/**
+		 * Page sheet style: full page width with Word margins as padding.
+		 * Sizes come from w:pgSz / w:pgMar so the preview matches Word 1:1.
+		 * Default font size comes from w:docDefaults so body text renders at the
+		 * correct pt size rather than the browser default (16px).
+		 */
+		const pageStyle = [
+			`width:${doc.pageWidth}pt`,
+			`min-height:${doc.pageHeight}pt`,
+			`padding:${doc.pageMargins.top}pt ${doc.pageMargins.right}pt ${doc.pageMargins.bottom}pt ${doc.pageMargins.left}pt`,
+			`font-size:${doc.defaultFontSize}pt`,
+			'color:#000000',
+			'background:#ffffff',
+			'box-sizing:border-box'
+		].join(';');
+
+		return { doc, imageUrls, pages, pageStyle };
 	}
+
+	// svelte-ignore state_referenced_locally
+	const docPromise = loadDocx(fileUrl);
+	let loadedDoc: LoadedDocx | null = $state(null);
 
 	/** Revoke all object URLs when the component is destroyed. */
 	$effect(() => () => {
-		for (const url of imageUrls.values()) URL.revokeObjectURL(url);
-	});
-
-	/**
-	 * Split body nodes into pages at each page-break node.
-	 * Header/footer are rendered above/below each page slice.
-	 */
-	const pages = (() => {
-		const result: (typeof doc.body)[] = [];
-		let cur: typeof doc.body = [];
-		for (const node of doc.body) {
-			if (node.type === 'page-break') {
-				result.push(cur);
-				cur = [];
-			} else {
-				cur.push(node);
-			}
+		for (const objectUrl of loadedDoc?.imageUrls.values() ?? []) {
+			URL.revokeObjectURL(objectUrl);
 		}
-		result.push(cur);
-		return result;
-	})();
-
-	/**
-	 * Page sheet style: full page width with Word margins as padding.
-	 * Sizes come from w:pgSz / w:pgMar so the preview matches Word 1:1.
-	 * Default font size comes from w:docDefaults so body text renders at the
-	 * correct pt size rather than the browser default (16px).
-	 */
-	const pageStyle = [
-		`width:${doc.pageWidth}pt`,
-		`min-height:${doc.pageHeight}pt`,
-		`padding:${doc.pageMargins.top}pt ${doc.pageMargins.right}pt ${doc.pageMargins.bottom}pt ${doc.pageMargins.left}pt`,
-		`font-size:${doc.defaultFontSize}pt`,
-		'color:#000000',
-		'background:#ffffff',
-		'box-sizing:border-box'
-	].join(';');
+	});
 
 	/** Resolves a relationship ID to a pre-built object URL. */
 	function resolveImage(relId: string): string | undefined {
-		const filename = doc.imgRels.get(relId);
-		return filename ? imageUrls.get(filename) : undefined;
+		if (!loadedDoc) return undefined;
+		const filename = loadedDoc.doc.imgRels.get(relId);
+		return filename ? loadedDoc.imageUrls.get(filename) : undefined;
 	}
 
 	/** Maps a DOCX paragraph style name to an HTML heading tag. */
@@ -91,7 +105,7 @@
 	}
 
 	/**
-	 * Structural classes for headings — no font-size here, that comes from
+	 * Structural classes for headings - no font-size here, that comes from
 	 * runStyle() via the resolved Word styles so sizes match the document exactly.
 	 */
 	function headingClass(tag: string): string {
@@ -112,7 +126,7 @@
 	/**
 	 * Builds an inline CSS style string from paragraph-level properties.
 	 * Spacing and indent come from styles.xml (resolved with inheritance).
-	 * Headings also get font-size:inherit to suppress browser h1–h6 defaults.
+	 * Headings also get font-size:inherit to suppress browser h1-h6 defaults.
 	 */
 	function paragraphStyle(node: DocxParagraph, isHeading = false): string {
 		const parts: string[] = [];
@@ -128,10 +142,10 @@
 		if (node.indent != null) parts.push(`padding-left:${node.indent}pt`);
 		if (node.lineSpacing) {
 			if (node.lineSpacing.rule === 'auto') {
-				// 240 = single spacing → line-height: 1
+				// 240 = single spacing -> line-height: 1
 				parts.push(`line-height:${node.lineSpacing.value / 240}`);
 			} else {
-				// 'exact' or 'atLeast': absolute value in twips → pt
+				// 'exact' or 'atLeast': absolute value in twips -> pt
 				parts.push(`line-height:${node.lineSpacing.value / 20}pt`);
 			}
 		}
@@ -191,84 +205,100 @@
 	{/if}
 {/snippet}
 
-<div class="flex flex-col items-center gap-6">
-	{#each pages as page, pi (pi)}
-		<div class="docx-preview relative shadow-md" style={pageStyle}>
-			{#if doc.header?.length}
-				<div
-					class="absolute"
-					style="top:{doc.headerDistance}pt;left:{doc.pageMargins
-						.left}pt;right:{doc.pageMargins.right}pt"
-				>
-					{#each doc.header as node, i (i)}
-						{@render para(node)}
-					{/each}
-				</div>
-			{/if}
-
-			{#each page as node, ni (ni)}
-				{#if node.type === 'paragraph'}
-					{@render para(node)}
-				{:else if node.type === 'table'}
-					<table
-						class="border-collapse text-sm"
-						style="width:{node.tableWidth
-							? `${node.tableWidth}pt`
-							: '100%'};table-layout:fixed"
-					>
-						{#if node.colWidths}
-							<colgroup>
-								{#each node.colWidths as w, ci (ci)}
-									<col style="width:{w}pt" />
-								{/each}
-							</colgroup>
-						{/if}
-						<tbody>
-							{#each node.rows as row, ri (ri)}
-								<tr
-									style="{row.height
-										? `height:${row.height}pt;`
-										: ''}{row.bgColor ? `background:#${row.bgColor}` : ''}"
-								>
-									{#each row.cells as cell, ci (ci)}
-										<td
-											class="border border-gray-300"
-											style="word-break:break-word;overflow-wrap:break-word;padding:{cell
-												.padding.top}pt {cell.padding.right}pt {cell.padding
-												.bottom}pt {cell.padding
-												.left}pt;vertical-align:{cell.vAlign === 'center'
-												? 'middle'
-												: (cell.vAlign ?? 'top')};{cell.bgColor
-												? `background:#${cell.bgColor}`
-												: ''}"
-											colspan={cell.colspan}
-											rowspan={cell.rowspan}
-										>
-											{#each cell.paragraphs as cp, cpi (cpi)}
-												<p class="min-h-[1em]" style={paragraphStyle(cp)}>
-													{@render inlines(cp.runs)}
-												</p>
-											{/each}
-										</td>
-									{/each}
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				{/if}
-			{/each}
-
-			{#if doc.footer?.length}
-				<div
-					class="absolute"
-					style="bottom:{doc.footerDistance}pt;left:{doc.pageMargins
-						.left}pt;right:{doc.pageMargins.right}pt"
-				>
-					{#each doc.footer as node, i (i)}
-						{@render para(node)}
-					{/each}
-				</div>
-			{/if}
+<svelte:boundary>
+	{#await docPromise}
+		<div class="flex min-h-24 items-center justify-center">
+			<Spinner class="size-6" />
 		</div>
-	{/each}
-</div>
+	{:then parsed}
+		{@const _ = loadedDoc = parsed}
+		<div class="flex flex-col items-center gap-6">
+			{#each loadedDoc.pages as page, pi (pi)}
+				<div
+					class="docx-preview relative shadow-md"
+					style={loadedDoc.pageStyle}
+				>
+					{#if loadedDoc.doc.header?.length}
+						<div
+							class="absolute"
+							style="top:{loadedDoc.doc.headerDistance}pt;left:{loadedDoc.doc
+								.pageMargins.left}pt;right:{loadedDoc.doc.pageMargins.right}pt"
+						>
+							{#each loadedDoc.doc.header as node, i (i)}
+								{@render para(node)}
+							{/each}
+						</div>
+					{/if}
+
+					{#each page as node, ni (ni)}
+						{#if node.type === 'paragraph'}
+							{@render para(node)}
+						{:else if node.type === 'table'}
+							<table
+								class="border-collapse text-sm"
+								style="width:{node.tableWidth
+									? `${node.tableWidth}pt`
+									: '100%'};table-layout:fixed"
+							>
+								{#if node.colWidths}
+									<colgroup>
+										{#each node.colWidths as w, ci (ci)}
+											<col style="width:{w}pt" />
+										{/each}
+									</colgroup>
+								{/if}
+								<tbody>
+									{#each node.rows as row, ri (ri)}
+										<tr
+											style="{row.height
+												? `height:${row.height}pt;`
+												: ''}{row.bgColor ? `background:#${row.bgColor}` : ''}"
+										>
+											{#each row.cells as cell, ci (ci)}
+												<td
+													class="border border-gray-300"
+													style="word-break:break-word;overflow-wrap:break-word;padding:{cell
+														.padding.top}pt {cell.padding.right}pt {cell.padding
+														.bottom}pt {cell.padding
+														.left}pt;vertical-align:{cell.vAlign === 'center'
+														? 'middle'
+														: (cell.vAlign ?? 'top')};{cell.bgColor
+														? `background:#${cell.bgColor}`
+														: ''}"
+													colspan={cell.colspan}
+													rowspan={cell.rowspan}
+												>
+													{#each cell.paragraphs as cp, cpi (cpi)}
+														<p class="min-h-[1em]" style={paragraphStyle(cp)}>
+															{@render inlines(cp.runs)}
+														</p>
+													{/each}
+												</td>
+											{/each}
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						{/if}
+					{/each}
+
+					{#if loadedDoc.doc.footer?.length}
+						<div
+							class="absolute"
+							style="bottom:{loadedDoc.doc.footerDistance}pt;left:{loadedDoc.doc
+								.pageMargins.left}pt;right:{loadedDoc.doc.pageMargins.right}pt"
+						>
+							{#each loadedDoc.doc.footer as node, i (i)}
+								{@render para(node)}
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/each}
+		</div>
+	{/await}
+
+	{#snippet failed(error)}
+		<ErrorAlert {error} />
+	{/snippet}
+</svelte:boundary>
