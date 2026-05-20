@@ -4,7 +4,7 @@
 	import WizardDropzone from '$wizard/components/WizardDropzone.svelte';
 	import TemplatesDialog from '$templates/components/TemplatesDialog.svelte';
 	import { goto } from '$app/navigation';
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '$ui/button';
 	import { resolve } from '$app/paths';
 	import AnimatedTokenCount from '$tokens/components/AnimatedTokenCount.svelte';
 

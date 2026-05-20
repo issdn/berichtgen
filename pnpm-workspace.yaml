@@ -1,2 +1,9 @@
+allowBuilds:
+  '@sentry/cli': true
+  esbuild: false
+  protobufjs: false
+  sharp: false
+  supabase: true
+  tesseract.js: true
 onlyBuiltDependencies:
   - esbuild

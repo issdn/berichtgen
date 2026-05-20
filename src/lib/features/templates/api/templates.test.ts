@@ -67,7 +67,7 @@ import {
 	markTemplateSafeById,
 	PAGE_SIZE,
 	type TemplateRow
-} from '$templates/api/handlers/templates';
+} from '$templates/api/templates.handlers';
 
 // ─── Factories ───────────────────────────────────────────────────────────────
 
@@ -228,7 +228,9 @@ describe('deleteTemplateReport', () => {
 		dbMock.execute.mockRejectedValue(new Error('db failure'));
 		await expect(
 			deleteTemplateReport('tmpl-uuid', 'user-uuid')
-		).rejects.toMatchObject({ status: ECommonServerError.DATABASE_ERROR.httpCode });
+		).rejects.toMatchObject({
+			status: ECommonServerError.DATABASE_ERROR.httpCode
+		});
 	});
 });
 
@@ -284,7 +286,9 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toMatchObject({ status: ETemplateError.TEMPLATE_NOT_FOUND.httpCode });
+		).rejects.toMatchObject({
+			status: ETemplateError.TEMPLATE_NOT_FOUND.httpCode
+		});
 	});
 
 	test('throws CANNOT_REPORT_OWN when reporter is the owner', async () => {
@@ -294,7 +298,9 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toMatchObject({ status: ETemplateError.CANNOT_REPORT_OWN.httpCode });
+		).rejects.toMatchObject({
+			status: ETemplateError.CANNOT_REPORT_OWN.httpCode
+		});
 	});
 
 	test('throws ALREADY_REPORTED when a report already exists', async () => {
@@ -304,7 +310,9 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toMatchObject({ status: ETemplateError.ALREADY_REPORTED.httpCode });
+		).rejects.toMatchObject({
+			status: ETemplateError.ALREADY_REPORTED.httpCode
+		});
 	});
 
 	test('throws DATABASE_ERROR when the insert fails', async () => {
@@ -315,7 +323,9 @@ describe('submitTemplateReport', () => {
 
 		await expect(
 			submitTemplateReport({ templateId: 'tmpl-1' }, 'reporter-id')
-		).rejects.toMatchObject({ status: ECommonServerError.DATABASE_ERROR.httpCode });
+		).rejects.toMatchObject({
+			status: ECommonServerError.DATABASE_ERROR.httpCode
+		});
 	});
 });
 

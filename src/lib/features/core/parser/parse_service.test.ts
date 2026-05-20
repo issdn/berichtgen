@@ -1,7 +1,7 @@
 import { describe, test, expect, vi } from 'vitest';
 import { okResult } from '$lib/result';
 import { FileTypes } from '$wizard/enums';
-import { ParserError, EParserError } from '$parser/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import type { ResultEntry } from '$wizard/types';
 
 // ─── Module mocks ─────────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@ vi.mock('$wizard/services/wizard_mediator.svelte', () => ({
 	wizardMediator: { workersInUse: 0, workersNr: 0 }
 }));
 
-vi.mock('$parser/txt_parser', () => ({
+vi.mock('$core/parser/txt_parser', () => ({
 	TXTParser: vi.fn(function () {
 		return {
 			init: vi.fn().mockResolvedValue(undefined),
@@ -22,7 +22,7 @@ vi.mock('$parser/txt_parser', () => ({
 	})
 }));
 
-vi.mock('$parser/json_parser', () => ({
+vi.mock('$core/parser/json_parser', () => ({
 	JSONParser: vi.fn(function () {
 		return {
 			init: vi.fn().mockResolvedValue(undefined),
@@ -38,7 +38,7 @@ vi.mock('$parser/json_parser', () => ({
 	})
 }));
 
-vi.mock('$parser/img_parser', () => ({
+vi.mock('$core/parser/img_parser', () => ({
 	IMGParser: vi.fn(function () {
 		return {
 			init: vi.fn().mockResolvedValue(undefined),
@@ -47,7 +47,7 @@ vi.mock('$parser/img_parser', () => ({
 	})
 }));
 
-vi.mock('$parser/pdf_parser', () => ({
+vi.mock('$core/parser/pdf_parser', () => ({
 	PDFParser: vi.fn(function () {
 		return {
 			init: vi.fn().mockResolvedValue(undefined),
@@ -56,7 +56,7 @@ vi.mock('$parser/pdf_parser', () => ({
 	})
 }));
 
-vi.mock('$parser/docx_parser', () => ({
+vi.mock('$core/parser/docx_parser', () => ({
 	DOCXParser: vi.fn(function () {
 		return {
 			init: vi.fn().mockResolvedValue(undefined),
@@ -67,7 +67,7 @@ vi.mock('$parser/docx_parser', () => ({
 
 // ─── Imports (after mocks) ────────────────────────────────────────────────────
 
-import { parseFile, type ParseOptions } from '$parser/parse_service';
+import { parseFile, type ParseOptions } from '$core/parser/parse_service';
 import { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
 
@@ -150,7 +150,7 @@ describe('parseFile', () => {
 		});
 
 		test('propagates toSchema() errors', async () => {
-			const { JSONParser } = await import('$parser/json_parser');
+			const { JSONParser } = await import('$core/parser/json_parser');
 			const parseError = new ParserError(EParserError.PARSE_FAILED);
 			vi.mocked(JSONParser).mockImplementationOnce(function () {
 				return {
@@ -245,7 +245,7 @@ describe('parseFile', () => {
 		});
 
 		test('wraps parser init errors as PARSE_FAILED', async () => {
-			const { TXTParser } = await import('$parser/txt_parser');
+			const { TXTParser } = await import('$core/parser/txt_parser');
 			vi.mocked(TXTParser).mockImplementationOnce(function () {
 				return {
 					init: vi.fn().mockRejectedValue(new Error('Lesefehler')),

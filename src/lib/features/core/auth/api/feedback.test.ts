@@ -11,7 +11,7 @@ const { dbMock } = vi.hoisted(() => ({
 
 vi.mock('$lib/server/db', () => ({ default: dbMock, db: dbMock }));
 
-import { submitFeedback } from '$auth/api/handlers/feedback';
+import { submitFeedback } from '$core/auth/api/feedback.handlers';
 
 describe('submitFeedback', () => {
 	beforeEach(() => vi.clearAllMocks());

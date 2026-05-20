@@ -3,7 +3,7 @@
 	import { getContextPrompt } from '$wizard/completion/prompt';
 	import { Ort } from '$wizard/enums';
 	import { Pin } from '@lucide/svelte';
-	import FilesToConfigModal from './FilesToConfigModal.svelte';
+	import FilesToConfigModal from '$core/config/components/FilesToConfigModal.svelte';
 	import CopyButton from './CopyButton.svelte';
 	import Button from '$ui/button/button.svelte';
 </script>
@@ -75,7 +75,7 @@
 					<Card.Title>Kostenlose Version (Self-Host)</Card.Title>
 				</Card.Header>
 				<Card.Content class="flex flex-row flex-wrap">
-					Lade die App herunter und hoste sie selbst!:
+					Lade die App herunter und hoste sie selbst!
 					<Button
 						target="_blank"
 						variant="link"

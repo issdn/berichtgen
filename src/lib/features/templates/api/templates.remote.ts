@@ -19,7 +19,7 @@ import {
 	markTemplateSafeById,
 	submitTemplateReport,
 	uploadTemplateFile
-} from '$templates/api/handlers/templates';
+} from '$templates/api/templates.handlers';
 import * as z from 'zod';
 
 export const getTemplates = query(

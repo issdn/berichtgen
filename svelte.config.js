@@ -14,14 +14,10 @@ const config = {
 			$routes: path.resolve('./src/routes'),
 			$templates: path.resolve('./src/lib/features/templates'),
 			$core: path.resolve('./src/lib/features/core'),
-			$persistence: path.resolve('./src/lib/features/persistence'),
-			$auth: path.resolve('./src/lib/features/auth'),
-			$parser: path.resolve('./src/lib/features/parser'),
 			$wizard: path.resolve('./src/lib/features/wizard'),
-			$ui: path.resolve('./src/lib/components/ui'),
-			$server: path.resolve('./src/lib/server'),
 			$tokens: path.resolve('./src/lib/features/tokens'),
-			$settings: path.resolve('./src/lib/features/settings'),
+			$ui: path.resolve('./src/lib/components/ui'),
+			$server: path.resolve('./src/lib/server')
 		},
 		experimental: {
 			remoteFunctions: true

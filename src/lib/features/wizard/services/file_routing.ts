@@ -1,7 +1,7 @@
 import type { Scheduler } from 'tesseract.js';
 import type { WizardFileContext } from './wizard_file_context';
-import type { ParseOptions } from '$parser/parse_service';
-import { parseFile } from '$parser/parse_service';
+import type { ParseOptions } from '$core/parser/parse_service';
+import { parseFile } from '$core/parser/parse_service';
 import { requestGcsUploadCommand } from '$wizard/api/wizard.remote';
 import { WizardError, EFileRoutingError, EGCSError } from '$wizard/errors';
 import { errorByHttpCode } from '$lib/errors';

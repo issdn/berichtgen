@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { emailSchema } from '$auth/schemas';
+	import { emailSchema } from '$core/auth/schemas';
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import { getUserDisplayName } from '$lib/utils';
 	import { toast } from 'svelte-sonner';
@@ -35,7 +35,7 @@
 	import { Separator } from '$ui/separator';
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
 	import { AsyncResource } from '$core/async.svelte';
-	import { submitUserFeedback } from '$auth/api/feedback.remote';
+	import { submitUserFeedback } from '$core/auth/api/feedback.remote';
 	import {
 		BerichtgenError,
 		ECommonServerError,

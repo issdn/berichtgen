@@ -4,7 +4,7 @@
  * This file is intentionally thin — it only handles:
  *   1. Input schema validation (via zod)
  *   2. Authentication via `getRequestEvent`
- *   3. Delegating to the pure business-logic functions in `api/handlers/kauf`
+ *   3. Delegating to the pure business-logic functions in `api/kauf`
  *
  * All actual logic lives in `handlers/kauf.ts` so it can be unit-tested
  * without the remote-function transport layer.
@@ -17,7 +17,10 @@
 import { query, command, getRequestEvent } from '$app/server';
 import * as z from 'zod';
 import { ECommonServerError, throwSvelteError } from '$lib/errors';
-import { handleCreatePaymentIntent, handleGetPaymentIntent } from './api/handlers/kauf';
+import {
+	handleCreatePaymentIntent,
+	handleGetPaymentIntent
+} from './kauf.handlers';
 
 const quantitySchema = z.object({
 	quantity: z.number().int().min(1).max(90)

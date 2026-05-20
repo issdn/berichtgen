@@ -6,8 +6,8 @@ vi.mock('$wizard/services/wizard_mediator.svelte', () => ({
 import { createWorker, createScheduler } from 'tesseract.js';
 // @ts-ignore - canvas has no type declarations in this environment
 import { createCanvas } from 'canvas';
-import { DOCXParser } from '$parser/docx_parser';
-import { PDFParser } from '$parser/pdf_parser';
+import { DOCXParser } from '$core/parser/docx_parser';
+import { PDFParser } from '$core/parser/pdf_parser';
 import { expect, test } from 'vitest';
 import * as fs from 'node:fs';
 import { WizardFileContext } from '$wizard/services/wizard_file_context';

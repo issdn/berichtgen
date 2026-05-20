@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { DOCXParser } from '$lib/features/parser/docx_parser';
+	import { DOCXParser } from '$core/parser/docx_parser';
 	import type {
 		DocxDocument,
 		DocxInline,
 		DocxParagraph
-	} from '$lib/features/parser/docx_ast';
+	} from '$core/parser/docx_ast';
 	import ErrorAlert from '$lib/components/ui/ErrorAlert.svelte';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import { SvelteMap } from 'svelte/reactivity';

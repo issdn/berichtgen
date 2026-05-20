@@ -8,7 +8,7 @@
 		WizardRawDirectory
 	} from '$wizard/types';
 	import Dropzone from '$core/components/Dropzone.svelte';
-	import { readCsvConfig } from '$lib/features/parser/config_reader';
+	import { readCsvConfig } from '$core/config/services/config_reader';
 	import { ScanReturnValue } from '$core/types';
 	import { CONFIG_FILENAME_REGEX } from '$lib/constants';
 	import {

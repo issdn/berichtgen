@@ -23,7 +23,7 @@ import {
 	WIZARD_PERSISTENCE_TTL_MS,
 	WIZARD_PERSISTENCE_VERSION
 } from '$lib/constants';
-import Persistence from '$persistence';
+import Persistence from '$core/persistence';
 import { ProcessQueue } from './process_queue';
 import { debounce } from '$lib/utils';
 import { WizardScheduler } from './wizard_scheduler.svelte';

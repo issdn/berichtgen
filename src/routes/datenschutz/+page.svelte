@@ -29,9 +29,7 @@
 					Auf der Lieth 174<br />
 					33100 Paderborn, Deutschland<br />
 					E-Mail:
-					<a href="mailto:karol.bielski.contact@proton.me"
-						>karol.bielski.contact@proton.me</a
-					>
+					<a href="mailto:contact@karolbielski.com">contact@karolbielski.com</a>
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>

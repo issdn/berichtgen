@@ -1,4 +1,4 @@
-import { Parser } from '$parser/parser';
+import { Parser } from '$core/parser/parser';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
 

@@ -10,7 +10,10 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { profileNameSchema, userMetadataSchema } from '$settings/schemas';
+	import {
+		profileNameSchema,
+		userMetadataSchema
+	} from '$core/settings/schemas';
 
 	let { data } = $props();
 

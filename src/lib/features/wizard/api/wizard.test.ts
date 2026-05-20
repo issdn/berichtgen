@@ -12,7 +12,7 @@ const { dbMock } = vi.hoisted(() => ({
 vi.mock('$lib/server/db', () => ({ default: dbMock, db: dbMock }));
 vi.mock('@sentry/sveltekit', () => ({ captureException: vi.fn() }));
 
-import { checkPreferredTemplateExists } from '$wizard/api/handlers/wizard';
+import { checkPreferredTemplateExists } from '$wizard/api/wizard.handlers';
 import * as Sentry from '@sentry/sveltekit';
 
 describe('checkPreferredTemplateExists', () => {
@@ -32,13 +32,17 @@ describe('checkPreferredTemplateExists', () => {
 
 	test('returns false when the template row does not exist', async () => {
 		dbMock.executeTakeFirst.mockResolvedValue(undefined);
-		expect(await checkPreferredTemplateExists('templates/deleted.docx')).toBe(false);
+		expect(await checkPreferredTemplateExists('templates/deleted.docx')).toBe(
+			false
+		);
 	});
 
 	test('returns false and captures exception on DB error', async () => {
 		const err = new Error('connection refused');
 		dbMock.executeTakeFirst.mockRejectedValue(err);
-		expect(await checkPreferredTemplateExists('templates/foo.docx')).toBe(false);
+		expect(await checkPreferredTemplateExists('templates/foo.docx')).toBe(
+			false
+		);
 		expect(Sentry.captureException).toHaveBeenCalledOnce();
 	});
 });

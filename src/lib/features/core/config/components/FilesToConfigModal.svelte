@@ -11,8 +11,8 @@
 	import * as Dialog from '$ui/dialog';
 	import { Button } from '$ui/button';
 	import { SvelteMap } from 'svelte/reactivity';
-	import Dropzone from './Dropzone.svelte';
-	import { buildConfigMap } from '$core/scripts/config_generator';
+	import Dropzone from '../../components/Dropzone.svelte';
+	import { buildConfigMap } from '$core/config/services/config_generator';
 
 	let resultFiles = $state<SvelteMap<string, string> | null>(null);
 

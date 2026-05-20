@@ -1,5 +1,5 @@
 import { ScanReturnValue, type ScanReturnType } from '$core/types';
-import { ParserError, EParserError } from '$parser/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import type { WizardRawDirectories, WizardRawDirectory } from '$wizard/types';
 
 export function getFileListWithPreserverFolderStructure(

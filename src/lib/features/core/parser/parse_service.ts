@@ -1,6 +1,6 @@
 import type { Scheduler } from 'tesseract.js';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context';
-import { ParserError, EParserError } from '$parser/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import { type Result, errResult, tryResultAsync } from '$lib/result';
 import type { ResultEntry } from '$wizard/types';
 import { FileTypes } from '$wizard/enums';
@@ -125,7 +125,7 @@ function loadImage(
 	scheduler: Scheduler
 ): Promise<Result<string>> {
 	return tryResultAsync(
-		import('$parser/img_parser').then(async ({ IMGParser }) => {
+		import('$core/parser/img_parser').then(async ({ IMGParser }) => {
 			const parser = new IMGParser(context, scheduler);
 			await parser.init(data);
 			return parser.parse();
@@ -144,7 +144,7 @@ function loadText(
 	scheduler: Scheduler
 ): Promise<Result<string>> {
 	return tryResultAsync(
-		import('$parser/txt_parser').then(async ({ TXTParser }) => {
+		import('$core/parser/txt_parser').then(async ({ TXTParser }) => {
 			const parser = new TXTParser(context, scheduler);
 			await parser.init(data);
 			return parser.parse();
@@ -166,7 +166,7 @@ function loadJson(
 	rewordJSON: boolean
 ): Promise<Result<string | ResultEntry[]>> {
 	return tryResultAsync(
-		import('$parser/json_parser').then(async ({ JSONParser }) => {
+		import('$core/parser/json_parser').then(async ({ JSONParser }) => {
 			const parser = new JSONParser(context, scheduler);
 			await parser.init(data);
 			if (rewordJSON) return parser.parse() as string | ResultEntry[];
@@ -190,7 +190,7 @@ function loadPdf(
 	processPhotos: boolean
 ): Promise<Result<string>> {
 	return tryResultAsync(
-		import('$parser/pdf_parser').then(async ({ PDFParser }) => {
+		import('$core/parser/pdf_parser').then(async ({ PDFParser }) => {
 			const parser = new PDFParser(
 				context,
 				scheduler,
@@ -216,7 +216,7 @@ function loadDocx(
 	processPhotos: boolean
 ): Promise<Result<string>> {
 	return tryResultAsync(
-		import('$parser/docx_parser').then(async ({ DOCXParser }) => {
+		import('$core/parser/docx_parser').then(async ({ DOCXParser }) => {
 			const parser = new DOCXParser(context, scheduler, processPhotos);
 			await parser.init(data);
 			return parser.parse();

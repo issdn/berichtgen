@@ -10,7 +10,7 @@ import {
 	errorByHttpCode,
 	throwSvelteError
 } from '$lib/errors';
-import { checkPreferredTemplateExists } from '$wizard/api/handlers/wizard';
+import { checkPreferredTemplateExists } from '$wizard/api/wizard.handlers';
 import { EGCSError, WizardError } from '$wizard/errors';
 import {
 	batchCompletionApiSchema,

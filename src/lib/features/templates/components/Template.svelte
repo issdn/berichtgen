@@ -11,7 +11,7 @@
 		View
 	} from '@lucide/svelte';
 
-	import Authed from '$auth/components/Authed.svelte';
+	import Authed from '$core/auth/components/Authed.svelte';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import {
 		BerichtgenError,

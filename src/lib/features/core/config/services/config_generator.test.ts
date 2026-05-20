@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { buildConfigMap } from '$core/scripts/config_generator';
+import { buildConfigMap } from '$core/config/services/config_generator';
 import { LOCALE, TIMEZONE } from '$lib/constants';
 import { now, startOfWeek, toCalendarDate } from '@internationalized/date';
 

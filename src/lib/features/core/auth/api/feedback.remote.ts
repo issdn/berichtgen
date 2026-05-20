@@ -1,6 +1,6 @@
 import { getRequestEvent } from '$app/server';
 import { guardedCommand } from '$lib/server/remote';
-import { submitFeedback } from './handlers/feedback';
+import { submitFeedback } from './feedback.handlers';
 import * as z from 'zod';
 
 export const submitUserFeedback = guardedCommand(
@@ -14,4 +14,3 @@ export const submitUserFeedback = guardedCommand(
 		return submitFeedback({ message }, user?.id);
 	}
 );
-

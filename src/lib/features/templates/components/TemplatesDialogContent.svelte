@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Authed from '$auth/components/Authed.svelte';
+	import Authed from '$core/auth/components/Authed.svelte';
 	import { getTemplates } from '$templates/api/templates.remote';
 	import * as InputGroup from '$ui/input-group';
 	import { SearchIcon, X } from '@lucide/svelte';

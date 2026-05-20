@@ -9,17 +9,19 @@
 	import { onMount } from 'svelte';
 	import Logo from '$ui/svg/Logo.svelte';
 	import { resolve } from '$app/paths';
-	import SettingsPopover from '$auth/components/SettingsPopover.svelte';
+	import SettingsPopover from '$core/auth/components/SettingsPopover.svelte';
 	import ProgressBar from '$ui/ProgressBar.svelte';
 
 	let { data, children } = $props();
 
 	onMount(() => {
-		const { data: authData } = data.supabase.auth.onAuthStateChange((_, newSession) => {
-			if (newSession?.expires_at !== data.session?.expires_at) {
-				invalidate('supabase:auth');
+		const { data: authData } = data.supabase.auth.onAuthStateChange(
+			(_, newSession) => {
+				if (newSession?.expires_at !== data.session?.expires_at) {
+					invalidate('supabase:auth');
+				}
 			}
-		});
+		);
 		return () => authData.subscription.unsubscribe();
 	});
 </script>

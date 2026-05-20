@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/sveltekit';
 import { BerichtgenError, ECommonServerError } from '$lib/errors';
 import { supabaseAdmin } from '$lib/server/admin';
 import db from '$lib/server/db';
-import { profileNameSchema, userMetadataSchema } from '$settings/schemas';
+import { profileNameSchema, userMetadataSchema } from '$core/settings/schemas';
 import { tryResultAsync } from '$lib/result';
 
 export const load = async ({ parent, locals: { user } }) => {

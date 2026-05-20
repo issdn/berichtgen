@@ -1,7 +1,7 @@
 import { Parser } from './parser';
 import { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { Scheduler, ImageLike } from 'tesseract.js';
-import { ParserError, EParserError } from '$parser/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import { XMLParser } from 'fast-xml-parser';
 import JSZip from 'jszip';
 import type {

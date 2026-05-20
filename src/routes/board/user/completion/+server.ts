@@ -277,9 +277,6 @@ async function deleteProcessedGcsFilesBestEffort(
 	}
 	if (gcsUris.size === 0) return;
 
-	let credentials: { client_email: string; private_key: string } & {
-		project_id: string;
-	};
 	const credentialsResult = tryResult(
 		() => JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, '')),
 		BerichtgenError,
@@ -289,7 +286,7 @@ async function deleteProcessedGcsFilesBestEffort(
 		Sentry.captureException(credentialsResult.error);
 		return;
 	}
-	credentials = credentialsResult.data;
+	const credentials = credentialsResult.data;
 
 	const storage = new Storage({ credentials });
 

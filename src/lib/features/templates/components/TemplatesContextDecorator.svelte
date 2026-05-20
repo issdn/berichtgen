@@ -11,7 +11,7 @@
 	 * optionally, which user ID owns the "own" templates in the story.
 	 */
 
-	import { setUserContext } from '$auth/contexts';
+	import { setUserContext } from '$core/auth/contexts';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { type Snippet } from 'svelte';
 
@@ -31,7 +31,9 @@
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		user: loggedIn ? ({ id: userId, email: 'max@example.de' } as any) : null,
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		profile: loggedIn ? ({ id: userId, full_name: 'Max Mustermann', avatar_url: null } as any) : null,
+		profile: loggedIn
+			? ({ id: userId, full_name: 'Max Mustermann', avatar_url: null } as any)
+			: null,
 		loggedIn,
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		supabase: {} as any

@@ -1,5 +1,5 @@
-import { Parser } from '$parser/parser';
-import { ParserError, EParserError } from '$parser/errors';
+import { Parser } from '$core/parser/parser';
+import { ParserError, EParserError } from '$core/parser/errors';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';

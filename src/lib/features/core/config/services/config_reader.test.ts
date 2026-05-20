@@ -1,4 +1,4 @@
-import { readCsvConfigFromText } from '$parser/config_reader';
+import { readCsvConfigFromText } from '$core/config/services/config_reader';
 import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';
 

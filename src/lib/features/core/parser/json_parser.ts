@@ -3,7 +3,7 @@ import { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
 import { fullResultSchema } from '$wizard/schemas';
 import { okResult, errResult, tryResult, type Result } from '$lib/result';
-import { ParserError, EParserError } from '$parser/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import type { ResultEntry } from '$wizard/types';
 
 export class JSONParser extends TXTParser {

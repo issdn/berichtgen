@@ -1,4 +1,4 @@
-import { ParserError, EParserError } from '$parser/errors';
+import { ParserError, EParserError } from '$core/parser/errors';
 import { type Result, tryResultAsync } from '$lib/result';
 import type { CSVConfig } from '$wizard/types';
 import { Ort } from '$wizard/enums';
