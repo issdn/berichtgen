@@ -1,4 +1,3 @@
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import {
 	BerichtgenError,
 	ECommonServerError,
@@ -204,34 +203,18 @@ export async function deleteTemplateReport(
 	if (!deleteResult.ok) throwSvelteError(ECommonServerError.DATABASE_ERROR);
 }
 
-/**
- * Best-effort copy of a reported template into quarantine for manual review.
- */
-async function copyTemplateToQuarantine(
-	templateId: string,
-	storagePath: string
-): Promise<void> {
-	const publicUrl = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/templates/${storagePath}`;
-	const fileResponse = await fetch(publicUrl);
-	if (!fileResponse.ok) return;
-	const blob = await fileResponse.blob();
-	const { error: uploadError } = await supabaseAdmin.storage
-		.from('quarantine')
-		.upload(templateId, blob, { upsert: true });
-	if (uploadError)
-		Sentry.captureException(uploadError, { extra: { templateId } });
-}
-
 export async function submitTemplateReport(
 	params: { templateId: string; message?: string },
 	userId: string
 ): Promise<void> {
 	const { templateId, message } = params;
+
 	const template = await db
 		.selectFrom('template')
 		.select(['id', 'user_id', 'storage_path', 'safe_marked_at'])
 		.where('id', '=', templateId)
 		.executeTakeFirst();
+
 	const existing = await db
 		.selectFrom('template_report')
 		.select('id')
@@ -256,28 +239,15 @@ export async function submitTemplateReport(
 		Sentry.captureException(insertResult.error);
 		throwSvelteError(ECommonServerError.DATABASE_ERROR);
 	}
-
-	const quarantineResult = await tryResultAsync(
-		copyTemplateToQuarantine(templateId, template!.storage_path),
-		BerichtgenError,
-		ECommonServerError.INTERNAL_ERROR
-	);
-	if (!quarantineResult.ok) {
-		Sentry.captureException(quarantineResult.error, { extra: { templateId } });
-	}
 }
 
 export async function markTemplateSafeById(templateId: string): Promise<void> {
-	const { error } = await supabaseAdmin.storage
-		.from('quarantine')
-		.remove([templateId]);
-	if (error) Sentry.captureException(error, { extra: { templateId } });
-
 	await db
 		.updateTable('template')
 		.set({ safe_marked_at: new Date().toISOString() })
 		.where('id', '=', templateId)
 		.execute();
+
 	await db
 		.deleteFrom('template_report')
 		.where('template_id', '=', templateId)

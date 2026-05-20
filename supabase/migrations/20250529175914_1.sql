@@ -113,10 +113,6 @@ WHERE NOT EXISTS (
     SELECT 1 FROM storage.buckets WHERE id = 'templates'
 );
 
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('quarantine', 'quarantine', false)
-ON CONFLICT (id) DO NOTHING;
-
 -- ============================================================
 -- Functions
 -- ============================================================
