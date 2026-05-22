@@ -19,13 +19,20 @@
 	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
 	import { useWizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
+	import { GCS_MAX_BYTES } from '$wizard/services/file_routing';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
 
 	const wizardMediator = useWizardMediatorContext();
 
 	let filesNumber = $state(0);
-	let accept = $derived(page.data.loggedIn ? undefined : '.json');
+	let accept = $derived(
+		page.data.loggedIn ? Object.values(FileTypes).join(',') : FileTypes.JSON
+	);
+
+	const isValidFile = (file: File): boolean => {
+		return file.size <= GCS_MAX_BYTES;
+	};
 
 	/**
 	 * Normalizes dropped/selected input items to wizard raw directories.
@@ -156,4 +163,4 @@
 	}
 </script>
 
-<Dropzone {accept} {handleFiles} {filesNumber} />
+<Dropzone {accept} {handleFiles} {filesNumber} {isValidFile} />

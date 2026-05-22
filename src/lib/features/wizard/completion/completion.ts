@@ -12,57 +12,15 @@ import { submitBatchCompletionCommand } from '$wizard/api/wizard.remote';
 /** Maximum total UTF-8 byte size for a single batch request (4 MB). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
 
-/**
- * Strips characters that encode to more than 2 bytes in UTF-8 (code points > U+07FF).
- * Keeps ASCII, Latin-1 Supplement, Latin Extended-A/B, and German umlauts
- * (ä ö ü ß Ä Ö Ü — all ≤ U+00FF, well within the 2-byte boundary).
- * Removes CJK, emoji, and any other multi-byte scripts.
- */
-export function sanitizeToTwoByteUTF8(text: string): string {
-	return [...text]
-		.filter((char) => (char.codePointAt(0) ?? 0) <= 0x7ff)
-		.join('');
-}
-
 /** Returns the UTF-8 encoded byte length of a string. */
-export function getByteSize(text: string): number {
+function getByteSize(text: string): number {
 	return new TextEncoder().encode(text).byteLength;
-}
-
-/**
- * Splits `text` into the minimum number of equal-sized chunks where each
- * chunk's UTF-8 byte size does not exceed `maxBytes`.
- * If the text already fits in one chunk it is returned as a single-element array.
- *
- * Chunks are equal by character count; the small byte-size variation due to
- * 1-vs-2-byte characters is negligible after {@link sanitizeToTwoByteUTF8}.
- */
-export function splitTextIntoChunks(
-	text: string,
-	maxBytes: number = MAX_BATCH_BYTES
-): string[] {
-	const byteSize = getByteSize(text);
-	if (byteSize <= maxBytes) return [text];
-
-	const numChunks = Math.ceil(byteSize / maxBytes);
-	const charsPerChunk = Math.ceil(text.length / numChunks);
-
-	const chunks: string[] = [];
-	for (let i = 0; i < numChunks; i++) {
-		const start = i * charsPerChunk;
-		const end = Math.min(start + charsPerChunk, text.length);
-		if (start < text.length) {
-			chunks.push(text.slice(start, end));
-		}
-	}
-	return chunks;
 }
 
 /**
  * Groups items into the fewest sequential batches where the combined UTF-8
  * byte size of all texts in each batch does not exceed `maxBytes`.
- * An item whose text alone exceeds `maxBytes` forms a batch by itself
- * (use {@link splitTextIntoChunks} upstream to prevent oversized items).
+ * An item whose text alone exceeds `maxBytes` forms a batch by itself.
  */
 export function createBatchesBySize<T extends { text: string }>(
 	items: T[],
@@ -97,9 +55,9 @@ export function createBatchesBySize<T extends { text: string }>(
  * token budget could not cover all items.
  *
  * Each item carries a `FileRouting` descriptor that determines how it is sent:
- * - `text`   → `{ type: 'text', text, ort }`
- * - `inline` → `{ type: 'inline', data, mimeType, ort }`
- * - `gcs`    → `{ type: 'gcs', fileUri, mimeType, ort }`
+ * - `inline` -> `{ type: 'inline', data, mimeType, ort }`
+ * - `gcs`    -> `{ type: 'gcs', fileUri, mimeType, ort }`
+ * - `url`    -> `{ type: 'url', url, ort }`
  */
 export function sendBatchCompletion(
 	items: Array<{ routing: FileRouting; ort: Ort }>

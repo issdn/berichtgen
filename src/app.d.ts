@@ -7,7 +7,6 @@ declare global {
 	namespace App {
 		// interface Error {}
 		interface BerichtgenSettings {
-			processPhotos: boolean;
 			rewordJSON: boolean;
 			constantHours: boolean;
 			preferredTemplatePath: string | null;

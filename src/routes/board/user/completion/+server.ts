@@ -6,7 +6,6 @@ import {
 } from '$lib/errors';
 import { ECompletionException, EWizardError } from '$wizard/errors';
 import * as genai from '@google/genai';
-import { LocalTokenizer } from '@google/genai/tokenizer';
 import { json } from '@sveltejs/kit';
 import db from '$lib/server/db';
 import { sql } from 'kysely';
@@ -61,13 +60,10 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 			projectId: credentials.project_id
 		}
 	});
-	// TODO: Switch to DEFAULT_MODEL when the 3.1 tokenizer is available
-	const tokenizer = new LocalTokenizer('gemini-2.5-flash-lite');
-
 	const { items } = parsed.data;
 
 	const tokenCounts = await Promise.all(
-		items.map((item) => countItemTokens(item, ai, model, tokenizer))
+		items.map((item) => countItemTokens(item, ai, model))
 	);
 
 	const userBalance = await readUserBalance(user.id);
@@ -123,18 +119,13 @@ export const POST: RequestHandler = async ({ request, locals: { user } }) => {
 
 /**
  * Counts the tokens for a single completion item.
- * Text items use the fast local tokenizer; file items call the Gemini API.
+ * All items call the Gemini API token counter.
  */
 async function countItemTokens(
 	item: BatchCompletionItem,
 	ai: genai.GoogleGenAI,
-	model: string,
-	localTokenizer: InstanceType<typeof LocalTokenizer>
+	model: string
 ): Promise<number> {
-	if (item.type === 'text') {
-		const result = await localTokenizer.countTokens(item.text);
-		return result.totalTokens ?? 0;
-	}
 	const part = itemToContentPart(item);
 	const result = await ai.models.countTokens({
 		model,

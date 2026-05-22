@@ -2,7 +2,6 @@
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
 	import { cn } from '$lib/utils';
 	import * as Kbd from '$ui/kbd';
-	import { FileTypes } from '$wizard/enums';
 	import { Clock, FileCheck, FileUp, FileX } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -10,35 +9,50 @@
 		handleFiles,
 		filesNumber = $bindable(null),
 		disabled = false,
-		accept = Object.values(FileTypes).join(','),
+		accept,
+		isValidFile,
 		class: className
 	}: {
 		handleFiles: (files: DataTransferItemList | FileList) => Promise<void>;
 		filesNumber?: number | null;
 		disabled?: boolean;
 		accept?: string;
+		isValidFile?: (file: File) => boolean;
 		class?: string;
 	} = $props();
 
-	let input = $state<HTMLInputElement>();
 	let isDraggingIn = $state(false);
 	let isDraggedInputValid = $state(true);
+
+	const matchesAccept = (type: string) =>
+		accept ? accept.includes(type) : false;
+
+	function areFilesValid(files: FileList): boolean {
+		return [...files].every(
+			(file) =>
+				matchesAccept(file.type) && (isValidFile ? isValidFile(file) : true)
+		);
+	}
 
 	async function extractAndHandleFiles(
 		dataTransfer: DataTransfer | FileList | null
 	) {
 		if (dataTransfer instanceof DataTransfer) {
-			if (!dataTransfer) {
-				toast.error('Browser API Fehler. Versuche mit einem anderen Browser.');
-				return;
-			}
 			const maybeItems = dataTransfer.items;
 			if (maybeItems == null) {
-				toast.error('Keine gültigen Dateien gefunden.');
+				toast.error('Keine gueltigen Dateien gefunden.');
+				return;
+			}
+			if (!areFilesValid(dataTransfer.files)) {
+				toast.error('Ungueltige Datei(en) erkannt');
 				return;
 			}
 			await handleFiles(maybeItems);
 		} else if (dataTransfer instanceof FileList) {
+			if (!areFilesValid(dataTransfer)) {
+				toast.error('Ungueltige Datei(en) erkannt');
+				return;
+			}
 			await handleFiles(dataTransfer);
 		}
 	}
@@ -53,7 +67,14 @@
 		isDraggingIn = true;
 		const items = [...(e.dataTransfer?.items ?? [])];
 
-		const allValid = items.every((item) => accept.includes(item.type));
+		const allValid = items.every((item) => {
+			const file = item.getAsFile();
+			if (!file) return false;
+			return (
+				matchesAccept(file.type) && (isValidFile ? isValidFile(file) : true)
+			);
+		});
+
 		isDraggedInputValid = allValid ? true : false;
 	}
 
@@ -85,7 +106,7 @@
 	async function handlePaste(e: ClipboardEvent) {
 		// URL paste: wrap as a text/uri-list File so the wizard treats it like a URL entry.
 		// Pass dt.files (FileList) rather than dt so getFileListWithPreserverFolderStructure
-		// is used — webkitGetAsEntry() returns null for programmatically-added files.
+		// is used - webkitGetAsEntry() returns null for programmatically-added files.
 		const text = e.clipboardData?.getData('text/plain')?.trim();
 		if (text && URL.canParse(text)) {
 			const dt = new DataTransfer();
@@ -107,7 +128,7 @@
 		class={cn(
 			'text-border hover:border-primary hover:text-primary',
 			'data-[dragging=true]:border-primary data-[dragging=true]:text-primary',
-			'data-[valid=false]:border-destructive data-[valid=false]:text-destructive',
+			'data-[valid=false]:border-destructive data-[valid=false]:text-destructive data-[valid=false]:[&_kbd]:text-destructive',
 			'relative flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed',
 			'text-sm font-medium transition-colors duration-300',
 			className
@@ -126,7 +147,6 @@
 		<input
 			data-testid="dropzone-input"
 			{accept}
-			bind:this={input}
 			type="file"
 			multiple
 			style="display:none"

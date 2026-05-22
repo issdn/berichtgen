@@ -2,7 +2,6 @@ import { describe, test, expect, vi } from 'vitest';
 import { WizardStep } from '$wizard/enums';
 import { CalendarDate } from '@internationalized/date';
 import { okResult } from '$lib/result';
-import type { Scheduler } from 'tesseract.js';
 
 // ---------------------------------------------------------------------------
 // Infrastructure mocks — things that cannot run outside a browser/SvelteKit
@@ -14,7 +13,6 @@ vi.mock('$core/stores/berichtgen.svelte', () => ({
 		get: (key: keyof App.BerichtgenSettings) => {
 			const values: App.BerichtgenSettings = {
 				rewordJSON: false,
-				processPhotos: false,
 				constantHours: false,
 				preferredTemplatePath: null,
 				tempEmailContainer: null
@@ -83,11 +81,8 @@ describe('State machine full lifecycle', () => {
 			okResult({ results: [[AI_RESULT]], insufficient_tokens: false })
 		);
 
-		// Real wizardMediator — parse_service is mocked so no OCR workers needed.
+		// Real wizardMediator instance.
 		const scheduler = WizardMediator.createDefault();
-		scheduler.scheduler = {
-			terminate: () => Promise.resolve()
-		} as unknown as Scheduler;
 
 		// Create the schedule with a single plain-text file.
 		const file = new File([DUMMY_TEXT], 'test.txt', { type: 'text/plain' });

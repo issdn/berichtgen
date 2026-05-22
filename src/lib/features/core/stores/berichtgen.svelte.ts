@@ -4,7 +4,6 @@ import { tryResult } from '$lib/result';
 import { SvelteMap } from 'svelte/reactivity';
 
 const DEFAULT_SETTINGS: App.BerichtgenSettings = {
-	processPhotos: false,
 	rewordJSON: false,
 	constantHours: false,
 	preferredTemplatePath: null,

@@ -4,7 +4,6 @@ import { completionSchema, type BatchCompletionItem } from '$wizard/schemas';
 
 /** Maps a `BatchCompletionItem` to its Gemini content part. */
 export function itemToContentPart(item: BatchCompletionItem): genai.Part {
-	if (item.type === 'text') return { text: item.text };
 	if (item.type === 'inline')
 		return { inlineData: { data: item.data, mimeType: item.mimeType } };
 	if (item.type === 'url') return { text: `URL zu dem Text: ${item.url}` };

@@ -39,10 +39,10 @@ export function createStateMachineForContext(
 					return void this.next();
 				}
 
-				resolveFileRouting(context.file.file, context, scheduler.scheduler!, {
-					processPhotos: berichtgenStore.get('processPhotos'),
-					rewordJSON: berichtgenStore.get('rewordJSON')
-				}).then((result) => {
+				resolveFileRouting(
+					context.file.file,
+					berichtgenStore.get('rewordJSON')
+				).then((result) => {
 					if (result.ok) {
 						context.snapshot = result.data;
 						scheduler.persistSoon();

@@ -65,12 +65,6 @@ const {
 // Module mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('@google/genai/tokenizer', () => ({
-	LocalTokenizer: class {
-		countTokens = mockCountTokens;
-	}
-}));
-
 vi.mock('@google/genai', () => ({
 	GoogleGenAI: class {
 		models = {
@@ -126,8 +120,18 @@ function makeEvent(body: unknown, userId = 'user-1'): any {
 }
 
 const validItems = [
-	{ type: 'text' as const, text: 'Montag: Programmieren', ort: 'BETRIEB' },
-	{ type: 'text' as const, text: 'Dienstag: Testen', ort: 'SCHULE' }
+	{
+		type: 'inline' as const,
+		data: btoa('Montag: Programmieren'),
+		mimeType: 'text/plain',
+		ort: 'BETRIEB'
+	},
+	{
+		type: 'inline' as const,
+		data: btoa('Dienstag: Testen'),
+		mimeType: 'text/plain',
+		ort: 'SCHULE'
+	}
 ];
 
 // ---------------------------------------------------------------------------

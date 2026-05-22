@@ -86,13 +86,6 @@ const ortEnum = z.enum([
 	Ort['SCHULE/BETRIEB']
 ]);
 
-/** Completion item carrying parsed text (fallback for > 50 MB files). */
-const textItemSchema = z.object({
-	type: z.literal('text'),
-	text: z.string().nonempty(),
-	ort: ortEnum
-});
-
 /** Completion item carrying a base64-encoded file (≤ 1 MB). */
 const inlineItemSchema = z.object({
 	type: z.literal('inline'),
@@ -118,9 +111,8 @@ const urlItemSchema = z.object({
 	ort: ortEnum
 });
 
-/** One item in a batch completion request — text, inline file, Files API file, or URL. */
+/** One item in a batch completion request — inline file, GCS file, or URL. */
 export const batchCompletionItemSchema = z.discriminatedUnion('type', [
-	textItemSchema,
 	inlineItemSchema,
 	fileApiItemSchema,
 	urlItemSchema

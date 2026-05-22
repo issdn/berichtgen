@@ -5,14 +5,13 @@ import { createStateMachineForContext } from './state_machine';
 import { BerichtgenError } from '$lib/errors';
 import { WizardError, EWizardError } from '$wizard/errors';
 import { WizardFileContext } from './wizard_file_context';
-import type { Scheduler } from 'tesseract.js';
 import type {
 	ResultEntry,
 	WizardDirectories,
 	WizardProcessStateMachine
 } from '$wizard/types';
 import { combineJSONs } from '$wizard/postprocess/combine';
-import { WizardStep } from '$wizard/enums';
+import { Ort, WizardStep } from '$wizard/enums';
 import {
 	createBatchesBySize,
 	MAX_BATCH_BYTES,
@@ -30,25 +29,22 @@ import { debounce } from '$lib/utils';
 import { WizardScheduler } from './wizard_scheduler.svelte';
 import { get } from 'svelte/store';
 import { WizardBatcher } from './wizard_batcher';
-import { Chunker, type ChunkDescriptor } from './chunker';
+import type { FileRouting } from './file_routing';
 
 export class WizardMediator {
 	readonly schedulerState: WizardScheduler;
 	readonly batcher: WizardBatcher;
 	readonly queue: ProcessQueue<WizardProcessStateMachine>;
-	readonly chunker: Chunker;
 
 	constructor(
 		schedulerState: WizardScheduler,
 		batcher: WizardBatcher,
 		queue: ProcessQueue<WizardProcessStateMachine>,
-		chunker: Chunker,
 		userId?: string | null
 	) {
 		this.schedulerState = schedulerState;
 		this.batcher = batcher;
 		this.queue = queue;
-		this.chunker = chunker;
 		this.userKey = userId ? `user:${userId}` : 'anon';
 		this.persistedSessionPromise = this.loadPersistedSession();
 	}
@@ -56,7 +52,6 @@ export class WizardMediator {
 	static createDefault(userId?: string | null) {
 		const schedulerState = new WizardScheduler();
 		const batcher = new WizardBatcher();
-		const chunker = new Chunker();
 		// eslint-disable-next-line prefer-const
 		let mediatorRef: WizardMediator;
 
@@ -76,18 +71,10 @@ export class WizardMediator {
 			}
 		});
 
-		mediatorRef = new WizardMediator(
-			schedulerState,
-			batcher,
-			queue,
-			chunker,
-			userId
-		);
+		mediatorRef = new WizardMediator(schedulerState, batcher, queue, userId);
 
 		return mediatorRef;
 	}
-
-	scheduler: Scheduler | null = null;
 
 	result = $state<Promise<ResultEntry[]> | null>(null);
 
@@ -175,10 +162,6 @@ export class WizardMediator {
 	};
 
 	init = async (session: WizardPersistedSession | null = null) => {
-		if (this.scheduler === null) {
-			const { createScheduler } = await import('tesseract.js');
-			this.scheduler = createScheduler();
-		}
 		this.resetRuntimeState();
 		if (session) {
 			this.rehydrateFromSnapshot(session);
@@ -198,8 +181,6 @@ export class WizardMediator {
 	finish = () => {
 		this.result = (async () => {
 			const finishedDirectories = this.schedulerState.getFinishedDirectories();
-			await this.scheduler?.terminate();
-			this.scheduler = null;
 			const combined = combineJSONs(
 				finishedDirectories,
 				berichtgenStore.get('constantHours')
@@ -241,22 +222,29 @@ export class WizardMediator {
 		const pendingList = this.takePendingProcesses();
 		this.persistSoon();
 
-		const allChunks = this.chunker.expandPendingFiles(pendingList);
+		const pendingItems = pendingList.map((process, fileIndex) => {
+			const routing = process.context.snapshot as FileRouting;
+			const ort = process.context.dateRanges!.ort;
+			return { routing, ort, fileIndex };
+		});
 		const batches = createBatchesBySize(
-			this.chunker.withSizeProxy(allChunks),
+			pendingItems.map((item) => ({
+				...item,
+				text: this.toSizeProxyText(item.routing)
+			})),
 			MAX_BATCH_BYTES
 		);
 
-		const chunkResults = new SvelteMap<number, SvelteMap<number, string[]>>();
+		const fileResults = new SvelteMap<number, string[]>();
 		const startedFileIndices = new SvelteSet<number>();
 		const errorCause = await this.processBatches(
 			batches,
 			pendingList,
 			startedFileIndices,
-			chunkResults
+			fileResults
 		);
 
-		this.applyChunkResults(pendingList, allChunks, chunkResults, errorCause);
+		this.applyResults(pendingList, fileResults, errorCause);
 	};
 
 	private takePendingProcesses() {
@@ -265,10 +253,17 @@ export class WizardMediator {
 	}
 
 	private async processBatches(
-		batches: Array<(ChunkDescriptor & { text: string })[]>,
+		batches: Array<
+			Array<{
+				routing: FileRouting;
+				ort: Ort;
+				fileIndex: number;
+				text: string;
+			}>
+		>,
 		pendingList: WizardProcessStateMachine[],
 		startedFileIndices: SvelteSet<number>,
-		chunkResults: SvelteMap<number, SvelteMap<number, string[]>>
+		fileResults: SvelteMap<number, string[]>
 	): Promise<BerichtgenError | null> {
 		let errorCause: BerichtgenError | null = null;
 
@@ -277,10 +272,10 @@ export class WizardMediator {
 			const result = await sendBatchCompletion(batch);
 			if (!result.ok) return result.error;
 
-			this.chunker.collectChunkResults(
+			this.collectBatchResults(
 				batch,
 				result.data.results,
-				chunkResults
+				fileResults
 			);
 			if (result.data.insufficient_tokens) {
 				errorCause = new WizardError(EWizardError.COMPLETION_FAILED);
@@ -292,7 +287,12 @@ export class WizardMediator {
 	}
 
 	private startBatchFiles(
-		batch: ChunkDescriptor[],
+		batch: Array<{
+			routing: FileRouting;
+			ort: Ort;
+			fileIndex: number;
+			text: string;
+		}>,
 		pendingList: WizardProcessStateMachine[],
 		startedFileIndices: SvelteSet<number>
 	) {
@@ -303,17 +303,34 @@ export class WizardMediator {
 		}
 	}
 
-	private applyChunkResults(
+	private collectBatchResults(
+		batch: Array<{
+			routing: FileRouting;
+			ort: Ort;
+			fileIndex: number;
+			text: string;
+		}>,
+		results: (string[] | null)[],
+		fileResults: SvelteMap<number, string[]>
+	) {
+		for (let i = 0; i < batch.length; i++) {
+			const { fileIndex } = batch[i];
+			const result = results[i];
+			if (result != null) {
+				fileResults.set(fileIndex, result);
+			}
+		}
+	}
+
+	private applyResults(
 		pendingList: WizardProcessStateMachine[],
-		allChunks: ChunkDescriptor[],
-		chunkResults: SvelteMap<number, SvelteMap<number, string[]>>,
+		fileResults: SvelteMap<number, string[]>,
 		errorCause: BerichtgenError | null
 	) {
-		for (const { process, entries } of this.chunker.applyChunkResults(
-			pendingList,
-			allChunks,
-			chunkResults
-		)) {
+		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
+			const process = pendingList[fileIndex];
+			const result = fileResults.get(fileIndex);
+			const entries = result ? result.map((text) => ({ text })) : null;
 			if (entries === null) {
 				process.context.error =
 					errorCause ?? new WizardError(EWizardError.COMPLETION_FAILED);
@@ -324,6 +341,14 @@ export class WizardMediator {
 			}
 			this.persistSoon();
 		}
+	}
+
+	private toSizeProxyText(routing: FileRouting): string {
+		if (routing.type === 'inline') {
+			return 'x'.repeat(Math.ceil((routing.data.length * 3) / 4));
+		}
+		if (routing.type === 'gcs') return routing.fileUri;
+		return routing.url;
 	}
 
 	createProcessStateMachine = (

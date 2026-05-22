@@ -26,12 +26,6 @@
 				<Separator />
 				{#if page.data.loggedIn}
 					{@render settingSwitch(
-						'processPhotos',
-						'terms-switch',
-						'Bilder verarbeiten',
-						'Die Bilder aus Word/PDF Dateien extrahieren und mit einem Text ML Model lesen.'
-					)}
-					{@render settingSwitch(
 						'rewordJSON',
 						'reword-json-switch',
 						'JSON-Dateien umformulieren',
