@@ -334,14 +334,11 @@ describe('submitTemplateReport', () => {
 describe('markTemplateSafeById', () => {
 	beforeEach(() => vi.clearAllMocks());
 
-	test('removes from quarantine, sets safe_marked_at, and clears reports', async () => {
-		storageMock.remove.mockResolvedValue({ error: null });
+	test('GIVEN a template id WHEN markTemplateSafeById runs THEN it sets safe_marked_at and clears reports', async () => {
 		dbMock.execute.mockResolvedValue({});
 
 		await markTemplateSafeById('tmpl-uuid');
 
-		expect(storageMock.from).toHaveBeenCalledWith('quarantine');
-		expect(storageMock.remove).toHaveBeenCalledWith(['tmpl-uuid']);
 		expect(dbMock.updateTable).toHaveBeenCalledWith('template');
 		expect(dbMock.set).toHaveBeenCalledWith(
 			expect.objectContaining({ safe_marked_at: expect.any(String) })
@@ -349,15 +346,14 @@ describe('markTemplateSafeById', () => {
 		expect(dbMock.deleteFrom).toHaveBeenCalledWith('template_report');
 	});
 
-	test('continues and logs to Sentry when quarantine removal fails', async () => {
-		const { captureException } = await import('@sentry/sveltekit');
-		storageMock.remove.mockResolvedValue({ error: new Error('storage error') });
+	test('GIVEN a template id WHEN markTemplateSafeById runs THEN it does not touch storage and still updates DB', async () => {
 		dbMock.execute.mockResolvedValue({});
 
 		await markTemplateSafeById('tmpl-uuid');
 
-		expect(captureException).toHaveBeenCalled();
-		// DB update must still proceed
+		expect(storageMock.from).not.toHaveBeenCalled();
+		expect(storageMock.remove).not.toHaveBeenCalled();
 		expect(dbMock.updateTable).toHaveBeenCalledWith('template');
+		expect(dbMock.deleteFrom).toHaveBeenCalledWith('template_report');
 	});
 });

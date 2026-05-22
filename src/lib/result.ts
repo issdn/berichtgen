@@ -18,7 +18,7 @@ export function errResult(
 		error:
 			error instanceof BerichtgenError
 				? error
-				: new errorClass({ ...apiError, cause: toErrorBody(error).message })
+				: new errorClass({ ...apiError, ...toErrorBody(error) })
 	};
 }
 

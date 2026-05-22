@@ -5,7 +5,7 @@
 	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
-	import { wizardMediator } from '$wizard/services/wizard_mediator.svelte';
+	import { useWizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { handleDOCXDownload } from '$wizard/write/write_docx';
 	import { handleJSONDownload } from '$wizard/write/write_json';
 	import { FileCheck2, FileClock, FileJson, FileType } from '@lucide/svelte';
@@ -25,6 +25,8 @@
 	import * as AlertDialog from '$ui/alert-dialog';
 	import type { WizardPersistedSession } from '$wizard/services/types';
 
+	const wizardMediator = useWizardMediatorContext();
+
 	onMount(() => {
 		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 			import('pdfjs-dist/build/pdf.worker.min?url')
@@ -42,17 +44,16 @@
 		}
 	});
 
-	let dialogOpen = $state(false);
+	let hasAnyResult = $state(false);
 	let restoreDismissed = $state(false);
 
-	wizardMediator.setUserKey(page.data.user?.id);
-	const persistedSessionPromise = wizardMediator.loadPersistedSession();
-
-	let result = $derived(wizardMediator.result);
-
 	$effect(() => {
-		if (result !== null && wizardMediator.isDone) {
-			dialogOpen = true;
+		if (wizardMediator.result !== null) {
+			wizardMediator.result?.then((items) => {
+				if (items.length > 0) {
+					hasAnyResult = true;
+				}
+			});
 		}
 	});
 
@@ -96,7 +97,7 @@
 			const path = berichtgenStore.get('preferredTemplatePath');
 			if (!path) {
 				toast.error(
-					'Keine bevorzugte Vorlage ausgew\u00e4hlt. Bitte w\u00e4hle eine Vorlage aus den Einstellungen aus.'
+					'Keine bevorzugte Vorlage ausgewählt. Bitte wähle eine Vorlage aus den Einstellungen aus.'
 				);
 				return;
 			}
@@ -106,7 +107,7 @@
 			if (!exists) {
 				berichtgenStore.set('preferredTemplatePath', null);
 				toast.info(
-					'Deine bevorzugte Vorlage wurde gel\u00f6scht. Bitte w\u00e4hle eine neue Vorlage aus.',
+					'Deine bevorzugte Vorlage wurde gelöscht. Bitte wähle eine neue Vorlage aus.',
 					{ closeButton: true, dismissable: true }
 				);
 				return;
@@ -116,7 +117,7 @@
 				.download(path);
 			if (!templateResult.data) {
 				toast.error(
-					'Vorlage existiert nicht. Bitte w\u00e4hle eine andere Vorlage aus.'
+					'Vorlage existiert nicht. Bitte wähle eine andere Vorlage aus.'
 				);
 				return;
 			}
@@ -136,9 +137,7 @@
 		}
 	);
 
-	const downloadDisabled = $derived(
-		wizardMediator.isRunning || !wizardMediator.result
-	);
+	const downloadDisabled = $derived(hasAnyResult);
 </script>
 
 <div
@@ -152,11 +151,11 @@
 		<div class="flex flex-row items-center gap-x-4">
 			<WizardSettingsPopover />
 		</div>
-		<Dialog.Root bind:open={dialogOpen}>
+		<Dialog.Root bind:open={hasAnyResult}>
 			<Dialog.Trigger
 				class={buttonVariants({ variant: 'default' })}
 				data-testid="wizard-completion-button"
-				disabled={result === null}><FileCheck2 /></Dialog.Trigger
+				disabled={!hasAnyResult}><FileCheck2 /></Dialog.Trigger
 			>
 			<Dialog.Content {children} {childrenBehind} class="max-w-min" />
 		</Dialog.Root>
@@ -228,7 +227,7 @@
 {/snippet}
 
 <svelte:boundary>
-	{@const persistedSession = await persistedSessionPromise}
+	{@const persistedSession = await wizardMediator.persistedSessionPromise}
 	{#if persistedSession !== null && !restoreDismissed}
 		<AlertDialog.Root open={true}>
 			<AlertDialog.Content>

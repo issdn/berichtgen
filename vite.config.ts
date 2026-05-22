@@ -43,7 +43,15 @@ export default defineConfig(({ mode }) => ({
 		exclude: ['quickjs-emscripten']
 	},
 	test: {
-		coverage: { provider: 'v8' },
+		coverage: {
+			provider: 'v8',
+			exclude: [
+				'**/.svelte-kit/**',
+				'**/node_modules/**',
+				'**/*.d.ts',
+				'**/*.remote.ts'
+			]
+		},
 		projects: [
 			{
 				extends: true,

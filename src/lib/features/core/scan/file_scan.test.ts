@@ -1,6 +1,15 @@
-import { test, expect } from 'vitest';
+import { test, expect, describe } from 'vitest';
 import { get2DimensionalDirectories } from '$core/scan/file_scan';
-import { ScanReturnValue } from '$core/types';
+import { ScanReturnValue, type ScanReturnType } from '$core/types';
+import {
+	extractFilesSimple,
+	getFileListWithPreserverFolderStructure
+} from '$core/scan/file_scan';
+import { EParserError } from '$core/parser/errors';
+
+class MockFileList extends Array<File> {}
+(globalThis as unknown as { FileList?: typeof MockFileList }).FileList =
+	MockFileList;
 
 function makeFileEntry(fullPath: string): FileSystemFileEntry {
 	return {
@@ -37,6 +46,19 @@ function makeItemList(entries: FileSystemEntry[]): DataTransferItemList {
 	} as unknown as DataTransferItemList;
 }
 
+function makeItemListWithKinds(
+	items: Array<{ kind: string; file: File | null }>
+): DataTransferItemList {
+	const dataTransferItems = items.map((item) => ({
+		kind: item.kind,
+		getAsFile: () => item.file
+	}));
+
+	return {
+		[Symbol.iterator]: () => dataTransferItems[Symbol.iterator]()
+	} as unknown as DataTransferItemList;
+}
+
 test('returns all files including those alongside subdirectories (regression)', async () => {
 	// Structure: notes/ containing raid.pdf at root level AND hist/ subdirectory
 	// Previously, raid.pdf was silently dropped because the depth-based flattening
@@ -62,4 +84,104 @@ test('returns all files including those alongside subdirectories (regression)', 
 	expect(paths).toContain('/notes/hist/Balkanfeldzug_(1941).pdf');
 	expect(paths).toContain('/notes/hist/Jugoslawischer_Kriegsschauplatz.pdf');
 	expect(paths).toContain('/notes/hist/Timeline.pdf');
+});
+
+describe('get2DimensionalDirectories', () => {
+	test('returns file entries when return type is FILE', async () => {
+		const fileA = new File(['a'], 'a.txt', { type: 'text/plain' });
+		const fileB = new File(['b'], 'b.txt', { type: 'text/plain' });
+
+		const entryA = {
+			isFile: true,
+			isDirectory: false,
+			file: (success: (file: File) => void) => success(fileA)
+		} as unknown as FileSystemFileEntry;
+
+		const entryB = {
+			isFile: true,
+			isDirectory: false,
+			file: (success: (file: File) => void) => success(fileB)
+		} as unknown as FileSystemFileEntry;
+
+		const result = await get2DimensionalDirectories(
+			makeItemList([entryA, entryB]),
+			ScanReturnValue.FILE
+		);
+
+		expect(result).toEqual([[fileA], [fileB]]);
+	});
+
+	test('throws INVALID_FILE for unknown return type', async () => {
+		await expect(
+			get2DimensionalDirectories(
+				makeItemList([]),
+				'bad-type' as unknown as ScanReturnType
+			)
+		).rejects.toMatchObject({
+			apiError: EParserError.INVALID_FILE
+		});
+	});
+
+	test('throws INVALID_FILE when webkitGetAsEntry returns null', async () => {
+		const items = [
+			{
+				webkitGetAsEntry: () => null
+			}
+		];
+
+		await expect(
+			get2DimensionalDirectories(
+				{
+					[Symbol.iterator]: () => items[Symbol.iterator]()
+				} as unknown as DataTransferItemList,
+				ScanReturnValue.DATA_TRANSFER_ITEM
+			)
+		).rejects.toMatchObject({
+			apiError: EParserError.INVALID_FILE
+		});
+	});
+});
+
+describe('getFileListWithPreserverFolderStructure', () => {
+	test('groups files by parent directory while preserving insertion order', () => {
+		const files = [
+			Object.assign(new File(['a'], 'a.txt'), {
+				webkitRelativePath: 'alpha/a.txt'
+			}),
+			Object.assign(new File(['b'], 'b.txt'), {
+				webkitRelativePath: 'alpha/b.txt'
+			}),
+			Object.assign(new File(['c'], 'c.txt'), {
+				webkitRelativePath: 'beta/c.txt'
+			})
+		] as unknown as FileList;
+
+		const result = getFileListWithPreserverFolderStructure(files);
+		expect(result).toHaveLength(2);
+		expect(result[0].map((f) => f.name)).toEqual(['a.txt', 'b.txt']);
+		expect(result[1].map((f) => f.name)).toEqual(['c.txt']);
+	});
+});
+
+describe('extractFilesSimple', () => {
+	test('extracts only valid files from DataTransferItemList', () => {
+		const file = new File(['x'], 'x.txt', { type: 'text/plain' });
+		const result = extractFilesSimple(
+			makeItemListWithKinds([
+				{ kind: 'file', file },
+				{ kind: 'file', file: null },
+				{ kind: 'string', file: null }
+			])
+		);
+
+		expect(result).toEqual([file]);
+	});
+
+	test('returns all files when input is FileList', () => {
+		const fileA = new File(['a'], 'a.txt');
+		const fileB = new File(['b'], 'b.txt');
+		const fileList = new MockFileList(fileA, fileB) as unknown as FileList;
+
+		expect(extractFilesSimple(fileList)).toEqual([fileA, fileB]);
+	});
 });

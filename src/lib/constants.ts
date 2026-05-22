@@ -23,3 +23,6 @@ export const WIZARD_PERSISTENCE_VERSION = 1;
 export const WIZARD_PERSISTENCE_TTL_MS = 24 * 60 * 60 * 1000;
 
 export const WIZARD_PERSISTENCE_STORE = 'wizard_sessions';
+
+/** Maximum milliseconds a single template JS expression may run before being interrupted. (write_docx.ts) */
+export const JS_EXECUTION_TIMEOUT_MS = 5_000;

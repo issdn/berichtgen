@@ -250,11 +250,6 @@
 								von Nutzungsinhalten
 							</Table.Cell>
 						</Table.Row>
-						<Table.Row>
-							<Table.Cell>Google Fonts</Table.Cell>
-							<Table.Cell>USA</Table.Cell>
-							<Table.Cell>Einbindung externer Schriftarten</Table.Cell>
-						</Table.Row>
 					</Table.Body>
 				</Table.Root>
 				<p>

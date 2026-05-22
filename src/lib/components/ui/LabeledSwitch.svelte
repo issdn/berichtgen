@@ -1,6 +1,5 @@
-	<script lang="ts">
+<script lang="ts">
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { wizardMediator } from '$wizard/services/wizard_mediator.svelte';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 
@@ -9,12 +8,14 @@
 		id,
 		description,
 		checked = $bindable(false),
+		disabled = false,
 		onchange
 	}: {
 		label: string;
 		id: string;
 		description: string;
 		checked?: boolean;
+		disabled?: boolean;
 		onchange?: (value: boolean) => void;
 	} = $props();
 </script>
@@ -25,7 +26,7 @@
 			<Switch
 				bind:checked
 				{id}
-				disabled={wizardMediator.isRunning}
+				{disabled}
 				onCheckedChange={onchange}
 			/>
 			<Label

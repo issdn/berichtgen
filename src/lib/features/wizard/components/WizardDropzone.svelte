@@ -18,9 +18,11 @@
 	import { FileTypes } from '$wizard/enums';
 	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
-	import { wizardMediator } from '$wizard/services/wizard_mediator.svelte';
+	import { useWizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
+
+	const wizardMediator = useWizardMediatorContext();
 
 	let filesNumber = $state(0);
 	let accept = $derived(page.data.loggedIn ? undefined : '.json');

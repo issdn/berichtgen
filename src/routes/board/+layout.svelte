@@ -3,8 +3,14 @@
 	import { getFlash } from 'sveltekit-flash-message';
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
+	import {
+		WizardMediator,
+		setWizardMediatorContext
+	} from '$wizard/services/wizard_mediator.svelte';
 
 	let { children } = $props();
+
+	setWizardMediatorContext(WizardMediator.createDefault(page.data.user?.id));
 
 	const flash = getFlash(page);
 

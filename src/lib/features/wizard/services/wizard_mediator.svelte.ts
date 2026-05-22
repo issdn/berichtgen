@@ -1,4 +1,5 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import { createContext } from 'svelte';
 import berichtgenStore from '$core/stores/berichtgen.svelte';
 import { createStateMachineForContext } from './state_machine';
 import { BerichtgenError } from '$lib/errors';
@@ -41,15 +42,18 @@ export class WizardMediator {
 		schedulerState: WizardScheduler,
 		batcher: WizardBatcher,
 		queue: ProcessQueue<WizardProcessStateMachine>,
-		chunker: Chunker
+		chunker: Chunker,
+		userId?: string | null
 	) {
 		this.schedulerState = schedulerState;
 		this.batcher = batcher;
 		this.queue = queue;
 		this.chunker = chunker;
+		this.userKey = userId ? `user:${userId}` : 'anon';
+		this.persistedSessionPromise = this.loadPersistedSession();
 	}
 
-	static createDefault() {
+	static createDefault(userId?: string | null) {
 		const schedulerState = new WizardScheduler();
 		const batcher = new WizardBatcher();
 		const chunker = new Chunker();
@@ -71,7 +75,15 @@ export class WizardMediator {
 				mediatorRef.persistSoon();
 			}
 		});
-		mediatorRef = new WizardMediator(schedulerState, batcher, queue, chunker);
+
+		mediatorRef = new WizardMediator(
+			schedulerState,
+			batcher,
+			queue,
+			chunker,
+			userId
+		);
+
 		return mediatorRef;
 	}
 
@@ -85,11 +97,9 @@ export class WizardMediator {
 		return this.batcher.isRunning;
 	});
 
-	workersInUse = 0;
-
-	workersNr = 0;
-
 	userKey: string = 'anon';
+
+	persistedSessionPromise: Promise<WizardPersistedSession | null>;
 
 	sessionId: string = crypto.randomUUID();
 
@@ -119,10 +129,6 @@ export class WizardMediator {
 
 	get filesReady() {
 		return this.schedulerState.filesReady;
-	}
-
-	setUserKey(userId: string | null | undefined) {
-		this.userKey = userId ? `user:${userId}` : 'anon';
 	}
 
 	persistSoon = debounce(() => {
@@ -410,5 +416,7 @@ export class WizardMediator {
 	}
 }
 
-// eslint-disable-next-line prefer-const
-export let wizardMediator = WizardMediator.createDefault();
+const [useWizardMediatorContext, setWizardMediatorContext] =
+	createContext<WizardMediator>();
+
+export { useWizardMediatorContext, setWizardMediatorContext };

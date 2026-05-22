@@ -5,13 +5,11 @@ import type { ResultEntry, Entry } from '$wizard/types';
 import { downloadBlob } from '$lib/utils';
 import { FileTypes } from '$wizard/enums';
 import type { KyselyDatabase } from '$lib/schema';
+import { JS_EXECUTION_TIMEOUT_MS } from '$lib/constants';
 
 export type SandBox = Parameters<
 	NonNullable<Parameters<typeof createReport>[0]['runJs']>
 >[0]['sandbox'];
-
-/** Maximum milliseconds a single template JS expression may run before being interrupted. */
-const JS_EXECUTION_TIMEOUT_MS = 5_000;
 
 async function withQuickJsContext<T>(
 	run: (vm: QuickJSContext, injected: Map<string, string>) => Promise<T>
@@ -26,7 +24,6 @@ async function withQuickJsContext<T>(
 	try {
 		return await run(vm, injected);
 	} finally {
-		// Fix vuln-1: dispose AFTER createReport completes, not inside the per-expression callback
 		vm.dispose();
 	}
 }
@@ -131,7 +128,6 @@ export async function generateReportBytes(
 			ausbildungsberuf: userMetadata?.ausbildungsberuf ?? '',
 			abteilung: userMetadata?.abteilung ?? ''
 		},
-		// Fix vuln-1: use buildRunJs — no vm.dispose() inside the callback
 		runJs: buildRunJs(vm, injected)
 	});
 }
