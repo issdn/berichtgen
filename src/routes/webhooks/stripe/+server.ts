@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { json } from '@sveltejs/kit';
 import {
 	BerichtgenError,
-	throwSvelteError,
+	throw svelteApiError,
 	ECommonServerError
 } from '$lib/errors';
 import * as Sentry from '@sentry/sveltekit';
@@ -19,20 +19,24 @@ export async function POST({ request }) {
 
 	if (!signature) {
 		Sentry.captureException(new Error('No stripe signature found'));
-		return throwSvelteError(
+		throw svelteApiError(
 			ECommonServerError.VALIDATION_ERROR,
 			'No stripe signature found'
 		);
 	}
 
 	const eventResult = tryResult(
-		() => stripe.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET),
+		() =>
+			stripe.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET),
 		BerichtgenError,
 		ECommonServerError.VALIDATION_ERROR
 	);
 	if (!eventResult.ok) {
 		Sentry.captureException(eventResult.error);
-		return throwSvelteError(ECommonServerError.VALIDATION_ERROR, 'Invalid request');
+		throw svelteApiError(
+			ECommonServerError.VALIDATION_ERROR,
+			'Invalid request'
+		);
 	}
 	const event = eventResult.data;
 
@@ -76,7 +80,7 @@ export async function POST({ request }) {
 		);
 		if (!tokenUpdateResult.ok) {
 			Sentry.captureException(tokenUpdateResult.error);
-			return throwSvelteError(
+			throw svelteApiError(
 				ECommonServerError.DATABASE_ERROR,
 				"Couldn't update token balance"
 			);

@@ -1,4 +1,4 @@
-import { ECommonServerError, throwSvelteError } from '$lib/errors';
+import { ECommonServerError, svelteApiError } from '$lib/errors';
 import db from '$lib/server/db';
 import { tryResultAsync } from '$lib/result';
 import { BerichtgenError } from '$lib/errors';
@@ -7,7 +7,7 @@ export async function submitFeedback(
 	{ message }: { message: string },
 	userId: string | undefined
 ): Promise<void> {
-	if (!userId) throwSvelteError(ECommonServerError.UNAUTHORIZED);
+	if (!userId) throw svelteApiError(ECommonServerError.UNAUTHORIZED);
 
 	const insertResult = await tryResultAsync(
 		db
@@ -22,6 +22,6 @@ export async function submitFeedback(
 	);
 
 	if (!insertResult.ok) {
-		throwSvelteError(ECommonServerError.DATABASE_ERROR);
+		throw svelteApiError(ECommonServerError.DATABASE_ERROR);
 	}
 }

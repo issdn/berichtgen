@@ -1,4 +1,4 @@
-import { throwSvelteError } from '$lib/errors.js';
+import { throw svelteApiError } from '$lib/errors.js';
 import { EAuthError } from '$core/auth/errors';
 import { redirect } from 'sveltekit-flash-message/server';
 
@@ -18,11 +18,11 @@ export const load = async ({ locals: { supabase }, url, cookies }) => {
 			);
 		}
 
-		throwSvelteError({
+		throw svelteApiError({
 			...EAuthError.OAUTH_LOGIN_FAILED,
 			message: `OAuth-Login Fehler mit code: ${error?.code ?? 'unbekannt'}`
 		});
 	}
 
-	throwSvelteError(EAuthError.NO_CODE);
+	throw svelteApiError(EAuthError.NO_CODE);
 };

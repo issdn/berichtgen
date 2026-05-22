@@ -1,5 +1,5 @@
 import { command, getRequestEvent, query } from '$app/server';
-import { ECommonServerError, throwSvelteError } from '$lib/errors';
+import { ECommonServerError, svelteApiError } from '$lib/errors';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type z from 'zod';
 
@@ -13,7 +13,7 @@ export function guardedQuery<S extends z.ZodTypeAny, T>(
 		} = getRequestEvent();
 
 		if (!user) {
-			throwSvelteError(ECommonServerError.UNAUTHORIZED);
+			throw svelteApiError(ECommonServerError.UNAUTHORIZED);
 		}
 
 		return fn(input);
@@ -30,7 +30,7 @@ export function guardedCommand<S extends z.ZodTypeAny, T>(
 		} = getRequestEvent();
 
 		if (!user) {
-			throwSvelteError(ECommonServerError.UNAUTHORIZED);
+			throw svelteApiError(ECommonServerError.UNAUTHORIZED);
 		}
 
 		return fn(input);

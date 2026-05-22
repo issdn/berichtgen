@@ -1,7 +1,7 @@
 import {
 	BerichtgenError,
 	ECommonServerError,
-	throwSvelteError
+	svelteApiError
 } from '$lib/errors';
 import { ETemplateError } from '$wizard/errors';
 import { supabaseAdmin } from '$lib/server/admin';
@@ -69,12 +69,12 @@ export function validateCanReport(
 	userId: string,
 	existing: { id: string } | undefined
 ): void {
-	if (!template) return throwSvelteError(ETemplateError.TEMPLATE_NOT_FOUND);
+	if (!template) throw svelteApiError(ETemplateError.TEMPLATE_NOT_FOUND);
 	if (template.user_id === userId)
-		throwSvelteError(ETemplateError.CANNOT_REPORT_OWN);
+		throw svelteApiError(ETemplateError.CANNOT_REPORT_OWN);
 	if (template.safe_marked_at !== null)
-		throwSvelteError(ETemplateError.TEMPLATE_SAFE);
-	if (existing) throwSvelteError(ETemplateError.ALREADY_REPORTED);
+		throw svelteApiError(ETemplateError.TEMPLATE_SAFE);
+	if (existing) throw svelteApiError(ETemplateError.ALREADY_REPORTED);
 }
 
 export async function fetchTemplates(
@@ -150,7 +150,8 @@ export async function uploadTemplateFile(
 			contentType: params.type,
 			upsert: true
 		});
-	if (error) throwSvelteError(ECommonServerError.DATABASE_ERROR, error.message);
+	if (error)
+		throw svelteApiError(ECommonServerError.DATABASE_ERROR, error.message);
 
 	const existing = await db
 		.selectFrom('template')
@@ -180,7 +181,8 @@ export async function deleteTemplateFile(storagePath: string): Promise<void> {
 	const { error } = await supabaseAdmin.storage
 		.from('templates')
 		.remove([storagePath]);
-	if (error) throwSvelteError(ECommonServerError.DATABASE_ERROR, error.message);
+	if (error)
+		throw svelteApiError(ECommonServerError.DATABASE_ERROR, error.message);
 	await db
 		.deleteFrom('template')
 		.where('storage_path', '=', storagePath)
@@ -200,7 +202,7 @@ export async function deleteTemplateReport(
 		BerichtgenError,
 		ECommonServerError.DATABASE_ERROR
 	);
-	if (!deleteResult.ok) throwSvelteError(ECommonServerError.DATABASE_ERROR);
+	if (!deleteResult.ok) throw svelteApiError(ECommonServerError.DATABASE_ERROR);
 }
 
 export async function submitTemplateReport(
@@ -237,7 +239,7 @@ export async function submitTemplateReport(
 	);
 	if (!insertResult.ok) {
 		Sentry.captureException(insertResult.error);
-		throwSvelteError(ECommonServerError.DATABASE_ERROR);
+		throw svelteApiError(ECommonServerError.DATABASE_ERROR);
 	}
 }
 

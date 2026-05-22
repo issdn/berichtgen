@@ -15,7 +15,7 @@ import db from '$lib/server/db';
 import {
 	BerichtgenError,
 	ECommonServerError,
-	throwSvelteError
+	throw svelteApiError
 } from '$lib/errors';
 import { PRICE_PER_MILLION_TOKENS_CENTS } from '$lib/constants';
 import { tryResultAsync } from '$lib/result';
@@ -82,7 +82,7 @@ export async function handleCreatePaymentIntent(
 			return { clientSecret: paymentIntent.client_secret };
 		}
 		Sentry.captureException(paymentIntentResult.error);
-		return throwSvelteError(
+		throw svelteApiError(
 			ECommonServerError.STRIPE_ERROR,
 			paymentIntentResult.error.message
 		);
@@ -99,7 +99,7 @@ export async function handleCreatePaymentIntent(
 	);
 	if (!paymentIntentResult.ok) {
 		Sentry.captureException(paymentIntentResult.error);
-		return throwSvelteError(
+		throw svelteApiError(
 			ECommonServerError.STRIPE_ERROR,
 			paymentIntentResult.error.message
 		);

@@ -16,7 +16,7 @@
 
 import { query, command, getRequestEvent } from '$app/server';
 import * as z from 'zod';
-import { ECommonServerError, throwSvelteError } from '$lib/errors';
+import { ECommonServerError, svelteApiError } from '$lib/errors';
 import {
 	handleCreatePaymentIntent,
 	handleGetPaymentIntent
@@ -30,7 +30,7 @@ const quantitySchema = z.object({
 async function getAuthenticatedUserId(): Promise<string> {
 	const { locals } = getRequestEvent();
 	const userId = (await locals.safeGetSession())?.user?.id;
-	if (!userId) throwSvelteError(ECommonServerError.UNAUTHORIZED);
+	if (!userId) throw svelteApiError(ECommonServerError.UNAUTHORIZED);
 	return userId!;
 }
 

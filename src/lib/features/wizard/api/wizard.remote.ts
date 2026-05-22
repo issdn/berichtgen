@@ -8,13 +8,15 @@ import {
 	BerichtgenError,
 	ECommonServerError,
 	errorByHttpCode,
-	throwSvelteError
+	svelteApiError
 } from '$lib/errors';
-import { checkPreferredTemplateExists } from '$wizard/api/wizard.handlers';
+import {
+	checkPreferredTemplateExists,
+	runBatchCompletion
+} from '$wizard/api/wizard.handlers';
 import { EGCSError, WizardError } from '$wizard/errors';
 import {
 	batchCompletionApiSchema,
-	type BatchCompletionApiResponse,
 	uploadUrlRequestSchema
 } from '$wizard/schemas';
 import { Storage } from '@google-cloud/storage';
@@ -111,7 +113,8 @@ export const requestGcsUploadCommand = guardedCommand(
 			locals: { user }
 		} = getRequestEvent();
 
-		if (!GCS_BUCKET_NAME) throwSvelteError(ECommonServerError.INTERNAL_ERROR);
+		if (!GCS_BUCKET_NAME)
+			throw svelteApiError(ECommonServerError.INTERNAL_ERROR);
 
 		const normalizedFullPath = fullFilePath.replace(/\\/g, '/');
 		const hash = createHash('sha256').update(normalizedFullPath).digest('hex');
@@ -123,8 +126,7 @@ export const requestGcsUploadCommand = guardedCommand(
 			WizardError,
 			ECommonServerError.INTERNAL_ERROR
 		);
-		if (!storageResult.ok)
-			return throwSvelteError(storageResult.error.apiError);
+		if (!storageResult.ok) throw svelteApiError(storageResult.error.apiError);
 
 		const signedUploadResult = await createSignedUploadResult({
 			storage: storageResult.data,
@@ -133,41 +135,31 @@ export const requestGcsUploadCommand = guardedCommand(
 			fileUri
 		});
 		if (!signedUploadResult.ok)
-			return throwSvelteError(signedUploadResult.error.apiError);
+			throw svelteApiError(signedUploadResult.error.apiError);
 
 		return signedUploadResult.data;
 	}
 );
 
 /**
- * Executes one batch completion request via the existing completion route.
+ * Executes one batch completion request via remote command.
  */
 export const submitBatchCompletionCommand = guardedCommand(
 	batchCompletionApiSchema,
 	async ({ items }) => {
-		const { fetch } = getRequestEvent();
-		const response = await fetch('/board/user/completion', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ items })
-		});
-		const data = await response.json();
-		if (!response.ok) {
-			const code =
-				typeof data === 'object' &&
-				data !== null &&
-				'code' in data &&
-				typeof (data as { code?: unknown }).code === 'string'
-					? (data as { code: string }).code
-					: undefined;
+		const {
+			locals: { user }
+		} = getRequestEvent();
+		if (!user) throw svelteApiError(ECommonServerError.UNAUTHORIZED);
 
-			throwSvelteError(
-				code
-					? WizardError.fromCode(code).apiError
-					: ECommonServerError.INTERNAL_ERROR
-			);
+		const result = await tryResultAsync(
+			runBatchCompletion(items, user!.id),
+			BerichtgenError,
+			ECommonServerError.INTERNAL_ERROR
+		);
+		if (!result.ok) {
+			throw svelteApiError(result.error.apiError);
 		}
-
-		return data as BatchCompletionApiResponse;
+		return result.data;
 	}
 );

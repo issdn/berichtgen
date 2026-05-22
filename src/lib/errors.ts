@@ -94,7 +94,7 @@ export class BerichtgenError extends Error {
 // Utilities
 // ---------------------------------------------------------------------------
 
-export function throwSvelteError(e: AnyErrorValue, cause?: string) {
+export function svelteApiError(e: AnyErrorValue, cause?: string) {
 	return error(e.httpCode, {
 		message: e.message,
 		code: e.code,
@@ -116,7 +116,7 @@ export function errorByHttpCode<T extends EnumError>(
  * Normalises an unknown thrown value into a structured error body.
  *
  * Handles three cases in priority order:
- * 1. SvelteKit `HttpError` produced by {@link throwSvelteError} — extracts `code`, `message` and
+ * 1. SvelteKit `HttpError` produced by {@link throw svelteApiError} — extracts `code`, `message` and
  *    `cause` from the `.body` property.
  * 2. Native `Error` instance — uses `.message` and falls back to `'INTERNAL_ERROR'` as the code.
  * 3. Anything else — returns a generic German fallback message.
