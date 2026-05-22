@@ -2,8 +2,7 @@
 	import { ScanReturnValue } from '$core/types';
 
 	import {
-		get2DimensionalDirectories,
-		getFileListWithPreserverFolderStructure
+		scanDroppedInput
 	} from '$core/scan/file_scan';
 	import { buttonVariants } from '$ui/button';
 	import { Download, FileType } from '@lucide/svelte';
@@ -20,13 +19,10 @@
 	let filesNumber = $state(0);
 
 	async function handleFiles(items: DataTransferItemList | FileList) {
-		const directories =
-			items instanceof FileList
-				? getFileListWithPreserverFolderStructure(items)
-				: ((await get2DimensionalDirectories(
-						items,
-						ScanReturnValue.DATA_TRANSFER_ITEM
-					)) as FileSystemFileEntry[][]);
+		const directories = await scanDroppedInput(
+			items,
+			ScanReturnValue.DATA_TRANSFER_ITEM
+		);
 		const allFiles = directories.flat();
 		filesNumber = allFiles.length;
 		resultFiles = new SvelteMap(buildConfigMap(allFiles));

@@ -1,5 +1,5 @@
 import { redirect } from 'sveltekit-flash-message/server';
-import { throw svelteApiError, ECommonServerError } from '$lib/errors.js';
+import { svelteApiError, ECommonServerError } from '$lib/errors.js';
 
 export const load = async ({ url, cookies }) => {
 	const status = url.searchParams.get('redirect_status');

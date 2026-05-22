@@ -1,4 +1,4 @@
-import { throw svelteApiError } from '$lib/errors.js';
+import { svelteApiError } from '$lib/errors.js';
 import { EAuthError } from '$core/auth/errors';
 import { redirect } from 'sveltekit-flash-message/server';
 

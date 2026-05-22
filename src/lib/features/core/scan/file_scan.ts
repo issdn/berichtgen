@@ -3,10 +3,12 @@ import { ParserError, EParserError } from '$core/parser/errors';
 import type { WizardRawDirectories, WizardRawDirectory } from '$wizard/types';
 
 export function getFileListWithPreserverFolderStructure(
-	files: FileList
+	files: FileList,
+	isFileValid?: (file: File) => boolean
 ): WizardRawDirectories {
 	const directories = new Map<string, WizardRawDirectory>(
 		[...files].reduce((acc, file) => {
+			if (isFileValid && !isFileValid(file)) return acc;
 			const pathParts = file.webkitRelativePath.split('/');
 			const directoryPath = pathParts.slice(0, -1).join('/');
 			if (!acc.has(directoryPath)) {
@@ -19,12 +21,40 @@ export function getFileListWithPreserverFolderStructure(
 	return [...directories.values()];
 }
 
+export async function scanDroppedInput(
+	input: DataTransferItemList | FileList,
+	returnType: (typeof ScanReturnValue)['FILE'],
+	isFileValid?: (file: File) => boolean
+): Promise<WizardRawDirectories>;
+
+export async function scanDroppedInput(
+	input: DataTransferItemList | FileList,
+	returnType: (typeof ScanReturnValue)['DATA_TRANSFER_ITEM']
+): Promise<(File | FileSystemFileEntry)[][]>;
+
+export async function scanDroppedInput(
+	input: DataTransferItemList | FileList,
+	returnType: ScanReturnType,
+	isFileValid?: (file: File) => boolean
+): Promise<WizardRawDirectories | (File | FileSystemFileEntry)[][]> {
+	if (input instanceof FileList) {
+		if (returnType === ScanReturnValue.FILE) {
+			return getFileListWithPreserverFolderStructure(input, isFileValid);
+		}
+		return getFileListWithPreserverFolderStructure(input, isFileValid);
+	}
+	return get2DimensionalDirectories(input, returnType, isFileValid);
+}
+
 export async function get2DimensionalDirectories(
 	items: DataTransferItemList,
-	returnType: ScanReturnType
+	returnType: ScanReturnType,
+	isFileValid?: (file: File) => boolean
 ) {
 	if (returnType === ScanReturnValue.FILE) {
-		return _get2DimensionalDirectories(items, scanFiles);
+		return _get2DimensionalDirectories(items, (entry) =>
+			scanFiles(entry, [], isFileValid)
+		);
 	} else if (returnType === ScanReturnValue.DATA_TRANSFER_ITEM) {
 		return _get2DimensionalDirectories(items, scanSystemFileEntries);
 	} else {
@@ -57,7 +87,8 @@ async function _get2DimensionalDirectories<T>(
 
 async function scanFiles(
 	item: FileSystemEntry,
-	items: WizardRawDirectories = []
+	items: WizardRawDirectories = [],
+	isFileValid?: (file: File) => boolean
 ) {
 	if (item.isDirectory) {
 		const directoryReader = (item as FileSystemDirectoryEntry).createReader();
@@ -71,7 +102,7 @@ async function scanFiles(
 						resolve(
 							(
 								await Promise.all(
-									entries.map((entry) => scanFiles(entry, items))
+									entries.map((entry) => scanFiles(entry, items, isFileValid))
 								)
 							).flat()
 						);
@@ -86,13 +117,11 @@ async function scanFiles(
 
 		return allEntries;
 	} else if (item.isFile) {
-		return [
-			[
-				await new Promise<File>((resolve, reject) =>
-					(item as FileSystemFileEntry).file(resolve, reject)
-				)
-			]
-		] as WizardRawDirectories;
+		const file = await new Promise<File>((resolve, reject) =>
+			(item as FileSystemFileEntry).file(resolve, reject)
+		);
+		if (isFileValid && !isFileValid(file)) return [] as WizardRawDirectories;
+		return [[file]] as WizardRawDirectories;
 	}
 	return items;
 }

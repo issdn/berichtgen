@@ -18,7 +18,7 @@
 </svelte:head>
 
 <div class="h-main flex w-full flex-col gap-4 px-4 pb-4 md:flex-row">
-	<div class="flex w-full flex-col gap-y-4">
+	<div class="flex w-full max-w-1/2 flex-col gap-y-4">
 		<WizardDropzone />
 		<Wizard />
 	</div>

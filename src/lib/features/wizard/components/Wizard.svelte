@@ -136,8 +136,6 @@
 			}
 		}
 	);
-
-	const downloadDisabled = $derived(hasAnyResult);
 </script>
 
 <div
@@ -151,7 +149,7 @@
 		<div class="flex flex-row items-center gap-x-4">
 			<WizardSettingsPopover />
 		</div>
-		<Dialog.Root bind:open={hasAnyResult}>
+		<Dialog.Root open={hasAnyResult}>
 			<Dialog.Trigger
 				class={buttonVariants({ variant: 'default' })}
 				data-testid="wizard-completion-button"
@@ -203,7 +201,7 @@
 		<div class="flex w-fit flex-col gap-y-2">
 			<Button
 				onclick={downloadJSON.execute}
-				disabled={downloadDisabled || downloadJSON.loading}
+				disabled={!hasAnyResult || downloadJSON.loading}
 				data-testid="wizard-json-download"
 			>
 				{#if downloadJSON.loading}
@@ -214,7 +212,7 @@
 			</Button>
 			<Button
 				onclick={downloadDOCX.execute}
-				disabled={downloadDisabled || downloadDOCX.loading}
+				disabled={!hasAnyResult || downloadDOCX.loading}
 			>
 				{#if downloadDOCX.loading}
 					<Spinner size="sm" />

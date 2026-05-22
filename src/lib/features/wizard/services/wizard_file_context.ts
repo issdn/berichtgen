@@ -19,21 +19,13 @@ export class WizardFileContext {
 
 	cancelled: boolean = false;
 
-	constructor(
-		file: WizardDirectoryEntry | File | string,
-		dateRanges: DateRangeSchema | null | undefined = null
-	) {
-		this.file =
-			typeof file === 'string'
-				? { url: file }
-				: file instanceof File
-					? { file }
-					: file;
-		this.dateRanges = dateRanges ?? null;
+	constructor(file: WizardDirectoryEntry) {
+		this.file = file;
+		this.dateRanges = file.config ?? null;
 	}
 
 	static rehydrate(file: WizardPersistedFile) {
-		const context = new WizardFileContext(file.file, file.dateRanges);
+		const context = new WizardFileContext(file.file);
 		context.snapshot = file.snapshot ?? undefined;
 		context.finished = file.finished;
 		context.cancelled = file.cancelled;

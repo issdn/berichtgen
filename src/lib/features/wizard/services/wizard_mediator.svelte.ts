@@ -3,7 +3,11 @@ import { createContext } from 'svelte';
 import berichtgenStore from '$core/stores/berichtgen.svelte';
 import { createStateMachineForContext } from './state_machine';
 import { BerichtgenError } from '$lib/errors';
-import { WizardError, EWizardError } from '$wizard/errors';
+import {
+	WizardError,
+	EWizardError,
+	ECompletionException
+} from '$wizard/errors';
 import { WizardFileContext } from './wizard_file_context';
 import type {
 	ResultEntry,
@@ -265,25 +269,19 @@ export class WizardMediator {
 		startedFileIndices: SvelteSet<number>,
 		fileResults: SvelteMap<number, string[]>
 	): Promise<BerichtgenError | null> {
-		let errorCause: BerichtgenError | null = null;
-
 		for (const batch of batches) {
 			this.startBatchFiles(batch, pendingList, startedFileIndices);
 			const result = await sendBatchCompletion(batch);
 			if (!result.ok) return result.error;
 
-			this.collectBatchResults(
-				batch,
-				result.data.results,
-				fileResults
-			);
+			this.collectBatchResults(batch, result.data.results, fileResults);
+
 			if (result.data.insufficient_tokens) {
-				errorCause = new WizardError(EWizardError.COMPLETION_FAILED);
-				break;
+				return new WizardError(ECompletionException.NOT_ENOUGH_TOKENS);
 			}
 		}
 
-		return errorCause;
+		return null;
 	}
 
 	private startBatchFiles(

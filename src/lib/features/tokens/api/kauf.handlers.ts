@@ -15,7 +15,7 @@ import db from '$lib/server/db';
 import {
 	BerichtgenError,
 	ECommonServerError,
-	throw svelteApiError
+	svelteApiError
 } from '$lib/errors';
 import { PRICE_PER_MILLION_TOKENS_CENTS } from '$lib/constants';
 import { tryResultAsync } from '$lib/result';

@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { json } from '@sveltejs/kit';
 import {
 	BerichtgenError,
-	throw svelteApiError,
+	svelteApiError,
 	ECommonServerError
 } from '$lib/errors';
 import * as Sentry from '@sentry/sveltekit';

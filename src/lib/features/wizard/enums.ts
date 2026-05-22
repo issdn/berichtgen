@@ -30,7 +30,12 @@ export const FileTypes = Object.freeze({
 	TXT: 'text/plain',
 	CSV: 'text/csv',
 	JPG: 'image/jpeg',
-	PNG: 'image/png'
+	PNG: 'image/png',
+	/**
+	 * Synthetic MIME type used by Dropzone URL paste/drag transport.
+	 * This is not a real uploaded document format.
+	 */
+	URI_LIST: 'text/uri-list'
 } as const);
 
 export type FileTypes = (typeof FileTypes)[keyof typeof FileTypes];

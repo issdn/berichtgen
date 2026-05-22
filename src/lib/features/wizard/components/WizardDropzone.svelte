@@ -11,10 +11,7 @@
 	import { readCsvConfig } from '$core/config/services/config_reader';
 	import { ScanReturnValue } from '$core/types';
 	import { CONFIG_FILENAME_REGEX } from '$lib/constants';
-	import {
-		get2DimensionalDirectories,
-		getFileListWithPreserverFolderStructure
-	} from '$core/scan/file_scan';
+	import { scanDroppedInput } from '$core/scan/file_scan';
 	import { FileTypes } from '$wizard/enums';
 	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
@@ -31,27 +28,17 @@
 	);
 
 	const isValidFile = (file: File): boolean => {
-		return file.size <= GCS_MAX_BYTES;
+		if (file.type === FileTypes.URI_LIST) return true;
+		return (
+			file.type.length > 0 &&
+			accept.includes(file.type) &&
+			file.size <= GCS_MAX_BYTES
+		);
 	};
-
-	/**
-	 * Normalizes dropped/selected input items to wizard raw directories.
-	 */
-	async function scanDirectories(
-		items: DataTransferItemList | FileList
-	): Promise<WizardRawDirectories> {
-		if (items instanceof FileList) {
-			return getFileListWithPreserverFolderStructure(items);
-		}
-		return (await get2DimensionalDirectories(
-			items,
-			ScanReturnValue.FILE
-		)) as WizardRawDirectories;
-	}
 
 	async function handleFiles(items: DataTransferItemList | FileList) {
 		const scanResult = await tryResultAsync(
-			scanDirectories(items),
+			scanDroppedInput(items, ScanReturnValue.FILE, isValidFile),
 			BerichtgenError,
 			ECommonServerError.INTERNAL_ERROR
 		);
@@ -64,6 +51,10 @@
 
 		const directories = scanResult.data;
 		filesNumber = directories.flat().length;
+		if (filesNumber === 0) {
+			toast.error('Keine gueltigen Dateien gefunden.');
+			return;
+		}
 		const anyNonJsonFiles = directories
 			.flat()
 			.find((f) => f.type !== FileTypes.JSON);
@@ -121,7 +112,7 @@
 	}
 
 	function fileToEntry(file: File): WizardDirectoryEntry {
-		if (file.type === 'text/uri-list') return { url: file.name };
+		if (file.type === FileTypes.URI_LIST) return { url: file.name };
 		return { file };
 	}
 
@@ -150,8 +141,9 @@
 		const configuredFileCount = configRows.filter(
 			({ file }) => !URL.canParse(file)
 		).length;
+
 		if (configuredFileCount < fileEntries.size) {
-			toast('Nicht alle Dateien in der Konfiguration gefunden.');
+			toast.error('Nicht alle Dateien in der Konfiguration gefunden.');
 		}
 		if (notFound.length > 0) {
 			toast.error(

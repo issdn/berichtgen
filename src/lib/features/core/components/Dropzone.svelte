@@ -2,6 +2,7 @@
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
 	import { cn } from '$lib/utils';
 	import * as Kbd from '$ui/kbd';
+	import { FileTypes } from '$wizard/enums';
 	import { Clock, FileCheck, FileUp, FileX } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -25,13 +26,15 @@
 	let isDraggedInputValid = $state(true);
 
 	const matchesAccept = (type: string) =>
-		accept ? accept.includes(type) : false;
+		type === FileTypes.URI_LIST ||
+		(type.length > 0 && (accept ? accept.includes(type) : false));
+
+	function isFileValid(file: File): boolean {
+		return matchesAccept(file.type) && (isValidFile ? isValidFile(file) : true);
+	}
 
 	function areFilesValid(files: FileList): boolean {
-		return [...files].every(
-			(file) =>
-				matchesAccept(file.type) && (isValidFile ? isValidFile(file) : true)
-		);
+		return [...files].every(isFileValid);
 	}
 
 	async function extractAndHandleFiles(
@@ -41,10 +44,6 @@
 			const maybeItems = dataTransfer.items;
 			if (maybeItems == null) {
 				toast.error('Keine gueltigen Dateien gefunden.');
-				return;
-			}
-			if (!areFilesValid(dataTransfer.files)) {
-				toast.error('Ungueltige Datei(en) erkannt');
 				return;
 			}
 			await handleFiles(maybeItems);
@@ -69,10 +68,13 @@
 
 		const allValid = items.every((item) => {
 			const file = item.getAsFile();
-			if (!file) return false;
-			return (
-				matchesAccept(file.type) && (isValidFile ? isValidFile(file) : true)
-			);
+			if (!file) {
+				// Folder-like drag entries usually have no MIME type.
+				// If a MIME type exists, still validate it (e.g. video/mp4).
+				return item.type ? matchesAccept(item.type) : true;
+			}
+
+			return isFileValid(file);
 		});
 
 		isDraggedInputValid = allValid ? true : false;
@@ -104,13 +106,13 @@
 	}
 
 	async function handlePaste(e: ClipboardEvent) {
-		// URL paste: wrap as a text/uri-list File so the wizard treats it like a URL entry.
+		// URL paste: wrap as FileTypes.URI_LIST so the wizard treats it like a URL entry.
 		// Pass dt.files (FileList) rather than dt so getFileListWithPreserverFolderStructure
 		// is used - webkitGetAsEntry() returns null for programmatically-added files.
 		const text = e.clipboardData?.getData('text/plain')?.trim();
 		if (text && URL.canParse(text)) {
 			const dt = new DataTransfer();
-			dt.items.add(new File([text], text, { type: 'text/uri-list' }));
+			dt.items.add(new File([text], text, { type: FileTypes.URI_LIST }));
 			await extractAndHandleFiles(dt.files);
 			return;
 		}
