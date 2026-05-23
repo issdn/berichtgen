@@ -6,9 +6,9 @@
 	import * as Tooltip from '$ui/tooltip';
 	import { Separator } from '$ui/separator';
 	import { page } from '$app/state';
-	import { useWizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
+	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 
-	const wizardMediator = useWizardMediatorContext();
+	const wizardMediator = wizardMediatorContext.get();
 
 	type BooleanSettingKey = {
 		[K in keyof App.BerichtgenSettings]: App.BerichtgenSettings[K] extends boolean

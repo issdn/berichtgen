@@ -10,6 +10,7 @@ import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import ts from 'typescript-eslint';
 import svelteConfig from './svelte.config.js';
+import perfectionist from 'eslint-plugin-perfectionist'
 
 const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 
@@ -20,6 +21,7 @@ export default defineConfig(
 	svelte.configs.recommended,
 	prettier,
 	svelte.configs.prettier,
+	perfectionist.configs['recommended-alphabetical'],
 	{
 		languageOptions: { globals: { ...globals.browser, ...globals.node } },
 		rules: {
@@ -29,7 +31,8 @@ export default defineConfig(
 			'@typescript-eslint/no-unused-vars': [
 				'error',
 				{ varsIgnorePattern: '^_', argsIgnorePattern: '^_' }
-			]
+			],
+			"perfectionist/sort-imports": "error"
 		}
 	},
 	{

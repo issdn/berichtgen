@@ -52,7 +52,7 @@ export type WizardDirectories = WizardDirectory[];
 
 export type WizardProcessStateMachine = {
 	context: WizardFileContext;
-	machine: ReturnType<StateMachineSignature>;
+	machine: StateMachineSignature;
 	id: string;
 	/** Sets cancelled and advances the machine — call instead of mutating context directly. */
 	cancel: () => void;

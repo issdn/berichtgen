@@ -5,10 +5,16 @@
 	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
-	import { useWizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
+	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { handleDOCXDownload } from '$wizard/write/write_docx';
 	import { handleJSONDownload } from '$wizard/write/write_json';
-	import { FileCheck2, FileClock, FileJson, FileType } from '@lucide/svelte';
+	import {
+		FileCheck2,
+		FileClock,
+		FileJson,
+		FileType,
+		Play
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { flip } from 'svelte/animate';
 	import WizardFile from './WizardFile.svelte';
@@ -23,7 +29,7 @@
 	import * as AlertDialog from '$ui/alert-dialog';
 	import type { WizardPersistedSession } from '$wizard/services/types';
 
-	const wizardMediator = useWizardMediatorContext();
+	const wizardMediator = wizardMediatorContext.get();
 
 	let hasAnyResult = $state(false);
 
@@ -31,7 +37,7 @@
 
 	let flushLoading = $state(false);
 
-	let states = $state([]);
+	let canRunFlush = $derived((wizardMediator.filesStates?.waiting ?? 0) > 0);
 
 	$effect(() => {
 		if (wizardMediator.result !== null) {
@@ -141,26 +147,29 @@
 		<div class="flex flex-row items-center gap-x-4">
 			<WizardSettingsPopover />
 		</div>
-		<Button
-			variant="secondary"
-			disabled={flushLoading}
-			onclick={flushAiCompletion}
-			data-testid="wizard-flush-button"
-		>
-			{#if flushLoading}
-				<Spinner size="sm" />
-			{:else}
-				<FileType />Ausführen
-			{/if}
-		</Button>
-		<Dialog.Root open={hasAnyResult}>
-			<Dialog.Trigger
-				class={buttonVariants({ variant: 'default' })}
-				data-testid="wizard-completion-button"
-				disabled={!hasAnyResult}><FileCheck2 /></Dialog.Trigger
+		<div class="flex flex-row gap-x-2">
+			<Button
+				variant="default"
+				disabled={flushLoading || !canRunFlush}
+				onclick={flushAiCompletion}
+				data-testid="wizard-flush-button"
 			>
-			<Dialog.Content {children} {childrenBehind} class="max-w-min" />
-		</Dialog.Root>
+				{#if flushLoading}
+					<Spinner size="sm" />
+				{:else}
+					<Play />
+				{/if}
+				Ausführen
+			</Button>
+			<Dialog.Root open={hasAnyResult}>
+				<Dialog.Trigger
+					class={buttonVariants({ variant: 'default' })}
+					data-testid="wizard-completion-button"
+					disabled={!hasAnyResult}><FileCheck2 /></Dialog.Trigger
+				>
+				<Dialog.Content {children} {childrenBehind} class="max-w-min" />
+			</Dialog.Root>
+		</div>
 	</div>
 	{#if wizardMediator.schedule !== null && wizardMediator.processInit !== null}
 		{#await wizardMediator.processInit}

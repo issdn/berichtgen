@@ -1,5 +1,6 @@
-import { createContext } from 'svelte';
+import { Context } from 'runed';
 import type { TemplatesMutationContext } from './types';
 
-export const [getTemplatesMutationContext, setTemplatesMutationContext] =
-	createContext<TemplatesMutationContext>();
+export const templatesMutationContext = new Context<TemplatesMutationContext>(
+	'templates_mutation'
+);

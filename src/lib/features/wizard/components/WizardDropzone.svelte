@@ -15,12 +15,12 @@
 	import { FileTypes } from '$wizard/enums';
 	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
-	import { useWizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
+	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { GCS_MAX_BYTES } from '$wizard/services/file_routing';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
 
-	const wizardMediator = useWizardMediatorContext();
+	const wizardMediator = wizardMediatorContext.get();
 
 	let filesNumber = $state(0);
 	let accept = $derived(

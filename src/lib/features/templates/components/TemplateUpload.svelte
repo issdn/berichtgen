@@ -12,12 +12,12 @@
 	import type { ResultEntry } from '$wizard/types';
 	import { renderDocxBlob } from '$wizard/write/write_docx';
 	import { toast } from 'svelte-sonner';
-	import { getTemplatesMutationContext } from '../contexts';
+	import { templatesMutationContext } from '../contexts';
 	import TemplateDocxPreviewDialog from './TemplateDocxPreviewDialog.svelte';
 	import Checkbox from '$ui/checkbox/checkbox.svelte';
 	import { Label } from '$ui/label';
 
-	const mutation = getTemplatesMutationContext();
+	const mutation = templatesMutationContext.get();
 
 	const {
 		query

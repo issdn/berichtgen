@@ -1,3 +1,4 @@
+import type { WizardStep } from '$wizard/enums';
 import type {
 	Entry,
 	WizardDirectoryEntry,
@@ -5,8 +6,8 @@ import type {
 	WizardProcessStateMachine
 } from '$wizard/types';
 import type { WizardPersistedFile } from './types';
-import type { WizardStep } from '$wizard/enums';
-import { get } from 'svelte/store';
+
+type FilesStates = Record<WizardStep, number>;
 
 export class WizardScheduler {
 	schedule: WizardProcessStateMachine[] | null = $state(null);
@@ -16,14 +17,26 @@ export class WizardScheduler {
 		return this.schedule.length;
 	});
 
-	filesReady = $derived.by(() => {
-		if (this.schedule === null) return 0;
-		return this.schedule.filter(
-			(process) =>
-				process.context.finished !== null ||
-				process.context.error !== undefined ||
-				process.context.cancelled
-		).length;
+	filesStates = $derived.by<FilesStates | null>(() => {
+		if (this.schedule === null) return null;
+
+		const counts: FilesStates = {
+			init: 0,
+			process: 0,
+			waiting: 0,
+			batch_pending: 0,
+			completion: 0,
+			time_spread: 0,
+			done: 0,
+			cancelled: 0,
+			error: 0
+		};
+
+		for (const process of this.schedule) {
+			counts[process.machine.current]++;
+		}
+
+		return counts;
 	});
 
 	clear() {
@@ -58,7 +71,7 @@ export class WizardScheduler {
 	toPersistedFiles(): WizardPersistedFile[] {
 		return (this.schedule ?? []).map((process) => ({
 			id: process.id,
-			step: get(process.machine) as WizardStep,
+			step: process.machine.current,
 			...process.context,
 			error: process.context.error?.apiError
 		}));

@@ -1,5 +1,4 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import { createContext } from 'svelte';
 import berichtgenStore from '$core/stores/berichtgen.svelte';
 import { createStateMachineForContext } from './state_machine';
 import { BerichtgenError } from '$lib/errors';
@@ -30,9 +29,9 @@ import {
 import Persistence from '$core/persistence';
 import { debounce } from '$lib/utils';
 import { WizardScheduler } from './wizard_scheduler.svelte';
-import { get } from 'svelte/store';
 import { WizardBatcher } from './wizard_batcher';
 import type { FileRouting } from './file_routing';
+import { Context } from 'runed';
 
 const MAX_PARALLEL_REQUESTS = 5;
 
@@ -83,9 +82,8 @@ export class WizardMediator {
 
 	get isDone() {
 		return (
-			!this.isRunning &&
 			this.schedulerState.schedule !== null &&
-			this.schedulerState.filesReady === this.schedulerState.numberOfFiles
+			this.filesStates?.done === this.schedulerState.numberOfFiles
 		);
 	}
 
@@ -101,8 +99,8 @@ export class WizardMediator {
 		return this.schedulerState.numberOfFiles;
 	}
 
-	get filesReady() {
-		return this.schedulerState.filesReady;
+	get filesStates() {
+		return this.schedulerState.filesStates;
 	}
 
 	persistSoon = debounce(() => {
@@ -161,7 +159,7 @@ export class WizardMediator {
 			this.createProcessStateMachine(new WizardFileContext(entry))
 		);
 		for (const process of this.schedulerState.schedule ?? []) {
-			process.machine.next();
+			process.machine.send('next');
 		}
 		this.persistSoon();
 	};
@@ -195,7 +193,7 @@ export class WizardMediator {
 		if (this.schedulerState.schedule === null) return;
 
 		for (const process of this.schedulerState.schedule) {
-			const step = get(process.machine) as WizardStep;
+			const step = process.machine.current as WizardStep;
 			if (step === WizardStep.INITIALISING || step === WizardStep.PROCESSING) {
 				return;
 			}
@@ -298,7 +296,7 @@ export class WizardMediator {
 	) {
 		for (const { fileIndex } of batch) {
 			if (startedFileIndices.has(fileIndex)) continue;
-			pendingList[fileIndex].machine.start();
+			pendingList[fileIndex].machine.send('start');
 			startedFileIndices.add(fileIndex);
 		}
 	}
@@ -325,13 +323,13 @@ export class WizardMediator {
 			const process = pendingList[fileIndex];
 			if (globalError !== null) {
 				process.context.error = globalError;
-				process.machine.error();
+				process.machine.send('error');
 				continue;
 			}
 			const fileError = fileErrors.get(fileIndex);
 			if (fileError) {
 				process.context.error = fileError;
-				process.machine.error();
+				process.machine.send('error');
 				continue;
 			}
 
@@ -339,10 +337,10 @@ export class WizardMediator {
 			const entries = result ? result.map((text) => ({ text })) : null;
 			if (entries === null) {
 				process.context.error = new WizardError(EWizardError.COMPLETION_FAILED);
-				process.machine.error();
+				process.machine.send('error');
 			} else {
 				process.context.snapshot = entries;
-				process.machine.next(entries);
+				process.machine.send('next', entries);
 			}
 		}
 
@@ -370,9 +368,6 @@ export class WizardMediator {
 			id,
 			initialStep
 		);
-		void machine.next;
-		void machine.start;
-		void machine.error;
 
 		const process: WizardProcessStateMachine = {
 			context,
@@ -380,16 +375,16 @@ export class WizardMediator {
 			id,
 			cancel() {
 				context.cancelled = true;
-				machine.cancel();
+				machine.send('cancel');
 			},
 			restart() {
 				context.cancelled = false;
-				machine.next();
-				machine.next();
+				machine.send('next');
+				machine.send('next');
 			},
 			confirmDateRanges() {
 				if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
-					machine.next();
+					machine.send('next');
 				}
 			}
 		};
@@ -400,8 +395,6 @@ export class WizardMediator {
 		return {
 			sessionId: this.sessionId,
 			updatedAt: Date.now(),
-			isRunning: this.isRunning,
-			filesReady: this.filesReady,
 			flushRequested: this.flushRequested,
 			files: this.schedulerState.toPersistedFiles()
 		};
@@ -431,7 +424,7 @@ export class WizardMediator {
 		this.schedulerState.setSchedule(restored);
 
 		for (const process of restored) {
-			if (get(process.machine) === WizardStep.BATCH_PENDING) {
+			if (process.machine.current === WizardStep.BATCH_PENDING) {
 				this.batcher.register(process);
 			}
 		}
@@ -440,7 +433,6 @@ export class WizardMediator {
 	}
 }
 
-const [useWizardMediatorContext, setWizardMediatorContext] =
-	createContext<WizardMediator>();
-
-export { useWizardMediatorContext, setWizardMediatorContext };
+export const wizardMediatorContext = new Context<WizardMediator>(
+	'wizard_mediator'
+);

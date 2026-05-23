@@ -51,7 +51,9 @@
 		}
 	}
 
-	let { icon: Icon, label } = $derived.by(() => statusFromStep($machine));
+	let step = $derived(machine.current);
+
+	let { icon: Icon, label } = $derived.by(() => statusFromStep(step));
 </script>
 
 <div
@@ -63,24 +65,24 @@
 			>{'url' in context.file ? context.file.url : context.file.file.name}</span
 		>
 		<div class="flex flex-row gap-x-2">
-			{#if $machine === WizardStep.WAITING}
+			{#if step === WizardStep.WAITING}
 				<TimeSpreadDialog
 					{id}
 					onClose={confirmDateRanges}
 					onValidChange={(data) => (context.dateRanges = data)}
 				/>
 			{/if}
-			{#if $machine === WizardStep.WAITING || $machine === WizardStep.INITIALISING}
+			{#if step === WizardStep.WAITING || step === WizardStep.INITIALISING}
 				<Button variant="destructive" onclick={cancel}><XIcon /></Button>
 			{/if}
-			{#if $machine === WizardStep.CANCELLED}
+			{#if step === WizardStep.CANCELLED}
 				<Button variant="default" onclick={restart}><RotateCcw /></Button>
 			{/if}
 		</div>
 	</div>
 	<div class="flex flex-row justify-between">
 		<div class="flex flex-row items-center gap-x-1">
-			{#if $machine === WizardStep.ERROR}
+			{#if step === WizardStep.ERROR}
 				<Tooltip.Provider delayDuration={100}>
 					<Tooltip.Root>
 						<Tooltip.Trigger>
@@ -105,7 +107,7 @@
 				</Badge>
 			{/if}
 		</div>
-		{#if $machine === WizardStep.PROCESSING || $machine === WizardStep.AI_COMPLETION || $machine === WizardStep.TIME_SPREADING}
+		{#if step === WizardStep.PROCESSING || step === WizardStep.AI_COMPLETION || step === WizardStep.TIME_SPREADING}
 			<Spinner size="sm" />
 		{/if}
 	</div>

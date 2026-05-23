@@ -1,4 +1,4 @@
-ï»¿<script lang="ts">
+<script lang="ts">
 	import {
 		Check,
 		Download,
@@ -33,7 +33,7 @@
 		getTemplates,
 		reportTemplate
 	} from '../api/templates.remote';
-	import { getTemplatesMutationContext } from '../contexts';
+	import { templatesMutationContext } from '../contexts';
 	import TemplateDocxPreviewDialog from './TemplateDocxPreviewDialog.svelte';
 	import { LOCALE } from '$lib/constants';
 	import { page } from '$app/state';
@@ -56,7 +56,7 @@
 		query: ReturnType<typeof getTemplates>;
 	} = $props();
 
-	const mutation = getTemplatesMutationContext();
+	const mutation = templatesMutationContext.get();
 
 	let reportDialogOpen = $state(false);
 
@@ -127,9 +127,9 @@
 			ECommonServerError.INTERNAL_ERROR
 		);
 		if (result.ok) {
-			toast.success('Meldung zurÃ¼ckgezogen.');
+			toast.success('Meldung zurückgezogen.');
 		} else {
-			toast.error('Fehler beim ZurÃ¼ckziehen.', {
+			toast.error('Fehler beim Zurückziehen.', {
 				description: toErrorBody(result.error).message
 			});
 		}
@@ -150,9 +150,9 @@
 			ECommonServerError.INTERNAL_ERROR
 		);
 		if (result.ok) {
-			toast.success('Datei erfolgreich gelÃ¶scht.');
+			toast.success('Datei erfolgreich gelöscht.');
 		} else {
-			toast.error('Fehler beim LÃ¶schen der Datei.', {
+			toast.error('Fehler beim Löschen der Datei.', {
 				description: toErrorBody(result.error).message
 			});
 		}
@@ -175,7 +175,7 @@
 			reportDialogOpen = false;
 			reportMessage = '';
 			toast.success('Template gemeldet.', {
-				action: { label: 'RÃ¼ckgÃ¤ngig', onClick: undoReport }
+				action: { label: 'Rückgängig', onClick: undoReport }
 			});
 		} else {
 			toast.error('Fehler beim Melden.', {
@@ -216,7 +216,7 @@
 			<Button
 				variant="default"
 				size="icon"
-				title="Als Template auswÃ¤hlen"
+				title="Als Template auswählen"
 				onclick={() => {
 					if (hasPendingReport) {
 						confirmSelectOpen = true;
@@ -252,7 +252,7 @@
 			href="https://docs.google.com/viewer?url={encodeURIComponent(filepath)}"
 			target="_blank"
 			rel="noopener noreferrer"
-			title="In Word Online Ã¶ffnen"
+			title="In Word Online öffnen"
 		>
 			<Button variant="ghost" size="icon" tabindex={-1}>
 				<ExternalLink size={16} />
@@ -274,7 +274,7 @@
 				<Button
 					variant="destructive"
 					size="icon"
-					title="Template lÃ¶schen"
+					title="Template löschen"
 					disabled={deletePending}
 					onclick={() => (confirmDeleteOpen = true)}
 				>
@@ -286,7 +286,7 @@
 				<Button
 					variant="ghost"
 					size="icon"
-					title="Meldung zurÃ¼ckziehen"
+					title="Meldung zurückziehen"
 					onclick={undoReport}
 				>
 					<FlagOff size={16} />
@@ -304,8 +304,8 @@
 						<Dialog.Header>
 							<Dialog.Title>Template melden</Dialog.Title>
 							<Dialog.Description>
-								Melde dieses Template als potenziell schÃ¤dlich. Die Meldung wird
-								von einem Admin geprÃ¼ft.
+								Melde dieses Template als potenziell schädlich. Die Meldung wird
+								von einem Admin geprüft.
 							</Dialog.Description>
 						</Dialog.Header>
 						<div>
@@ -341,9 +341,9 @@
 <AlertDialog.Root bind:open={confirmSelectOpen}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Gemeldetes Template auswÃ¤hlen?</AlertDialog.Title>
+			<AlertDialog.Title>Gemeldetes Template auswählen?</AlertDialog.Title>
 			<AlertDialog.Description>
-				Dieses Template wurde gemeldet und wird noch Ã¼berprÃ¼ft. Die Nutzung
+				Dieses Template wurde gemeldet und wird noch überprüft. Die Nutzung
 				erfolgt auf eigenes Risiko.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
@@ -355,7 +355,7 @@
 					confirmSelectOpen = false;
 				}}
 			>
-				Trotzdem auswÃ¤hlen
+				Trotzdem auswählen
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
@@ -364,14 +364,14 @@
 <AlertDialog.Root bind:open={confirmDeleteOpen}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Template lÃ¶schen?</AlertDialog.Title>
+			<AlertDialog.Title>Template löschen?</AlertDialog.Title>
 			<AlertDialog.Description>
-				â€ž{name}" wird unwiderruflich gelÃ¶scht.
+				„{name}" wird unwiderruflich gelöscht.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Abbrechen</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={submitDelete}>LÃ¶schen</AlertDialog.Action>
+			<AlertDialog.Action onclick={submitDelete}>Löschen</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

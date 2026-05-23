@@ -3,10 +3,6 @@ import { WizardStep } from '$wizard/enums';
 import { CalendarDate } from '@internationalized/date';
 import { okResult } from '$lib/result';
 
-// ---------------------------------------------------------------------------
-// Infrastructure mocks — things that cannot run outside a browser/SvelteKit
-// ---------------------------------------------------------------------------
-
 vi.mock('$app/navigation', () => ({ invalidate: vi.fn() }));
 vi.mock('$core/stores/berichtgen.svelte', () => ({
 	default: {
@@ -23,19 +19,11 @@ vi.mock('$core/stores/berichtgen.svelte', () => ({
 	}
 }));
 
-// Mock resolveFileRouting so the state-machine test only exercises state
-// transitions, not actual file routing/parsing/uploading.
-// Routing correctness is covered separately.
 const mockResolveFileRouting = vi.hoisted(() => vi.fn());
 vi.mock('$wizard/services/file_routing', async (importOriginal) => ({
 	...((await importOriginal()) as object),
 	resolveFileRouting: mockResolveFileRouting
 }));
-
-// ---------------------------------------------------------------------------
-// The single behavioral mock: the HTTP completion endpoint
-// Everything else in the completion module (sanitize, split, batch, stringsToEntries) runs real.
-// ---------------------------------------------------------------------------
 
 const mockSendBatch = vi.hoisted(() => vi.fn());
 vi.mock('$wizard/completion/completion', async (importOriginal) => ({
@@ -43,31 +31,18 @@ vi.mock('$wizard/completion/completion', async (importOriginal) => ({
 	sendBatchCompletion: mockSendBatch
 }));
 
-// ---------------------------------------------------------------------------
-// Imports (after mocks)
-// ---------------------------------------------------------------------------
-
 import { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
 import type { DateRangeSchema } from '$wizard/schemas';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function flush() {
 	return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-// ---------------------------------------------------------------------------
-// Test
-// ---------------------------------------------------------------------------
-
 const DUMMY_TEXT = 'Montag: Programmieren';
 const AI_RESULT = 'KI: Montag: Programmieren';
 
 describe('State machine full lifecycle', () => {
-	test('INITIALISING → PROCESSING → WAITING → BATCH_PENDING → AI_COMPLETION → TIME_SPREADING → DONE', async () => {
-		// resolveFileRouting returns an inline routing instantly (simulates a small file).
+	test('INITIALISING -> PROCESSING -> WAITING -> BATCH_PENDING -> AI_COMPLETION -> TIME_SPREADING -> DONE', async () => {
 		mockResolveFileRouting.mockResolvedValue(
 			okResult({
 				type: 'inline',
@@ -76,40 +51,26 @@ describe('State machine full lifecycle', () => {
 			})
 		);
 
-		// The mocked server responds instantly with a prefixed version of the text.
 		mockSendBatch.mockResolvedValue(
 			okResult({ results: [[AI_RESULT]], insufficient_tokens: false })
 		);
 
-		// Real wizardMediator instance.
 		const scheduler = WizardMediator.createDefault();
-
-		// Create the schedule with a single plain-text file.
 		const file = new File([DUMMY_TEXT], 'test.txt', { type: 'text/plain' });
 		scheduler.createSchedule([[{ file }]]);
 
 		const { context, machine } = scheduler.schedule![0];
 
-		// Track the current FSM state via store subscription.
-		let currentState = WizardStep.INITIALISING as string;
-		machine.subscribe((s: string) => {
-			currentState = s;
-		});
+		expect(machine.current).toBe(WizardStep.PROCESSING);
 
-		// 1. createSchedule now starts INITIALISING → PROCESSING immediately
-		expect(currentState).toBe(WizardStep.PROCESSING);
-
-		// 2. Wait for parseFile to resolve (mocked as an instantly-resolving promise).
 		await flush();
 
-		// 3. PROCESSING finished — snapshot holds the inline routing descriptor, machine waits for date config.
-		expect(currentState).toBe(WizardStep.WAITING);
+		expect(machine.current).toBe(WizardStep.WAITING);
 		expect(context.snapshot).toMatchObject({
 			type: 'inline',
 			mimeType: 'text/plain'
 		});
 
-		// 4. Provide real date ranges (real CalendarDate objects for real spreadEntriesAcrossWeeks).
 		context.dateRanges = {
 			ort: 'BETRIEB',
 			ranges: [
@@ -124,15 +85,11 @@ describe('State machine full lifecycle', () => {
 			]
 		} as unknown as DateRangeSchema;
 
-		// WAITING → BATCH_PENDING, then explicit flush starts AI completion.
-		machine.next();
+		machine.send('next');
 		await scheduler.flushAiCompletion();
-
-		// 5+6. Wait for the async endpoint call + TIME_SPREADING + DONE.
 		await flush();
 
-		// 7. Machine reached DONE with the AI-prefixed text preserved through TIME_SPREADING.
-		expect(currentState).toBe(WizardStep.DONE);
+		expect(machine.current).toBe(WizardStep.DONE);
 		expect(context.finished![0].text).toBe(AI_RESULT);
 	});
 });

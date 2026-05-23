@@ -15,8 +15,6 @@ export type WizardPersistedFile = {
 export type WizardPersistedSession = {
 	sessionId: string;
 	updatedAt: number;
-	isRunning: boolean;
-	filesReady: number;
 	flushRequested: boolean;
 	files: WizardPersistedFile[];
 };

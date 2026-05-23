@@ -5,12 +5,12 @@
 	import { toast } from 'svelte-sonner';
 	import {
 		WizardMediator,
-		setWizardMediatorContext
+		wizardMediatorContext
 	} from '$wizard/services/wizard_mediator.svelte';
 
 	let { children } = $props();
 
-	setWizardMediatorContext(WizardMediator.createDefault(page.data.user?.id));
+wizardMediatorContext.set(WizardMediator.createDefault(page.data.user?.id));
 
 	const flash = getFlash(page);
 
