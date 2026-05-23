@@ -9,14 +9,12 @@
 	import { handleDOCXDownload } from '$wizard/write/write_docx';
 	import { handleJSONDownload } from '$wizard/write/write_json';
 	import { FileCheck2, FileClock, FileJson, FileType } from '@lucide/svelte';
-	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { flip } from 'svelte/animate';
 	import WizardFile from './WizardFile.svelte';
 	import WizardSettingsPopover from './WizardSettingsPopover.svelte';
 	import type { WizardProcessStateMachine } from '$wizard/types';
 	import { dndzone, type DndEvent } from 'svelte-dnd-action';
-	import * as pdf from 'pdfjs-dist/legacy/build/pdf.mjs';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import Docx from '$ui/svg/DOCX.svelte';
 	import Pdf from '$ui/svg/PDF.svelte';
@@ -27,25 +25,13 @@
 
 	const wizardMediator = useWizardMediatorContext();
 
-	onMount(() => {
-		if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-			import('pdfjs-dist/build/pdf.worker.min?url')
-				.then((pdfWorkerURL) => {
-					pdf.GlobalWorkerOptions.workerSrc = new URL(
-						pdfWorkerURL.default,
-						import.meta.url
-					).toString();
-				})
-				.catch(() =>
-					toast.error(
-						'Fehler beim Laden des PDF-Workers. Stelle sicher, dass du eine Internetverbindung hast.'
-					)
-				);
-		}
-	});
-
 	let hasAnyResult = $state(false);
+
 	let restoreDismissed = $state(false);
+
+	let flushLoading = $state(false);
+
+	let states = $state([]);
 
 	$effect(() => {
 		if (wizardMediator.result !== null) {
@@ -77,6 +63,12 @@
 		e: CustomEvent<DndEvent<WizardProcessStateMachine>>
 	) {
 		wizardMediator.schedule = e.detail.items;
+	}
+
+	async function flushAiCompletion() {
+		flushLoading = true;
+		await wizardMediator.flushAiCompletion();
+		flushLoading = false;
 	}
 
 	const downloadJSON = new AsyncResource(
@@ -149,6 +141,18 @@
 		<div class="flex flex-row items-center gap-x-4">
 			<WizardSettingsPopover />
 		</div>
+		<Button
+			variant="secondary"
+			disabled={flushLoading}
+			onclick={flushAiCompletion}
+			data-testid="wizard-flush-button"
+		>
+			{#if flushLoading}
+				<Spinner size="sm" />
+			{:else}
+				<FileType />Ausführen
+			{/if}
+		</Button>
 		<Dialog.Root open={hasAnyResult}>
 			<Dialog.Trigger
 				class={buttonVariants({ variant: 'default' })}

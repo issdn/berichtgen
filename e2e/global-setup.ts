@@ -1,5 +1,7 @@
 import { chromium, type FullConfig } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
+import { Kysely, PostgresDialect } from 'kysely';
+import pg from 'pg';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -42,11 +44,12 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
 	const anonKey = process.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 	const serviceRoleKey = process.env.SUPABASE_SECRET;
+	const databaseUrl = process.env.DATABASE_URL;
 
-	if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+	if (!supabaseUrl || !anonKey || !serviceRoleKey || !databaseUrl) {
 		throw new Error(
 			'E2E globalSetup requires PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY ' +
-				'and SUPABASE_SECRET to be set in .env or .env.local'
+				'SUPABASE_SECRET and DATABASE_URL to be set in .env or .env.local'
 		);
 	}
 
@@ -55,6 +58,18 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	});
 	const admin = createClient(supabaseUrl, serviceRoleKey, {
 		auth: { autoRefreshToken: false, persistSession: false }
+	});
+
+	const db = new Kysely<{
+		template: { user_id: string; storage_path: string };
+		user_token_count: { user_id: string; tokens: number };
+	}>({
+		dialect: new PostgresDialect({
+			pool: new pg.Pool({
+				connectionString: databaseUrl,
+				options: '-c search_path=private'
+			})
+		})
 	});
 
 	// ── 1. Create a fresh random test user ──────────────────────────────────
@@ -83,7 +98,7 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	const session = signInData.session!;
 
 	// ── 2. Upload template.docx to storage ──────────────────────────────────
-	const templatePath = path.join('src', 'test', 'template.docx');
+	const templatePath = path.join('src', 'test', 'fixtures', 'template.docx');
 	if (!fs.existsSync(templatePath)) {
 		throw new Error(
 			`Template fixture not found at ${templatePath} — run seed-template.ts first`
@@ -104,21 +119,23 @@ async function globalSetup(config: FullConfig): Promise<void> {
 		throw new Error(`Storage upload failed: ${uploadError.message}`);
 
 	// ── 3. Insert template metadata row ─────────────────────────────────────
-	await admin.from('template').delete().eq('storage_path', storagePath);
-	const { error: insertError } = await admin
-		.from('template')
-		.insert({ user_id: userId, storage_path: storagePath });
-	if (insertError)
-		throw new Error(`Template insert failed: ${insertError.message}`);
+	await db
+		.deleteFrom('template')
+		.where('storage_path', '=', storagePath)
+		.execute();
+	await db
+		.insertInto('template')
+		.values({ user_id: userId, storage_path: storagePath })
+		.execute();
 
 	// ── 4. Grant a large token balance ──────────────────────────────────────
-	const { error: tokenError } = await admin
-		.from('user_token_count')
-		.upsert(
-			{ user_id: userId, tokens: 2_000_000_000 },
-			{ onConflict: 'user_id' }
-		);
-	if (tokenError) throw new Error(`Token upsert failed: ${tokenError.message}`);
+	await db
+		.insertInto('user_token_count')
+		.values({ user_id: userId, tokens: 2_000_000_000 })
+		.onConflict((oc) =>
+			oc.column('user_id').doUpdateSet({ tokens: 2_000_000_000 })
+		)
+		.execute();
 
 	// ── 5. Inject session cookies and save storage state ────────────────────
 	// Derive the project ref that @supabase/ssr uses as the cookie name prefix
@@ -179,6 +196,7 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
 	await context.storageState({ path: AUTH_FILE });
 	await browser.close();
+	await db.destroy();
 }
 
 export default globalSetup;

@@ -84,9 +84,6 @@
 				directories.map(resolveDirectory)
 			);
 			wizardMediator.createSchedule(resolvedDirectories);
-			wizardMediator.schedule?.forEach((process) =>
-				wizardMediator.queue.enqueue(process)
-			);
 		})();
 	}
 

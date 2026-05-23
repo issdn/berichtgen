@@ -17,7 +17,7 @@ function createIndexedDbMock() {
 				contains: (_name: string) => true
 			},
 			createObjectStore: vi.fn(),
-			transaction: (_store: string, mode: 'readonly' | 'readwrite') => {
+			transaction: (_store: string, _mode: 'readonly' | 'readwrite') => {
 				const tx: {
 					oncomplete?: () => void;
 					onerror?: () => void;

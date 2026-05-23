@@ -21,72 +21,59 @@ import {
 	MAX_BATCH_BYTES,
 	sendBatchCompletion
 } from '$wizard/completion/completion';
-import type { WizardPersistedSession } from './types';
+import type { BatchErrorScope, WizardPersistedSession } from './types';
 import {
 	WIZARD_PERSISTENCE_STORE,
 	WIZARD_PERSISTENCE_TTL_MS,
 	WIZARD_PERSISTENCE_VERSION
 } from '$lib/constants';
 import Persistence from '$core/persistence';
-import { ProcessQueue } from './process_queue';
 import { debounce } from '$lib/utils';
 import { WizardScheduler } from './wizard_scheduler.svelte';
 import { get } from 'svelte/store';
 import { WizardBatcher } from './wizard_batcher';
 import type { FileRouting } from './file_routing';
 
+const MAX_PARALLEL_REQUESTS = 5;
+
+type BatchItem = {
+	routing: FileRouting;
+	ort: Ort;
+	fileIndex: number;
+	text: string;
+};
+
 export class WizardMediator {
 	readonly schedulerState: WizardScheduler;
+
 	readonly batcher: WizardBatcher;
-	readonly queue: ProcessQueue<WizardProcessStateMachine>;
 
 	constructor(
 		schedulerState: WizardScheduler,
 		batcher: WizardBatcher,
-		queue: ProcessQueue<WizardProcessStateMachine>,
 		userId?: string | null
 	) {
 		this.schedulerState = schedulerState;
 		this.batcher = batcher;
-		this.queue = queue;
 		this.userKey = userId ? `user:${userId}` : 'anon';
 		this.persistedSessionPromise = this.loadPersistedSession();
 	}
 
 	static createDefault(userId?: string | null) {
-		const schedulerState = new WizardScheduler();
-		const batcher = new WizardBatcher();
-		// eslint-disable-next-line prefer-const
-		let mediatorRef: WizardMediator;
-
-		const queue = new ProcessQueue<WizardProcessStateMachine>(5, {
-			onenqueue: (item, index) => {
-				if (index < mediatorRef.batchSize) {
-					item.machine.next();
-				}
-			},
-			ondequeue: (_removed, nextToStart) => {
-				nextToStart?.machine.next();
-				if (mediatorRef.isDone) {
-					mediatorRef.finish();
-				}
-				mediatorRef.checkBatchReady();
-				mediatorRef.persistSoon();
-			}
-		});
-
-		mediatorRef = new WizardMediator(schedulerState, batcher, queue, userId);
-
-		return mediatorRef;
+		return new WizardMediator(
+			new WizardScheduler(),
+			new WizardBatcher(),
+			userId
+		);
 	}
 
 	result = $state<Promise<ResultEntry[]> | null>(null);
 
 	processInit = $state<Promise<void> | null>(null);
 
-	isRunning = $derived.by(() => {
-		return this.batcher.isRunning;
-	});
+	flushRequested = $state(false);
+
+	isRunning = $derived.by(() => this.batcher.isRunning);
 
 	userKey: string = 'anon';
 
@@ -100,10 +87,6 @@ export class WizardMediator {
 			this.schedulerState.schedule !== null &&
 			this.schedulerState.filesReady === this.schedulerState.numberOfFiles
 		);
-	}
-
-	get batchSize() {
-		return this.queue.batchSize;
 	}
 
 	get schedule() {
@@ -149,20 +132,18 @@ export class WizardMediator {
 	}
 
 	private resetRuntimeState() {
-		this.queue.reset();
 		this.batcher.reset();
 		this.schedulerState.clear();
 		this.result = null;
+		this.flushRequested = false;
 	}
 
 	onFileErrored = () => {
 		this.persistSoon();
-		this.queue.dequeue();
 	};
 
 	onFileCancelled = () => {
 		this.persistSoon();
-		this.queue.dequeue();
 	};
 
 	init = async (session: WizardPersistedSession | null = null) => {
@@ -179,6 +160,9 @@ export class WizardMediator {
 		this.schedulerState.createSchedule(directories, (entry) =>
 			this.createProcessStateMachine(new WizardFileContext(entry))
 		);
+		for (const process of this.schedulerState.schedule ?? []) {
+			process.machine.next();
+		}
 		this.persistSoon();
 	};
 
@@ -194,62 +178,64 @@ export class WizardMediator {
 		})();
 	};
 
-	/**
-	 * Called by a file's state machine when it enters BATCH_PENDING.
-	 * Registers the file in the pending map by id (avoids Svelte proxy reference issues).
-	 */
 	onFileBatchPending = (id: string) => {
 		const file = this.schedulerState.findById(id);
 		if (!file) return;
 		this.batcher.register(file);
-		this.checkBatchReady();
 		this.persistSoon();
 	};
 
-	/**
-	 * Fires when every file has either finished (filesReady) or is waiting in
-	 * BATCH_PENDING (batchPendingFiles.size) — i.e. all files have settled.
-	 */
-	checkBatchReady = () => {
-		if (
-			this.schedulerState.schedule !== null &&
-			this.batcher.size > 0 &&
-			this.filesReady + this.batcher.size ===
-				this.schedulerState.schedule.length
-		) {
-			void this.runBatches();
+	private classifyBatchError(error: BerichtgenError): BatchErrorScope {
+		return error.apiError.code === EWizardError.INVALID_JSON_FROM_AI.code
+			? 'file_scoped'
+			: 'global';
+	}
+
+	async flushAiCompletion(): Promise<void> {
+		if (this.schedulerState.schedule === null) return;
+
+		for (const process of this.schedulerState.schedule) {
+			const step = get(process.machine) as WizardStep;
+			if (step === WizardStep.INITIALISING || step === WizardStep.PROCESSING) {
+				return;
+			}
+			if (step === WizardStep.WAITING) return;
 		}
-	};
 
-	/** Runs completion batches for all currently pending files. */
-	private runBatches = async () => {
-		const pendingList = this.takePendingProcesses();
+		this.flushRequested = true;
 		this.persistSoon();
+
+		const pendingList = this.takePendingProcesses();
+		if (pendingList.length === 0) return;
 
 		const pendingItems = pendingList.map((process, fileIndex) => {
 			const routing = process.context.snapshot as FileRouting;
 			const ort = process.context.dateRanges!.ort;
-			return { routing, ort, fileIndex };
+			return {
+				routing,
+				ort,
+				fileIndex,
+				text: this.toSizeProxyText(routing)
+			};
 		});
-		const batches = createBatchesBySize(
-			pendingItems.map((item) => ({
-				...item,
-				text: this.toSizeProxyText(item.routing)
-			})),
+		const batches = createBatchesBySize<BatchItem>(
+			pendingItems,
 			MAX_BATCH_BYTES
 		);
 
 		const fileResults = new SvelteMap<number, string[]>();
+		const fileErrors = new SvelteMap<number, BerichtgenError>();
 		const startedFileIndices = new SvelteSet<number>();
-		const errorCause = await this.processBatches(
+		const globalError = await this.processBatches(
 			batches,
 			pendingList,
 			startedFileIndices,
-			fileResults
+			fileResults,
+			fileErrors
 		);
 
-		this.applyResults(pendingList, fileResults, errorCause);
-	};
+		this.applyResults(pendingList, fileResults, fileErrors, globalError);
+	}
 
 	private takePendingProcesses() {
 		const pendingIds = this.batcher.takePendingIds();
@@ -257,40 +243,56 @@ export class WizardMediator {
 	}
 
 	private async processBatches(
-		batches: Array<
-			Array<{
-				routing: FileRouting;
-				ort: Ort;
-				fileIndex: number;
-				text: string;
-			}>
-		>,
+		batches: BatchItem[][],
 		pendingList: WizardProcessStateMachine[],
 		startedFileIndices: SvelteSet<number>,
-		fileResults: SvelteMap<number, string[]>
+		fileResults: SvelteMap<number, string[]>,
+		fileErrors: SvelteMap<number, BerichtgenError>
 	): Promise<BerichtgenError | null> {
-		for (const batch of batches) {
-			this.startBatchFiles(batch, pendingList, startedFileIndices);
-			const result = await sendBatchCompletion(batch);
-			if (!result.ok) return result.error;
+		if (batches.length === 0) return null;
 
-			this.collectBatchResults(batch, result.data.results, fileResults);
+		let cursor = 0;
+		let globalError: BerichtgenError | null = null;
+		const workerCount = Math.min(MAX_PARALLEL_REQUESTS, batches.length);
 
-			if (result.data.insufficient_tokens) {
-				return new WizardError(ECompletionException.NOT_ENOUGH_TOKENS);
+		const worker = async () => {
+			while (true) {
+				if (globalError !== null) return;
+				const index = cursor;
+				cursor++;
+				const batch = batches[index];
+				if (!batch) return;
+
+				this.startBatchFiles(batch, pendingList, startedFileIndices);
+				const result = await sendBatchCompletion(batch);
+
+				if (!result.ok) {
+					const scope = this.classifyBatchError(result.error);
+					if (scope === 'global') {
+						globalError = result.error;
+						return;
+					}
+					for (const { fileIndex } of batch) {
+						fileErrors.set(fileIndex, result.error);
+					}
+					continue;
+				}
+
+				this.collectBatchResults(batch, result.data.results, fileResults);
+
+				if (result.data.insufficient_tokens) {
+					globalError = new WizardError(ECompletionException.NOT_ENOUGH_TOKENS);
+					return;
+				}
 			}
-		}
+		};
 
-		return null;
+		await Promise.all(Array.from({ length: workerCount }, () => worker()));
+		return globalError;
 	}
 
 	private startBatchFiles(
-		batch: Array<{
-			routing: FileRouting;
-			ort: Ort;
-			fileIndex: number;
-			text: string;
-		}>,
+		batch: BatchItem[],
 		pendingList: WizardProcessStateMachine[],
 		startedFileIndices: SvelteSet<number>
 	) {
@@ -302,43 +304,51 @@ export class WizardMediator {
 	}
 
 	private collectBatchResults(
-		batch: Array<{
-			routing: FileRouting;
-			ort: Ort;
-			fileIndex: number;
-			text: string;
-		}>,
+		batch: BatchItem[],
 		results: (string[] | null)[],
 		fileResults: SvelteMap<number, string[]>
 	) {
 		for (let i = 0; i < batch.length; i++) {
 			const { fileIndex } = batch[i];
 			const result = results[i];
-			if (result != null) {
-				fileResults.set(fileIndex, result);
-			}
+			if (result != null) fileResults.set(fileIndex, result);
 		}
 	}
 
 	private applyResults(
 		pendingList: WizardProcessStateMachine[],
 		fileResults: SvelteMap<number, string[]>,
-		errorCause: BerichtgenError | null
+		fileErrors: SvelteMap<number, BerichtgenError>,
+		globalError: BerichtgenError | null
 	) {
 		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
 			const process = pendingList[fileIndex];
+			if (globalError !== null) {
+				process.context.error = globalError;
+				process.machine.error();
+				continue;
+			}
+			const fileError = fileErrors.get(fileIndex);
+			if (fileError) {
+				process.context.error = fileError;
+				process.machine.error();
+				continue;
+			}
+
 			const result = fileResults.get(fileIndex);
 			const entries = result ? result.map((text) => ({ text })) : null;
 			if (entries === null) {
-				process.context.error =
-					errorCause ?? new WizardError(EWizardError.COMPLETION_FAILED);
+				process.context.error = new WizardError(EWizardError.COMPLETION_FAILED);
 				process.machine.error();
 			} else {
 				process.context.snapshot = entries;
 				process.machine.next(entries);
 			}
-			this.persistSoon();
 		}
+
+		this.flushRequested = false;
+		this.persistSoon();
+		if (this.isDone) this.finish();
 	}
 
 	private toSizeProxyText(routing: FileRouting): string {
@@ -354,23 +364,15 @@ export class WizardMediator {
 		id: string = crypto.randomUUID(),
 		initialStep: WizardStep = WizardStep.INITIALISING
 	) => {
-		// eslint-disable-next-line @typescript-eslint/no-this-alias
-		const scheduler = this;
-
 		const machine = createStateMachineForContext(
 			context,
-			scheduler,
+			this,
 			id,
 			initialStep
 		);
-		// Svelte 5 deep-proxies objects stored in $state — accessing methods here
-		// prevents the proxy from hiding them when the machine is retrieved later
-		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-		machine.next;
-		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-		machine.start;
-		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-		machine.error;
+		void machine.next;
+		void machine.start;
+		void machine.error;
 
 		const process: WizardProcessStateMachine = {
 			context,
@@ -382,7 +384,8 @@ export class WizardMediator {
 			},
 			restart() {
 				context.cancelled = false;
-				machine.next(process);
+				machine.next();
+				machine.next();
 			},
 			confirmDateRanges() {
 				if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
@@ -399,13 +402,16 @@ export class WizardMediator {
 			updatedAt: Date.now(),
 			isRunning: this.isRunning,
 			filesReady: this.filesReady,
+			flushRequested: this.flushRequested,
 			files: this.schedulerState.toPersistedFiles()
 		};
 	}
 
 	private rehydrateFromSnapshot(snapshot: WizardPersistedSession): void {
 		this.sessionId = snapshot.sessionId;
+		this.flushRequested = snapshot.flushRequested ?? false;
 		this.resetRuntimeState();
+		this.flushRequested = snapshot.flushRequested ?? false;
 
 		const restored: WizardProcessStateMachine[] = [];
 		for (const file of snapshot.files) {
@@ -419,7 +425,6 @@ export class WizardMediator {
 				file.id,
 				restoredStep
 			);
-
 			restored.push(process);
 		}
 
@@ -430,11 +435,7 @@ export class WizardMediator {
 				this.batcher.register(process);
 			}
 		}
-		if (this.isDone) {
-			this.finish();
-		} else {
-			this.checkBatchReady();
-		}
+		if (this.isDone) this.finish();
 		this.persistSoon();
 	}
 }

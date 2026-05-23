@@ -96,9 +96,8 @@ describe('State machine full lifecycle', () => {
 			currentState = s;
 		});
 
-		// 1. Kick off: INITIALISING → PROCESSING
-		expect(currentState).toBe(WizardStep.INITIALISING);
-		scheduler.queue.enqueue(scheduler.schedule![0]);
+		// 1. createSchedule now starts INITIALISING → PROCESSING immediately
+		expect(currentState).toBe(WizardStep.PROCESSING);
 
 		// 2. Wait for parseFile to resolve (mocked as an instantly-resolving promise).
 		await flush();
@@ -125,8 +124,9 @@ describe('State machine full lifecycle', () => {
 			]
 		} as unknown as DateRangeSchema;
 
-		// WAITING → BATCH_PENDING → checkBatchReady fires → runBatches → mocked endpoint.
+		// WAITING → BATCH_PENDING, then explicit flush starts AI completion.
 		machine.next();
+		await scheduler.flushAiCompletion();
 
 		// 5+6. Wait for the async endpoint call + TIME_SPREADING + DONE.
 		await flush();

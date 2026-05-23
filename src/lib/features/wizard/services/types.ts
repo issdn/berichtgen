@@ -17,5 +17,8 @@ export type WizardPersistedSession = {
 	updatedAt: number;
 	isRunning: boolean;
 	filesReady: number;
+	flushRequested: boolean;
 	files: WizardPersistedFile[];
 };
+
+export type BatchErrorScope = 'file_scoped' | 'global';

@@ -234,6 +234,36 @@ test.describe('Wizard — full state-machine flow', () => {
 		}
 	});
 
+	test('does not get stuck when 6 files are dropped: 6th leaves Initialiserung', async ({
+		page
+	}) => {
+		await page.goto('/board', { waitUntil: 'networkidle' });
+		await expect(page.getByTestId('wizard-container')).toBeVisible();
+
+		const dropzone = page.getByTestId('dropzone');
+		await expect(dropzone).toBeVisible();
+
+		const files = Array.from({ length: 6 }, (_, i) => ({
+			name: `stuck-${i + 1}.txt`,
+			mimeType: 'text/plain',
+			buffer: Buffer.from(TXT_CONTENT, 'utf-8')
+		}));
+
+		await dropzone.setInputFiles(files);
+		await expect(page.getByTestId('wizard-file')).toHaveCount(6, {
+			timeout: 15_000
+		});
+
+		const sixthFile = page.getByTestId('wizard-file').nth(5);
+		const sixthStatus = sixthFile.getByTestId('wizard-file-status');
+
+		// Correct behavior expectation:
+		// 6th file should reach WAITING and not remain stuck in init.
+		await expect(sixthStatus).toContainText('Warten auf Eingabe', {
+			timeout: 12_000
+		});
+	});
+
 	test('processes 3 large TXT files (>4 MB, 3 MB, 2 MB) through batching to DONE', async ({
 		page
 	}) => {

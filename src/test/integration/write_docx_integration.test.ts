@@ -7,7 +7,7 @@ import { describe, test, expect } from 'vitest';
 import { getQuickJS } from 'quickjs-emscripten';
 import { generateReportBytes } from '$wizard/write/write_docx';
 import { Ort } from '$wizard/enums';
-import type { ResultEntry } from '$wizard/types';
+import type { Entry } from '$wizard/types';
 import * as fs from 'node:fs';
 import JSZip from 'jszip';
 import type { KyselyDatabase } from '$lib/schema';
@@ -25,6 +25,7 @@ const entries = [
 ];
 
 const userMetadata: KyselyDatabase['user_metadata'] = {
+	user_id: 'test-user',
 	full_name: 'Max Mustermann',
 	ausbildungsberuf: 'Fachinformatiker',
 	abteilung: 'IT'
@@ -44,7 +45,7 @@ describe('generateReportBytes integration', () => {
 		try {
 			result = await generateReportBytes(
 				template,
-				Promise.resolve(entries) as any,
+				Promise.resolve(entries as Required<Entry>[]),
 				userMetadata,
 				injected,
 				vm
@@ -72,7 +73,7 @@ describe('generateReportBytes integration', () => {
 		try {
 			result = await generateReportBytes(
 				template,
-				Promise.resolve(entries) as any,
+				Promise.resolve(entries as Required<Entry>[]),
 				userMetadata,
 				injected,
 				vm
@@ -98,7 +99,7 @@ describe('generateReportBytes integration', () => {
 		try {
 			result = await generateReportBytes(
 				template,
-				Promise.resolve(entries) as any,
+				Promise.resolve(entries as Required<Entry>[]),
 				userMetadata,
 				injected,
 				vm

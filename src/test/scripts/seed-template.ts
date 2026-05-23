@@ -90,12 +90,7 @@ const templateName = `template-${id}.docx`;
 // 2. Upload the template file using the admin client (storage policies removed)
 const currentFilePath = fileURLToPath(import.meta.url);
 const currentDir = dirname(currentFilePath);
-const templatePath = join(
-	currentDir,
-	'..',
-	'fixtures',
-	'template.docx'
-);
+const templatePath = join(currentDir, '..', 'fixtures', 'template.docx');
 const fileBytes = readFileSync(templatePath);
 const file = new File([fileBytes], templateName, {
 	type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -112,7 +107,10 @@ if (uploadError) throw uploadError;
 console.log('Upload successful.');
 
 // 3. Insert template metadata row (insert trigger removed)
-await db.deleteFrom('template').where('storage_path', '=', storagePath).execute();
+await db
+	.deleteFrom('template')
+	.where('storage_path', '=', storagePath)
+	.execute();
 await db
 	.insertInto('template')
 	.values({ user_id: user.id, storage_path: storagePath })

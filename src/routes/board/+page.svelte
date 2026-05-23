@@ -21,7 +21,7 @@
 	class="flex w-full flex-col gap-4 px-4 pb-4 md:h-[calc(100%-5rem)] md:flex-row"
 >
 	<div
-		class="flex w-full flex-col gap-4 md:grid md:h-full md:min-h-0 md:grid-rows-2 md:overflow-hidden md:max-w-1/2"
+		class="flex w-full flex-col gap-4 md:grid md:h-full md:min-h-0 md:max-w-1/2 md:grid-rows-2 md:overflow-hidden"
 	>
 		<WizardDropzone />
 		<Wizard />

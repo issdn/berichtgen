@@ -2,11 +2,7 @@ import fsm from 'svelte-fsm';
 import type { WizardFileContext } from './wizard_file_context';
 import { invalidate } from '$app/navigation';
 import type { WizardMediator } from './wizard_mediator.svelte';
-import type {
-	Entry,
-	ResultEntry,
-	WizardProcessStateMachine
-} from '$wizard/types';
+import type { Entry, ResultEntry } from '$wizard/types';
 import { WizardStep, FileTypes } from '$wizard/enums';
 import berichtgenStore from '$core/stores/berichtgen.svelte';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
@@ -161,7 +157,7 @@ export function createStateMachineForContext(
 			_enter: () => {
 				context.finished = context.snapshot as ResultEntry[];
 				scheduler.persistSoon();
-				scheduler.queue.dequeue();
+				if (scheduler.isDone) scheduler.finish();
 			}
 		},
 
@@ -177,14 +173,10 @@ export function createStateMachineForContext(
 				scheduler.persistSoon();
 				scheduler.onFileCancelled();
 			},
-			next(process: WizardProcessStateMachine) {
-				this.init();
-				scheduler.queue.enqueue(process);
-			},
-			init: () => {
-				scheduler.persistSoon();
+			next() {
 				return WizardStep.INITIALISING;
-			}
+			},
+			init: () => WizardStep.INITIALISING
 		}
 	});
 }

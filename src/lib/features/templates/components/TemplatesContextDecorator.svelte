@@ -28,15 +28,12 @@
 	} = $props();
 
 	setUserContext({
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		user: loggedIn ? ({ id: userId, email: 'max@example.de' } as any) : null,
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		user: loggedIn ? ({ id: userId, email: 'max@example.de' } as never) : null,
 		profile: loggedIn
-			? ({ id: userId, full_name: 'Max Mustermann', avatar_url: null } as any)
+			? ({ id: userId, full_name: 'Max Mustermann', avatar_url: null } as never)
 			: null,
 		loggedIn,
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		supabase: {} as any
+		supabase: {} as never
 	});
 </script>
 
