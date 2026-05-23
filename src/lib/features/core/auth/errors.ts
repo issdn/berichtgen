@@ -15,7 +15,9 @@ export class AuthError extends BerichtgenError {
 	}
 
 	static fromCode(code: string): AuthError {
-		const match = (Object.values(EAuthError) as AuthErrorValue[]).find((e) => e.code === code);
+		const match = (Object.values(EAuthError) as AuthErrorValue[]).find(
+			(e) => e.code === code
+		);
 		return new AuthError(match ?? EAuthError.OAUTH_LOGIN_FAILED);
 	}
 }

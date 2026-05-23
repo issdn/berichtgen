@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { ScanReturnValue } from '$core/types';
 
-	import {
-		scanDroppedInput
-	} from '$core/scan/file_scan';
+	import { scanDroppedInput } from '$core/scan/file_scan';
 	import { buttonVariants } from '$ui/button';
 	import { Download, FileType } from '@lucide/svelte';
 	import JSZip from 'jszip';

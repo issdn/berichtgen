@@ -26,7 +26,11 @@ export class ProcessQueue<T> {
 
 	dequeue(): T | undefined {
 		const shifted = this.items.shift();
-		this.callbacks.ondequeue?.(shifted, this.items.at(this.batchSize), this.items);
+		this.callbacks.ondequeue?.(
+			shifted,
+			this.items.at(this.batchSize),
+			this.items
+		);
 		return shifted;
 	}
 }

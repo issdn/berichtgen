@@ -23,7 +23,10 @@ function createIndexedDbMock() {
 					onerror?: () => void;
 					objectStore: (_name: string) => {
 						put: (value: StoreRecord) => void;
-						get: (key: string) => { onsuccess?: () => void; onerror?: () => void };
+						get: (key: string) => {
+							onsuccess?: () => void;
+							onerror?: () => void;
+						};
 						delete: (key: string) => void;
 					};
 				} = {
@@ -92,35 +95,46 @@ describe('Persistence', () => {
 
 	test('no-ops when not in browser', async () => {
 		const Persistence = await loadPersistenceWithBrowser(false);
-		await expect(Persistence.save('wizard', 'u1', { a: 1 }, 1)).resolves.toBeUndefined();
+		await expect(
+			Persistence.save('wizard', 'u1', { a: 1 }, 1)
+		).resolves.toBeUndefined();
 		await expect(Persistence.clear('wizard', 'u1')).resolves.toBeUndefined();
-		await expect(Persistence.load('wizard', 'u1', 1, 60_000)).resolves.toBeNull();
+		await expect(
+			Persistence.load('wizard', 'u1', 1, 60_000)
+		).resolves.toBeNull();
 	});
 
 	test('saves and loads valid envelope', async () => {
 		const { indexedDB } = createIndexedDbMock();
-		(globalThis as { indexedDB: IDBFactory }).indexedDB = indexedDB as unknown as IDBFactory;
+		(globalThis as { indexedDB: IDBFactory }).indexedDB =
+			indexedDB as unknown as IDBFactory;
 		const Persistence = await loadPersistenceWithBrowser(true);
 
 		const payload = { hello: 'world' };
 		await Persistence.save('wizard', 'u1', payload, 3);
 
-		await expect(Persistence.load<typeof payload>('wizard', 'u1', 3, 60_000)).resolves.toEqual(payload);
+		await expect(
+			Persistence.load<typeof payload>('wizard', 'u1', 3, 60_000)
+		).resolves.toEqual(payload);
 	});
 
 	test('invalidates and clears on version mismatch', async () => {
 		const { indexedDB, store } = createIndexedDbMock();
-		(globalThis as { indexedDB: IDBFactory }).indexedDB = indexedDB as unknown as IDBFactory;
+		(globalThis as { indexedDB: IDBFactory }).indexedDB =
+			indexedDB as unknown as IDBFactory;
 		const Persistence = await loadPersistenceWithBrowser(true);
 
 		await Persistence.save('wizard', 'u1', { foo: 'bar' }, 1);
-		await expect(Persistence.load('wizard', 'u1', 2, 60_000)).resolves.toBeNull();
+		await expect(
+			Persistence.load('wizard', 'u1', 2, 60_000)
+		).resolves.toBeNull();
 		expect(store.has('wizard:u1')).toBe(false);
 	});
 
 	test('invalidates and clears expired record by ttl', async () => {
 		const { indexedDB, store } = createIndexedDbMock();
-		(globalThis as { indexedDB: IDBFactory }).indexedDB = indexedDB as unknown as IDBFactory;
+		(globalThis as { indexedDB: IDBFactory }).indexedDB =
+			indexedDB as unknown as IDBFactory;
 		const Persistence = await loadPersistenceWithBrowser(true);
 
 		await Persistence.save('wizard', 'u1', { foo: 'bar' }, 1);
@@ -146,12 +160,15 @@ describe('Persistence', () => {
 		(globalThis as { indexedDB: IDBFactory }).indexedDB =
 			failingIndexedDb as unknown as IDBFactory;
 		const Persistence = await loadPersistenceWithBrowser(true);
-		await expect(Persistence.load('wizard', 'u1', 1, 1_000)).resolves.toBeNull();
+		await expect(
+			Persistence.load('wizard', 'u1', 1, 1_000)
+		).resolves.toBeNull();
 	});
 
 	test('clear removes persisted key', async () => {
 		const { indexedDB, store } = createIndexedDbMock();
-		(globalThis as { indexedDB: IDBFactory }).indexedDB = indexedDB as unknown as IDBFactory;
+		(globalThis as { indexedDB: IDBFactory }).indexedDB =
+			indexedDB as unknown as IDBFactory;
 		const Persistence = await loadPersistenceWithBrowser(true);
 
 		await Persistence.save('wizard', 'u1', { n: 1 }, 1);
@@ -161,4 +178,3 @@ describe('Persistence', () => {
 		expect(store.has('wizard:u1')).toBe(false);
 	});
 });
-

@@ -54,7 +54,7 @@
 
 		<div class="min-h-0 flex-1 overflow-y-scroll pt-2">
 			<svelte:boundary>
-				<DocxPreview fileUrl={fileUrl} />
+				<DocxPreview {fileUrl} />
 				{#snippet pending()}
 					<div class="flex h-full items-center justify-center">
 						<div class="text-muted-foreground animate-pulse text-sm">
@@ -74,12 +74,16 @@
 			</svelte:boundary>
 		</div>
 
-		<div class="text-muted-foreground shrink-0 border-t px-6 py-2 text-center text-xs">
+		<div
+			class="text-muted-foreground shrink-0 border-t px-6 py-2 text-center text-xs"
+		>
 			Die Vorschau gibt das Dokument möglicherweise nicht vollständig wieder.
 			{#if canOpenInWordOnline}
 				Für eine genaue Darstellung öffne die Datei in
 				<a
-					href="https://docs.google.com/viewer?url={encodeURIComponent(fileUrl)}"
+					href="https://docs.google.com/viewer?url={encodeURIComponent(
+						fileUrl
+					)}"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="underline">Microsoft Word Online</a

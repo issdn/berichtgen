@@ -25,10 +25,14 @@ const id = Math.random().toString(36).slice(2, 8);
 const TEST_EMAIL = `test-seed-${id}@berichtgen.local`;
 const TEST_PASSWORD = `seed-${id}-password!`;
 
-const supabase = createClient<SupabaseDatabase, 'private'>(SUPABASE_URL, ANON_KEY, {
-	auth: { autoRefreshToken: false, persistSession: false },
-	db: { schema: 'private' }
-});
+const supabase = createClient<SupabaseDatabase, 'private'>(
+	SUPABASE_URL,
+	ANON_KEY,
+	{
+		auth: { autoRefreshToken: false, persistSession: false },
+		db: { schema: 'private' }
+	}
+);
 
 const admin = createClient<SupabaseDatabase, 'private'>(
 	SUPABASE_URL,
@@ -64,7 +68,12 @@ console.log('Signed in as:', user.id);
 const templateName = `template-${id}.docx`;
 
 // 2. Upload the template file using the admin client (storage policies removed)
-const templatePath = join((import.meta as any).dir, '..', 'fixtures', 'template.docx');
+const templatePath = join(
+	(import.meta as any).dir,
+	'..',
+	'fixtures',
+	'template.docx'
+);
 const fileBytes = readFileSync(templatePath);
 const file = new File([fileBytes], templateName, {
 	type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

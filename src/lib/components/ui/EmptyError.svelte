@@ -20,10 +20,7 @@
 	{...restProps}
 	class="border-destructive/40 bg-destructive/5 text-destructive"
 >
-	<Empty.Media
-		variant="icon"
-		class="bg-destructive/10 text-destructive"
-	>
+	<Empty.Media variant="icon" class="bg-destructive/10 text-destructive">
 		<CloudAlert class="size-4" />
 	</Empty.Media>
 	<Empty.Header>

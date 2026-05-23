@@ -36,11 +36,11 @@ export class WizardScheduler {
 
 	createSchedule(
 		directories: WizardDirectories,
-		createProcess: (
-			entry: WizardDirectoryEntry
-		) => WizardProcessStateMachine
+		createProcess: (entry: WizardDirectoryEntry) => WizardProcessStateMachine
 	) {
-		this.schedule = [...directories].flat().map((entry) => createProcess(entry));
+		this.schedule = [...directories]
+			.flat()
+			.map((entry) => createProcess(entry));
 	}
 
 	findById(id: string): WizardProcessStateMachine | undefined {

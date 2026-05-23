@@ -23,5 +23,10 @@
 
 <Story
 	name="LoggedIn"
-	decorators={[() => ({ Component: TemplatesContextDecorator, props: { loggedIn: true, userId: 'user-story-a' } })]}
+	decorators={[
+		() => ({
+			Component: TemplatesContextDecorator,
+			props: { loggedIn: true, userId: 'user-story-a' }
+		})
+	]}
 />

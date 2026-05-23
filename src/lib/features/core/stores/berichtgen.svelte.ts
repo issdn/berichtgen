@@ -13,7 +13,12 @@ const DEFAULT_SETTINGS: App.BerichtgenSettings = {
 const settings = new SvelteMap<
 	keyof App.BerichtgenSettings,
 	App.BerichtgenSettings[keyof App.BerichtgenSettings]
->(Object.entries(DEFAULT_SETTINGS) as [keyof App.BerichtgenSettings, App.BerichtgenSettings[keyof App.BerichtgenSettings]][]);
+>(
+	Object.entries(DEFAULT_SETTINGS) as [
+		keyof App.BerichtgenSettings,
+		App.BerichtgenSettings[keyof App.BerichtgenSettings]
+	][]
+);
 
 let hydrated = false;
 

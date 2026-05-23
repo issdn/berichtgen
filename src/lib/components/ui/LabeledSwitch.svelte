@@ -23,12 +23,7 @@
 <Tooltip.Root>
 	<Tooltip.Trigger>
 		<div class="flex items-center space-x-2">
-			<Switch
-				bind:checked
-				{id}
-				{disabled}
-				onCheckedChange={onchange}
-			/>
+			<Switch bind:checked {id} {disabled} onCheckedChange={onchange} />
 			<Label
 				for={id}
 				class="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"

@@ -25,14 +25,14 @@
 			</div>
 			<div class="flex flex-col gap-y-1 text-base">
 				<p class="text-xl font-medium">
-					<b class="text-4xl font-bold text-queer-blue">5€</b> / ~700 Seiten
+					<b class="text-queer-blue text-4xl font-bold">5€</b> / ~700 Seiten
 				</p>
 				<p class="text-md opacity-80">
 					oder <a
 						href="https://codeberg.org/isdn/Berichtgen"
 						target="_blank"
 						rel="noopener noreferrer"
-						class="font-semibold text-queer-blue underline underline-offset-2 transition-opacity hover:opacity-80"
+						class="text-queer-blue font-semibold underline underline-offset-2 transition-opacity hover:opacity-80"
 						>kostenlos</a
 					> selbst gehostet
 				</p>
@@ -61,22 +61,22 @@
 					<p class="text-sm font-medium opacity-50">Dateien hier droppen</p>
 					<PNG
 						class="file absolute -top-[calc(50%-3rem)] -left-[calc(50%-1.5rem)] translate-x-1/2
-							 transition-all duration-200 ease-in-out
-							 drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)]
+							 drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)] transition-all duration-200
+							 ease-in-out
 							 group-hover:-top-[calc(50%-2rem)] group-hover:-left-[calc(50%-0.5rem)]
 							 group-hover:drop-shadow-[0_16px_32px_rgba(0,0,0,0.12)]"
 					/>
 					<DOCX
 						class="file absolute -top-[calc(50%-1rem)] left-1/2 -translate-x-1/2
-							 transition-all duration-200 ease-in-out
-							 drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)]
+							 drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)] transition-all duration-200
+							 ease-in-out
 							 group-hover:-top-[calc(50%)]
 							 group-hover:drop-shadow-[0_16px_32px_rgba(0,0,0,0.12)]"
 					/>
 					<PDF
 						class="file absolute -top-[calc(50%-4.5rem)] -right-[calc(50%-1rem)] -translate-x-1/2
-							 transition-all duration-200 ease-in-out
-							 drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)]
+							 drop-shadow-[0_4px_8px_rgba(0,0,0,0.35)] transition-all duration-200
+							 ease-in-out
 							 group-hover:-top-[calc(50%-3.5rem)] group-hover:-right-[calc(50%)]
 							 group-hover:drop-shadow-[0_16px_32px_rgba(0,0,0,0.12)]"
 					/>

@@ -13,12 +13,12 @@ export const EFileRoutingError = buildError({
 	FORMAT_NOT_SUPPORTED: {
 		httpCode: 400,
 		message: 'Dateiformat wird nicht unterstützt.'
-		},
-		FILE_TOO_LARGE: {
-			httpCode: 413,
-			message: 'Datei ist größer als 50 MB.'
-		}
-	} as const);
+	},
+	FILE_TOO_LARGE: {
+		httpCode: 413,
+		message: 'Datei ist größer als 50 MB.'
+	}
+} as const);
 
 export const EWizardError = buildError({
 	COMPLETION_FAILED: {
@@ -141,14 +141,16 @@ export const EGCSError = buildError({
 	}
 } as const);
 
-type WizardErrorValue = UnionOf<[
-	typeof EWizardError,
-	typeof ECompletionException,
-	typeof EGenAIError,
-	typeof ETemplateError,
-	typeof EFileRoutingError,
-	typeof EGCSError
-]>;
+type WizardErrorValue = UnionOf<
+	[
+		typeof EWizardError,
+		typeof ECompletionException,
+		typeof EGenAIError,
+		typeof ETemplateError,
+		typeof EFileRoutingError,
+		typeof EGCSError
+	]
+>;
 
 export class WizardError extends BerichtgenError {
 	declare readonly apiError: WizardErrorValue;

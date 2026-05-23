@@ -70,7 +70,11 @@
 				{/if}
 			</div>
 
-			<span class="text-sm font-medium {isActive ? 'text-foreground' : 'text-muted-foreground'}">
+			<span
+				class="text-sm font-medium {isActive
+					? 'text-foreground'
+					: 'text-muted-foreground'}"
+			>
 				{label}
 			</span>
 		</button>
