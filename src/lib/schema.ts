@@ -1,12 +1,10 @@
-import type { KyselifyDatabase } from 'kysely-supabase';
+import type { KyselifyTable } from 'kysely-supabase';
 import type { Database as SupabaseDatabase } from './supabase.database';
 
-type KyselyDatabaseWithSchema = KyselifyDatabase<SupabaseDatabase>;
-
 export type KyselyQueryDatabase = {
-	[Name in keyof KyselyDatabaseWithSchema as Name extends `private.${infer Table}`
-		? Table
-		: never]: KyselyDatabaseWithSchema[Name];
+	[Table in keyof SupabaseDatabase['private']['Tables']]: KyselifyTable<
+		SupabaseDatabase['private']['Tables'][Table]
+	>;
 };
 
 export type KyselyDatabase = {
