@@ -140,7 +140,7 @@
 
 <div
 	data-testid="wizard-container"
-	class="relative flex h-96 w-full flex-col overflow-hidden rounded-lg border-4 md:h-full"
+	class="relative flex h-96 min-h-0 w-full flex-col overflow-hidden rounded-lg border-4 md:h-full"
 >
 	<div
 		data-testid="wizard-header"
@@ -158,39 +158,33 @@
 			<Dialog.Content {children} {childrenBehind} class="max-w-min" />
 		</Dialog.Root>
 	</div>
-	<div
-		data-testid="wizard-content"
-		class="h-full overflow-x-hidden overflow-y-auto"
-	>
-		<div class="relative h-full p-4">
-			{#if wizardMediator.schedule !== null && wizardMediator.processInit !== null}
-				{#await wizardMediator.processInit}
-					<div data-testid="wizard-loading" class="center-absolute">
-						<Spinner />
+	{#if wizardMediator.schedule !== null && wizardMediator.processInit !== null}
+		{#await wizardMediator.processInit}
+			<div data-testid="wizard-loading" class="center-absolute translate-y-0.5">
+				<Spinner />
+			</div>
+		{:then}
+			{@const items = wizardMediator.schedule.flat()}
+			<div
+				id="wizard-content"
+				class="flex min-h-0 w-full flex-1 flex-col gap-y-2 overflow-y-auto p-4"
+				use:dndzone={{ items, flipDurationMs: 300, dropTargetStyle: {} }}
+				onconsider={handleDndConsider}
+				onfinalize={handleDndFinalize}
+			>
+				{#each items as file (file.id)}
+					<div class="w-full" animate:flip={{ duration: 300 }}>
+						<WizardFile {...file} />
 					</div>
-				{:then}
-					{@const items = wizardMediator.schedule.flat()}
-					<div
-						class="flex h-full w-full flex-col gap-y-2"
-						use:dndzone={{ items, flipDurationMs: 300, dropTargetStyle: {} }}
-						onconsider={handleDndConsider}
-						onfinalize={handleDndFinalize}
-					>
-						{#each items as file (file.id)}
-							<div class="w-full" animate:flip={{ duration: 300 }}>
-								<WizardFile {...file} />
-							</div>
-						{/each}
-					</div>
-				{/await}
-			{:else}
-				<FileClock
-					data-testid="wizard-empty-state"
-					class="center-absolute text-muted size-12"
-				/>
-			{/if}
-		</div>
-	</div>
+				{/each}
+			</div>
+		{/await}
+	{:else}
+		<FileClock
+			data-testid="wizard-empty-state"
+			class="center-absolute text-muted size-12 translate-y-0.5"
+		/>
+	{/if}
 </div>
 
 {#snippet children()}

@@ -2,21 +2,29 @@
  * Creates a test user and uploads src/test/fixtures/template.docx to their storage subfolder.
  * Also inserts the template metadata row directly (trigger removed).
  *
- * Usage: bun src/test/scripts/seed-template.ts
+ * Usage: node --experimental-strip-types src/test/scripts/seed-template.ts
  */
 
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseDatabase } from '$lib/schema';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { config as loadEnv } from 'dotenv';
+import { Kysely, PostgresDialect } from 'kysely';
+import pg from 'pg';
+
+// Running this script with plain `node` does not auto-load `.env`.
+loadEnv();
 
 const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL;
 const ANON_KEY = process.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SECRET;
+const DATABASE_URL = process.env.DATABASE_URL;
 
-if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) {
+if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY || !DATABASE_URL) {
 	console.error(
-		'Missing PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, or SUPABASE_SECRET env vars.'
+		'Missing PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET, or DATABASE_URL env vars.'
 	);
 	process.exit(1);
 }
@@ -43,8 +51,20 @@ const admin = createClient<SupabaseDatabase, 'private'>(
 	}
 );
 
+const db = new Kysely<{
+	template: { user_id: string; storage_path: string };
+	user_token_count: { user_id: string; tokens: number };
+}>({
+	dialect: new PostgresDialect({
+		pool: new pg.Pool({
+			connectionString: DATABASE_URL,
+			options: '-c search_path=private'
+		})
+	})
+});
+
 // 1. Sign up a fresh random user
-console.log(`Creating user ${TEST_EMAIL}…`);
+console.log(`Creating user ${TEST_EMAIL}...`);
 const { error: signUpError } = await supabase.auth.signUp({
 	email: TEST_EMAIL,
 	password: TEST_PASSWORD
@@ -68,8 +88,10 @@ console.log('Signed in as:', user.id);
 const templateName = `template-${id}.docx`;
 
 // 2. Upload the template file using the admin client (storage policies removed)
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDir = dirname(currentFilePath);
 const templatePath = join(
-	(import.meta as any).dir,
+	currentDir,
 	'..',
 	'fixtures',
 	'template.docx'
@@ -80,7 +102,7 @@ const file = new File([fileBytes], templateName, {
 });
 
 const storagePath = `${user.id}/${templateName}`;
-console.log(`Uploading to templates/${storagePath}…`);
+console.log(`Uploading to templates/${storagePath}...`);
 
 const { error: uploadError } = await admin.storage
 	.from('templates')
@@ -90,22 +112,23 @@ if (uploadError) throw uploadError;
 console.log('Upload successful.');
 
 // 3. Insert template metadata row (insert trigger removed)
-await admin.from('template').delete().eq('storage_path', storagePath);
-
-const { error: insertError } = await admin
-	.from('template')
-	.insert({ user_id: user.id, storage_path: storagePath });
-
-if (insertError) throw insertError;
+await db.deleteFrom('template').where('storage_path', '=', storagePath).execute();
+await db
+	.insertInto('template')
+	.values({ user_id: user.id, storage_path: storagePath })
+	.execute();
 console.log('Template metadata row created.');
 
 // 4. Grant the test user a large token balance
-const { error: tokenError } = await admin
-	.from('user_token_count')
-	.upsert({ user_id: user.id, tokens: 999000 }, { onConflict: 'user_id' });
-if (tokenError) throw tokenError;
+await db
+	.insertInto('user_token_count')
+	.values({ user_id: user.id, tokens: 999000 })
+	.onConflict((oc) => oc.column('user_id').doUpdateSet({ tokens: 999000 }))
+	.execute();
 console.log('Token balance set to 999000.');
 
 console.log(
 	`\nTest user:\n  email:    ${TEST_EMAIL}\n  password: ${TEST_PASSWORD}\n  user_id:  ${user.id}`
 );
+
+await db.destroy();

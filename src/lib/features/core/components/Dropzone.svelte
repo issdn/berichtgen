@@ -131,7 +131,7 @@
 			'text-border hover:border-primary hover:text-primary',
 			'data-[dragging=true]:border-primary data-[dragging=true]:text-primary',
 			'data-[valid=false]:border-destructive data-[valid=false]:text-destructive data-[valid=false]:[&_kbd]:text-destructive',
-			'relative flex h-full min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed',
+			'relative flex min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed',
 			'text-sm font-medium transition-colors duration-300',
 			className
 		)}

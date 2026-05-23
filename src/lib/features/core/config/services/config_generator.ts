@@ -21,7 +21,7 @@ export function buildConfigMap(
 		texts.set(
 			root,
 			(texts.get(root) ?? '') +
-				`SCHULE,"${fileName}",${mondayOfWeek};${endOfWeek};40\n`
+				`SCHULE,"${fileName}",${mondayOfWeek};${endOfWeek};1\n`
 		);
 	}
 	return texts;

@@ -155,4 +155,10 @@
 	}
 </script>
 
-<Dropzone {accept} {handleFiles} {filesNumber} {isValidFile} />
+<Dropzone
+	class="h-64 min-h-0 md:h-full"
+	{accept}
+	{handleFiles}
+	{filesNumber}
+	{isValidFile}
+/>
