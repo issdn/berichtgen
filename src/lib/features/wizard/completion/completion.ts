@@ -3,8 +3,7 @@ import type {
 	BatchCompletionApiResponse,
 	BatchCompletionItem
 } from '$wizard/schemas';
-import type { FileRouting } from '$wizard/services/file_routing';
-import type { CompletionResult } from '$wizard/types';
+import type { CompletionResult, FileRouting } from '$wizard/types';
 
 import { type Result, tryResultAsync } from '$lib/result';
 import { submitBatchCompletionCommand } from '$wizard/api/wizard.remote';
@@ -18,7 +17,7 @@ export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
  * byte size of all texts in each batch does not exceed `maxBytes`.
  * An item whose text alone exceeds `maxBytes` forms a batch by itself.
  */
-export function createBatchesBySize<T extends { text: string }>(
+export function createBatchesBySize<T extends { data: string }>(
 	items: T[],
 	maxBytes: number = MAX_BATCH_BYTES
 ): T[][] {
@@ -27,7 +26,7 @@ export function createBatchesBySize<T extends { text: string }>(
 	let currentSize = 0;
 
 	for (const item of items) {
-		const size = getByteSize(item.text);
+		const size = getByteSize(item.data);
 		if (currentBatch.length > 0 && currentSize + size > maxBytes) {
 			batches.push(currentBatch);
 			currentBatch = [item];
@@ -56,7 +55,7 @@ export function createBatchesBySize<T extends { text: string }>(
  * - `url`    -> `{ type: 'url', url, ort }`
  */
 export function sendBatchCompletion(
-	items: Array<{ ort: Ort; routing: FileRouting; }>
+	items: Array<{ ort: Ort; routing: FileRouting }>
 ): Promise<Result<BatchCompletionApiResponse>> {
 	const mapped: BatchCompletionItem[] = items.map(({ ort, routing }) => ({
 		ort,

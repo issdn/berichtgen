@@ -7,16 +7,9 @@ import { GCS_BUCKET_NAME, GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
 import {
 	BerichtgenError,
 	ECommonServerError,
-	errorByHttpCode,
 	svelteApiError
 } from '$lib/errors';
-import {
-	errResult,
-	okResult,
-	type Result,
-	tryResult,
-	tryResultAsync
-} from '$lib/result';
+import { tryResult, tryResultAsync } from '$lib/result';
 import { guardedCommand } from '$lib/server/remote';
 import {
 	checkPreferredTemplateExists,
@@ -49,10 +42,10 @@ async function createSignedUploadPayload({
 	fileUri: string;
 	objectPath: string;
 	storage: Storage;
-}): Promise<{ fileUri: string; signedUrl?: string; }> {
+}) {
 	const file = storage.bucket(GCS_BUCKET_NAME).file(objectPath);
 	const [exists] = await file.exists();
-	if (exists) return { fileUri };
+	if (exists) return { fileUri, signedUrl: null };
 
 	const [signedUrl] = await file.getSignedUrl({
 		action: 'write',
@@ -63,39 +56,8 @@ async function createSignedUploadPayload({
 		},
 		version: 'v4'
 	});
+
 	return { fileUri, signedUrl };
-}
-
-async function createSignedUploadResult({
-	contentType,
-	fileUri,
-	objectPath,
-	storage
-}: {
-	contentType: string;
-	fileUri: string;
-	objectPath: string;
-	storage: Storage;
-}): Promise<Result<{ fileUri: string; signedUrl?: string; }>> {
-	const signedResult = await tryResultAsync(
-		createSignedUploadPayload({ contentType, fileUri, objectPath, storage }),
-		BerichtgenError,
-		EGCSError.INTERNAL_SERVER_ERROR
-	);
-	if (!signedResult.ok) {
-		const e = signedResult.error.cause;
-		const httpCode =
-			e !== null && typeof e === 'object' && 'code' in e
-				? Number((e as { code: unknown }).code)
-				: 500;
-
-		if (httpCode === 412) return okResult({ fileUri });
-
-		const gcsError =
-			errorByHttpCode(EGCSError, httpCode) ?? EGCSError.INTERNAL_SERVER_ERROR;
-		return errResult(WizardError, gcsError, signedResult.error);
-	}
-	return okResult(signedResult.data);
 }
 
 function createStorageClient(): Storage {
@@ -128,12 +90,16 @@ export const requestGcsUploadCommand = guardedCommand(
 		);
 		if (!storageResult.ok) throw svelteApiError(storageResult.error.apiError);
 
-		const signedUploadResult = await createSignedUploadResult({
-			contentType,
-			fileUri,
-			objectPath,
-			storage: storageResult.data
-		});
+		const signedUploadResult = await tryResultAsync(
+			createSignedUploadPayload({
+				contentType,
+				fileUri,
+				objectPath,
+				storage: storageResult.data
+			}),
+			BerichtgenError,
+			EGCSError.INTERNAL_SERVER_ERROR
+		);
 		if (!signedUploadResult.ok)
 			throw svelteApiError(signedUploadResult.error.apiError);
 

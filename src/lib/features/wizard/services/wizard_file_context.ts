@@ -3,9 +3,8 @@ import type { BerichtgenError } from '$lib/errors';
 import { BerichtgenError as BerichtgenErrorClass } from '$lib/errors';
 
 import type { DateRangeSchema } from '../schemas';
-import type { WizardDirectoryEntry } from '../types';
+import type { FileRouting, WizardDirectoryEntry } from '../types';
 import type { Entry, ResultEntry } from '../types';
-import type { FileRouting } from './file_routing';
 import type { WizardPersistedFile } from './types';
 
 export class WizardFileContext {
@@ -13,21 +12,21 @@ export class WizardFileContext {
 
 	dateRanges: DateRangeSchema | null = null;
 
-	error?: BerichtgenError;
+	entry: WizardDirectoryEntry;
 
-	file: WizardDirectoryEntry;
+	error?: BerichtgenError;
 
 	finished: null | ResultEntry[] = null;
 
 	snapshot: Entry[] | FileRouting | ResultEntry[] | undefined;
 
-	constructor(file: WizardDirectoryEntry) {
-		this.file = file;
-		this.dateRanges = file.config ?? null;
+	constructor(entry: WizardDirectoryEntry) {
+		this.entry = entry;
+		this.dateRanges = entry.config ?? null;
 	}
 
 	static rehydrate(file: WizardPersistedFile) {
-		const context = new WizardFileContext(file.file);
+		const context = new WizardFileContext(file.entry);
 		context.snapshot = file.snapshot ?? undefined;
 		context.finished = file.finished;
 		context.cancelled = file.cancelled;

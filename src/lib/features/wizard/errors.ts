@@ -1,6 +1,10 @@
 import { BerichtgenError, buildError, type UnionOf } from '$lib/errors';
 
 export const EFileRoutingError = buildError({
+	FILE_CORRUPTED: {
+		httpCode: 400,
+		message: 'Die Datei scheint beschädigt zu sein.'
+	},
 	FILE_READ_FAILED: {
 		httpCode: 400,
 		message: 'Datei konnte nicht gelesen werden.'

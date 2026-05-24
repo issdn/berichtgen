@@ -1,15 +1,18 @@
-import type { Entry, ResultEntry } from '$wizard/types';
+import type { Entry, ResultEntry, WizardDirectoryEntry } from '$wizard/types';
 
 import { invalidate } from '$app/navigation';
 import berichtgenStore from '$core/stores/berichtgen.svelte';
+import { GCS_MAX_BYTES, INLINE_MAX_BYTES } from '$lib/constants';
+import { errResult, okResult, tryResultAsync } from '$lib/result';
 import { FileTypes, WizardStep } from '$wizard/enums';
+import { EFileRoutingError, WizardError } from '$wizard/errors';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
+import { fullResultSchema } from '$wizard/schemas';
+import { uploadToGcs } from '$wizard/services/gcs_service';
 import { FiniteStateMachine } from 'runed';
 
 import type { WizardFileContext } from './wizard_file_context';
 import type { WizardMediator } from './wizard_mediator.svelte';
-
-import { resolveFileRouting } from './file_routing';
 
 export type StateMachineSignature = ReturnType<
 	typeof createStateMachineForContext
@@ -17,12 +20,17 @@ export type StateMachineSignature = ReturnType<
 
 type WizardMachineEvent = 'cancel' | 'error' | 'init' | 'next' | 'start';
 
-export function createStateMachineForContext(
-	context: WizardFileContext,
-	scheduler: WizardMediator,
-	id: string,
-	initialStep: WizardStep = WizardStep.INITIALISING
-) {
+export function createStateMachineForContext({
+	context,
+	id,
+	initialStep = WizardStep.INITIALISING,
+	scheduler
+}: {
+	context: WizardFileContext;
+	id: string;
+	initialStep?: WizardStep;
+	scheduler: WizardMediator;
+}) {
 	const machine = new FiniteStateMachine<WizardStep, WizardMachineEvent>(
 		initialStep,
 		{
@@ -94,27 +102,23 @@ export function createStateMachineForContext(
 
 			[WizardStep.PROCESSING]: {
 				_enter() {
-					if ('url' in context.file) {
-						context.snapshot = { type: 'url' as const, url: context.file.url };
+					if ('url' in context.entry) {
+						context.snapshot = { type: 'url' as const, url: context.entry.url };
 						scheduler.persistSoon();
 						machine.send('next');
 						return;
 					}
 
-					resolveFileRouting(
-						context.file.file,
-						berichtgenStore.get('rewordJSON')
-					).then((result) => {
-						if (result.ok) {
+					processFile({ entry: context.entry }).then((result) => {
+						if (!result.ok) {
+							context.error = result.error;
+							scheduler.persistSoon();
+							machine.send('error');
+						} else {
 							context.snapshot = result.data;
 							scheduler.persistSoon();
 							machine.send('next');
-							return;
 						}
-
-						context.error = result.error;
-						scheduler.persistSoon();
-						machine.send('error');
 					});
 				},
 				cancel: () => {
@@ -172,10 +176,65 @@ export function createStateMachineForContext(
 	return machine;
 }
 
+async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
+	if (
+		entry.type === 'file' &&
+		entry.file.type === FileTypes.JSON &&
+		!berichtgenStore.get('rewordJSON')
+	) {
+		return tryResultAsync(
+			entry.file.text().then((text) => {
+				const parsed = JSON.parse(text);
+				const validated = fullResultSchema.safeParse(parsed);
+				if (!validated.success) {
+					throw new WizardError(EFileRoutingError.FORMAT_NOT_SUPPORTED);
+				}
+				return validated.data as ResultEntry[];
+			}),
+			WizardError,
+			EFileRoutingError.FORMAT_NOT_SUPPORTED
+		);
+	}
+
+	if (entry.type === 'url')
+		return okResult({ type: 'url' as const, url: entry.url });
+
+	if (entry.file.size > GCS_MAX_BYTES) {
+		return errResult(WizardError, EFileRoutingError.FILE_TOO_LARGE);
+	}
+
+	if (entry.file.size <= INLINE_MAX_BYTES) {
+		const text = await tryResultAsync(
+			entry.file.text(),
+			WizardError,
+			EFileRoutingError.FILE_READ_FAILED
+		);
+		if (!text.ok) return text;
+
+		return okResult({
+			data: text.data,
+			mimeType: entry.file.type,
+			type: 'inline' as const
+		});
+	}
+
+	const urls = await uploadToGcs(entry.file);
+
+	if (urls.ok) {
+		return okResult({
+			...urls.data,
+			mimeType: entry.file.type,
+			type: 'gcs' as const
+		});
+	}
+
+	return null as never;
+}
+
 function shouldSkipAiCompletion(context: WizardFileContext): boolean {
 	return (
-		'file' in context.file &&
-		context.file.file.type === FileTypes.JSON &&
+		'file' in context.entry &&
+		context.entry.file.type === FileTypes.JSON &&
 		!berichtgenStore.get('rewordJSON')
 	);
 }

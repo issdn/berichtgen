@@ -13,11 +13,10 @@
 	import { readCsvConfig } from '$core/config/services/config_reader';
 	import { scanDroppedInput } from '$core/scan/file_scan';
 	import { ScanReturnValue } from '$core/types';
-	import { CONFIG_FILENAME_REGEX } from '$lib/constants';
+	import { CONFIG_FILENAME_REGEX, GCS_MAX_BYTES } from '$lib/constants';
 	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
 	import { FileTypes } from '$wizard/enums';
-	import { GCS_MAX_BYTES } from '$wizard/services/file_routing';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -44,9 +43,9 @@
 			ECommonServerError.INTERNAL_ERROR
 		);
 		if (!scanResult.ok) {
-			toast.error(
-				'Fehler beim Scannen der Dateien: ' + scanResult.error.message
-			);
+			toast.error('Fehler beim Scannen der Dateien', {
+				description: scanResult.error.message
+			});
 			return;
 		}
 
@@ -110,8 +109,9 @@
 	}
 
 	function fileToEntry(file: File): WizardDirectoryEntry {
-		if (file.type === FileTypes.URI_LIST) return { url: file.name };
-		return { file };
+		if (file.type === FileTypes.URI_LIST)
+			return { type: 'url', url: file.name };
+		return { file, type: 'file' };
 	}
 
 	function applyConfig(
@@ -128,7 +128,7 @@
 		for (const { file, ort, ranges } of configRows) {
 			const config = { ort, ranges: ranges.map((r, i) => ({ ...r, id: i })) };
 			if (URL.canParse(file)) {
-				entries.push({ config, url: file });
+				entries.push({ config, type: 'url', url: file });
 			} else if (fileEntries.has(file)) {
 				fileEntries.get(file)!.config = config;
 			} else {

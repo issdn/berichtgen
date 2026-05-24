@@ -1,8 +1,8 @@
 import { type AnyErrorValue, BerichtgenError, toErrorBody } from '$lib/errors';
 
 export type Result<T> =
-	| { data: T; ok: true; }
-	| { error: BerichtgenError; ok: false; };
+	| { data: T; ok: true }
+	| { error: BerichtgenError; ok: false };
 
 export function errResult(
 	errorClass: typeof BerichtgenError,

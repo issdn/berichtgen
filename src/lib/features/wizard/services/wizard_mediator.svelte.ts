@@ -1,4 +1,5 @@
 import type {
+	FileRouting,
 	ResultEntry,
 	WizardDirectories,
 	WizardProcessStateMachine
@@ -28,7 +29,6 @@ import { combineJSONs } from '$wizard/postprocess/combine';
 import { Context } from 'runed';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
-import type { FileRouting } from './file_routing';
 import type { BatchErrorScope, WizardPersistedSession } from './types';
 
 import { createStateMachineForContext } from './state_machine';
@@ -39,10 +39,10 @@ import { WizardScheduler } from './wizard_scheduler.svelte';
 const MAX_PARALLEL_REQUESTS = 5;
 
 type BatchItem = {
+	data: string;
 	fileIndex: number;
 	ort: Ort;
 	routing: FileRouting;
-	text: string;
 };
 
 export class WizardMediator {
@@ -119,12 +119,12 @@ export class WizardMediator {
 		id: string = crypto.randomUUID(),
 		initialStep: WizardStep = WizardStep.INITIALISING
 	) => {
-		const machine = createStateMachineForContext(
+		const machine = createStateMachineForContext({
 			context,
-			this,
 			id,
-			initialStep
-		);
+			initialStep,
+			scheduler: this
+		});
 
 		const process: WizardProcessStateMachine = {
 			cancel() {
@@ -200,12 +200,18 @@ export class WizardMediator {
 			const routing = process.context.snapshot as FileRouting;
 			const ort = process.context.dateRanges!.ort;
 			return {
+				data:
+					routing.type === 'url'
+						? routing.url
+						: routing.type === 'gcs'
+							? routing.fileUri
+							: routing.data,
 				fileIndex,
 				ort,
-				routing,
-				text: this.toSizeProxyText(routing)
+				routing
 			};
 		});
+
 		const batches = createBatchesBySize<BatchItem>(
 			pendingItems,
 			MAX_BATCH_BYTES
@@ -270,8 +276,8 @@ export class WizardMediator {
 
 	private applyResults(
 		pendingList: WizardProcessStateMachine[],
-		fileResults: SvelteMap<number, string[]>,
-		fileErrors: SvelteMap<number, BerichtgenError>,
+		fileResults: Map<number, string[]>,
+		fileErrors: Map<number, BerichtgenError>,
 		globalError: BerichtgenError | null
 	) {
 		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
@@ -425,14 +431,6 @@ export class WizardMediator {
 	private takePendingProcesses() {
 		const pendingIds = this.batcher.takePendingIds();
 		return pendingIds.map((id) => this.schedulerState.findById(id)!);
-	}
-
-	private toSizeProxyText(routing: FileRouting): string {
-		if (routing.type === 'inline') {
-			return 'x'.repeat(Math.ceil((routing.data.length * 3) / 4));
-		}
-		if (routing.type === 'gcs') return routing.fileUri;
-		return routing.url;
 	}
 }
 
