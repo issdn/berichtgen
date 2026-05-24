@@ -1,15 +1,15 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { ECommonServerError } from '$lib/errors';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const { dbMock } = vi.hoisted(() => ({
 	dbMock: {
+		execute: vi.fn(),
 		insertInto: vi.fn().mockReturnThis(),
-		values: vi.fn().mockReturnThis(),
-		execute: vi.fn()
+		values: vi.fn().mockReturnThis()
 	}
 }));
 
-vi.mock('$lib/server/db', () => ({ default: dbMock, db: dbMock }));
+vi.mock('$lib/server/db', () => ({ db: dbMock, default: dbMock }));
 
 import { submitFeedback } from '$core/auth/api/feedback.handlers';
 
@@ -31,8 +31,8 @@ describe('submitFeedback', () => {
 		).resolves.toBeUndefined();
 		expect(dbMock.insertInto).toHaveBeenCalledWith('user_feedback');
 		expect(dbMock.values).toHaveBeenCalledWith({
-			user_id: 'user-1',
-			message: '   '
+			message: '   ',
+			user_id: 'user-1'
 		});
 	});
 });

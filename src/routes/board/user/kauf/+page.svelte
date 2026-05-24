@@ -1,24 +1,24 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { toast } from 'svelte-sonner';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Input } from '$lib/components/ui/input';
-	import { debounce } from '$lib/utils';
+	import { AsyncResource } from '$core/async.svelte';
 	import * as Alert from '$lib/components/ui/alert';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
+	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { CircleAlert, CreditCard, MoveLeft, Package } from '@lucide/svelte';
+	import Separator from '$lib/components/ui/separator/separator.svelte';
 	import Stepper from '$lib/components/ui/Stepper.svelte';
 	import { LOCALE, PRICE_PER_MILLION_TOKENS_EUR } from '$lib/constants';
+	import { debounce } from '$lib/utils';
 	import {
 		getPaymentIntent,
 		updatePaymentIntent
 	} from '$tokens/api/kauf.remote';
 	import StripeElement from '$tokens/components/StripeElement.svelte';
 	import { Spinner } from '$ui/spinner';
-	import { AsyncResource } from '$core/async.svelte';
+	import { CircleAlert, CreditCard, MoveLeft, Package } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
 
 	const debouncedFetchPaymentIntent = debounce((quantity: number) => {
 		if (quantity > 0) mutation.execute({ quantity });
@@ -30,9 +30,9 @@
 		initialValue: initial,
 		onError(e) {
 			toast.error(e.message, {
+				closeButton: true,
 				description: e.cause,
-				duration: 10_000,
-				closeButton: true
+				duration: 10_000
 			});
 		}
 	});
@@ -87,11 +87,11 @@
 					steps={[
 						{ label: 'Mengenauswahl' },
 						{
-							label: 'Zahlungsdetails',
 							disabled:
 								!termsAccepted ||
 								!mutation.data?.clientSecret ||
-								mutation.loading
+								mutation.loading,
+							label: 'Zahlungsdetails'
 						}
 					]}
 					bind:currentStep

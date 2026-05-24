@@ -1,15 +1,15 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const { dbMock } = vi.hoisted(() => ({
 	dbMock: {
-		selectFrom: vi.fn().mockReturnThis(),
+		executeTakeFirst: vi.fn(),
 		select: vi.fn().mockReturnThis(),
-		where: vi.fn().mockReturnThis(),
-		executeTakeFirst: vi.fn()
+		selectFrom: vi.fn().mockReturnThis(),
+		where: vi.fn().mockReturnThis()
 	}
 }));
 
-vi.mock('$lib/server/db', () => ({ default: dbMock, db: dbMock }));
+vi.mock('$lib/server/db', () => ({ db: dbMock, default: dbMock }));
 vi.mock('@sentry/sveltekit', () => ({ captureException: vi.fn() }));
 
 import { checkPreferredTemplateExists } from '$wizard/api/wizard.handlers';

@@ -1,21 +1,22 @@
 <script lang="ts">
 	import Authed from '$core/auth/components/Authed.svelte';
+	import { debounce } from '$lib/utils';
 	import { getTemplates } from '$templates/api/templates.remote';
-	import * as InputGroup from '$ui/input-group';
-	import { SearchIcon, X } from '@lucide/svelte';
 	import * as Dialog from '$ui/dialog/index.js';
+	import * as InputGroup from '$ui/input-group';
+	import { Separator } from '$ui/separator';
+	import { Toggle } from '$ui/toggle';
+	import { SearchIcon, X } from '@lucide/svelte';
+
+	import { templatesMutationContext } from '../contexts';
 	import TemplateList from './TemplateList.svelte';
 	import TemplateUpload from './TemplateUpload.svelte';
-	import { Toggle } from '$ui/toggle';
-	import { debounce } from '$lib/utils';
-	import { templatesMutationContext } from '../contexts';
-	import { Separator } from '$ui/separator';
 
 	/** Counts in-flight mutations (delete / report / unreport / upload). Read by TemplateList. */
 	let mutationCount = $state(0);
 	templatesMutationContext.set({
-		start: () => mutationCount++,
-		end: () => mutationCount--
+		end: () => mutationCount--,
+		start: () => mutationCount++
 	});
 
 	/** Raw value bound to the input — updates on every keystroke. */
@@ -46,7 +47,7 @@
 	 * by appending a new page; the next filter change resets it back.
 	 */
 	let pages = $derived<ReturnType<typeof getTemplates>[]>([
-		getTemplates({ search, hideReported })
+		getTemplates({ hideReported, search })
 	]);
 
 	/**
@@ -56,7 +57,7 @@
 	 * @param afterId - ID of the last visible template, used as the cursor.
 	 */
 	function handleLoadMore(afterId: string) {
-		pages = [...pages, getTemplates({ afterId, search, hideReported })];
+		pages = [...pages, getTemplates({ afterId, hideReported, search })];
 	}
 </script>
 

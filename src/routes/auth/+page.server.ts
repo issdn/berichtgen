@@ -5,10 +5,10 @@ export const actions = {
 	signin: async ({ locals: { supabase }, url }) => {
 		const baseUrl = `${url.origin}/auth/callback?next=/board`;
 		const { data, error } = await supabase.auth.signInWithOAuth({
-			provider: 'google',
 			options: {
 				redirectTo: baseUrl
-			}
+			},
+			provider: 'google'
 		});
 		if (error) return json({ error: error.message }, { status: 500 });
 		if (data.url) {

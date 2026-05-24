@@ -5,18 +5,18 @@ export const EFileRoutingError = buildError({
 		httpCode: 400,
 		message: 'Datei konnte nicht gelesen werden.'
 	},
-	GCS_UPLOAD_URL_FAILED: {
-		httpCode: 500,
-		message: 'Upload-URL konnte nicht erstellt werden.'
+	FILE_TOO_LARGE: {
+		httpCode: 413,
+		message: 'Datei ist größer als 50 MB.'
 	},
-	GCS_UPLOAD_FAILED: { httpCode: 500, message: 'Datei-Upload fehlgeschlagen.' },
 	FORMAT_NOT_SUPPORTED: {
 		httpCode: 400,
 		message: 'Dateiformat wird nicht unterstützt.'
 	},
-	FILE_TOO_LARGE: {
-		httpCode: 413,
-		message: 'Datei ist größer als 50 MB.'
+	GCS_UPLOAD_FAILED: { httpCode: 500, message: 'Datei-Upload fehlgeschlagen.' },
+	GCS_UPLOAD_URL_FAILED: {
+		httpCode: 500,
+		message: 'Upload-URL konnte nicht erstellt werden.'
 	}
 } as const);
 
@@ -33,27 +33,26 @@ export const EWizardError = buildError({
 } as const);
 
 export const ECompletionException = buildError({
+	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' },
 	NOT_ENOUGH_TOKENS: { httpCode: 402, message: 'Nicht genug Tokens.' },
+	TOO_MANY_REQUESTS: { httpCode: 429, message: 'Zu viele Anfragen.' },
 	UNKNOWN_THIRD_PARTY_ERROR: {
 		httpCode: 404,
 		message: 'Ein unbekannter Fehler beim LLM-Anbieter ist aufgetreten.'
-	},
-	TOO_MANY_REQUESTS: { httpCode: 429, message: 'Zu viele Anfragen.' },
-	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' }
+	}
 } as const);
 
 export const EGenAIError = buildError({
-	INVALID_ARGUMENT: { httpCode: 400, message: 'Ungültiges Argument.' },
-	PERMISSION_DENIED: { httpCode: 403, message: 'Zugriff verweigert.' },
-	NOT_FOUND: { httpCode: 404, message: 'Nicht gefunden.' },
-	RESOURCE_EXHAUSTED: { httpCode: 429, message: 'Ratenlimit überschritten.' },
+	DEADLINE_EXCEEDED: { httpCode: 504, message: 'Zeitlimit überschritten.' },
 	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' },
-	UNAVAILABLE: { httpCode: 503, message: 'Dienst nicht verfügbar.' },
-	DEADLINE_EXCEEDED: { httpCode: 504, message: 'Zeitlimit überschritten.' }
+	INVALID_ARGUMENT: { httpCode: 400, message: 'Ungültiges Argument.' },
+	NOT_FOUND: { httpCode: 404, message: 'Nicht gefunden.' },
+	PERMISSION_DENIED: { httpCode: 403, message: 'Zugriff verweigert.' },
+	RESOURCE_EXHAUSTED: { httpCode: 429, message: 'Ratenlimit überschritten.' },
+	UNAVAILABLE: { httpCode: 503, message: 'Dienst nicht verfügbar.' }
 } as const);
 
 export const ETemplateError = buildError({
-	TEMPLATE_NOT_FOUND: { httpCode: 404, message: 'Template nicht gefunden.' },
 	ALREADY_REPORTED: {
 		httpCode: 409,
 		message: 'Du hast dieses Template bereits gemeldet.'
@@ -62,6 +61,7 @@ export const ETemplateError = buildError({
 		httpCode: 403,
 		message: 'Du kannst dein eigenes Template nicht melden.'
 	},
+	TEMPLATE_NOT_FOUND: { httpCode: 404, message: 'Template nicht gefunden.' },
 	TEMPLATE_SAFE: {
 		httpCode: 403,
 		message: 'Dieses Template wurde als sicher markiert.'
@@ -70,74 +70,74 @@ export const ETemplateError = buildError({
 
 export const EGCSError = buildError({
 	BAD_REQUEST: {
+		cause: 'badRequest',
 		httpCode: 400,
-		message: 'Ungültige Anfrage. Bitte überprüfen Sie die Syntax.',
-		cause: 'badRequest'
-	},
-	UNAUTHORIZED: {
-		httpCode: 401,
-		message: 'Authentifizierung erforderlich.',
-		cause: 'unauthorized'
-	},
-	FORBIDDEN: {
-		httpCode: 403,
-		message: 'Zugriff verweigert. Unzureichende Berechtigungen.',
-		cause: 'forbidden'
-	},
-	NOT_FOUND: {
-		httpCode: 404,
-		message: 'Die angeforderte Ressource wurde nicht gefunden.',
-		cause: 'notFound'
-	},
-	METHOD_NOT_ALLOWED: {
-		httpCode: 405,
-		message: 'Diese HTTP-Methode ist für diese Ressource nicht erlaubt.',
-		cause: 'methodNotAllowed'
+		message: 'Ungültige Anfrage. Bitte überprüfen Sie die Syntax.'
 	},
 	CONFLICT: {
+		cause: 'conflict',
 		httpCode: 409,
-		message: 'Konflikt bei der Bearbeitung der Anfrage.',
-		cause: 'conflict'
+		message: 'Konflikt bei der Bearbeitung der Anfrage.'
 	},
-	GONE: {
-		httpCode: 410,
-		message: 'Ressource ist dauerhaft nicht mehr verfügbar.',
-		cause: 'gone'
-	},
-	PRECONDITION_FAILED: {
-		httpCode: 412,
-		message: 'Vorbedingung der Anfrage nicht erfüllt.',
-		cause: 'conditionNotMet'
-	},
-	PAYLOAD_TOO_LARGE: {
-		httpCode: 413,
-		message: 'Anfrage-Datenmenge ist zu groß.',
-		cause: 'uploadTooLarge'
-	},
-	REQUESTED_RANGE_NOT_SATISFIABLE: {
-		httpCode: 416,
-		message: 'Angeforderter Bereich nicht erfüllbar.',
-		cause: 'requestedRangeNotSatisfiable'
-	},
-	TOO_MANY_REQUESTS: {
-		httpCode: 429,
-		message: 'Zu viele Anfragen in kurzer Zeit. Bitte warten.',
-		cause: 'rateLimitExceeded'
-	},
-	INTERNAL_SERVER_ERROR: {
-		httpCode: 500,
-		message: 'Interner Serverfehler.',
-		cause: 'internalError'
-	},
-	SERVICE_UNAVAILABLE: {
-		httpCode: 503,
-		message: 'Dienst vorübergehend nicht verfügbar.',
-		cause: 'backendError'
+	FORBIDDEN: {
+		cause: 'forbidden',
+		httpCode: 403,
+		message: 'Zugriff verweigert. Unzureichende Berechtigungen.'
 	},
 	GATEWAY_TIMEOUT: {
+		cause: 'gatewayTimeout',
 		httpCode: 504,
-		message: 'Zeitüberschreitung beim Gateway.',
-		cause: 'gatewayTimeout'
+		message: 'Zeitüberschreitung beim Gateway.'
+	},
+	GONE: {
+		cause: 'gone',
+		httpCode: 410,
+		message: 'Ressource ist dauerhaft nicht mehr verfügbar.'
+	},
+	INTERNAL_SERVER_ERROR: {
+		cause: 'internalError',
+		httpCode: 500,
+		message: 'Interner Serverfehler.'
+	},
+	METHOD_NOT_ALLOWED: {
+		cause: 'methodNotAllowed',
+		httpCode: 405,
+		message: 'Diese HTTP-Methode ist für diese Ressource nicht erlaubt.'
+	},
+	NOT_FOUND: {
+		cause: 'notFound',
+		httpCode: 404,
+		message: 'Die angeforderte Ressource wurde nicht gefunden.'
+	},
+	PAYLOAD_TOO_LARGE: {
+		cause: 'uploadTooLarge',
+		httpCode: 413,
+		message: 'Anfrage-Datenmenge ist zu groß.'
+	},
+	PRECONDITION_FAILED: {
+		cause: 'conditionNotMet',
+		httpCode: 412,
+		message: 'Vorbedingung der Anfrage nicht erfüllt.'
+	},
+	REQUESTED_RANGE_NOT_SATISFIABLE: {
+		cause: 'requestedRangeNotSatisfiable',
+		httpCode: 416,
+		message: 'Angeforderter Bereich nicht erfüllbar.'
+	},
+	SERVICE_UNAVAILABLE: {
+		cause: 'backendError',
+		httpCode: 503,
+		message: 'Dienst vorübergehend nicht verfügbar.'
+	},
+	TOO_MANY_REQUESTS: {
+		cause: 'rateLimitExceeded',
+		httpCode: 429,
+		message: 'Zu viele Anfragen in kurzer Zeit. Bitte warten.'
+	},
+	UNAUTHORIZED: {
+		cause: 'unauthorized',
+		httpCode: 401,
+		message: 'Authentifizierung erforderlich.'
 	}
 } as const);
 

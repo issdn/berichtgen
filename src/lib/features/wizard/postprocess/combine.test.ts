@@ -1,16 +1,17 @@
-import { combineJSONs } from '$wizard/postprocess/combine';
-import { Ort } from '$wizard/enums';
-import { test, expect } from 'vitest';
 import type { ResultEntry } from '$wizard/types';
+
+import { Ort } from '$wizard/enums';
+import { combineJSONs } from '$wizard/postprocess/combine';
+import { expect, test } from 'vitest';
 
 function makeEntry(text: string, datum: string): ResultEntry {
 	return {
-		text,
+		ausbildungsjahr: 1,
 		datum,
 		endDatum: '',
-		stunden: 1,
 		ort: Ort.BETRIEB,
-		ausbildungsjahr: 1
+		stunden: 1,
+		text
 	};
 }
 
@@ -32,8 +33,8 @@ test('combine json entries by day ', () => {
 	expect(combined).toHaveLength(3);
 	expect(combined[0]).toMatchObject({
 		datum: '2025-03-24',
-		text: '2025-03-24',
-		stunden: 1
+		stunden: 1,
+		text: '2025-03-24'
 	});
 	expect(combined[1]).toMatchObject({
 		datum: '2025-03-17',
@@ -43,7 +44,7 @@ test('combine json entries by day ', () => {
 	expect(combined[1].text).toContain('2025-03-17 2');
 	expect(combined[2]).toMatchObject({
 		datum: '2025-03-10',
-		text: '2025-03-10',
-		stunden: 1
+		stunden: 1,
+		text: '2025-03-10'
 	});
 });

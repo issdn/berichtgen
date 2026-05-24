@@ -1,16 +1,17 @@
 <script lang="ts">
-	import { buttonVariants } from '$ui/button';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import type { DateRangeSchema } from '$wizard/schemas';
-	import { CalendarIcon } from '@lucide/svelte';
 	import type { SuperForm } from 'sveltekit-superforms';
 	import type { SuperFormData } from 'sveltekit-superforms/client';
-	import { cn } from 'tailwind-variants';
+
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { RangeCalendar } from '$lib/components/ui/range-calendar/index.js';
+	import { LOCALE, TIMEZONE } from '$lib/constants';
+	import { dateFormatter } from '$lib/utils';
+	import { buttonVariants } from '$ui/button';
 	import * as Form from '$ui/form';
 	import * as Popover from '$ui/popover';
-	import { RangeCalendar } from '$lib/components/ui/range-calendar/index.js';
-	import { dateFormatter } from '$lib/utils';
-	import { LOCALE, TIMEZONE } from '$lib/constants';
+	import { CalendarIcon } from '@lucide/svelte';
+	import { cn } from 'tailwind-variants';
 
 	let {
 		form,
@@ -71,8 +72,8 @@
 							data-testid="date-range-trigger"
 							class={cn(
 								buttonVariants({
-									variant: 'outline',
-									class: 'w-calendar'
+									class: 'w-calendar',
+									variant: 'outline'
 								})
 							)}
 						>

@@ -1,8 +1,9 @@
-import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
 import { Ort } from '$wizard/enums';
-import { testAIResponse } from '../../../../test/helpers/test_inputs';
+import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
 import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';
+
+import { testAIResponse } from '../../../../test/helpers/test_inputs';
 
 test('Spread single entry across multiple weeks.', () => {
 	const entries = [
@@ -24,8 +25,8 @@ test('Spread single entry across multiple weeks.', () => {
 		ranges: [
 			{
 				daterange: {
-					start: parseDate('2025-03-25'),
-					end: parseDate('2025-04-01')
+					end: parseDate('2025-04-01'),
+					start: parseDate('2025-03-25')
 				}
 			}
 		]
@@ -70,15 +71,15 @@ test('Spread multiple entries across multiple weeks.', () => {
 	];
 
 	const received = spreadEntriesAcrossWeeks(entries, {
+		ort: Ort.BETRIEB,
 		ranges: [
 			{
 				daterange: {
-					start: parseDate('2025-03-04'),
-					end: parseDate('2025-03-17')
+					end: parseDate('2025-03-17'),
+					start: parseDate('2025-03-04')
 				}
 			}
-		],
-		ort: Ort.BETRIEB
+		]
 	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -99,15 +100,15 @@ test('Spread one entry across multiple weeks.', () => {
 	];
 
 	const received = spreadEntriesAcrossWeeks(entries, {
+		ort: Ort.BETRIEB,
 		ranges: [
 			{
 				daterange: {
-					start: parseDate('2025-03-04'),
-					end: parseDate('2025-03-24')
+					end: parseDate('2025-03-24'),
+					start: parseDate('2025-03-04')
 				}
 			}
-		],
-		ort: Ort.BETRIEB
+		]
 	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -142,15 +143,15 @@ test('Spread multiple entries across one week.', () => {
 	];
 
 	const received = spreadEntriesAcrossWeeks(entries, {
+		ort: Ort.BETRIEB,
 		ranges: [
 			{
 				daterange: {
-					start: parseDate('2025-03-04'),
-					end: parseDate('2025-03-05')
+					end: parseDate('2025-03-05'),
+					start: parseDate('2025-03-04')
 				}
 			}
-		],
-		ort: Ort.BETRIEB
+		]
 	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -185,21 +186,21 @@ test('Spread multiple entries across multiple week ranges.', () => {
 	];
 
 	const received = spreadEntriesAcrossWeeks(entries, {
+		ort: Ort.BETRIEB,
 		ranges: [
 			{
 				daterange: {
-					start: parseDate('2025-03-04'),
-					end: parseDate('2025-03-05')
+					end: parseDate('2025-03-05'),
+					start: parseDate('2025-03-04')
 				}
 			},
 			{
 				daterange: {
-					start: parseDate('2025-04-07'),
-					end: parseDate('2025-04-08')
+					end: parseDate('2025-04-08'),
+					start: parseDate('2025-04-07')
 				}
 			}
-		],
-		ort: Ort.BETRIEB
+		]
 	});
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
 });
@@ -247,23 +248,23 @@ test('spreads more entries than available weeks across multiple ranges with stun
 	];
 
 	const received = spreadEntriesAcrossWeeks(entries, {
+		ort: Ort.BETRIEB,
 		ranges: [
 			{
 				daterange: {
-					start: parseDate('2025-03-03'),
-					end: parseDate('2025-03-05')
+					end: parseDate('2025-03-05'),
+					start: parseDate('2025-03-03')
 				},
 				stunden: 30
 			},
 			{
 				daterange: {
-					start: parseDate('2025-04-07'),
-					end: parseDate('2025-04-08')
+					end: parseDate('2025-04-08'),
+					start: parseDate('2025-04-07')
 				},
 				stunden: 20
 			}
-		],
-		ort: Ort.BETRIEB
+		]
 	});
 
 	received.forEach((o, i) => expect(o).toMatchObject(expected[i]));
@@ -271,16 +272,16 @@ test('spreads more entries than available weeks across multiple ranges with stun
 
 test('Spread multiple entries across multiple week ranges with stunden.', () => {
 	const received = spreadEntriesAcrossWeeks(testAIResponse, {
+		ort: Ort.BETRIEB,
 		ranges: [
 			{
 				daterange: {
-					start: parseDate('2023-12-01'),
-					end: parseDate('2024-01-01')
+					end: parseDate('2024-01-01'),
+					start: parseDate('2023-12-01')
 				},
 				stunden: 30
 			}
-		],
-		ort: Ort.BETRIEB
+		]
 	});
 
 	expect(received.length).toBe(testAIResponse.length);

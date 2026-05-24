@@ -1,12 +1,13 @@
+import type { ValidBerichtgenDateRanges } from '$wizard/schemas';
+import type { Entry, ResultEntry } from '$wizard/types';
+
+import { LOCALE } from '$lib/constants';
+import { Ort } from '$wizard/enums';
 import {
 	CalendarDate,
 	startOfWeek,
 	startOfYear
 } from '@internationalized/date';
-import type { Entry, ResultEntry } from '$wizard/types';
-import type { ValidBerichtgenDateRanges } from '$wizard/schemas';
-import { Ort } from '$wizard/enums';
-import { LOCALE } from '$lib/constants';
 
 /**
  *
@@ -17,7 +18,7 @@ import { LOCALE } from '$lib/constants';
  */
 export function spreadEntriesAcrossWeeks(
 	entries: Entry[],
-	{ ranges, ort }: ValidBerichtgenDateRanges
+	{ ort, ranges }: ValidBerichtgenDateRanges
 ): Required<Entry>[] {
 	const stundenSum = ranges.reduce(
 		(prev, { daterange, stunden }) =>
@@ -48,7 +49,6 @@ export function spreadEntriesAcrossWeeks(
 
 	const adjustedForHours = sorted.map((week) => ({
 		...week,
-		stunden: week.stunden ?? 1,
 		entriesPerWeek: Math.max(
 			((entries.length /
 				weekDiff(
@@ -58,7 +58,8 @@ export function spreadEntriesAcrossWeeks(
 				(week.stunden ?? 1)) /
 				stundenSum,
 			1
-		)
+		),
+		stunden: week.stunden ?? 1
 	}));
 
 	const newEntries: Required<Entry>[] = [];
@@ -72,7 +73,7 @@ export function spreadEntriesAcrossWeeks(
 	) as CalendarDate;
 
 	for (let i = 0; i < weeks; i += 1) {
-		const { entriesPerWeek, daterange, stunden } =
+		const { daterange, entriesPerWeek, stunden } =
 			adjustedForHours[currWeekIndex];
 		const entriesPerWeekEven = Math.floor(entriesPerWeek);
 		const entriesPerWeekRemainder = entriesPerWeek - entriesPerWeekEven;
@@ -128,18 +129,12 @@ function cloneObjectWithDate(
 ): ResultEntry {
 	return {
 		...entry,
+		ausbildungsjahr: date.year,
 		datum: date.toString(),
 		endDatum: date.add({ days: 7 }).toString(),
 		ort,
-		stunden,
-		ausbildungsjahr: date.year
+		stunden
 	};
-}
-
-function weekDiff(start: CalendarDate, end: CalendarDate) {
-	const startWeek = getWeek(start);
-	const endWeek = getWeek(end);
-	return endWeek - startWeek + 1;
 }
 
 function getWeek(date: CalendarDate) {
@@ -154,4 +149,10 @@ function getWeek(date: CalendarDate) {
 
 	// Use year and week to get an absolute week number
 	return date.year * 52 + weekOfYear;
+}
+
+function weekDiff(start: CalendarDate, end: CalendarDate) {
+	const startWeek = getWeek(start);
+	const endWeek = getWeek(end);
+	return endWeek - startWeek + 1;
 }

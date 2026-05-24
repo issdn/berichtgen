@@ -1,10 +1,11 @@
-import { requestGcsUploadCommand } from '$wizard/api/wizard.remote';
-import { WizardError, EFileRoutingError, EGCSError } from '$wizard/errors';
-import { errorByHttpCode } from '$lib/errors';
-import { errResult, type Result, okResult, tryResultAsync } from '$lib/result';
-import { FileTypes } from '$wizard/enums';
-import { fullResultSchema } from '$wizard/schemas';
 import type { ResultEntry } from '$wizard/types';
+
+import { errorByHttpCode } from '$lib/errors';
+import { errResult, okResult, type Result, tryResultAsync } from '$lib/result';
+import { requestGcsUploadCommand } from '$wizard/api/wizard.remote';
+import { FileTypes } from '$wizard/enums';
+import { EFileRoutingError, EGCSError, WizardError } from '$wizard/errors';
+import { fullResultSchema } from '$wizard/schemas';
 
 /** Maps a GCS HTTP response status to the matching {@link EGCSError} entry. */
 function gcsErrorFromStatus(status: number): WizardError {
@@ -19,18 +20,21 @@ export const INLINE_MAX_BYTES = 1 * 1024 * 1024; // 1 MB
 /** Strict max file size for wizard processing. */
 export const GCS_MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 
-/** The file is small enough (= 1 MB) to be sent inline as base64. */
-export type InlineRouting = {
-	type: 'inline';
-	data: string;
-	mimeType: string;
-};
+/** Discriminated union of all possible file routing strategies. */
+export type FileRouting = GcsRouting | InlineRouting | UrlRouting;
 
 /** The file was uploaded directly to Google Cloud Storage. */
 export type GcsRouting = {
-	type: 'gcs';
 	fileUri: string;
 	mimeType: string;
+	type: 'gcs';
+};
+
+/** The file is small enough (= 1 MB) to be sent inline as base64. */
+export type InlineRouting = {
+	data: string;
+	mimeType: string;
+	type: 'inline';
 };
 
 /** A web URL pasted by the user or specified in the config file. */
@@ -38,17 +42,6 @@ export type UrlRouting = {
 	type: 'url';
 	url: string;
 };
-
-/** Discriminated union of all possible file routing strategies. */
-export type FileRouting = InlineRouting | GcsRouting | UrlRouting;
-
-function toBase64(bytes: Uint8Array): string {
-	let binary = '';
-	for (let i = 0; i < bytes.length; i++) {
-		binary += String.fromCharCode(bytes[i]);
-	}
-	return btoa(binary);
-}
 
 export async function resolveFileRouting(
 	file: File,
@@ -81,9 +74,9 @@ export async function resolveFileRouting(
 			.then((buf) => toBase64(buf))
 			.then((data) => {
 				return okResult<FileRouting>({
-					type: 'inline',
 					data,
-					mimeType
+					mimeType,
+					type: 'inline'
 				});
 			});
 	}
@@ -91,43 +84,51 @@ export async function resolveFileRouting(
 	return uploadToGcs(file);
 }
 
+function toBase64(bytes: Uint8Array): string {
+	let binary = '';
+	for (let i = 0; i < bytes.length; i++) {
+		binary += String.fromCharCode(bytes[i]);
+	}
+	return btoa(binary);
+}
+
 async function uploadToGcs(file: File): Promise<Result<FileRouting>> {
 	const uploadUrlResult = await tryResultAsync(
 		requestGcsUploadCommand({
-			fileName: file.name,
-			fullFilePath: file.webkitRelativePath || file.name,
 			contentType: file.type,
-			fileSize: file.size
+			fileName: file.name,
+			fileSize: file.size,
+			fullFilePath: file.webkitRelativePath || file.name
 		}),
 		WizardError,
 		EFileRoutingError.GCS_UPLOAD_URL_FAILED
 	);
 	if (!uploadUrlResult.ok) return uploadUrlResult;
 
-	const { signedUrl, fileUri } = uploadUrlResult.data;
+	const { fileUri, signedUrl } = uploadUrlResult.data;
 
 	if (!signedUrl) {
 		return okResult<FileRouting>({
-			type: 'gcs',
 			fileUri,
-			mimeType: file.type
+			mimeType: file.type,
+			type: 'gcs'
 		});
 	}
 
 	return tryResultAsync(
 		fetch(signedUrl, {
-			method: 'PUT',
+			body: file,
 			headers: {
 				'Content-Type': file.type,
 				'x-goog-if-generation-match': '0'
 			},
-			body: file
+			method: 'PUT'
 		}).then((res) => {
 			if (res.status === 412) {
-				return { type: 'gcs' as const, fileUri, mimeType: file.type };
+				return { fileUri, mimeType: file.type, type: 'gcs' as const };
 			}
 			if (!res.ok) throw gcsErrorFromStatus(res.status);
-			return { type: 'gcs' as const, fileUri, mimeType: file.type };
+			return { fileUri, mimeType: file.type, type: 'gcs' as const };
 		}),
 		WizardError,
 		EFileRoutingError.GCS_UPLOAD_FAILED

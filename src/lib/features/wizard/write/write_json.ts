@@ -1,6 +1,7 @@
+import type { ResultEntry } from '$wizard/types';
+
 import { downloadBlob } from '$lib/utils';
 import { FileTypes } from '$wizard/enums';
-import type { ResultEntry } from '$wizard/types';
 
 export async function handleJSONDownload(
 	entries: Promise<ResultEntry[]>,

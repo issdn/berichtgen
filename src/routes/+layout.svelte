@@ -1,18 +1,20 @@
 <script lang="ts">
-	import { Toaster } from '$lib/components/ui/sonner/index.js';
-	import { ModeWatcher } from 'mode-watcher';
-	import '../app.css';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import { goto, invalidate } from '$app/navigation';
-	import { navigating } from '$app/state';
-	import DarkMode from '../lib/components/ui/DarkMode.svelte';
-	import { onMount } from 'svelte';
-	import Logo from '$ui/svg/Logo.svelte';
 	import { resolve } from '$app/paths';
-	import SettingsPopover from '$core/auth/components/SettingsPopover.svelte';
-	import ProgressBar from '$ui/ProgressBar.svelte';
 
-	let { data, children } = $props();
+	import '../app.css';
+	import { navigating } from '$app/state';
+	import SettingsPopover from '$core/auth/components/SettingsPopover.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { Toaster } from '$lib/components/ui/sonner/index.js';
+	import ProgressBar from '$ui/ProgressBar.svelte';
+	import Logo from '$ui/svg/Logo.svelte';
+	import { ModeWatcher } from 'mode-watcher';
+	import { onMount } from 'svelte';
+
+	import DarkMode from '../lib/components/ui/DarkMode.svelte';
+
+	let { children, data } = $props();
 
 	onMount(() => {
 		const { data: authData } = data.supabase.auth.onAuthStateChange(

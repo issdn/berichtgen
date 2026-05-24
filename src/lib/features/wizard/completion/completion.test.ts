@@ -1,11 +1,11 @@
-import { describe, expect, test } from 'vitest';
 import { createBatchesBySize } from '$wizard/completion/completion';
+import { describe, expect, test } from 'vitest';
 
 describe('createBatchesBySize', () => {
 	test('GIVEN small items WHEN combined size fits THEN returns one batch', () => {
 		const items = [
-			{ text: 'abc', ort: 'SCHULE' as const },
-			{ text: 'def', ort: 'BETRIEB' as const }
+			{ ort: 'SCHULE' as const, text: 'abc' },
+			{ ort: 'BETRIEB' as const, text: 'def' }
 		];
 		const batches = createBatchesBySize(items, 1000);
 		expect(batches).toHaveLength(1);
@@ -38,7 +38,7 @@ describe('createBatchesBySize', () => {
 	});
 
 	test('GIVEN item metadata WHEN batching THEN metadata remains intact', () => {
-		const items = [{ text: 'test', ort: 'BETRIEB' as const, extra: 42 }];
+		const items = [{ extra: 42, ort: 'BETRIEB' as const, text: 'test' }];
 		const batches = createBatchesBySize(items, 1000);
 		expect(batches[0][0]).toMatchObject({ extra: 42 });
 	});

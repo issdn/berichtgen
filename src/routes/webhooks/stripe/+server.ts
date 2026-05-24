@@ -1,15 +1,15 @@
-import Stripe from 'stripe';
-import { json } from '@sveltejs/kit';
+import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from '$env/static/private';
 import {
 	BerichtgenError,
-	svelteApiError,
-	ECommonServerError
+	ECommonServerError,
+	svelteApiError
 } from '$lib/errors';
-import * as Sentry from '@sentry/sveltekit';
-import db from '$lib/server/db';
-import { sql } from 'kysely';
-import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from '$env/static/private';
 import { tryResult, tryResultAsync } from '$lib/result';
+import db from '$lib/server/db';
+import * as Sentry from '@sentry/sveltekit';
+import { json } from '@sveltejs/kit';
+import { sql } from 'kysely';
+import Stripe from 'stripe';
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
@@ -50,18 +50,18 @@ export async function POST({ request }) {
 
 		if (!cart) return json({}, { status: 200 });
 
-		const { user_id: userId, quantity } = cart;
+		const { quantity, user_id: userId } = cart;
 		const tokensToCredit = quantity * 1_000_000;
 
 		const insertPurchaseResult = await tryResultAsync(
 			db
 				.insertInto('purchase')
 				.values({
+					quantity,
 					stripe_event_id: event.id,
 					stripe_intent_id: pi.id,
-					user_id: userId,
-					quantity,
-					tokens_credited: tokensToCredit
+					tokens_credited: tokensToCredit,
+					user_id: userId
 				})
 				.execute(),
 			BerichtgenError,

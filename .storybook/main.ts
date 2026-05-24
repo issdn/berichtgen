@@ -51,8 +51,15 @@ export const markTemplateSafe = noop;
 	}
 
 	return {
-		name: 'storybook:mock-remote-modules',
 		enforce: 'pre',
+		load(id) {
+			if (!id.startsWith(VIRTUAL_PREFIX)) return undefined;
+			const key = id.slice(VIRTUAL_PREFIX.length);
+			const entry = mocks.find(([alias]) => alias === key);
+			return entry ? entry[2] : undefined;
+		},
+
+		name: 'storybook:mock-remote-modules',
 
 		resolveId(id) {
 			const norm = id.replace(/\\/g, '/').split('?')[0];
@@ -64,13 +71,6 @@ export const markTemplateSafe = noop;
 			);
 			if (entry) return VIRTUAL_PREFIX + entry[0];
 			return undefined;
-		},
-
-		load(id) {
-			if (!id.startsWith(VIRTUAL_PREFIX)) return undefined;
-			const key = id.slice(VIRTUAL_PREFIX.length);
-			const entry = mocks.find(([alias]) => alias === key);
-			return entry ? entry[2] : undefined;
 		},
 
 		// Fallback: if resolveId/load didn't fire (e.g. another pre-plugin
@@ -86,9 +86,9 @@ export const markTemplateSafe = noop;
 }
 
 const config: StorybookConfig = {
-	stories: ['../src/**/*.stories.@(js|ts|svelte)'],
 	addons: ['@storybook/addon-svelte-csf', '@storybook/addon-vitest'],
 	framework: '@storybook/sveltekit',
+	stories: ['../src/**/*.stories.@(js|ts|svelte)'],
 
 	async viteFinal(config) {
 		// Flatten and filter the plugin list:

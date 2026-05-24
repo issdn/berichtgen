@@ -5,9 +5,9 @@
  * "vuln" tests reproduce the dangerous behaviour; "fix" tests verify the mitigation.
  */
 
-import { describe, test, expect } from 'vitest';
-import { getQuickJS } from 'quickjs-emscripten';
 import { buildRunJs, type SandBox } from '$wizard/write/write_docx';
+import { getQuickJS } from 'quickjs-emscripten';
+import { describe, expect, test } from 'vitest';
 
 /** Build a minimal valid SandBox for tests. */
 function box(code: string, extra: Record<string, unknown> = {}): SandBox {

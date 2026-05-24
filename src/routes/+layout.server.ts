@@ -1,9 +1,10 @@
-import type { LayoutServerLoad } from './$types';
 import db from '$server/db';
 
+import type { LayoutServerLoad } from './$types';
+
 export const load: LayoutServerLoad = async ({
-	locals: { safeGetSession },
-	cookies
+	cookies,
+	locals: { safeGetSession }
 }) => {
 	const { session, user } = await safeGetSession();
 
@@ -16,9 +17,9 @@ export const load: LayoutServerLoad = async ({
 		: null;
 
 	return {
-		session,
-		user,
+		cookies: cookies.getAll(),
 		profile,
-		cookies: cookies.getAll()
+		session,
+		user
 	};
 };

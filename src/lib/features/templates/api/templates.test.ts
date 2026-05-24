@@ -14,24 +14,24 @@
  * Run with:  pnpm vitest run src/lib/server/templates.test.ts
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { ECommonServerError } from '$lib/errors';
 import { ETemplateError } from '$wizard/errors';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 // ─── Module mocks ────────────────────────────────────────────────────────────
 
 const { dbMock, storageMock } = vi.hoisted(() => ({
 	dbMock: {
-		selectFrom: vi.fn().mockReturnThis(),
-		select: vi.fn().mockReturnThis(),
-		where: vi.fn().mockReturnThis(),
+		deleteFrom: vi.fn().mockReturnThis(),
+		execute: vi.fn(),
 		executeTakeFirst: vi.fn(),
 		insertInto: vi.fn().mockReturnThis(),
-		values: vi.fn().mockReturnThis(),
-		execute: vi.fn(),
-		deleteFrom: vi.fn().mockReturnThis(),
+		select: vi.fn().mockReturnThis(),
+		selectFrom: vi.fn().mockReturnThis(),
+		set: vi.fn().mockReturnThis(),
 		updateTable: vi.fn().mockReturnThis(),
-		set: vi.fn().mockReturnThis()
+		values: vi.fn().mockReturnThis(),
+		where: vi.fn().mockReturnThis()
 	},
 	storageMock: {
 		from: vi.fn().mockReturnThis(),
@@ -40,7 +40,7 @@ const { dbMock, storageMock } = vi.hoisted(() => ({
 	}
 }));
 
-vi.mock('$lib/server/db', () => ({ default: dbMock, db: dbMock }));
+vi.mock('$lib/server/db', () => ({ db: dbMock, default: dbMock }));
 
 vi.mock('$lib/server/admin', () => ({
 	supabaseAdmin: { storage: storageMock }
@@ -60,13 +60,13 @@ vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
 // ─── Import SUT after mocks are registered ───────────────────────────────────
 
 import {
-	paginateTemplates,
-	validateCanReport,
 	deleteTemplateReport,
-	submitTemplateReport,
 	markTemplateSafeById,
 	PAGE_SIZE,
-	type TemplateRow
+	paginateTemplates,
+	submitTemplateReport,
+	type TemplateRow,
+	validateCanReport
 } from '$templates/api/templates.handlers';
 
 // ─── Factories ───────────────────────────────────────────────────────────────
@@ -74,16 +74,16 @@ import {
 /** Build a minimal TemplateRow for use in tests. */
 function makeRow(overrides: Partial<TemplateRow> = {}): TemplateRow {
 	return {
-		id: 'row-1',
-		user_id: 'user-1',
-		storage_path: 'user-1/file.docx',
-		is_public: false,
-		safe_marked_at: null,
 		created_at: '2024-01-01T00:00:00Z',
-		updated_at: null,
+		id: 'row-1',
 		is_mine: false,
+		is_public: false,
 		profile: null,
+		safe_marked_at: null,
+		storage_path: 'user-1/file.docx',
 		template_report: [],
+		updated_at: null,
+		user_id: 'user-1',
 		...overrides
 	};
 }
@@ -151,8 +151,8 @@ describe('validateCanReport', () => {
 
 	const validTemplate = makeRow({
 		id: 'tmpl-1',
-		user_id: otherUserId,
-		safe_marked_at: null
+		safe_marked_at: null,
+		user_id: otherUserId
 	});
 
 	test('passes silently when all conditions are satisfied', () => {
@@ -182,8 +182,8 @@ describe('validateCanReport', () => {
 
 	test('throws TEMPLATE_SAFE when safe_marked_at is set', () => {
 		const safeTemplate = makeRow({
-			user_id: otherUserId,
-			safe_marked_at: '2024-01-01T00:00:00Z'
+			safe_marked_at: '2024-01-01T00:00:00Z',
+			user_id: otherUserId
 		});
 		expect(() =>
 			validateCanReport(safeTemplate, userId, undefined)
@@ -241,9 +241,9 @@ describe('submitTemplateReport', () => {
 
 	const template = {
 		id: 'tmpl-1',
-		user_id: 'owner-id',
+		safe_marked_at: null,
 		storage_path: 'owner-id/file.docx',
-		safe_marked_at: null
+		user_id: 'owner-id'
 	};
 
 	test('inserts report when all validation passes', async () => {
@@ -254,16 +254,16 @@ describe('submitTemplateReport', () => {
 		dbMock.execute.mockResolvedValue({});
 
 		await submitTemplateReport(
-			{ templateId: 'tmpl-1', message: 'spam' },
+			{ message: 'spam', templateId: 'tmpl-1' },
 			'reporter-id'
 		);
 
 		expect(dbMock.insertInto).toHaveBeenCalledWith('template_report');
 		expect(dbMock.values).toHaveBeenCalledWith(
 			expect.objectContaining({
-				template_id: 'tmpl-1',
+				message: 'spam',
 				reporter_user_id: 'reporter-id',
-				message: 'spam'
+				template_id: 'tmpl-1'
 			})
 		);
 	});

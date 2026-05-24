@@ -1,6 +1,35 @@
-import { ScanReturnValue, type ScanReturnType } from '$core/types';
-import { ParserError, EParserError } from '$core/parser/errors';
 import type { WizardRawDirectories, WizardRawDirectory } from '$wizard/types';
+
+import { EParserError, ParserError } from '$core/parser/errors';
+import { type ScanReturnType, ScanReturnValue } from '$core/types';
+
+export function extractFilesSimple(
+	input: DataTransferItemList | FileList
+): File[] {
+	if (input instanceof FileList) {
+		return Array.from(input);
+	}
+
+	return Array.from(input)
+		.map((item) => (item.kind === 'file' ? item.getAsFile() : null))
+		.filter((file): file is File => !!file);
+}
+
+export async function get2DimensionalDirectories(
+	items: DataTransferItemList,
+	returnType: ScanReturnType,
+	isFileValid?: (file: File) => boolean
+) {
+	if (returnType === ScanReturnValue.FILE) {
+		return _get2DimensionalDirectories(items, (entry) =>
+			scanFiles(entry, [], isFileValid)
+		);
+	} else if (returnType === ScanReturnValue.DATA_TRANSFER_ITEM) {
+		return _get2DimensionalDirectories(items, scanSystemFileEntries);
+	} else {
+		throw new ParserError(EParserError.INVALID_FILE);
+	}
+}
 
 export function getFileListWithPreserverFolderStructure(
 	files: FileList,
@@ -26,17 +55,15 @@ export async function scanDroppedInput(
 	returnType: (typeof ScanReturnValue)['FILE'],
 	isFileValid?: (file: File) => boolean
 ): Promise<WizardRawDirectories>;
-
 export async function scanDroppedInput(
 	input: DataTransferItemList | FileList,
 	returnType: (typeof ScanReturnValue)['DATA_TRANSFER_ITEM']
 ): Promise<(File | FileSystemFileEntry)[][]>;
-
 export async function scanDroppedInput(
 	input: DataTransferItemList | FileList,
 	returnType: ScanReturnType,
 	isFileValid?: (file: File) => boolean
-): Promise<WizardRawDirectories | (File | FileSystemFileEntry)[][]> {
+): Promise<(File | FileSystemFileEntry)[][] | WizardRawDirectories> {
 	if (input instanceof FileList) {
 		if (returnType === ScanReturnValue.FILE) {
 			return getFileListWithPreserverFolderStructure(input, isFileValid);
@@ -44,22 +71,6 @@ export async function scanDroppedInput(
 		return getFileListWithPreserverFolderStructure(input, isFileValid);
 	}
 	return get2DimensionalDirectories(input, returnType, isFileValid);
-}
-
-export async function get2DimensionalDirectories(
-	items: DataTransferItemList,
-	returnType: ScanReturnType,
-	isFileValid?: (file: File) => boolean
-) {
-	if (returnType === ScanReturnValue.FILE) {
-		return _get2DimensionalDirectories(items, (entry) =>
-			scanFiles(entry, [], isFileValid)
-		);
-	} else if (returnType === ScanReturnValue.DATA_TRANSFER_ITEM) {
-		return _get2DimensionalDirectories(items, scanSystemFileEntries);
-	} else {
-		throw new ParserError(EParserError.INVALID_FILE);
-	}
 }
 
 async function _get2DimensionalDirectories<T>(
@@ -160,16 +171,4 @@ async function scanSystemFileEntries(
 		return [[item as FileSystemFileEntry]];
 	}
 	return items;
-}
-
-export function extractFilesSimple(
-	input: DataTransferItemList | FileList
-): File[] {
-	if (input instanceof FileList) {
-		return Array.from(input);
-	}
-
-	return Array.from(input)
-		.map((item) => (item.kind === 'file' ? item.getAsFile() : null))
-		.filter((file): file is File => !!file);
 }

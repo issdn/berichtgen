@@ -1,18 +1,19 @@
-import * as Sentry from '@sentry/sveltekit';
 import { BerichtgenError, ECommonServerError } from '$lib/errors';
-import db from '$server/db';
-import type { LayoutServerLoad } from './$types';
-import { loadFlash } from 'sveltekit-flash-message/server';
 import { tryResultAsync } from '$lib/result';
+import db from '$server/db';
+import * as Sentry from '@sentry/sveltekit';
+import { loadFlash } from 'sveltekit-flash-message/server';
+
+import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = loadFlash(
-	async ({ locals: { user, session }, depends }) => {
+	async ({ depends, locals: { session, user } }) => {
 		depends('user:tokenCount');
 
 		if (!user) {
 			return {
-				tokenCount: null,
-				session
+				session,
+				tokenCount: null
 			};
 		}
 
@@ -30,7 +31,7 @@ export const load: LayoutServerLoad = loadFlash(
 			const insertedResult = await tryResultAsync(
 				db
 					.insertInto('user_token_count')
-					.values({ user_id: user.id, tokens: 0 })
+					.values({ tokens: 0, user_id: user.id })
 					.onConflict((oc) => oc.column('user_id').doNothing())
 					.returning('tokens')
 					.executeTakeFirst(),
@@ -52,8 +53,8 @@ export const load: LayoutServerLoad = loadFlash(
 				.executeTakeFirst()) ?? null;
 
 		return {
-			tokenCount,
 			session,
+			tokenCount,
 			user,
 			userMetadata
 		};

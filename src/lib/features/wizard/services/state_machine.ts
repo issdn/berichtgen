@@ -1,22 +1,21 @@
-import { FiniteStateMachine } from 'runed';
-import type { WizardFileContext } from './wizard_file_context';
-import { invalidate } from '$app/navigation';
-import type { WizardMediator } from './wizard_mediator.svelte';
 import type { Entry, ResultEntry } from '$wizard/types';
-import { WizardStep, FileTypes } from '$wizard/enums';
+
+import { invalidate } from '$app/navigation';
 import berichtgenStore from '$core/stores/berichtgen.svelte';
+import { FileTypes, WizardStep } from '$wizard/enums';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
+import { FiniteStateMachine } from 'runed';
+
+import type { WizardFileContext } from './wizard_file_context';
+import type { WizardMediator } from './wizard_mediator.svelte';
+
 import { resolveFileRouting } from './file_routing';
 
-function shouldSkipAiCompletion(context: WizardFileContext): boolean {
-	return (
-		'file' in context.file &&
-		context.file.file.type === FileTypes.JSON &&
-		!berichtgenStore.get('rewordJSON')
-	);
-}
+export type StateMachineSignature = ReturnType<
+	typeof createStateMachineForContext
+>;
 
-type WizardMachineEvent = 'next' | 'start' | 'error' | 'cancel' | 'init';
+type WizardMachineEvent = 'cancel' | 'error' | 'init' | 'next' | 'start';
 
 export function createStateMachineForContext(
 	context: WizardFileContext,
@@ -27,6 +26,68 @@ export function createStateMachineForContext(
 	const machine = new FiniteStateMachine<WizardStep, WizardMachineEvent>(
 		initialStep,
 		{
+			[WizardStep.AI_COMPLETION]: {
+				cancel: () => {
+					scheduler.persistSoon();
+					return WizardStep.CANCELLED;
+				},
+				error: () => {
+					scheduler.persistSoon();
+					return WizardStep.ERROR;
+				},
+				next(...args: unknown[]) {
+					const entries = args[0] as Entry[];
+					context.snapshot = entries;
+					invalidate('user:tokenCount');
+					scheduler.persistSoon();
+					return WizardStep.TIME_SPREADING;
+				}
+			},
+
+			[WizardStep.BATCH_PENDING]: {
+				_enter() {
+					scheduler.onFileBatchPending(id);
+				},
+				cancel: () => {
+					scheduler.persistSoon();
+					return WizardStep.CANCELLED;
+				},
+				error: () => {
+					scheduler.persistSoon();
+					return WizardStep.ERROR;
+				},
+				start: () => {
+					scheduler.persistSoon();
+					return WizardStep.AI_COMPLETION;
+				}
+			},
+
+			[WizardStep.CANCELLED]: {
+				_enter() {
+					scheduler.persistSoon();
+					scheduler.onFileCancelled();
+				},
+				init: () => WizardStep.INITIALISING,
+				next() {
+					return WizardStep.INITIALISING;
+				}
+			},
+
+			[WizardStep.DONE]: {
+				_enter: () => {
+					context.finished = context.snapshot as ResultEntry[];
+					scheduler.persistSoon();
+					if (scheduler.isDone) scheduler.finish();
+				}
+			},
+
+			[WizardStep.ERROR]: {
+				_enter() {
+					scheduler.persistSoon();
+					scheduler.onFileErrored();
+				}
+			},
+
 			[WizardStep.INITIALISING]: {
 				next: WizardStep.PROCESSING
 			},
@@ -56,74 +117,17 @@ export function createStateMachineForContext(
 						machine.send('error');
 					});
 				},
+				cancel: () => {
+					scheduler.persistSoon();
+					return WizardStep.CANCELLED;
+				},
+				error: () => {
+					scheduler.persistSoon();
+					return WizardStep.ERROR;
+				},
 				next: () => {
 					scheduler.persistSoon();
 					return WizardStep.WAITING;
-				},
-				error: () => {
-					scheduler.persistSoon();
-					return WizardStep.ERROR;
-				},
-				cancel: () => {
-					scheduler.persistSoon();
-					return WizardStep.CANCELLED;
-				}
-			},
-
-			[WizardStep.WAITING]: {
-				_enter() {
-					if (shouldSkipAiCompletion(context) || context.dateRanges !== null) {
-						machine.send('next');
-					}
-				},
-				next() {
-					if (shouldSkipAiCompletion(context)) {
-						return context.dateRanges === null
-							? WizardStep.DONE
-							: WizardStep.TIME_SPREADING;
-					}
-					scheduler.persistSoon();
-					return WizardStep.BATCH_PENDING;
-				},
-				cancel: () => {
-					scheduler.persistSoon();
-					return WizardStep.CANCELLED;
-				}
-			},
-
-			[WizardStep.BATCH_PENDING]: {
-				_enter() {
-					scheduler.onFileBatchPending(id);
-				},
-				start: () => {
-					scheduler.persistSoon();
-					return WizardStep.AI_COMPLETION;
-				},
-				error: () => {
-					scheduler.persistSoon();
-					return WizardStep.ERROR;
-				},
-				cancel: () => {
-					scheduler.persistSoon();
-					return WizardStep.CANCELLED;
-				}
-			},
-
-			[WizardStep.AI_COMPLETION]: {
-				next(...args: unknown[]) {
-					const entries = args[0] as Entry[];
-					context.snapshot = entries;
-					invalidate('user:tokenCount');
-					scheduler.persistSoon();
-					return WizardStep.TIME_SPREADING;
-				},
-				error: () => {
-					scheduler.persistSoon();
-					return WizardStep.ERROR;
-				},
-				cancel: () => {
-					scheduler.persistSoon();
-					return WizardStep.CANCELLED;
 				}
 			},
 
@@ -142,30 +146,25 @@ export function createStateMachineForContext(
 				}
 			},
 
-			[WizardStep.DONE]: {
-				_enter: () => {
-					context.finished = context.snapshot as ResultEntry[];
-					scheduler.persistSoon();
-					if (scheduler.isDone) scheduler.finish();
-				}
-			},
-
-			[WizardStep.ERROR]: {
+			[WizardStep.WAITING]: {
 				_enter() {
+					if (shouldSkipAiCompletion(context) || context.dateRanges !== null) {
+						machine.send('next');
+					}
+				},
+				cancel: () => {
 					scheduler.persistSoon();
-					scheduler.onFileErrored();
-				}
-			},
-
-			[WizardStep.CANCELLED]: {
-				_enter() {
-					scheduler.persistSoon();
-					scheduler.onFileCancelled();
+					return WizardStep.CANCELLED;
 				},
 				next() {
-					return WizardStep.INITIALISING;
-				},
-				init: () => WizardStep.INITIALISING
+					if (shouldSkipAiCompletion(context)) {
+						return context.dateRanges === null
+							? WizardStep.DONE
+							: WizardStep.TIME_SPREADING;
+					}
+					scheduler.persistSoon();
+					return WizardStep.BATCH_PENDING;
+				}
 			}
 		}
 	);
@@ -173,6 +172,10 @@ export function createStateMachineForContext(
 	return machine;
 }
 
-export type StateMachineSignature = ReturnType<
-	typeof createStateMachineForContext
->;
+function shouldSkipAiCompletion(context: WizardFileContext): boolean {
+	return (
+		'file' in context.file &&
+		context.file.file.type === FileTypes.JSON &&
+		!berichtgenStore.get('rewordJSON')
+	);
+}

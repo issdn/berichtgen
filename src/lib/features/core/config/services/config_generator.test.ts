@@ -1,7 +1,7 @@
-import { test, expect } from 'vitest';
 import { buildConfigMap } from '$core/config/services/config_generator';
 import { LOCALE, TIMEZONE } from '$lib/constants';
 import { now, startOfWeek, toCalendarDate } from '@internationalized/date';
+import { expect, test } from 'vitest';
 
 function makeEntry(fullPath: string): FileSystemFileEntry {
 	return {

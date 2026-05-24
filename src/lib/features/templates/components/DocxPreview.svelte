@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { DOCXParser } from '$core/parser/docx_parser';
 	import type {
 		DocxDocument,
 		DocxInline,
 		DocxParagraph
 	} from '$core/parser/docx_ast';
+
+	import { DOCXParser } from '$core/parser/docx_parser';
 	import ErrorAlert from '$lib/components/ui/ErrorAlert.svelte';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import { SvelteMap } from 'svelte/reactivity';
@@ -155,11 +156,11 @@
 	/** Converts a DocxRun's formatting properties to a CSS inline style string. */
 	function runStyle(run: {
 		bold?: boolean;
-		italic?: boolean;
-		underline?: boolean;
 		color?: string;
-		size?: number;
 		fontFamily?: string;
+		italic?: boolean;
+		size?: number;
+		underline?: boolean;
 	}): string {
 		const parts: string[] = [];
 		if (run.fontFamily)

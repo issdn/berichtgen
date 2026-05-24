@@ -1,5 +1,5 @@
 import { LOCALE, TIMEZONE } from '$lib/constants';
-import { startOfWeek, now, toCalendarDate } from '@internationalized/date';
+import { now, startOfWeek, toCalendarDate } from '@internationalized/date';
 
 export function buildConfigMap(
 	files: (File | FileSystemFileEntry)[]

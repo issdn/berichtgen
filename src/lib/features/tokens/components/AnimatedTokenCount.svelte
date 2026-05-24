@@ -34,16 +34,16 @@
 					<span
 						class="inline-block w-full text-center"
 						in:fly={{
-							y: 15 * direction,
-							duration: 100,
 							delay: i * 50,
-							easing: cubicOut
+							duration: 100,
+							easing: cubicOut,
+							y: 15 * direction
 						}}
 						out:fly={{
-							y: -15 * direction,
-							duration: 100,
 							delay: i * 50,
-							easing: cubicOut
+							duration: 100,
+							easing: cubicOut,
+							y: -15 * direction
 						}}
 					>
 						{digit}

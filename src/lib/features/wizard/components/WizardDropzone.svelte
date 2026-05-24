@@ -7,18 +7,19 @@
 		WizardRawDirectories,
 		WizardRawDirectory
 	} from '$wizard/types';
+
+	import { page } from '$app/state';
 	import Dropzone from '$core/components/Dropzone.svelte';
 	import { readCsvConfig } from '$core/config/services/config_reader';
+	import { scanDroppedInput } from '$core/scan/file_scan';
 	import { ScanReturnValue } from '$core/types';
 	import { CONFIG_FILENAME_REGEX } from '$lib/constants';
-	import { scanDroppedInput } from '$core/scan/file_scan';
-	import { FileTypes } from '$wizard/enums';
 	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
-	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
+	import { FileTypes } from '$wizard/enums';
 	import { GCS_MAX_BYTES } from '$wizard/services/file_routing';
+	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { toast } from 'svelte-sonner';
-	import { page } from '$app/state';
 
 	const wizardMediator = wizardMediatorContext.get();
 
@@ -125,9 +126,9 @@
 		const notFound: string[] = [];
 
 		for (const { file, ort, ranges } of configRows) {
-			const config = { ranges: ranges.map((r, i) => ({ ...r, id: i })), ort };
+			const config = { ort, ranges: ranges.map((r, i) => ({ ...r, id: i })) };
 			if (URL.canParse(file)) {
-				entries.push({ url: file, config });
+				entries.push({ config, url: file });
 			} else if (fileEntries.has(file)) {
 				fileEntries.get(file)!.config = config;
 			} else {

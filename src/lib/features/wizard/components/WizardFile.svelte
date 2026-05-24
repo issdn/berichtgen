@@ -1,7 +1,12 @@
 <script lang="ts">
+	import type { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
+
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+	import ErrorAlert from '$ui/ErrorAlert.svelte';
 	import { Spinner } from '$ui/spinner';
 	import { WizardStep } from '$wizard/enums';
-	import type { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
 	import {
 		Binary,
 		Bug,
@@ -13,41 +18,38 @@
 		WandSparkles,
 		XIcon
 	} from '@lucide/svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
+
 	import TimeSpreadDialog from './TimeSpreadDialog.svelte';
-	import ErrorAlert from '$ui/ErrorAlert.svelte';
 
 	const {
-		context,
-		machine,
-		id,
 		cancel,
-		restart,
-		confirmDateRanges
+		confirmDateRanges,
+		context,
+		id,
+		machine,
+		restart
 	}: ReturnType<WizardMediator['createProcessStateMachine']> = $props();
 
 	function statusFromStep(step: WizardStep) {
 		switch (step) {
+			case WizardStep.AI_COMPLETION:
+				return { icon: WandSparkles, label: 'KI-Umformulierung...' };
+			case WizardStep.BATCH_PENDING:
+				return { icon: Clock, label: 'Warte auf andere Dateien...' };
+			case WizardStep.CANCELLED:
+				return { icon: XIcon, label: 'Abgebrochen' };
+			case WizardStep.DONE:
+				return { icon: Check, label: 'Fertig' };
+			case WizardStep.ERROR:
+				return { icon: Bug, label: 'Fehler' };
 			case WizardStep.INITIALISING:
 				return { icon: Coffee, label: 'Initialiserung...' };
 			case WizardStep.PROCESSING:
 				return { icon: Binary, label: 'Verarbeitung...' };
-			case WizardStep.BATCH_PENDING:
-				return { icon: Clock, label: 'Warte auf andere Dateien...' };
-			case WizardStep.AI_COMPLETION:
-				return { icon: WandSparkles, label: 'KI-Umformulierung...' };
 			case WizardStep.TIME_SPREADING:
 				return { icon: Calendar, label: 'Zeitliche Verteilung...' };
-			case WizardStep.DONE:
-				return { icon: Check, label: 'Fertig' };
 			case WizardStep.WAITING:
 				return { icon: Clock, label: 'Warten auf Eingabe' };
-			case WizardStep.ERROR:
-				return { icon: Bug, label: 'Fehler' };
-			case WizardStep.CANCELLED:
-				return { icon: XIcon, label: 'Abgebrochen' };
 		}
 	}
 

@@ -1,12 +1,13 @@
-import { sequence } from '@sveltejs/kit/hooks';
+import type { SupabaseDatabase } from '$lib/schema';
+
+import {
+	PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+	PUBLIC_SUPABASE_URL
+} from '$env/static/public';
 import * as Sentry from '@sentry/sveltekit';
 import { createServerClient } from '@supabase/ssr';
 import { type Handle, redirect } from '@sveltejs/kit';
-import {
-	PUBLIC_SUPABASE_URL,
-	PUBLIC_SUPABASE_PUBLISHABLE_KEY
-} from '$env/static/public';
-import type { SupabaseDatabase } from '$lib/schema';
+import { sequence } from '@sveltejs/kit/hooks';
 
 const supabase: Handle = async ({ event, resolve }) => {
 	/**
@@ -18,7 +19,6 @@ const supabase: Handle = async ({ event, resolve }) => {
 		PUBLIC_SUPABASE_URL,
 		PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 		{
-			db: { schema: 'private' },
 			cookies: {
 				getAll: () => event.cookies.getAll(),
 				/**
@@ -27,11 +27,12 @@ const supabase: Handle = async ({ event, resolve }) => {
 				 * standard behavior.
 				 */
 				setAll: (cookiesToSet) => {
-					cookiesToSet.forEach(({ name, value, options }) => {
+					cookiesToSet.forEach(({ name, options, value }) => {
 						event.cookies.set(name, value, { ...options, path: '/' });
 					});
 				}
-			}
+			},
+			db: { schema: 'private' }
 		}
 	);
 
@@ -85,8 +86,8 @@ const authGuard: Handle = async ({ event, resolve }) => {
 
 Sentry.init({
 	dsn: 'https://0bf253098410971587721601bcddda16@o4509192225816576.ingest.de.sentry.io/4509192227258448',
-	tracesSampleRate: 1,
-	sendDefaultPii: false
+	sendDefaultPii: false,
+	tracesSampleRate: 1
 });
 
 export const handleError = Sentry.handleErrorWithSentry();

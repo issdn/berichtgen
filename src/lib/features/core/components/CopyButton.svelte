@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { Button } from '$ui/button';
-	import { Copy, Check } from '@lucide/svelte';
+	import { Check, Copy } from '@lucide/svelte';
 
 	interface Props {
-		text: string;
 		children?: import('svelte').Snippet;
+		text: string;
 	}
 
-	let { text, children }: Props = $props();
+	let { children, text }: Props = $props();
 
 	let copied = $state(false);
 

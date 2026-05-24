@@ -3,13 +3,21 @@
  */
 
 import { getRequestEvent, query } from '$app/server';
-import { guardedCommand } from '$lib/server/remote';
+import { GCS_BUCKET_NAME, GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
 import {
 	BerichtgenError,
 	ECommonServerError,
 	errorByHttpCode,
 	svelteApiError
 } from '$lib/errors';
+import {
+	errResult,
+	okResult,
+	type Result,
+	tryResult,
+	tryResultAsync
+} from '$lib/result';
+import { guardedCommand } from '$lib/server/remote';
 import {
 	checkPreferredTemplateExists,
 	runBatchCompletion
@@ -21,14 +29,6 @@ import {
 } from '$wizard/schemas';
 import { Storage } from '@google-cloud/storage';
 import { createHash } from 'node:crypto';
-import {
-	errResult,
-	okResult,
-	tryResult,
-	tryResultAsync,
-	type Result
-} from '$lib/result';
-import { GCS_BUCKET_NAME, GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
 import * as z from 'zod';
 
 export const checkPreferredTemplate = query(
@@ -39,51 +39,46 @@ export const checkPreferredTemplate = query(
 	}
 );
 
-function createStorageClient(): Storage {
-	const credentials = JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''));
-	return new Storage({ credentials });
-}
-
 async function createSignedUploadPayload({
-	storage,
-	objectPath,
 	contentType,
-	fileUri
+	fileUri,
+	objectPath,
+	storage
 }: {
-	storage: Storage;
-	objectPath: string;
 	contentType: string;
 	fileUri: string;
-}): Promise<{ signedUrl?: string; fileUri: string }> {
+	objectPath: string;
+	storage: Storage;
+}): Promise<{ fileUri: string; signedUrl?: string; }> {
 	const file = storage.bucket(GCS_BUCKET_NAME).file(objectPath);
 	const [exists] = await file.exists();
 	if (exists) return { fileUri };
 
 	const [signedUrl] = await file.getSignedUrl({
-		version: 'v4',
 		action: 'write',
-		expires: Date.now() + 5 * 60 * 1000,
 		contentType,
+		expires: Date.now() + 5 * 60 * 1000,
 		extensionHeaders: {
 			'x-goog-if-generation-match': '0'
-		}
+		},
+		version: 'v4'
 	});
-	return { signedUrl, fileUri };
+	return { fileUri, signedUrl };
 }
 
 async function createSignedUploadResult({
-	storage,
-	objectPath,
 	contentType,
-	fileUri
+	fileUri,
+	objectPath,
+	storage
 }: {
-	storage: Storage;
-	objectPath: string;
 	contentType: string;
 	fileUri: string;
-}): Promise<Result<{ signedUrl?: string; fileUri: string }>> {
+	objectPath: string;
+	storage: Storage;
+}): Promise<Result<{ fileUri: string; signedUrl?: string; }>> {
 	const signedResult = await tryResultAsync(
-		createSignedUploadPayload({ storage, objectPath, contentType, fileUri }),
+		createSignedUploadPayload({ contentType, fileUri, objectPath, storage }),
 		BerichtgenError,
 		EGCSError.INTERNAL_SERVER_ERROR
 	);
@@ -103,12 +98,17 @@ async function createSignedUploadResult({
 	return okResult(signedResult.data);
 }
 
+function createStorageClient(): Storage {
+	const credentials = JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''));
+	return new Storage({ credentials });
+}
+
 /**
  * Creates (or reuses) a signed GCS upload URL for wizard file upload.
  */
 export const requestGcsUploadCommand = guardedCommand(
 	uploadUrlRequestSchema,
-	async ({ fullFilePath, contentType }) => {
+	async ({ contentType, fullFilePath }) => {
 		const {
 			locals: { user }
 		} = getRequestEvent();
@@ -129,10 +129,10 @@ export const requestGcsUploadCommand = guardedCommand(
 		if (!storageResult.ok) throw svelteApiError(storageResult.error.apiError);
 
 		const signedUploadResult = await createSignedUploadResult({
-			storage: storageResult.data,
-			objectPath,
 			contentType,
-			fileUri
+			fileUri,
+			objectPath,
+			storage: storageResult.data
 		});
 		if (!signedUploadResult.ok)
 			throw svelteApiError(signedUploadResult.error.apiError);

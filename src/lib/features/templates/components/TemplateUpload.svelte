@@ -1,21 +1,23 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import type { ResultEntry } from '$wizard/types';
+
+	import { page } from '$app/state';
+	import { AsyncResource } from '$core/async.svelte';
 	import Dropzone from '$core/components/Dropzone.svelte';
 	import { extractFilesSimple } from '$core/scan/file_scan';
-	import { AsyncResource } from '$core/async.svelte';
-	import { page } from '$app/state';
 	import {
 		getTemplates,
 		uploadTemplate
 	} from '$templates/api/templates.remote';
-	import { FileTypes } from '$wizard/enums';
-	import type { ResultEntry } from '$wizard/types';
-	import { renderDocxBlob } from '$wizard/write/write_docx';
-	import { toast } from 'svelte-sonner';
-	import { templatesMutationContext } from '../contexts';
-	import TemplateDocxPreviewDialog from './TemplateDocxPreviewDialog.svelte';
 	import Checkbox from '$ui/checkbox/checkbox.svelte';
 	import { Label } from '$ui/label';
+	import { FileTypes } from '$wizard/enums';
+	import { renderDocxBlob } from '$wizard/write/write_docx';
+	import { onDestroy } from 'svelte';
+	import { toast } from 'svelte-sonner';
+
+	import { templatesMutationContext } from '../contexts';
+	import TemplateDocxPreviewDialog from './TemplateDocxPreviewDialog.svelte';
 
 	const mutation = templatesMutationContext.get();
 
@@ -28,18 +30,18 @@
 	/** Minimal sample data used to render uploaded templates before submitting them. */
 	const TEMPLATE_PREVIEW_ENTRIES: ResultEntry[] = [
 		{
-			text: 'Beispiel: Tätigkeiten dokumentiert und Arbeitsablauf reflektiert.',
+			ausbildungsjahr: 2,
 			datum: '2025-01-06',
 			endDatum: '2025-01-12',
 			ort: 'BETRIEB',
 			stunden: 40,
-			ausbildungsjahr: 2
+			text: 'Beispiel: Tätigkeiten dokumentiert und Arbeitsablauf reflektiert.'
 		}
 	];
 
 	let pendingFile = $state<File | null>(null);
-	let pendingFileBytes = $state<Uint8Array<ArrayBuffer> | null>(null);
-	let pendingPreviewUrl = $state<string | null>(null);
+	let pendingFileBytes = $state<null | Uint8Array<ArrayBuffer>>(null);
+	let pendingPreviewUrl = $state<null | string>(null);
 	let pendingReplace = $state(false);
 	let previewOpen = $state(false);
 	let isPublic = $state(false);
@@ -50,8 +52,8 @@
 				await file.arrayBuffer()
 			);
 			const previewBlob = await renderDocxBlob({
-				template: bytes,
 				entries: Promise.resolve(TEMPLATE_PREVIEW_ENTRIES),
+				template: bytes,
 				userMetadata: page.data.userMetadata
 			});
 
@@ -60,10 +62,10 @@
 				.some((t) => t.storage_path.endsWith(`/${file.name}`));
 
 			return {
-				file,
 				bytes,
-				previewUrl: URL.createObjectURL(previewBlob),
-				isDuplicate: Boolean(isDuplicate)
+				file,
+				isDuplicate: Boolean(isDuplicate),
+				previewUrl: URL.createObjectURL(previewBlob)
 			};
 		},
 		{
@@ -77,10 +79,10 @@
 
 	const uploadMutation = new AsyncResource(
 		async (params: {
-			name: string;
-			type: string;
 			data: Uint8Array<ArrayBuffer>;
 			isPublic: boolean;
+			name: string;
+			type: string;
 		}) => {
 			mutation?.start();
 			try {
@@ -91,13 +93,13 @@
 			}
 		},
 		{
-			onSuccess: () => {
-				toast.success('Datei erfolgreich hochgeladen.');
-			},
 			onError: (error) => {
 				toast.error('Fehler beim Hochladen der Datei.', {
 					description: error.cause ?? error.message
 				});
+			},
+			onSuccess: () => {
+				toast.success('Datei erfolgreich hochgeladen.');
 			}
 		}
 	);
@@ -124,7 +126,7 @@
 		}
 	});
 
-	async function handleFiles(input: FileList | DataTransferItemList) {
+	async function handleFiles(input: DataTransferItemList | FileList) {
 		const files = extractFilesSimple(input);
 		const firstFile = files[0];
 		if (!firstFile) return;
@@ -154,10 +156,10 @@
 		if (!pendingFile || !pendingFileBytes) return false;
 
 		const uploaded = await uploadMutation.execute({
-			name: pendingFile.name,
-			type: pendingFile.type,
 			data: pendingFileBytes,
-			isPublic
+			isPublic,
+			name: pendingFile.name,
+			type: pendingFile.type
 		});
 
 		if (!uploaded) return false;

@@ -1,23 +1,24 @@
-import { SvelteMap } from 'svelte/reactivity';
 import type { WizardProcessStateMachine } from '$wizard/types';
+
+import { SvelteMap } from 'svelte/reactivity';
 
 export class WizardBatcher {
 	readonly pendingById = new SvelteMap<string, WizardProcessStateMachine>();
-
-	get size() {
-		return this.pendingById.size;
-	}
 
 	get isRunning() {
 		return this.size > 0;
 	}
 
-	reset() {
-		this.pendingById.clear();
+	get size() {
+		return this.pendingById.size;
 	}
 
 	register(process: WizardProcessStateMachine) {
 		this.pendingById.set(process.id, process);
+	}
+
+	reset() {
+		this.pendingById.clear();
 	}
 
 	takePendingIds(): string[] {

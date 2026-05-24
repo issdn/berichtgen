@@ -1,29 +1,30 @@
 <script lang="ts">
-	import { type Snippet } from 'svelte';
 	import { Button } from '$ui/button';
 	import * as Dialog from '$ui/dialog';
+	import { type Snippet } from 'svelte';
+
 	import DocxPreview from './DocxPreview.svelte';
 
-	type ConfirmHandler = () => void | boolean | Promise<void | boolean>;
+	type ConfirmHandler = () => boolean | Promise<boolean | void> | void;
 
 	let {
-		open = $bindable(false),
-		title,
+		confirmDisabled = false,
+		confirmLabel,
 		description = '',
 		fileUrl,
-		trigger,
-		confirmLabel,
-		confirmDisabled = false,
-		onConfirm
+		onConfirm,
+		open = $bindable(false),
+		title,
+		trigger
 	}: {
-		open?: boolean;
-		title: string;
+		confirmDisabled?: boolean;
+		confirmLabel?: string;
 		description?: string;
 		fileUrl: string;
-		trigger?: Snippet;
-		confirmLabel?: string;
-		confirmDisabled?: boolean;
 		onConfirm?: ConfirmHandler;
+		open?: boolean;
+		title: string;
+		trigger?: Snippet;
 	} = $props();
 
 	const canOpenInWordOnline = $derived(

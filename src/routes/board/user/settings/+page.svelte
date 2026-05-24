@@ -1,28 +1,25 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card/index.js';
-	import { superForm } from 'sveltekit-superforms/client';
-	import { HandCoins, UserRoundX, Save, User } from '@lucide/svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { toast } from 'svelte-sonner';
-	import { zod4Client } from 'sveltekit-superforms/adapters';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
-	import { buttonVariants } from '$lib/components/ui/button/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
 	import {
 		profileNameSchema,
 		userMetadataSchema
 	} from '$core/settings/schemas';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { buttonVariants } from '$lib/components/ui/button/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
+	import { HandCoins, Save, User, UserRoundX } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
+	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import { superForm } from 'sveltekit-superforms/client';
 
 	let { data } = $props();
 
 	const profileNameForm = $derived(
 		superForm(data.profileNameForm, {
 			dataType: 'json',
-			validators: zod4Client(profileNameSchema),
-			validationMethod: 'oninput',
-			resetForm: false,
 			invalidateAll: true,
 			onError({ result }) {
 				toast.error(result.error.message);
@@ -31,22 +28,22 @@
 				if (form.valid) {
 					toast.success(form.message);
 				}
-			}
+			},
+			resetForm: false,
+			validationMethod: 'oninput',
+			validators: zod4Client(profileNameSchema)
 		})
 	);
 
 	const {
-		form: profileFormData,
 		enhance: profileEnhance,
+		form: profileFormData,
 		submitting: profileSubmitting
 	} = profileNameForm;
 
 	const userMetadataForm = $derived(
 		superForm(data.userMetadataForm, {
 			dataType: 'json',
-			validators: zod4Client(userMetadataSchema),
-			validationMethod: 'oninput',
-			resetForm: false,
 			invalidateAll: true,
 			onError({ result }) {
 				toast.error(result.error.message);
@@ -55,13 +52,16 @@
 				if (form.valid) {
 					toast.success(form.message);
 				}
-			}
+			},
+			resetForm: false,
+			validationMethod: 'oninput',
+			validators: zod4Client(userMetadataSchema)
 		})
 	);
 
 	const {
-		form: metadataFormData,
 		enhance: metadataEnhance,
+		form: metadataFormData,
 		submitting: metadataSubmitting
 	} = userMetadataForm;
 </script>
@@ -176,7 +176,7 @@
 						<AlertDialog.Root>
 							<AlertDialog.Trigger
 								type="button"
-								class={buttonVariants({ variant: 'default', class: 'w-fit' })}
+								class={buttonVariants({ class: 'w-fit', variant: 'default' })}
 							>
 								<UserRoundX />
 								Konto löschen

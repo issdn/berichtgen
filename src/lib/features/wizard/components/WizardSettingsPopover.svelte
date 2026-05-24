@@ -1,12 +1,12 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import LabeledSwitch from '$ui/LabeledSwitch.svelte';
-	import { Settings } from '@lucide/svelte';
 	import * as Popover from '$ui/popover';
-	import * as Tooltip from '$ui/tooltip';
 	import { Separator } from '$ui/separator';
-	import { page } from '$app/state';
+	import * as Tooltip from '$ui/tooltip';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
+	import { Settings } from '@lucide/svelte';
 
 	const wizardMediator = wizardMediatorContext.get();
 

@@ -11,13 +11,13 @@ const config = {
 	kit: {
 		adapter: adapter({ regions: ['fra1'] }),
 		alias: {
-			$routes: path.resolve('./src/routes'),
-			$templates: path.resolve('./src/lib/features/templates'),
 			$core: path.resolve('./src/lib/features/core'),
-			$wizard: path.resolve('./src/lib/features/wizard'),
+			$routes: path.resolve('./src/routes'),
+			$server: path.resolve('./src/lib/server'),
+			$templates: path.resolve('./src/lib/features/templates'),
 			$tokens: path.resolve('./src/lib/features/tokens'),
 			$ui: path.resolve('./src/lib/components/ui'),
-			$server: path.resolve('./src/lib/server')
+			$wizard: path.resolve('./src/lib/features/wizard')
 		},
 		experimental: {
 			remoteFunctions: true

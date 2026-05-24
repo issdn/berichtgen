@@ -1,10 +1,19 @@
 <script lang="ts">
+	import type { WizardPersistedSession } from '$wizard/services/types';
+	import type { WizardProcessStateMachine } from '$wizard/types';
+
+	import { page } from '$app/state';
 	import { AsyncResource } from '$core/async.svelte';
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as AlertDialog from '$ui/alert-dialog';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
+	import Docx from '$ui/svg/DOCX.svelte';
+	import Pdf from '$ui/svg/PDF.svelte';
+	import Png from '$ui/svg/PNG.svelte';
+	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { handleDOCXDownload } from '$wizard/write/write_docx';
 	import { handleJSONDownload } from '$wizard/write/write_json';
@@ -15,19 +24,12 @@
 		FileType,
 		Play
 	} from '@lucide/svelte';
+	import { type DndEvent, dndzone } from 'svelte-dnd-action';
 	import { toast } from 'svelte-sonner';
 	import { flip } from 'svelte/animate';
+
 	import WizardFile from './WizardFile.svelte';
 	import WizardSettingsPopover from './WizardSettingsPopover.svelte';
-	import type { WizardProcessStateMachine } from '$wizard/types';
-	import { dndzone, type DndEvent } from 'svelte-dnd-action';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import Docx from '$ui/svg/DOCX.svelte';
-	import Pdf from '$ui/svg/PDF.svelte';
-	import Png from '$ui/svg/PNG.svelte';
-	import { page } from '$app/state';
-	import * as AlertDialog from '$ui/alert-dialog';
-	import type { WizardPersistedSession } from '$wizard/services/types';
 
 	const wizardMediator = wizardMediatorContext.get();
 
@@ -181,7 +183,7 @@
 			<div
 				id="wizard-content"
 				class="flex min-h-0 w-full flex-1 flex-col gap-y-2 overflow-y-auto p-4"
-				use:dndzone={{ items, flipDurationMs: 300, dropTargetStyle: {} }}
+				use:dndzone={{ dropTargetStyle: {}, flipDurationMs: 300, items }}
 				onconsider={handleDndConsider}
 				onfinalize={handleDndFinalize}
 			>

@@ -1,11 +1,11 @@
 import { BerichtgenError, buildError } from '$lib/errors';
 
 export const EParserError = buildError({
-	INVALID_FILE: { httpCode: 400, message: 'Ungültige Datei.' },
-	FORMAT_NOT_SUPPORTED: { httpCode: 400, message: 'Format nicht unterstützt.' },
-	PARSE_FAILED: { httpCode: 400, message: 'Parsing fehlgeschlagen.' },
 	DEVELOPERS_FAULT: { httpCode: 500, message: 'Fehler des Entwicklers.' },
-	DOCX_FAULTY: { httpCode: 400, message: 'DOCX-Datei fehlerhaft.' }
+	DOCX_FAULTY: { httpCode: 400, message: 'DOCX-Datei fehlerhaft.' },
+	FORMAT_NOT_SUPPORTED: { httpCode: 400, message: 'Format nicht unterstützt.' },
+	INVALID_FILE: { httpCode: 400, message: 'Ungültige Datei.' },
+	PARSE_FAILED: { httpCode: 400, message: 'Parsing fehlgeschlagen.' }
 } as const);
 
 type ParserErrorValue = (typeof EParserError)[keyof typeof EParserError];

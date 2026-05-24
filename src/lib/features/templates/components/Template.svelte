@@ -1,4 +1,22 @@
 <script lang="ts">
+	import type { KyselyDatabase } from '$lib/schema';
+
+	import { page } from '$app/state';
+	import Authed from '$core/auth/components/Authed.svelte';
+	import berichtgenStore from '$core/stores/berichtgen.svelte';
+	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+	import { LOCALE } from '$lib/constants';
+	import {
+		BerichtgenError,
+		ECommonServerError,
+		toErrorBody
+	} from '$lib/errors';
+	import { tryResultAsync } from '$lib/result';
+	import { getUserDisplayName } from '$lib/utils';
+	import * as AlertDialog from '$ui/alert-dialog';
+	import { Badge } from '$ui/badge';
+	import { Button } from '$ui/button';
+	import * as Dialog from '$ui/dialog';
 	import {
 		Check,
 		Download,
@@ -10,23 +28,8 @@
 		TriangleAlert,
 		View
 	} from '@lucide/svelte';
-
-	import Authed from '$core/auth/components/Authed.svelte';
-	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-	import {
-		BerichtgenError,
-		ECommonServerError,
-		toErrorBody
-	} from '$lib/errors';
-	import { tryResultAsync } from '$lib/result';
-	import type { KyselyDatabase } from '$lib/schema';
-	import berichtgenStore from '$core/stores/berichtgen.svelte';
-	import { getUserDisplayName } from '$lib/utils';
-	import { Badge } from '$ui/badge';
-	import { Button } from '$ui/button';
-	import * as Dialog from '$ui/dialog';
-	import * as AlertDialog from '$ui/alert-dialog';
 	import { toast } from 'svelte-sonner';
+
 	import {
 		deleteReport,
 		deleteTemplate,
@@ -35,25 +38,23 @@
 	} from '../api/templates.remote';
 	import { templatesMutationContext } from '../contexts';
 	import TemplateDocxPreviewDialog from './TemplateDocxPreviewDialog.svelte';
-	import { LOCALE } from '$lib/constants';
-	import { page } from '$app/state';
 
 	type TemplateItem = Awaited<
 		ReturnType<typeof getTemplates>
 	>['templates'][number];
 
 	const {
-		isPreferred,
-		template,
 		hasPendingReport = false,
+		isPreferred,
 		profile,
-		query
+		query,
+		template
 	}: {
-		isPreferred: boolean;
-		template: TemplateItem;
 		hasPendingReport?: boolean;
+		isPreferred: boolean;
 		profile: KyselyDatabase['profile'];
 		query: ReturnType<typeof getTemplates>;
+		template: TemplateItem;
 	} = $props();
 
 	const mutation = templatesMutationContext.get();
@@ -80,7 +81,7 @@
 
 	const isOwnTemplate = $derived(page.data.user?.id === template.user_id);
 
-	const { name, filepath } = $derived.by(() => {
+	const { filepath, name } = $derived.by(() => {
 		const name = template.storage_path
 			.split('/')
 			.at(-1)
@@ -88,7 +89,7 @@
 			.slice(0, -1)
 			.join('.');
 		const filepath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/templates/${template.storage_path}`;
-		return { name, filepath };
+		return { filepath, name };
 	});
 
 	function reportOverride(reported: boolean) {
@@ -101,15 +102,15 @@
 							template_report: reported
 								? [
 										{
-											id: 'optimistic',
-											template_id: template.id,
-											reporter_user_id: page.data.user!.id,
-											message: null,
 											created_at: new Date().toISOString(),
-											user_id: page.data.user!.id,
-											storage_path: '',
+											id: 'optimistic',
+											message: null,
+											reporter_user_id: page.data.user!.id,
 											safe_marked_at: null,
-											updated_at: null
+											storage_path: '',
+											template_id: template.id,
+											updated_at: null,
+											user_id: page.data.user!.id
 										}
 									]
 								: []
@@ -127,9 +128,9 @@
 			ECommonServerError.INTERNAL_ERROR
 		);
 		if (result.ok) {
-			toast.success('Meldung zurückgezogen.');
+			toast.success('Meldung zurï¿½ckgezogen.');
 		} else {
-			toast.error('Fehler beim Zurückziehen.', {
+			toast.error('Fehler beim Zurï¿½ckziehen.', {
 				description: toErrorBody(result.error).message
 			});
 		}
@@ -150,9 +151,9 @@
 			ECommonServerError.INTERNAL_ERROR
 		);
 		if (result.ok) {
-			toast.success('Datei erfolgreich gelöscht.');
+			toast.success('Datei erfolgreich gelï¿½scht.');
 		} else {
-			toast.error('Fehler beim Löschen der Datei.', {
+			toast.error('Fehler beim Lï¿½schen der Datei.', {
 				description: toErrorBody(result.error).message
 			});
 		}
@@ -165,8 +166,8 @@
 		mutation?.start();
 		const result = await tryResultAsync(
 			reportTemplate({
-				templateId: template.id,
-				message: reportMessage || undefined
+				message: reportMessage || undefined,
+				templateId: template.id
 			}).updates(reportOverride(true)),
 			BerichtgenError,
 			ECommonServerError.INTERNAL_ERROR
@@ -175,7 +176,7 @@
 			reportDialogOpen = false;
 			reportMessage = '';
 			toast.success('Template gemeldet.', {
-				action: { label: 'Rückgängig', onClick: undoReport }
+				action: { label: 'Rï¿½ckgï¿½ngig', onClick: undoReport }
 			});
 		} else {
 			toast.error('Fehler beim Melden.', {
@@ -216,7 +217,7 @@
 			<Button
 				variant="default"
 				size="icon"
-				title="Als Template auswählen"
+				title="Als Template auswï¿½hlen"
 				onclick={() => {
 					if (hasPendingReport) {
 						confirmSelectOpen = true;
@@ -252,7 +253,7 @@
 			href="https://docs.google.com/viewer?url={encodeURIComponent(filepath)}"
 			target="_blank"
 			rel="noopener noreferrer"
-			title="In Word Online öffnen"
+			title="In Word Online ï¿½ffnen"
 		>
 			<Button variant="ghost" size="icon" tabindex={-1}>
 				<ExternalLink size={16} />
@@ -274,7 +275,7 @@
 				<Button
 					variant="destructive"
 					size="icon"
-					title="Template löschen"
+					title="Template lï¿½schen"
 					disabled={deletePending}
 					onclick={() => (confirmDeleteOpen = true)}
 				>
@@ -286,7 +287,7 @@
 				<Button
 					variant="ghost"
 					size="icon"
-					title="Meldung zurückziehen"
+					title="Meldung zurï¿½ckziehen"
 					onclick={undoReport}
 				>
 					<FlagOff size={16} />
@@ -304,8 +305,8 @@
 						<Dialog.Header>
 							<Dialog.Title>Template melden</Dialog.Title>
 							<Dialog.Description>
-								Melde dieses Template als potenziell schädlich. Die Meldung wird
-								von einem Admin geprüft.
+								Melde dieses Template als potenziell schï¿½dlich. Die Meldung wird
+								von einem Admin geprï¿½ft.
 							</Dialog.Description>
 						</Dialog.Header>
 						<div>
@@ -341,9 +342,9 @@
 <AlertDialog.Root bind:open={confirmSelectOpen}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Gemeldetes Template auswählen?</AlertDialog.Title>
+			<AlertDialog.Title>Gemeldetes Template auswï¿½hlen?</AlertDialog.Title>
 			<AlertDialog.Description>
-				Dieses Template wurde gemeldet und wird noch überprüft. Die Nutzung
+				Dieses Template wurde gemeldet und wird noch ï¿½berprï¿½ft. Die Nutzung
 				erfolgt auf eigenes Risiko.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
@@ -355,7 +356,7 @@
 					confirmSelectOpen = false;
 				}}
 			>
-				Trotzdem auswählen
+				Trotzdem auswï¿½hlen
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
@@ -364,14 +365,14 @@
 <AlertDialog.Root bind:open={confirmDeleteOpen}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Template löschen?</AlertDialog.Title>
+			<AlertDialog.Title>Template lï¿½schen?</AlertDialog.Title>
 			<AlertDialog.Description>
-				„{name}" wird unwiderruflich gelöscht.
+				ï¿½{name}" wird unwiderruflich gelï¿½scht.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Abbrechen</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={submitDelete}>Löschen</AlertDialog.Action>
+			<AlertDialog.Action onclick={submitDelete}>Lï¿½schen</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

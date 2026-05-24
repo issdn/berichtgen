@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 /**
  * E2E browser test for the wizard state machine, scheduler, and AI completion pipeline.
@@ -37,9 +37,9 @@ const MOCK_DELAY_MS = 300; // keep AI_COMPLETION badge visible for assertions
 test.describe('Wizard — full state-machine flow', () => {
 	test('processes a TXT file through every state to DONE', async ({ page }) => {
 		// ── Mock: capture and respond to the AI completion request ─────────────
-		let capturedRequest: {
-			items: Array<{ text: string; ort: string }>;
-		} | null = null;
+		let capturedRequest: null | {
+			items: Array<{ ort: string; text: string; }>;
+		} = null;
 
 		await page.route('**/board/user/completion', async (route) => {
 			capturedRequest = await route.request().postDataJSON();
@@ -52,9 +52,9 @@ test.describe('Wizard — full state-machine flow', () => {
 			await new Promise((r) => setTimeout(r, MOCK_DELAY_MS));
 
 			await route.fulfill({
-				status: 200,
+				body: JSON.stringify({ insufficient_tokens: false, results }),
 				contentType: 'application/json',
-				body: JSON.stringify({ results, insufficient_tokens: false })
+				status: 200
 			});
 		});
 
@@ -80,9 +80,9 @@ test.describe('Wizard — full state-machine flow', () => {
 			'true'
 		);
 		await dropzone.setInputFiles({
-			name: 'wochenbericht.txt',
+			buffer: Buffer.from(TXT_CONTENT, 'utf-8'),
 			mimeType: 'text/plain',
-			buffer: Buffer.from(TXT_CONTENT, 'utf-8')
+			name: 'wochenbericht.txt'
 		});
 
 		// The wizard transitions from empty-state → loading (processInit) → file card.
@@ -244,9 +244,9 @@ test.describe('Wizard — full state-machine flow', () => {
 		await expect(dropzone).toBeVisible();
 
 		const files = Array.from({ length: 6 }, (_, i) => ({
-			name: `stuck-${i + 1}.txt`,
+			buffer: Buffer.from(TXT_CONTENT, 'utf-8'),
 			mimeType: 'text/plain',
-			buffer: Buffer.from(TXT_CONTENT, 'utf-8')
+			name: `stuck-${i + 1}.txt`
 		}));
 
 		await dropzone.setInputFiles(files);
@@ -269,7 +269,7 @@ test.describe('Wizard — full state-machine flow', () => {
 	}) => {
 		// ── Mock: collect every batch request ────────────────────────────────────
 		const capturedRequests: Array<{
-			items: Array<{ text: string; ort: string }>;
+			items: Array<{ ort: string; text: string; }>;
 		}> = [];
 
 		await page.route('**/board/user/completion', async (route) => {
@@ -278,9 +278,9 @@ test.describe('Wizard — full state-machine flow', () => {
 			const results = body.items.map(() => [AI_RESULT_1, AI_RESULT_2]);
 			await new Promise((r) => setTimeout(r, MOCK_DELAY_MS));
 			await route.fulfill({
-				status: 200,
+				body: JSON.stringify({ insufficient_tokens: false, results }),
 				contentType: 'application/json',
-				body: JSON.stringify({ results, insufficient_tokens: false })
+				status: 200
 			});
 		});
 
@@ -305,19 +305,19 @@ test.describe('Wizard — full state-machine flow', () => {
 		await expect(dropzone).toBeVisible();
 		await dropzone.setInputFiles([
 			{
-				name: 'bericht1.txt',
+				buffer: makeBuffer(Math.ceil(4.5 * 1024 * 1024)),
 				mimeType: 'text/plain',
-				buffer: makeBuffer(Math.ceil(4.5 * 1024 * 1024))
+				name: 'bericht1.txt'
 			},
 			{
-				name: 'bericht2.txt',
+				buffer: makeBuffer(3 * 1024 * 1024),
 				mimeType: 'text/plain',
-				buffer: makeBuffer(3 * 1024 * 1024)
+				name: 'bericht2.txt'
 			},
 			{
-				name: 'bericht3.txt',
+				buffer: makeBuffer(2 * 1024 * 1024),
 				mimeType: 'text/plain',
-				buffer: makeBuffer(2 * 1024 * 1024)
+				name: 'bericht3.txt'
 			}
 		]);
 

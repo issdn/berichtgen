@@ -1,9 +1,9 @@
 import { chromium, type FullConfig } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import { Kysely, PostgresDialect } from 'kysely';
-import pg from 'pg';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import pg from 'pg';
 
 /** Parse a .env file into process.env without overwriting existing values. */
 function loadEnvFile(filePath: string): void {
@@ -61,8 +61,8 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	});
 
 	const db = new Kysely<{
-		template: { user_id: string; storage_path: string };
-		user_token_count: { user_id: string; tokens: number };
+		template: { storage_path: string; user_id: string; };
+		user_token_count: { tokens: number; user_id: string; };
 	}>({
 		dialect: new PostgresDialect({
 			pool: new pg.Pool({
@@ -111,9 +111,9 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	const { error: uploadError } = await admin.storage
 		.from('templates')
 		.upload(storagePath, fileBytes, {
-			upsert: true,
 			contentType:
-				'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+			upsert: true
 		});
 	if (uploadError)
 		throw new Error(`Storage upload failed: ${uploadError.message}`);
@@ -125,13 +125,13 @@ async function globalSetup(config: FullConfig): Promise<void> {
 		.execute();
 	await db
 		.insertInto('template')
-		.values({ user_id: userId, storage_path: storagePath })
+		.values({ storage_path: storagePath, user_id: userId })
 		.execute();
 
 	// ── 4. Grant a large token balance ──────────────────────────────────────
 	await db
 		.insertInto('user_token_count')
-		.values({ user_id: userId, tokens: 2_000_000_000 })
+		.values({ tokens: 2_000_000_000, user_id: userId })
 		.onConflict((oc) =>
 			oc.column('user_id').doUpdateSet({ tokens: 2_000_000_000 })
 		)
@@ -147,24 +147,24 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	const domain = new URL(baseURL).hostname;
 
 	type Cookie = {
-		name: string;
-		value: string;
 		domain: string;
-		path: string;
 		httpOnly: false;
+		name: string;
+		path: string;
 		sameSite: 'Lax';
+		value: string;
 	};
 
 	// @supabase/ssr chunks the cookie value when it exceeds CHUNK_SIZE bytes
 	const cookies: Cookie[] = [];
 	if (cookieValue.length <= CHUNK_SIZE) {
 		cookies.push({
-			name: cookieName,
-			value: cookieValue,
 			domain,
-			path: '/',
 			httpOnly: false,
-			sameSite: 'Lax'
+			name: cookieName,
+			path: '/',
+			sameSite: 'Lax',
+			value: cookieValue
 		});
 	} else {
 		let chunkIndex = 0;
@@ -174,12 +174,12 @@ async function globalSetup(config: FullConfig): Promise<void> {
 			offset += CHUNK_SIZE, chunkIndex++
 		) {
 			cookies.push({
-				name: `${cookieName}.${chunkIndex}`,
-				value: cookieValue.slice(offset, offset + CHUNK_SIZE),
 				domain,
-				path: '/',
 				httpOnly: false,
-				sameSite: 'Lax'
+				name: `${cookieName}.${chunkIndex}`,
+				path: '/',
+				sameSite: 'Lax',
+				value: cookieValue.slice(offset, offset + CHUNK_SIZE)
 			});
 		}
 	}

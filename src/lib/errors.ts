@@ -4,25 +4,12 @@ import { error } from '@sveltejs/kit';
 // Core types
 // ---------------------------------------------------------------------------
 
-type OmitErrorField<T extends EnumError, F extends keyof T[keyof T]> = {
-	[K in keyof T]: Omit<T[K], F>;
-};
-
-type EnumError = {
-	[key: string]: {
-		code: string;
-		httpCode: number;
-		message: string;
-		cause?: string;
-	};
-};
-
 /** Structural type satisfied by every value produced by {@link buildError}. */
 export type AnyErrorValue = {
+	readonly cause?: string;
 	readonly code: string;
 	readonly httpCode: number;
 	readonly message: string;
-	readonly cause?: string;
 };
 
 export type ErrorBody<T extends EnumError> = T[keyof T];
@@ -38,6 +25,19 @@ export type UnionOf<T extends readonly Record<string, AnyErrorValue>[]> = {
 	[K in keyof T]: T[K][keyof T[K]];
 }[number];
 
+type EnumError = {
+	[key: string]: {
+		cause?: string;
+		code: string;
+		httpCode: number;
+		message: string;
+	};
+};
+
+type OmitErrorField<T extends EnumError, F extends keyof T[keyof T]> = {
+	[K in keyof T]: Omit<T[K], F>;
+};
+
 // ---------------------------------------------------------------------------
 // Builder
 // ---------------------------------------------------------------------------
@@ -51,8 +51,8 @@ export function buildError<T extends OmitErrorField<EnumError, 'code'>>(
 		)
 	) as {
 		readonly [K in keyof T]: Omit<T[K], 'cause'> & {
-			readonly code: K & string;
 			readonly cause?: string;
+			readonly code: K & string;
 		};
 	};
 }
@@ -63,14 +63,14 @@ export function buildError<T extends OmitErrorField<EnumError, 'code'>>(
 
 export const ECommonServerError = buildError({
 	DATABASE_ERROR: { httpCode: 500, message: 'Datenbankfehler.' },
-	UNAUTHORIZED: {
-		httpCode: 401,
-		message: 'Nicht autorisiert.',
-		cause: 'Muss angemeldet sein, um diese Aktion durchzuführen.'
-	},
-	VALIDATION_ERROR: { httpCode: 400, message: 'Validierungsfehler.' },
+	INTERNAL_ERROR: { httpCode: 500, message: 'Interner Serverfehler.' },
 	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' },
-	INTERNAL_ERROR: { httpCode: 500, message: 'Interner Serverfehler.' }
+	UNAUTHORIZED: {
+		cause: 'Muss angemeldet sein, um diese Aktion durchzuführen.',
+		httpCode: 401,
+		message: 'Nicht autorisiert.'
+	},
+	VALIDATION_ERROR: { httpCode: 400, message: 'Validierungsfehler.' }
 } as const);
 
 // ---------------------------------------------------------------------------
@@ -94,43 +94,22 @@ export class BerichtgenError extends Error {
 // Utilities
 // ---------------------------------------------------------------------------
 
-export function svelteApiError(e: AnyErrorValue, cause?: string) {
-	return error(e.httpCode, {
-		message: e.message,
-		code: e.code,
-		cause
-	});
-}
-
 export function errorByHttpCode<T extends EnumError>(
 	error: T,
 	httpCode: number
-): T[keyof T] | null {
+): null | T[keyof T] {
 	const entry = Object.entries(error).find(
 		([_, val]) => val.httpCode === httpCode
 	);
 	return entry ? (entry[1] as T[keyof T]) : null;
 }
 
-/**
- * Normalises an unknown thrown value into a structured error body.
- *
- * Handles three cases in priority order:
- * 1. SvelteKit `HttpError` produced by {@link throw svelteApiError} — extracts `code`, `message` and
- *    `cause` from the `.body` property.
- * 2. Native `Error` instance — uses `.message` and falls back to `'INTERNAL_ERROR'` as the code.
- * 3. Anything else — returns a generic German fallback message.
- */
-/** Extracts a structured error body from a plain object, or returns null. */
-function parseRecord(obj: unknown): Omit<AnyErrorValue, 'httpCode'> | null {
-	if (obj === null || typeof obj !== 'object') return null;
-	const { code, message, cause } = obj as Record<string, unknown>;
-	if (typeof code !== 'string' || typeof message !== 'string') return null;
-	return {
-		code,
-		message,
-		cause: typeof cause === 'string' ? cause : undefined
-	};
+export function svelteApiError(e: AnyErrorValue, cause?: string) {
+	return error(e.httpCode, {
+		cause,
+		code: e.code,
+		message: e.message
+	});
 }
 
 export function toErrorBody(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
@@ -146,11 +125,32 @@ export function toErrorBody(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
 
 function fallback(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
 	return {
+		cause: undefined,
 		code: 'INTERNAL_ERROR',
 		message:
 			e instanceof Error
 				? e.message
-				: 'Ein unbekannter Fehler ist aufgetreten.',
-		cause: undefined
+				: 'Ein unbekannter Fehler ist aufgetreten.'
+	};
+}
+
+/**
+ * Normalises an unknown thrown value into a structured error body.
+ *
+ * Handles three cases in priority order:
+ * 1. SvelteKit `HttpError` produced by {@link throw svelteApiError} — extracts `code`, `message` and
+ *    `cause` from the `.body` property.
+ * 2. Native `Error` instance — uses `.message` and falls back to `'INTERNAL_ERROR'` as the code.
+ * 3. Anything else — returns a generic German fallback message.
+ */
+/** Extracts a structured error body from a plain object, or returns null. */
+function parseRecord(obj: unknown): null | Omit<AnyErrorValue, 'httpCode'> {
+	if (obj === null || typeof obj !== 'object') return null;
+	const { cause, code, message } = obj as Record<string, unknown>;
+	if (typeof code !== 'string' || typeof message !== 'string') return null;
+	return {
+		cause: typeof cause === 'string' ? cause : undefined,
+		code,
+		message
 	};
 }

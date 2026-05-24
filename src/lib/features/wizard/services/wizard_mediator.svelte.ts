@@ -1,84 +1,76 @@
-import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import berichtgenStore from '$core/stores/berichtgen.svelte';
-import { createStateMachineForContext } from './state_machine';
-import { BerichtgenError } from '$lib/errors';
-import {
-	WizardError,
-	EWizardError,
-	ECompletionException
-} from '$wizard/errors';
-import { WizardFileContext } from './wizard_file_context';
 import type {
 	ResultEntry,
 	WizardDirectories,
 	WizardProcessStateMachine
 } from '$wizard/types';
-import { combineJSONs } from '$wizard/postprocess/combine';
-import { Ort, WizardStep } from '$wizard/enums';
-import {
-	createBatchesBySize,
-	MAX_BATCH_BYTES,
-	sendBatchCompletion
-} from '$wizard/completion/completion';
-import type { BatchErrorScope, WizardPersistedSession } from './types';
+
+import Persistence from '$core/persistence';
+import berichtgenStore from '$core/stores/berichtgen.svelte';
 import {
 	WIZARD_PERSISTENCE_STORE,
 	WIZARD_PERSISTENCE_TTL_MS,
 	WIZARD_PERSISTENCE_VERSION
 } from '$lib/constants';
-import Persistence from '$core/persistence';
+import { BerichtgenError } from '$lib/errors';
 import { debounce } from '$lib/utils';
-import { WizardScheduler } from './wizard_scheduler.svelte';
-import { WizardBatcher } from './wizard_batcher';
-import type { FileRouting } from './file_routing';
+import {
+	createBatchesBySize,
+	MAX_BATCH_BYTES,
+	sendBatchCompletion
+} from '$wizard/completion/completion';
+import { Ort, WizardStep } from '$wizard/enums';
+import {
+	ECompletionException,
+	EWizardError,
+	WizardError
+} from '$wizard/errors';
+import { combineJSONs } from '$wizard/postprocess/combine';
 import { Context } from 'runed';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+
+import type { FileRouting } from './file_routing';
+import type { BatchErrorScope, WizardPersistedSession } from './types';
+
+import { createStateMachineForContext } from './state_machine';
+import { WizardBatcher } from './wizard_batcher';
+import { WizardFileContext } from './wizard_file_context';
+import { WizardScheduler } from './wizard_scheduler.svelte';
 
 const MAX_PARALLEL_REQUESTS = 5;
 
 type BatchItem = {
-	routing: FileRouting;
-	ort: Ort;
 	fileIndex: number;
+	ort: Ort;
+	routing: FileRouting;
 	text: string;
 };
 
 export class WizardMediator {
-	readonly schedulerState: WizardScheduler;
-
 	readonly batcher: WizardBatcher;
-
-	constructor(
-		schedulerState: WizardScheduler,
-		batcher: WizardBatcher,
-		userId?: string | null
-	) {
-		this.schedulerState = schedulerState;
-		this.batcher = batcher;
-		this.userKey = userId ? `user:${userId}` : 'anon';
-		this.persistedSessionPromise = this.loadPersistedSession();
-	}
-
-	static createDefault(userId?: string | null) {
-		return new WizardMediator(
-			new WizardScheduler(),
-			new WizardBatcher(),
-			userId
-		);
-	}
-
-	result = $state<Promise<ResultEntry[]> | null>(null);
-
-	processInit = $state<Promise<void> | null>(null);
 
 	flushRequested = $state(false);
 
 	isRunning = $derived.by(() => this.batcher.isRunning);
 
-	userKey: string = 'anon';
+	persistedSessionPromise: Promise<null | WizardPersistedSession>;
 
-	persistedSessionPromise: Promise<WizardPersistedSession | null>;
+	persistSoon = debounce(() => {
+		void this.persistNow();
+	}, 250);
+
+	processInit = $state<null | Promise<void>>(null);
+
+	result = $state<null | Promise<ResultEntry[]>>(null);
+
+	readonly schedulerState: WizardScheduler;
 
 	sessionId: string = crypto.randomUUID();
+
+	userKey: string = 'anon';
+
+	get filesStates() {
+		return this.schedulerState.filesStates;
+	}
 
 	get isDone() {
 		return (
@@ -87,32 +79,34 @@ export class WizardMediator {
 		);
 	}
 
-	get schedule() {
-		return this.schedulerState.schedule;
-	}
-
-	set schedule(value: WizardProcessStateMachine[] | null) {
-		this.schedulerState.setSchedule(value);
-	}
-
 	get numberOfFiles() {
 		return this.schedulerState.numberOfFiles;
 	}
 
-	get filesStates() {
-		return this.schedulerState.filesStates;
+	get schedule() {
+		return this.schedulerState.schedule;
 	}
 
-	persistSoon = debounce(() => {
-		void this.persistNow();
-	}, 250);
+	set schedule(value: null | WizardProcessStateMachine[]) {
+		this.schedulerState.setSchedule(value);
+	}
 
-	async persistNow() {
-		await Persistence.save(
-			WIZARD_PERSISTENCE_STORE,
-			this.userKey,
-			this.exportSnapshot(),
-			WIZARD_PERSISTENCE_VERSION
+	constructor(
+		schedulerState: WizardScheduler,
+		batcher: WizardBatcher,
+		userId?: null | string
+	) {
+		this.schedulerState = schedulerState;
+		this.batcher = batcher;
+		this.userKey = userId ? `user:${userId}` : 'anon';
+		this.persistedSessionPromise = this.loadPersistedSession();
+	}
+
+	static createDefault(userId?: null | string) {
+		return new WizardMediator(
+			new WizardScheduler(),
+			new WizardBatcher(),
+			userId
 		);
 	}
 
@@ -120,38 +114,38 @@ export class WizardMediator {
 		await Persistence.clear(WIZARD_PERSISTENCE_STORE, this.userKey);
 	}
 
-	async loadPersistedSession(): Promise<WizardPersistedSession | null> {
-		return Persistence.load<WizardPersistedSession>(
-			WIZARD_PERSISTENCE_STORE,
-			this.userKey,
-			WIZARD_PERSISTENCE_VERSION,
-			WIZARD_PERSISTENCE_TTL_MS
+	createProcessStateMachine = (
+		context: WizardFileContext,
+		id: string = crypto.randomUUID(),
+		initialStep: WizardStep = WizardStep.INITIALISING
+	) => {
+		const machine = createStateMachineForContext(
+			context,
+			this,
+			id,
+			initialStep
 		);
-	}
 
-	private resetRuntimeState() {
-		this.batcher.reset();
-		this.schedulerState.clear();
-		this.result = null;
-		this.flushRequested = false;
-	}
-
-	onFileErrored = () => {
-		this.persistSoon();
-	};
-
-	onFileCancelled = () => {
-		this.persistSoon();
-	};
-
-	init = async (session: WizardPersistedSession | null = null) => {
-		this.resetRuntimeState();
-		if (session) {
-			this.rehydrateFromSnapshot(session);
-			return;
-		}
-		this.sessionId = crypto.randomUUID();
-		this.persistSoon();
+		const process: WizardProcessStateMachine = {
+			cancel() {
+				context.cancelled = true;
+				machine.send('cancel');
+			},
+			confirmDateRanges() {
+				if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
+					machine.send('next');
+				}
+			},
+			context,
+			id,
+			machine,
+			restart() {
+				context.cancelled = false;
+				machine.send('next');
+				machine.send('next');
+			}
+		};
+		return process;
 	};
 
 	createSchedule = (directories: WizardDirectories) => {
@@ -164,6 +158,15 @@ export class WizardMediator {
 		this.persistSoon();
 	};
 
+	exportSnapshot(): WizardPersistedSession {
+		return {
+			files: this.schedulerState.toPersistedFiles(),
+			flushRequested: this.flushRequested,
+			sessionId: this.sessionId,
+			updatedAt: Date.now()
+		};
+	}
+
 	finish = () => {
 		this.result = (async () => {
 			const finishedDirectories = this.schedulerState.getFinishedDirectories();
@@ -175,19 +178,6 @@ export class WizardMediator {
 			return combined;
 		})();
 	};
-
-	onFileBatchPending = (id: string) => {
-		const file = this.schedulerState.findById(id);
-		if (!file) return;
-		this.batcher.register(file);
-		this.persistSoon();
-	};
-
-	private classifyBatchError(error: BerichtgenError): BatchErrorScope {
-		return error.apiError.code === EWizardError.INVALID_JSON_FROM_AI.code
-			? 'file_scoped'
-			: 'global';
-	}
 
 	async flushAiCompletion(): Promise<void> {
 		if (this.schedulerState.schedule === null) return;
@@ -210,9 +200,9 @@ export class WizardMediator {
 			const routing = process.context.snapshot as FileRouting;
 			const ort = process.context.dateRanges!.ort;
 			return {
-				routing,
-				ort,
 				fileIndex,
+				ort,
+				routing,
 				text: this.toSizeProxyText(routing)
 			};
 		});
@@ -235,9 +225,101 @@ export class WizardMediator {
 		this.applyResults(pendingList, fileResults, fileErrors, globalError);
 	}
 
-	private takePendingProcesses() {
-		const pendingIds = this.batcher.takePendingIds();
-		return pendingIds.map((id) => this.schedulerState.findById(id)!);
+	init = async (session: null | WizardPersistedSession = null) => {
+		this.resetRuntimeState();
+		if (session) {
+			this.rehydrateFromSnapshot(session);
+			return;
+		}
+		this.sessionId = crypto.randomUUID();
+		this.persistSoon();
+	};
+
+	async loadPersistedSession(): Promise<null | WizardPersistedSession> {
+		return Persistence.load<WizardPersistedSession>(
+			WIZARD_PERSISTENCE_STORE,
+			this.userKey,
+			WIZARD_PERSISTENCE_VERSION,
+			WIZARD_PERSISTENCE_TTL_MS
+		);
+	}
+
+	onFileBatchPending = (id: string) => {
+		const file = this.schedulerState.findById(id);
+		if (!file) return;
+		this.batcher.register(file);
+		this.persistSoon();
+	};
+
+	onFileCancelled = () => {
+		this.persistSoon();
+	};
+
+	onFileErrored = () => {
+		this.persistSoon();
+	};
+
+	async persistNow() {
+		await Persistence.save(
+			WIZARD_PERSISTENCE_STORE,
+			this.userKey,
+			this.exportSnapshot(),
+			WIZARD_PERSISTENCE_VERSION
+		);
+	}
+
+	private applyResults(
+		pendingList: WizardProcessStateMachine[],
+		fileResults: SvelteMap<number, string[]>,
+		fileErrors: SvelteMap<number, BerichtgenError>,
+		globalError: BerichtgenError | null
+	) {
+		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
+			const process = pendingList[fileIndex];
+			if (globalError !== null) {
+				process.context.error = globalError;
+				process.machine.send('error');
+				continue;
+			}
+			const fileError = fileErrors.get(fileIndex);
+			if (fileError) {
+				process.context.error = fileError;
+				process.machine.send('error');
+				continue;
+			}
+
+			const result = fileResults.get(fileIndex);
+			const entries = result ? result.map((text) => ({ text })) : null;
+			if (entries === null) {
+				process.context.error = new WizardError(EWizardError.COMPLETION_FAILED);
+				process.machine.send('error');
+			} else {
+				process.context.snapshot = entries;
+				process.machine.send('next', entries);
+			}
+		}
+
+		this.flushRequested = false;
+		this.persistSoon();
+		if (this.isDone) this.finish();
+	}
+
+	private classifyBatchError(error: BerichtgenError): BatchErrorScope {
+		return error.apiError.code === EWizardError.INVALID_JSON_FROM_AI.code
+			? 'file_scoped'
+			: 'global';
+	}
+
+	private collectBatchResults(
+		batch: BatchItem[],
+		results: (null | string[])[],
+		fileResults: SvelteMap<number, string[]>
+	) {
+		for (let i = 0; i < batch.length; i++) {
+			const { fileIndex } = batch[i];
+			const result = results[i];
+			if (result != null) fileResults.set(fileIndex, result);
+		}
 	}
 
 	private async processBatches(
@@ -289,117 +371,6 @@ export class WizardMediator {
 		return globalError;
 	}
 
-	private startBatchFiles(
-		batch: BatchItem[],
-		pendingList: WizardProcessStateMachine[],
-		startedFileIndices: SvelteSet<number>
-	) {
-		for (const { fileIndex } of batch) {
-			if (startedFileIndices.has(fileIndex)) continue;
-			pendingList[fileIndex].machine.send('start');
-			startedFileIndices.add(fileIndex);
-		}
-	}
-
-	private collectBatchResults(
-		batch: BatchItem[],
-		results: (string[] | null)[],
-		fileResults: SvelteMap<number, string[]>
-	) {
-		for (let i = 0; i < batch.length; i++) {
-			const { fileIndex } = batch[i];
-			const result = results[i];
-			if (result != null) fileResults.set(fileIndex, result);
-		}
-	}
-
-	private applyResults(
-		pendingList: WizardProcessStateMachine[],
-		fileResults: SvelteMap<number, string[]>,
-		fileErrors: SvelteMap<number, BerichtgenError>,
-		globalError: BerichtgenError | null
-	) {
-		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
-			const process = pendingList[fileIndex];
-			if (globalError !== null) {
-				process.context.error = globalError;
-				process.machine.send('error');
-				continue;
-			}
-			const fileError = fileErrors.get(fileIndex);
-			if (fileError) {
-				process.context.error = fileError;
-				process.machine.send('error');
-				continue;
-			}
-
-			const result = fileResults.get(fileIndex);
-			const entries = result ? result.map((text) => ({ text })) : null;
-			if (entries === null) {
-				process.context.error = new WizardError(EWizardError.COMPLETION_FAILED);
-				process.machine.send('error');
-			} else {
-				process.context.snapshot = entries;
-				process.machine.send('next', entries);
-			}
-		}
-
-		this.flushRequested = false;
-		this.persistSoon();
-		if (this.isDone) this.finish();
-	}
-
-	private toSizeProxyText(routing: FileRouting): string {
-		if (routing.type === 'inline') {
-			return 'x'.repeat(Math.ceil((routing.data.length * 3) / 4));
-		}
-		if (routing.type === 'gcs') return routing.fileUri;
-		return routing.url;
-	}
-
-	createProcessStateMachine = (
-		context: WizardFileContext,
-		id: string = crypto.randomUUID(),
-		initialStep: WizardStep = WizardStep.INITIALISING
-	) => {
-		const machine = createStateMachineForContext(
-			context,
-			this,
-			id,
-			initialStep
-		);
-
-		const process: WizardProcessStateMachine = {
-			context,
-			machine,
-			id,
-			cancel() {
-				context.cancelled = true;
-				machine.send('cancel');
-			},
-			restart() {
-				context.cancelled = false;
-				machine.send('next');
-				machine.send('next');
-			},
-			confirmDateRanges() {
-				if ((context.dateRanges?.ranges?.length ?? 0) > 0) {
-					machine.send('next');
-				}
-			}
-		};
-		return process;
-	};
-
-	exportSnapshot(): WizardPersistedSession {
-		return {
-			sessionId: this.sessionId,
-			updatedAt: Date.now(),
-			flushRequested: this.flushRequested,
-			files: this.schedulerState.toPersistedFiles()
-		};
-	}
-
 	private rehydrateFromSnapshot(snapshot: WizardPersistedSession): void {
 		this.sessionId = snapshot.sessionId;
 		this.flushRequested = snapshot.flushRequested ?? false;
@@ -430,6 +401,38 @@ export class WizardMediator {
 		}
 		if (this.isDone) this.finish();
 		this.persistSoon();
+	}
+
+	private resetRuntimeState() {
+		this.batcher.reset();
+		this.schedulerState.clear();
+		this.result = null;
+		this.flushRequested = false;
+	}
+
+	private startBatchFiles(
+		batch: BatchItem[],
+		pendingList: WizardProcessStateMachine[],
+		startedFileIndices: SvelteSet<number>
+	) {
+		for (const { fileIndex } of batch) {
+			if (startedFileIndices.has(fileIndex)) continue;
+			pendingList[fileIndex].machine.send('start');
+			startedFileIndices.add(fileIndex);
+		}
+	}
+
+	private takePendingProcesses() {
+		const pendingIds = this.batcher.takePendingIds();
+		return pendingIds.map((id) => this.schedulerState.findById(id)!);
+	}
+
+	private toSizeProxyText(routing: FileRouting): string {
+		if (routing.type === 'inline') {
+			return 'x'.repeat(Math.ceil((routing.data.length * 3) / 4));
+		}
+		if (routing.type === 'gcs') return routing.fileUri;
+		return routing.url;
 	}
 }
 

@@ -1,12 +1,12 @@
 <script lang="ts">
-	import berichtgenStore from '$core/stores/berichtgen.svelte';
-	import { getFlash } from 'sveltekit-flash-message';
 	import { page } from '$app/state';
-	import { toast } from 'svelte-sonner';
+	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import {
 		WizardMediator,
 		wizardMediatorContext
 	} from '$wizard/services/wizard_mediator.svelte';
+	import { toast } from 'svelte-sonner';
+	import { getFlash } from 'sveltekit-flash-message';
 
 	let { children } = $props();
 
@@ -17,11 +17,11 @@ wizardMediatorContext.set(WizardMediator.createDefault(page.data.user?.id));
 	$effect(() => {
 		if (!$flash) return;
 		switch ($flash.type) {
-			case 'success':
-				toast.success($flash.message, $flash.data);
-				break;
 			case 'error':
 				toast.error($flash.message, $flash.data);
+				break;
+			case 'success':
+				toast.success($flash.message, $flash.data);
 				break;
 			default:
 				toast.info($flash.message, $flash.data);

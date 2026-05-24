@@ -1,6 +1,7 @@
+import { type BatchCompletionItem, completionSchema } from '$wizard/schemas';
 import * as genai from '@google/genai';
+
 import { getContextPrompt } from './prompt';
-import { completionSchema, type BatchCompletionItem } from '$wizard/schemas';
 
 /** Maps a `BatchCompletionItem` to its Gemini content part. */
 export function itemToContentPart(item: BatchCompletionItem): genai.Part {
@@ -19,16 +20,16 @@ export async function runCompletion(
 	item: BatchCompletionItem,
 	ai: genai.GoogleGenAI,
 	model: string
-): Promise<string[] | null> {
+): Promise<null | string[]> {
 	const response = await ai.models.generateContent({
-		model,
 		config: {
 			responseMimeType: 'application/json',
-			systemInstruction: getContextPrompt(item.ort),
 			responseSchema: completionSchema.toJSONSchema(),
+			systemInstruction: getContextPrompt(item.ort),
 			...(item.type === 'url' ? { tools: [{ googleSearch: {} }] } : {})
 		},
-		contents: [{ role: 'user', parts: [itemToContentPart(item)] }]
+		contents: [{ parts: [itemToContentPart(item)], role: 'user' }],
+		model
 	});
 	const parsed = completionSchema.safeParse(response.text);
 	return parsed.success ? parsed.data : null;

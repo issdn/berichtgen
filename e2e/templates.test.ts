@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
 /**
  * E2E tests for the Templates infinite-scroll list.
@@ -22,6 +22,19 @@ import { test, expect, type Page } from '@playwright/test';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
+ * Collect all `data-template-id` attribute values currently rendered in the list.
+ */
+async function getRenderedTemplateIds(
+	dialog: ReturnType<Page['getByTestId']>
+): Promise<string[]> {
+	return dialog
+		.getByTestId('template-item')
+		.evaluateAll((els) =>
+			els.map((el) => el.getAttribute('data-template-id') ?? '')
+		);
+}
+
+/**
  * Open the Templates dialog and return a locator scoped to its content.
  *
  * TemplateList is gated on `{#if open}` so the svelte:boundary starts fresh
@@ -32,6 +45,21 @@ async function openTemplatesDialog(page: Page) {
 	const dialog = page.getByTestId('templates-dialog');
 	await expect(dialog).toBeVisible();
 	return dialog;
+}
+
+/**
+ * Scroll the ScrollArea viewport to its bottom edge, triggering load-more.
+ * Uses evaluate() because Playwright's scroll helpers target the window,
+ * not an inner scrollable container.
+ */
+async function scrollListToBottom(dialog: ReturnType<Page['getByTestId']>) {
+	await dialog.getByTestId('templates-scroll-area').evaluate((el) => {
+		// The ScrollArea component renders a [data-radix-scroll-area-viewport]
+		// as the actual scrollable element.
+		const viewport =
+			el.querySelector('[data-radix-scroll-area-viewport]') ?? el;
+		viewport.scrollTop = viewport.scrollHeight;
+	});
 }
 
 /**
@@ -50,34 +78,6 @@ async function waitForListToLoad(
 			.getByTestId('templates-list')
 			.or(dialog.getByTestId('templates-empty'))
 	).toBeVisible({ timeout });
-}
-
-/**
- * Collect all `data-template-id` attribute values currently rendered in the list.
- */
-async function getRenderedTemplateIds(
-	dialog: ReturnType<Page['getByTestId']>
-): Promise<string[]> {
-	return dialog
-		.getByTestId('template-item')
-		.evaluateAll((els) =>
-			els.map((el) => el.getAttribute('data-template-id') ?? '')
-		);
-}
-
-/**
- * Scroll the ScrollArea viewport to its bottom edge, triggering load-more.
- * Uses evaluate() because Playwright's scroll helpers target the window,
- * not an inner scrollable container.
- */
-async function scrollListToBottom(dialog: ReturnType<Page['getByTestId']>) {
-	await dialog.getByTestId('templates-scroll-area').evaluate((el) => {
-		// The ScrollArea component renders a [data-radix-scroll-area-viewport]
-		// as the actual scrollable element.
-		const viewport =
-			el.querySelector('[data-radix-scroll-area-viewport]') ?? el;
-		viewport.scrollTop = viewport.scrollHeight;
-	});
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────

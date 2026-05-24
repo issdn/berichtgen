@@ -5,13 +5,14 @@
  * Usage: node --experimental-strip-types src/test/scripts/seed-template.ts
  */
 
-import { createClient } from '@supabase/supabase-js';
 import type { SupabaseDatabase } from '$lib/schema';
+
+import { createClient } from '@supabase/supabase-js';
+import { config as loadEnv } from 'dotenv';
+import { Kysely, PostgresDialect } from 'kysely';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { config as loadEnv } from 'dotenv';
-import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
 
 // Running this script with plain `node` does not auto-load `.env`.
@@ -52,8 +53,8 @@ const admin = createClient<SupabaseDatabase, 'private'>(
 );
 
 const db = new Kysely<{
-	template: { user_id: string; storage_path: string };
-	user_token_count: { user_id: string; tokens: number };
+	template: { storage_path: string; user_id: string; };
+	user_token_count: { tokens: number; user_id: string; };
 }>({
 	dialect: new PostgresDialect({
 		pool: new pg.Pool({
@@ -101,7 +102,7 @@ console.log(`Uploading to templates/${storagePath}...`);
 
 const { error: uploadError } = await admin.storage
 	.from('templates')
-	.upload(storagePath, file, { upsert: true, contentType: file.type });
+	.upload(storagePath, file, { contentType: file.type, upsert: true });
 
 if (uploadError) throw uploadError;
 console.log('Upload successful.');
@@ -113,14 +114,14 @@ await db
 	.execute();
 await db
 	.insertInto('template')
-	.values({ user_id: user.id, storage_path: storagePath })
+	.values({ storage_path: storagePath, user_id: user.id })
 	.execute();
 console.log('Template metadata row created.');
 
 // 4. Grant the test user a large token balance
 await db
 	.insertInto('user_token_count')
-	.values({ user_id: user.id, tokens: 999000 })
+	.values({ tokens: 999000, user_id: user.id })
 	.onConflict((oc) => oc.column('user_id').doUpdateSet({ tokens: 999000 }))
 	.execute();
 console.log('Token balance set to 999000.');

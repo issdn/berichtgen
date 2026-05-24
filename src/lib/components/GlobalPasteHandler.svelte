@@ -1,15 +1,16 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+
 	import { pasteStack } from '$core/stores/paste_stack.svelte';
 
 	let {
-		handlePaste,
+		children,
 		enabled = true,
-		children
+		handlePaste
 	}: {
-		handlePaste: (e: ClipboardEvent) => void | Promise<void>;
-		enabled?: boolean;
 		children: Snippet;
+		enabled?: boolean;
+		handlePaste: (e: ClipboardEvent) => Promise<void> | void;
 	} = $props();
 
 	let registered = $state(false);

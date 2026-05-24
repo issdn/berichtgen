@@ -2,11 +2,11 @@ import { toErrorBody } from '$lib/errors';
 import * as Sentry from '@sentry/sveltekit';
 
 export type AsyncOptions<T> = {
-	initialValue?: T | Promise<T>;
-	onSuccess?: (data: T) => void;
+	captureToSentry?: boolean;
+	initialValue?: Promise<T> | T;
 	onError?: (e: ReturnType<typeof toErrorBody>) => void;
 	onFinished?: () => void;
-	captureToSentry?: boolean;
+	onSuccess?: (data: T) => void;
 };
 
 /**
@@ -14,13 +14,24 @@ export type AsyncOptions<T> = {
  * P: The parameters of the async function (as a tuple)
  */
 export class AsyncResource<T, P extends unknown[]> {
-	#data = $state<T | null>(null);
-	#loading = $state(false);
-	#error = $state<ReturnType<typeof toErrorBody> | null>(null);
+	// Reactive Getters
+	get data(): null | T {
+		return this.#data;
+	}
+	get error(): null | ReturnType<typeof toErrorBody> {
+		return this.#error;
+	}
+	get loading(): boolean {
+		return this.#loading;
+	}
 
 	#asyncFn: (...args: P) => Promise<T>;
-	#options: AsyncOptions<T>;
+	#data = $state<null | T>(null);
 
+	#error = $state<null | ReturnType<typeof toErrorBody>>(null);
+
+	#loading = $state(false);
+	#options: AsyncOptions<T>;
 	constructor(
 		asyncFn: (...args: P) => Promise<T>,
 		options: AsyncOptions<T> = {}
@@ -32,28 +43,6 @@ export class AsyncResource<T, P extends unknown[]> {
 			this.#handleInitialPromise(options.initialValue);
 		} else if (options.initialValue !== undefined) {
 			this.#data = options.initialValue;
-		}
-	}
-
-	// Reactive Getters
-	get data(): T | null {
-		return this.#data;
-	}
-	get loading(): boolean {
-		return this.#loading;
-	}
-	get error(): ReturnType<typeof toErrorBody> | null {
-		return this.#error;
-	}
-
-	async #handleInitialPromise(promise: Promise<T>): Promise<void> {
-		this.#loading = true;
-		try {
-			this.#data = await promise;
-		} catch (e: unknown) {
-			this.#error = toErrorBody(e);
-		} finally {
-			this.#loading = false;
 		}
 	}
 
@@ -84,4 +73,15 @@ export class AsyncResource<T, P extends unknown[]> {
 			this.#options.onFinished?.();
 		}
 	};
+
+	async #handleInitialPromise(promise: Promise<T>): Promise<void> {
+		this.#loading = true;
+		try {
+			this.#data = await promise;
+		} catch (e: unknown) {
+			this.#error = toErrorBody(e);
+		} finally {
+			this.#loading = false;
+		}
+	}
 }

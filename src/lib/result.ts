@@ -1,12 +1,8 @@
-import { BerichtgenError, toErrorBody, type AnyErrorValue } from '$lib/errors';
+import { type AnyErrorValue, BerichtgenError, toErrorBody } from '$lib/errors';
 
 export type Result<T> =
-	| { ok: true; data: T }
-	| { ok: false; error: BerichtgenError };
-
-export function okResult<T>(data: T): Result<T> {
-	return { ok: true, data };
-}
+	| { data: T; ok: true; }
+	| { error: BerichtgenError; ok: false; };
 
 export function errResult(
 	errorClass: typeof BerichtgenError,
@@ -14,12 +10,16 @@ export function errResult(
 	error?: unknown
 ): Result<never> {
 	return {
-		ok: false,
 		error:
 			error instanceof BerichtgenError
 				? error
-				: new errorClass({ ...apiError, ...toErrorBody(error) })
+				: new errorClass({ ...apiError, ...toErrorBody(error) }),
+		ok: false
 	};
+}
+
+export function okResult<T>(data: T): Result<T> {
+	return { data, ok: true };
 }
 
 export function tryResult<T>(

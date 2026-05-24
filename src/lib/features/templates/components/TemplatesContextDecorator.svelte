@@ -28,12 +28,12 @@
 	} = $props();
 
 	setUserContext({
-		user: loggedIn ? ({ id: userId, email: 'max@example.de' } as never) : null,
-		profile: loggedIn
-			? ({ id: userId, full_name: 'Max Mustermann', avatar_url: null } as never)
-			: null,
 		loggedIn,
-		supabase: {} as never
+		profile: loggedIn
+			? ({ avatar_url: null, full_name: 'Max Mustermann', id: userId } as never)
+			: null,
+		supabase: {} as never,
+		user: loggedIn ? ({ email: 'max@example.de', id: userId } as never) : null
 	});
 </script>
 

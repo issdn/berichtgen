@@ -7,19 +7,19 @@
 	import { toast } from 'svelte-sonner';
 
 	let {
-		handleFiles,
-		filesNumber = $bindable(null),
-		disabled = false,
 		accept,
-		isValidFile,
-		class: className
+		class: className,
+		disabled = false,
+		filesNumber = $bindable(null),
+		handleFiles,
+		isValidFile
 	}: {
-		handleFiles: (files: DataTransferItemList | FileList) => Promise<void>;
-		filesNumber?: number | null;
-		disabled?: boolean;
 		accept?: string;
-		isValidFile?: (file: File) => boolean;
 		class?: string;
+		disabled?: boolean;
+		filesNumber?: null | number;
+		handleFiles: (files: DataTransferItemList | FileList) => Promise<void>;
+		isValidFile?: (file: File) => boolean;
 	} = $props();
 
 	let isDraggingIn = $state(false);

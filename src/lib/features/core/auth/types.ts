@@ -1,19 +1,19 @@
-import type { User } from '@supabase/supabase-js';
 import type { KyselyDatabase } from '$lib/schema';
+import type { User } from '@supabase/supabase-js';
 
 export type UserContext = {
-	user: User | null;
-	profile: KyselyDatabase['profile'] | null;
 	loggedIn: boolean;
+	profile: KyselyDatabase['profile'] | null;
 	supabase: App.Locals['supabase'];
+	user: null | User;
 };
 
 export const PaymentStatus = Object.freeze({
-	SUCCESS: 'success',
-	FAILED: 'failed'
+	FAILED: 'failed',
+	SUCCESS: 'success'
 } as const);
 
 export const KaufOperation = Object.freeze({
-	UPDATE: 'update',
-	CREATE: 'create'
+	CREATE: 'create',
+	UPDATE: 'update'
 } as const);

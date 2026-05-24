@@ -2,6 +2,7 @@
 	import { buttonVariants } from '$ui/button';
 	import { FileCode } from '@lucide/svelte';
 	import { Dialog } from 'bits-ui';
+
 	import TemplatesDialogContent from './TemplatesDialogContent.svelte';
 
 	let open = $state(false);

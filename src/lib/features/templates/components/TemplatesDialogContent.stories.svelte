@@ -1,16 +1,17 @@
 <script module lang="ts">
 	import { defineMeta } from '@storybook/addon-svelte-csf';
-	import TemplatesDialogContent from './TemplatesDialogContent.svelte';
+
 	import TemplatesContextDecorator from './TemplatesContextDecorator.svelte';
+	import TemplatesDialogContent from './TemplatesDialogContent.svelte';
 
 	// into $$ComponentProps; defineMeta sees a mismatch with its Record<string,never>
 	// constraint. The component renders correctly at runtime.
 	const { Story } = defineMeta({
-		title: 'Board/Templates/TemplatesDialogContent',
 		component: TemplatesDialogContent,
-		parameters: { layout: 'centered' },
 		// @ts-expect-error — Svelte 5 propagates Dialog.Content's required `children`
-		decorators: [() => ({ Component: TemplatesContextDecorator })]
+		decorators: [() => ({ Component: TemplatesContextDecorator })],
+		parameters: { layout: 'centered' },
+		title: 'Board/Templates/TemplatesDialogContent'
 	});
 </script>
 

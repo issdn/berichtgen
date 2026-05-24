@@ -11,7 +11,7 @@ export const profileNameSchema = z.object({
 export type ProfileNameSchema = typeof profileNameSchema;
 
 export const userMetadataSchema = z.object({
-	fullName: z
+	abteilung: z
 		.string()
 		.max(256, { message: 'Max 256 Zeichen' })
 		.nullable()
@@ -21,7 +21,7 @@ export const userMetadataSchema = z.object({
 		.max(256, { message: 'Max 256 Zeichen' })
 		.nullable()
 		.optional(),
-	abteilung: z
+	fullName: z
 		.string()
 		.max(256, { message: 'Max 256 Zeichen' })
 		.nullable()

@@ -1,16 +1,17 @@
+import type { SupabaseDatabase } from '$lib/schema.js';
+
+import {
+	PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+	PUBLIC_SUPABASE_URL
+} from '$env/static/public';
 import {
 	createBrowserClient,
 	createServerClient,
 	isBrowser
 } from '@supabase/ssr';
-import {
-	PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-	PUBLIC_SUPABASE_URL
-} from '$env/static/public';
-import type { SupabaseDatabase } from '$lib/schema.js';
 
 export const load = async ({
-	data: { profile, user, cookies, session },
+	data: { cookies, profile, session, user },
 	depends,
 	fetch
 }) => {
@@ -35,17 +36,17 @@ export const load = async ({
 				PUBLIC_SUPABASE_URL,
 				PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 				{
-					db: { schema: 'private' },
-					global: {
-						fetch
-					},
 					cookies: {
 						getAll() {
 							return cookies;
 						}
+					},
+					db: { schema: 'private' },
+					global: {
+						fetch
 					}
 				}
 			);
 
-	return { supabase, session, user, profile, loggedIn: !!user };
+	return { loggedIn: !!user, profile, session, supabase, user };
 };

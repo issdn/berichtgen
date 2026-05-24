@@ -1,6 +1,7 @@
+import type { KyselyQueryDatabase } from '$lib/schema';
+
 import { dev } from '$app/environment';
 import { DATABASE_URL } from '$env/static/private';
-import type { KyselyQueryDatabase } from '$lib/schema';
 import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
 
@@ -10,14 +11,14 @@ if (!dev && !ca) {
 	console.warn('SUPABASE_CA is not set.');
 }
 
-const ssl = ca ? { rejectUnauthorized: true, ca } : undefined;
+const ssl = ca ? { ca, rejectUnauthorized: true } : undefined;
 
 const db = new Kysely<KyselyQueryDatabase>({
 	dialect: new PostgresDialect({
 		pool: new pg.Pool({
 			connectionString: DATABASE_URL,
-			ssl,
-			options: '-c search_path=private'
+			options: '-c search_path=private',
+			ssl
 		})
 	})
 });

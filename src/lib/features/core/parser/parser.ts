@@ -1,19 +1,20 @@
-import { clamp } from '$lib/utils';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { Scheduler } from 'tesseract.js';
+
+import { clamp } from '$lib/utils';
 
 let workersInUse = 0;
 
 let workersNr = 0;
 
 export class Parser {
-	scheduler: Scheduler | null = null;
-
 	batchSize: number = 1;
 
-	withImages: boolean = false;
-
 	context: WizardFileContext;
+
+	scheduler: null | Scheduler = null;
+
+	withImages: boolean = false;
 
 	constructor(
 		context: WizardFileContext,

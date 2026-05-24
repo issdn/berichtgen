@@ -4,9 +4,9 @@ import { tryResult } from '$lib/result';
 import { SvelteMap } from 'svelte/reactivity';
 
 const DEFAULT_SETTINGS: App.BerichtgenSettings = {
-	rewordJSON: false,
 	constantHours: false,
 	preferredTemplatePath: null,
+	rewordJSON: false,
 	tempEmailContainer: null
 };
 
@@ -21,20 +21,6 @@ const settings = new SvelteMap<
 );
 
 let hydrated = false;
-
-function parseStoredSetting<K extends keyof App.BerichtgenSettings>(
-	key: K
-): App.BerichtgenSettings[K] | null {
-	if (!browser) return null;
-	const raw = localStorage.getItem(key);
-	if (raw === null) return null;
-	const parsed = tryResult(
-		() => JSON.parse(raw) as App.BerichtgenSettings[K],
-		BerichtgenError,
-		ECommonServerError.INTERNAL_ERROR
-	);
-	return parsed.ok ? parsed.data : null;
-}
 
 function ensureHydrated() {
 	if (!browser || hydrated) return;
@@ -54,6 +40,20 @@ function get<K extends keyof App.BerichtgenSettings>(
 ): App.BerichtgenSettings[K] {
 	ensureHydrated();
 	return settings.get(key)! as App.BerichtgenSettings[K];
+}
+
+function parseStoredSetting<K extends keyof App.BerichtgenSettings>(
+	key: K
+): App.BerichtgenSettings[K] | null {
+	if (!browser) return null;
+	const raw = localStorage.getItem(key);
+	if (raw === null) return null;
+	const parsed = tryResult(
+		() => JSON.parse(raw) as App.BerichtgenSettings[K],
+		BerichtgenError,
+		ECommonServerError.INTERNAL_ERROR
+	);
+	return parsed.ok ? parsed.data : null;
 }
 
 function set<K extends keyof App.BerichtgenSettings>(

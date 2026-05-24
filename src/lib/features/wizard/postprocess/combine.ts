@@ -1,4 +1,5 @@
 import type { ResultEntry } from '$wizard/types';
+
 import { parseDate } from '@internationalized/date';
 
 export function combineJSONs(
@@ -21,8 +22,8 @@ export function combineJSONs(
 			const combinedEntry = restEntries.reduce(
 				(acc, entry) => ({
 					...acc,
-					text: acc.text + `\n\n${entry.text}`,
-					stunden: acc.stunden + entry.stunden
+					stunden: acc.stunden + entry.stunden,
+					text: acc.text + `\n\n${entry.text}`
 				}),
 				firstEntry
 			);

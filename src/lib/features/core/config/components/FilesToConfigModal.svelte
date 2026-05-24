@@ -1,18 +1,18 @@
 <script lang="ts">
-	import { ScanReturnValue } from '$core/types';
-
+	import { buildConfigMap } from '$core/config/services/config_generator';
 	import { scanDroppedInput } from '$core/scan/file_scan';
+	import { ScanReturnValue } from '$core/types';
+	import { downloadBlob } from '$lib/utils';
 	import { buttonVariants } from '$ui/button';
+	import { Button } from '$ui/button';
+	import * as Dialog from '$ui/dialog';
 	import { Download, FileType } from '@lucide/svelte';
 	import JSZip from 'jszip';
-	import * as Dialog from '$ui/dialog';
-	import { Button } from '$ui/button';
 	import { SvelteMap } from 'svelte/reactivity';
-	import Dropzone from '../../components/Dropzone.svelte';
-	import { buildConfigMap } from '$core/config/services/config_generator';
-	import { downloadBlob } from '$lib/utils';
 
-	let resultFiles = $state<SvelteMap<string, string> | null>(null);
+	import Dropzone from '../../components/Dropzone.svelte';
+
+	let resultFiles = $state<null | SvelteMap<string, string>>(null);
 
 	let filesNumber = $state(0);
 

@@ -1,21 +1,17 @@
-import { WizardError, EWizardError } from '$wizard/errors';
-import { type Result, tryResultAsync } from '$lib/result';
 import type { Ort } from '$wizard/enums';
 import type {
 	BatchCompletionApiResponse,
 	BatchCompletionItem
 } from '$wizard/schemas';
-import type { CompletionResult } from '$wizard/types';
 import type { FileRouting } from '$wizard/services/file_routing';
+import type { CompletionResult } from '$wizard/types';
+
+import { type Result, tryResultAsync } from '$lib/result';
 import { submitBatchCompletionCommand } from '$wizard/api/wizard.remote';
+import { EWizardError, WizardError } from '$wizard/errors';
 
 /** Maximum total UTF-8 byte size for a single batch request (4 MB). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
-
-/** Returns the UTF-8 encoded byte length of a string. */
-function getByteSize(text: string): number {
-	return new TextEncoder().encode(text).byteLength;
-}
 
 /**
  * Groups items into the fewest sequential batches where the combined UTF-8
@@ -60,9 +56,9 @@ export function createBatchesBySize<T extends { text: string }>(
  * - `url`    -> `{ type: 'url', url, ort }`
  */
 export function sendBatchCompletion(
-	items: Array<{ routing: FileRouting; ort: Ort }>
+	items: Array<{ ort: Ort; routing: FileRouting; }>
 ): Promise<Result<BatchCompletionApiResponse>> {
-	const mapped: BatchCompletionItem[] = items.map(({ routing, ort }) => ({
+	const mapped: BatchCompletionItem[] = items.map(({ ort, routing }) => ({
 		ort,
 		...routing
 	}));
@@ -80,4 +76,9 @@ export function sendBatchCompletion(
  */
 export function stringsToEntries(strings: string[]): CompletionResult {
 	return strings.map((text) => ({ text }));
+}
+
+/** Returns the UTF-8 encoded byte length of a string. */
+function getByteSize(text: string): number {
+	return new TextEncoder().encode(text).byteLength;
 }

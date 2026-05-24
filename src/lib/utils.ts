@@ -1,13 +1,14 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-import { DateFormatter, parseAbsolute } from '@internationalized/date';
-import { LOCALE, TIMEZONE } from '$lib/constants';
 import type { KyselyDatabase } from '$lib/schema';
 import type { User } from '@supabase/supabase-js';
 
-export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs));
-}
+import { LOCALE, TIMEZONE } from '$lib/constants';
+import { DateFormatter, parseAbsolute } from '@internationalized/date';
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & {
+	ref?: null | U;
+};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
@@ -16,22 +17,8 @@ export type WithoutChildren<T> = T extends { children?: any }
 	? Omit<T, 'children'>
 	: T;
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
-export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & {
-	ref?: U | null;
-};
-
-export function promisify<T, E>(
-	fn: (success: (value: T) => void, error: (message: E) => void) => void
-): Promise<T> {
-	return new Promise((resolve, reject) => {
-		fn(resolve, reject);
-	});
-}
-
-export function parsePostgresDate(dateString: string): string {
-	return new DateFormatter(LOCALE, { dateStyle: 'medium' })
-		.format(parseAbsolute(dateString, TIMEZONE).toDate())
-		.toString();
+export function cn(...inputs: ClassValue[]) {
+	return twMerge(clsx(inputs));
 }
 
 export function downloadBlob(blob: Blob, filename: string) {
@@ -41,6 +28,20 @@ export function downloadBlob(blob: Blob, filename: string) {
 	a.download = filename;
 	a.click();
 	URL.revokeObjectURL(url);
+}
+
+export function parsePostgresDate(dateString: string): string {
+	return new DateFormatter(LOCALE, { dateStyle: 'medium' })
+		.format(parseAbsolute(dateString, TIMEZONE).toDate())
+		.toString();
+}
+
+export function promisify<T, E>(
+	fn: (success: (value: T) => void, error: (message: E) => void) => void
+): Promise<T> {
+	return new Promise((resolve, reject) => {
+		fn(resolve, reject);
+	});
 }
 
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
@@ -73,7 +74,7 @@ export function getArrayDepth(arr: unknown[]): number {
 
 export function getUserDisplayName(
 	profile: KyselyDatabase['profile'] | null,
-	user?: User | null
+	user?: null | User
 ) {
 	const fullName =
 		profile?.full_name ??

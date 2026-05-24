@@ -1,30 +1,19 @@
-import { test, expect, describe } from 'vitest';
+import { EParserError } from '$core/parser/errors';
 import { get2DimensionalDirectories } from '$core/scan/file_scan';
-import { ScanReturnValue, type ScanReturnType } from '$core/types';
 import {
 	extractFilesSimple,
 	getFileListWithPreserverFolderStructure
 } from '$core/scan/file_scan';
-import { EParserError } from '$core/parser/errors';
+import { type ScanReturnType, ScanReturnValue } from '$core/types';
+import { describe, expect, test } from 'vitest';
 
 class MockFileList extends Array<File> {}
 (globalThis as unknown as { FileList?: typeof MockFileList }).FileList =
 	MockFileList;
 
-function makeFileEntry(fullPath: string): FileSystemFileEntry {
-	return {
-		isFile: true,
-		isDirectory: false,
-		fullPath,
-		name: fullPath.split('/').at(-1)!
-	} as unknown as FileSystemFileEntry;
-}
-
 function makeDirEntry(children: FileSystemEntry[]): FileSystemDirectoryEntry {
 	let read = false;
 	return {
-		isFile: false,
-		isDirectory: true,
 		createReader: () => ({
 			readEntries: (success: (entries: FileSystemEntry[]) => void) => {
 				// FileSystem API requires calling readEntries repeatedly until [] is returned
@@ -35,8 +24,19 @@ function makeDirEntry(children: FileSystemEntry[]): FileSystemDirectoryEntry {
 					success([]);
 				}
 			}
-		})
+		}),
+		isDirectory: true,
+		isFile: false
 	} as unknown as FileSystemDirectoryEntry;
+}
+
+function makeFileEntry(fullPath: string): FileSystemFileEntry {
+	return {
+		fullPath,
+		isDirectory: false,
+		isFile: true,
+		name: fullPath.split('/').at(-1)!
+	} as unknown as FileSystemFileEntry;
 }
 
 function makeItemList(entries: FileSystemEntry[]): DataTransferItemList {
@@ -47,11 +47,11 @@ function makeItemList(entries: FileSystemEntry[]): DataTransferItemList {
 }
 
 function makeItemListWithKinds(
-	items: Array<{ kind: string; file: File | null }>
+	items: Array<{ file: File | null; kind: string; }>
 ): DataTransferItemList {
 	const dataTransferItems = items.map((item) => ({
-		kind: item.kind,
-		getAsFile: () => item.file
+		getAsFile: () => item.file,
+		kind: item.kind
 	}));
 
 	return {
@@ -92,15 +92,15 @@ describe('get2DimensionalDirectories', () => {
 		const fileB = new File(['b'], 'b.txt', { type: 'text/plain' });
 
 		const entryA = {
-			isFile: true,
+			file: (success: (file: File) => void) => success(fileA),
 			isDirectory: false,
-			file: (success: (file: File) => void) => success(fileA)
+			isFile: true
 		} as unknown as FileSystemFileEntry;
 
 		const entryB = {
-			isFile: true,
+			file: (success: (file: File) => void) => success(fileB),
 			isDirectory: false,
-			file: (success: (file: File) => void) => success(fileB)
+			isFile: true
 		} as unknown as FileSystemFileEntry;
 
 		const result = await get2DimensionalDirectories(
@@ -168,9 +168,9 @@ describe('extractFilesSimple', () => {
 		const file = new File(['x'], 'x.txt', { type: 'text/plain' });
 		const result = extractFilesSimple(
 			makeItemListWithKinds([
-				{ kind: 'file', file },
-				{ kind: 'file', file: null },
-				{ kind: 'string', file: null }
+				{ file, kind: 'file' },
+				{ file: null, kind: 'file' },
+				{ file: null, kind: 'string' }
 			])
 		);
 

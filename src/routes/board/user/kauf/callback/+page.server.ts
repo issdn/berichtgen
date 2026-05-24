@@ -1,7 +1,7 @@
+import { ECommonServerError, svelteApiError } from '$lib/errors.js';
 import { redirect } from 'sveltekit-flash-message/server';
-import { svelteApiError, ECommonServerError } from '$lib/errors.js';
 
-export const load = async ({ url, cookies }) => {
+export const load = async ({ cookies, url }) => {
 	const status = url.searchParams.get('redirect_status');
 
 	if (status === 'succeeded') {
@@ -9,14 +9,14 @@ export const load = async ({ url, cookies }) => {
 			303,
 			'/board',
 			{
-				type: 'success',
-				message: 'Zahlung wird verarbeitet.',
 				data: {
 					closeButton: true,
-					duration: 10_000,
 					description:
-						'Du erhältst deine Tokens sobald die Zahlung bestätigt wurde - lade die Seite dann neu.'
-				}
+						'Du erhältst deine Tokens sobald die Zahlung bestätigt wurde - lade die Seite dann neu.',
+					duration: 10_000
+				},
+				message: 'Zahlung wird verarbeitet.',
+				type: 'success'
 			},
 			cookies
 		);
@@ -27,8 +27,8 @@ export const load = async ({ url, cookies }) => {
 			303,
 			'/board/user/kauf',
 			{
-				type: 'error',
-				message: 'Zahlung fehlgeschlagen. Bitte versuche es erneut.'
+				message: 'Zahlung fehlgeschlagen. Bitte versuche es erneut.',
+				type: 'error'
 			},
 			cookies
 		);

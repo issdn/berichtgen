@@ -1,11 +1,12 @@
 <script lang="ts">
+	import FilesToConfigModal from '$core/config/components/FilesToConfigModal.svelte';
+	import Button from '$ui/button/button.svelte';
 	import * as Card from '$ui/card';
 	import { getContextPrompt } from '$wizard/completion/prompt';
 	import { Ort } from '$wizard/enums';
 	import { Pin } from '@lucide/svelte';
-	import FilesToConfigModal from '$core/config/components/FilesToConfigModal.svelte';
+
 	import CopyButton from './CopyButton.svelte';
-	import Button from '$ui/button/button.svelte';
 </script>
 
 <div class="bg-muted h-full max-h-240 w-full overflow-y-hidden">

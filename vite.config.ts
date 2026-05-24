@@ -1,13 +1,13 @@
 /// <reference types="vitest/config" />
 import { sentrySvelteKit } from '@sentry/sveltekit';
-import { defineConfig } from 'vite';
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { playwright } from '@vitest/browser-playwright';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
-import { playwright } from '@vitest/browser-playwright';
+import { defineConfig } from 'vite';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 const dirname =
 	typeof __dirname !== 'undefined'
@@ -19,6 +19,12 @@ export default defineConfig(({ mode }) => ({
 	define: {
 		__APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0')
 	},
+	esbuild: {
+		drop: mode === 'production' ? ['console', 'debugger'] : []
+	},
+	optimizeDeps: {
+		exclude: ['quickjs-emscripten']
+	},
 	plugins: [
 		nodePolyfills({
 			include: ['buffer']
@@ -26,42 +32,36 @@ export default defineConfig(({ mode }) => ({
 		tailwindcss(),
 		sentrySvelteKit({
 			sourceMapsUploadOptions: {
+				authToken: process.env.SENTRY_AUTH_TOKEN,
 				org: 'bielski',
-				project: 'berichtgen',
-				authToken: process.env.SENTRY_AUTH_TOKEN
+				project: 'berichtgen'
 			}
 		}),
 		sveltekit()
 	],
-	esbuild: {
-		drop: mode === 'production' ? ['console', 'debugger'] : []
-	},
 	ssr: {
 		noExternal: ['@lucide/svelte']
 	},
-	optimizeDeps: {
-		exclude: ['quickjs-emscripten']
-	},
 	test: {
 		coverage: {
-			provider: 'v8',
 			exclude: [
 				'**/.svelte-kit/**',
 				'**/node_modules/**',
 				'**/*.d.ts',
 				'**/*.remote.ts'
-			]
+			],
+			provider: 'v8'
 		},
 		projects: [
 			{
 				extends: true,
 				test: {
-					name: 'unit',
-					include: ['./src/**/*.test.ts'],
 					alias: {
 						canvas: new URL('./src/test/__mocks__/canvas.ts', import.meta.url)
 							.pathname
-					}
+					},
+					include: ['./src/**/*.test.ts'],
+					name: 'unit'
 				}
 			},
 			{
@@ -74,17 +74,17 @@ export default defineConfig(({ mode }) => ({
 					})
 				],
 				test: {
-					name: 'storybook',
 					browser: {
 						enabled: true,
 						headless: true,
-						provider: playwright(),
 						instances: [
 							{
 								browser: 'chromium'
 							}
-						]
-					}
+						],
+						provider: playwright()
+					},
+					name: 'storybook'
 				}
 			}
 		]

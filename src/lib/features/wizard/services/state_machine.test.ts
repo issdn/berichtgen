@@ -1,16 +1,16 @@
-import { describe, test, expect, vi } from 'vitest';
+import { okResult } from '$lib/result';
 import { WizardStep } from '$wizard/enums';
 import { CalendarDate } from '@internationalized/date';
-import { okResult } from '$lib/result';
+import { describe, expect, test, vi } from 'vitest';
 
 vi.mock('$app/navigation', () => ({ invalidate: vi.fn() }));
 vi.mock('$core/stores/berichtgen.svelte', () => ({
 	default: {
 		get: (key: keyof App.BerichtgenSettings) => {
 			const values: App.BerichtgenSettings = {
-				rewordJSON: false,
 				constantHours: false,
 				preferredTemplatePath: null,
+				rewordJSON: false,
 				tempEmailContainer: null
 			};
 			return values[key];
@@ -31,8 +31,9 @@ vi.mock('$wizard/completion/completion', async (importOriginal) => ({
 	sendBatchCompletion: mockSendBatch
 }));
 
-import { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
 import type { DateRangeSchema } from '$wizard/schemas';
+
+import { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
 
 function flush() {
 	return new Promise((resolve) => setTimeout(resolve, 0));
@@ -45,14 +46,14 @@ describe('State machine full lifecycle', () => {
 	test('INITIALISING -> PROCESSING -> WAITING -> BATCH_PENDING -> AI_COMPLETION -> TIME_SPREADING -> DONE', async () => {
 		mockResolveFileRouting.mockResolvedValue(
 			okResult({
-				type: 'inline',
 				data: btoa(DUMMY_TEXT),
-				mimeType: 'text/plain'
+				mimeType: 'text/plain',
+				type: 'inline'
 			})
 		);
 
 		mockSendBatch.mockResolvedValue(
-			okResult({ results: [[AI_RESULT]], insufficient_tokens: false })
+			okResult({ insufficient_tokens: false, results: [[AI_RESULT]] })
 		);
 
 		const scheduler = WizardMediator.createDefault();
@@ -67,19 +68,19 @@ describe('State machine full lifecycle', () => {
 
 		expect(machine.current).toBe(WizardStep.WAITING);
 		expect(context.snapshot).toMatchObject({
-			type: 'inline',
-			mimeType: 'text/plain'
+			mimeType: 'text/plain',
+			type: 'inline'
 		});
 
 		context.dateRanges = {
 			ort: 'BETRIEB',
 			ranges: [
 				{
-					id: 0,
 					daterange: {
-						start: new CalendarDate(2024, 1, 1),
-						end: new CalendarDate(2024, 1, 14)
+						end: new CalendarDate(2024, 1, 14),
+						start: new CalendarDate(2024, 1, 1)
 					},
+					id: 0,
 					stunden: null
 				}
 			]

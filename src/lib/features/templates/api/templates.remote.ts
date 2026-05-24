@@ -25,8 +25,8 @@ import * as z from 'zod';
 export const getTemplates = query(
 	z.object({
 		afterId: z.uuid().optional(),
-		search: z.string().optional().default(''),
-		hideReported: z.boolean().optional().default(false)
+		hideReported: z.boolean().optional().default(false),
+		search: z.string().optional().default('')
 	}),
 	async (params) => {
 		const {
@@ -38,10 +38,10 @@ export const getTemplates = query(
 
 export const uploadTemplate = guardedCommand(
 	z.object({
-		name: z.string().min(1),
-		type: z.string().min(1),
 		data: z.instanceof(Uint8Array),
-		isPublic: z.boolean().default(false)
+		isPublic: z.boolean().default(false),
+		name: z.string().min(1),
+		type: z.string().min(1)
 	}),
 	async (params) => {
 		const {
@@ -68,8 +68,8 @@ export const deleteReport = guardedCommand(
 
 export const reportTemplate = guardedCommand(
 	z.object({
-		templateId: z.uuid(),
-		message: z.string().max(1000).optional()
+		message: z.string().max(1000).optional(),
+		templateId: z.uuid()
 	}),
 	async (params) => {
 		const {

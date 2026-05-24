@@ -1,51 +1,52 @@
 <script lang="ts">
+	import { Button } from '$ui/button';
+	import * as Dialog from '$ui/dialog';
+	import * as Form from '$ui/form';
+	import { Separator } from '$ui/separator';
 	import { Ort } from '$wizard/enums';
 	import { dateRangeSchema, type DateRangeSchema } from '$wizard/schemas';
-	import { today, type DateValue } from '@internationalized/date';
+	import { type DateValue, today } from '@internationalized/date';
 	import { Calendar, Trash2 } from '@lucide/svelte';
 	import { slide } from 'svelte/transition';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zod4, zod4Client } from 'sveltekit-superforms/adapters';
+
 	import LocationCombobox from './LocationCombobox.svelte';
 	import TimeSpreadRow from './TimeSpreadRow.svelte';
-	import * as Dialog from '$ui/dialog';
-	import * as Form from '$ui/form';
-	import { Button } from '$ui/button';
-	import { Separator } from '$ui/separator';
 
 	let {
+		id,
 		onClose,
-		onValidChange,
-		id
+		onValidChange
 	}: {
+		id: string;
 		onClose: () => void;
 		onValidChange: (data: DateRangeSchema) => void;
-		id: string;
 	} = $props();
 
 	function newRow(id: number) {
 		return {
-			id,
-			daterange: { start: undefined, end: today('Europe/Berlin') as DateValue }
+			daterange: { end: today('Europe/Berlin') as DateValue, start: undefined },
+			id
 		};
 	}
 
 	// End date is today by default. Is there no start date, then it is invalid.
 	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
-	const { form, errors, enhance, validateForm, ...rest } = superForm(
-		defaults({ ranges: [newRow(0)], ort: Ort.SCHULE }, zod4(dateRangeSchema)),
+	const { enhance, errors, form, validateForm, ...rest } = superForm(
+		defaults({ ort: Ort.SCHULE, ranges: [newRow(0)] }, zod4(dateRangeSchema)),
 		{
-			id,
-			SPA: true,
 			dataType: 'json',
-			validators: zod4Client(dateRangeSchema),
+			id,
 			async onChange() {
 				const { valid } = await validateForm();
 				if (valid) {
 					onValidChange({ ...$form });
 					$form.ranges = [...$form.ranges, newRow($form.ranges.length)];
 				}
-			}
+			},
+			SPA: true,
+			validators: zod4Client(dateRangeSchema)
 		}
 	);
 
@@ -80,7 +81,7 @@
 				>
 					<p class="w-full pl-1 text-left align-middle font-normal">Ort</p>
 					<Form.Field
-						form={{ form, errors, enhance, validateForm, ...rest }}
+						form={{ enhance, errors, form, validateForm, ...rest }}
 						name="ort"
 						class="w-calendar space-y-0"
 					>
@@ -110,7 +111,7 @@
 						<TimeSpreadRow
 							{index}
 							formData={form}
-							form={{ form, errors, enhance, validateForm, ...rest }}
+							form={{ enhance, errors, form, validateForm, ...rest }}
 						/>
 					</div>
 				{/each}

@@ -8,19 +8,19 @@ test('Filename with comma', async () => {
 		'SCHULE,"first, example.test",2023-01-01;2023-01-07,2023-02-01;2023-02-13;40';
 	const expected = [
 		{
-			ort: 'SCHULE',
 			file: 'first, example.test',
+			ort: 'SCHULE',
 			ranges: [
 				{
 					daterange: {
-						start: parseDate('2023-01-01'),
-						end: parseDate('2023-01-07')
+						end: parseDate('2023-01-07'),
+						start: parseDate('2023-01-01')
 					}
 				},
 				{
 					daterange: {
-						start: parseDate('2023-02-01'),
-						end: parseDate('2023-02-13')
+						end: parseDate('2023-02-13'),
+						start: parseDate('2023-02-01')
 					},
 					stunden: 40
 				}
@@ -44,19 +44,19 @@ test('No comma with quotes', async () => {
 		'SCHULE,"example.test",2023-01-01;2023-01-07,2023-02-01;2023-02-13;40';
 	const expected = [
 		{
-			ort: 'SCHULE',
 			file: 'example.test',
+			ort: 'SCHULE',
 			ranges: [
 				{
 					daterange: {
-						start: parseDate('2023-01-01'),
-						end: parseDate('2023-01-07')
+						end: parseDate('2023-01-07'),
+						start: parseDate('2023-01-01')
 					}
 				},
 				{
 					daterange: {
-						start: parseDate('2023-02-01'),
-						end: parseDate('2023-02-13')
+						end: parseDate('2023-02-13'),
+						start: parseDate('2023-02-01')
 					},
 					stunden: 40
 				}

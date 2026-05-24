@@ -1,8 +1,8 @@
-import { svelteApiError } from '$lib/errors.js';
 import { EAuthError } from '$core/auth/errors';
+import { svelteApiError } from '$lib/errors.js';
 import { redirect } from 'sveltekit-flash-message/server';
 
-export const load = async ({ locals: { supabase }, url, cookies }) => {
+export const load = async ({ cookies, locals: { supabase }, url }) => {
 	const code = url.searchParams.get('code') as string;
 	const next = url.searchParams.get('next') ?? '/';
 
@@ -13,7 +13,7 @@ export const load = async ({ locals: { supabase }, url, cookies }) => {
 			throw redirect(
 				303,
 				`/${next.slice(1)}`,
-				{ type: 'success', message: 'Erfolgreich angemeldet!' },
+				{ message: 'Erfolgreich angemeldet!', type: 'success' },
 				cookies
 			);
 		}

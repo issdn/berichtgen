@@ -3,8 +3,49 @@ import { browser } from '$app/environment';
 const DB_NAME = 'berichtgen';
 const STORE_NAME = 'persistence';
 
+type Envelope<T> = {
+	data: T;
+	key: string;
+	scope: string;
+	updatedAt: number;
+	version: number;
+};
+
+async function clear(storeName: string, key: string): Promise<void> {
+	const db = await openDb();
+	if (!db) return;
+	await new Promise<void>((resolve) => {
+		const tx = db.transaction(STORE_NAME, 'readwrite');
+		tx.objectStore(STORE_NAME).delete(`${storeName}:${key}`);
+		tx.oncomplete = () => resolve();
+		tx.onerror = () => resolve();
+	});
+}
+
 function hasIndexedDb() {
 	return browser && typeof indexedDB !== 'undefined';
+}
+
+async function load<T>(
+	storeName: string,
+	key: string,
+	version: number,
+	ttlMs: number
+): Promise<null | T> {
+	const db = await openDb();
+	if (!db) return null;
+	const envelope = await new Promise<Envelope<T> | null>((resolve) => {
+		const tx = db.transaction(STORE_NAME, 'readonly');
+		const req = tx.objectStore(STORE_NAME).get(`${storeName}:${key}`);
+		req.onsuccess = () => resolve((req.result as Envelope<T>) ?? null);
+		req.onerror = () => resolve(null);
+	});
+	if (!envelope) return null;
+	if (envelope.version !== version || Date.now() - envelope.updatedAt > ttlMs) {
+		await clear(storeName, key);
+		return null;
+	}
+	return envelope.data;
 }
 
 function openDb(): Promise<IDBDatabase | null> {
@@ -22,14 +63,6 @@ function openDb(): Promise<IDBDatabase | null> {
 	});
 }
 
-type Envelope<T> = {
-	key: string;
-	scope: string;
-	version: number;
-	updatedAt: number;
-	data: T;
-};
-
 async function save<T>(
 	storeName: string,
 	key: string,
@@ -41,54 +74,21 @@ async function save<T>(
 	await new Promise<void>((resolve) => {
 		const tx = db.transaction(STORE_NAME, 'readwrite');
 		tx.objectStore(STORE_NAME).put({
+			data,
 			key: `${storeName}:${key}`,
 			scope: storeName,
-			version,
 			updatedAt: Date.now(),
-			data
+			version
 		} satisfies Envelope<T>);
 		tx.oncomplete = () => resolve();
 		tx.onerror = () => resolve();
 	});
 }
 
-async function load<T>(
-	storeName: string,
-	key: string,
-	version: number,
-	ttlMs: number
-): Promise<T | null> {
-	const db = await openDb();
-	if (!db) return null;
-	const envelope = await new Promise<Envelope<T> | null>((resolve) => {
-		const tx = db.transaction(STORE_NAME, 'readonly');
-		const req = tx.objectStore(STORE_NAME).get(`${storeName}:${key}`);
-		req.onsuccess = () => resolve((req.result as Envelope<T>) ?? null);
-		req.onerror = () => resolve(null);
-	});
-	if (!envelope) return null;
-	if (envelope.version !== version || Date.now() - envelope.updatedAt > ttlMs) {
-		await clear(storeName, key);
-		return null;
-	}
-	return envelope.data;
-}
-
-async function clear(storeName: string, key: string): Promise<void> {
-	const db = await openDb();
-	if (!db) return;
-	await new Promise<void>((resolve) => {
-		const tx = db.transaction(STORE_NAME, 'readwrite');
-		tx.objectStore(STORE_NAME).delete(`${storeName}:${key}`);
-		tx.oncomplete = () => resolve();
-		tx.onerror = () => resolve();
-	});
-}
-
 const Persistence = {
-	save,
+	clear,
 	load,
-	clear
+	save
 };
 
 export default Persistence;

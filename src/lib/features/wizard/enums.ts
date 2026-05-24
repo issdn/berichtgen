@@ -1,36 +1,36 @@
 export const Ort = Object.freeze({
-	SCHULE: 'SCHULE',
 	BETRIEB: 'BETRIEB',
-	UNTERWEISUNG: 'UNTERWEISUNG',
-	'SCHULE/BETRIEB': 'SCHULE/BETRIEB'
+	SCHULE: 'SCHULE',
+	'SCHULE/BETRIEB': 'SCHULE/BETRIEB',
+	UNTERWEISUNG: 'UNTERWEISUNG'
 } as const);
 
 export type Ort = (typeof Ort)[keyof typeof Ort];
 
 export const WizardStep = Object.freeze({
-	INITIALISING: 'init',
-	PROCESSING: 'process',
-	/** File has been parsed and configured — waiting for the scheduler to group all files. */
-	BATCH_PENDING: 'batch_pending',
 	/** Batch is actively being sent to the AI completion API. */
 	AI_COMPLETION: 'completion',
-	TIME_SPREADING: 'time_spread',
-	DONE: 'done',
+	/** File has been parsed and configured — waiting for the scheduler to group all files. */
+	BATCH_PENDING: 'batch_pending',
 	CANCELLED: 'cancelled',
+	DONE: 'done',
 	ERROR: 'error',
+	INITIALISING: 'init',
+	PROCESSING: 'process',
+	TIME_SPREADING: 'time_spread',
 	WAITING: 'waiting'
 } as const);
 
 export type WizardStep = (typeof WizardStep)[keyof typeof WizardStep];
 
 export const FileTypes = Object.freeze({
-	DOCX: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-	PDF: 'application/pdf',
-	JSON: 'application/json',
-	TXT: 'text/plain',
 	CSV: 'text/csv',
+	DOCX: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 	JPG: 'image/jpeg',
+	JSON: 'application/json',
+	PDF: 'application/pdf',
 	PNG: 'image/png',
+	TXT: 'text/plain',
 	/**
 	 * Synthetic MIME type used by Dropzone URL paste/drag transport.
 	 * This is not a real uploaded document format.

@@ -3,85 +3,86 @@ import {
 	ECommonServerError,
 	svelteApiError
 } from '$lib/errors';
-import { ETemplateError } from '$wizard/errors';
+import { tryResultAsync } from '$lib/result';
 import { supabaseAdmin } from '$lib/server/admin';
 import db from '$lib/server/db';
+import { ETemplateError } from '$wizard/errors';
 import * as Sentry from '@sentry/sveltekit';
 import { sql } from 'kysely';
-import { tryResultAsync } from '$lib/result';
 
 export const PAGE_SIZE = 30;
 
-export type ProfileRow = {
-	id: string;
-	full_name: string | null;
-	avatar_url: string | null;
-};
-
-export type TemplateReportRow = {
-	id: string;
-	template_id: string;
-	reporter_user_id: string;
-	message: string | null;
-	created_at: string;
-};
-
-export type TemplateRow = {
-	id: string;
-	user_id: string;
-	storage_path: string;
-	is_public: boolean;
-	safe_marked_at: string | null;
-	created_at: string;
-	updated_at: string | null;
-	is_mine: boolean;
-	profile: ProfileRow | null;
-	template_report: TemplateReportRow[];
-};
-
 export type FetchTemplatesParams = {
 	afterId?: string;
-	search?: string;
 	hideReported?: boolean;
+	search?: string;
 };
 
 export type FetchTemplatesResult = {
-	templates: TemplateRow[];
 	hasMore: boolean;
+	templates: TemplateRow[];
 };
 
-export function paginateTemplates(
-	data: TemplateRow[],
-	afterId: string | undefined,
-	pageSize: number
-): FetchTemplatesResult {
-	const mine = afterId ? [] : data.filter((t) => t.is_mine);
-	const others = data.filter((t) => !t.is_mine);
-	const hasMore = others.length > pageSize;
-	return {
-		templates: [...mine, ...others.slice(0, pageSize)],
-		hasMore
-	};
+export type ProfileRow = {
+	avatar_url: null | string;
+	full_name: null | string;
+	id: string;
+};
+
+export type TemplateReportRow = {
+	created_at: string;
+	id: string;
+	message: null | string;
+	reporter_user_id: string;
+	template_id: string;
+};
+
+export type TemplateRow = {
+	created_at: string;
+	id: string;
+	is_mine: boolean;
+	is_public: boolean;
+	profile: null | ProfileRow;
+	safe_marked_at: null | string;
+	storage_path: string;
+	template_report: TemplateReportRow[];
+	updated_at: null | string;
+	user_id: string;
+};
+
+export async function deleteTemplateFile(storagePath: string): Promise<void> {
+	const { error } = await supabaseAdmin.storage
+		.from('templates')
+		.remove([storagePath]);
+	if (error)
+		throw svelteApiError(ECommonServerError.DATABASE_ERROR, error.message);
+	await db
+		.deleteFrom('template')
+		.where('storage_path', '=', storagePath)
+		.execute();
 }
 
-export function validateCanReport(
-	template: Pick<TemplateRow, 'user_id' | 'safe_marked_at'> | undefined,
-	userId: string,
-	existing: { id: string } | undefined
-): void {
-	if (!template) throw svelteApiError(ETemplateError.TEMPLATE_NOT_FOUND);
-	if (template.user_id === userId)
-		throw svelteApiError(ETemplateError.CANNOT_REPORT_OWN);
-	if (template.safe_marked_at !== null)
-		throw svelteApiError(ETemplateError.TEMPLATE_SAFE);
-	if (existing) throw svelteApiError(ETemplateError.ALREADY_REPORTED);
+export async function deleteTemplateReport(
+	templateId: string,
+	userId: string
+): Promise<void> {
+	const deleteResult = await tryResultAsync(
+		db
+			.deleteFrom('template_report')
+			.where('template_id', '=', templateId)
+			.where('reporter_user_id', '=', userId)
+			.execute(),
+		BerichtgenError,
+		ECommonServerError.DATABASE_ERROR
+	);
+	if (!deleteResult.ok) throw svelteApiError(ECommonServerError.DATABASE_ERROR);
 }
 
 export async function fetchTemplates(
 	params: FetchTemplatesParams,
 	userId: string | undefined
 ): Promise<FetchTemplatesResult> {
-	const { afterId, search = '', hideReported = false } = params;
+	const { afterId, hideReported = false, search = '' } = params;
 
 	const searchCond = search
 		? sql`AND t.storage_path ILIKE ${`%/%${search}%.docx`}`
@@ -139,8 +140,73 @@ export async function fetchTemplates(
 	return paginateTemplates(data, afterId, PAGE_SIZE);
 }
 
+export async function markTemplateSafeById(templateId: string): Promise<void> {
+	await db
+		.updateTable('template')
+		.set({ safe_marked_at: new Date().toISOString() })
+		.where('id', '=', templateId)
+		.execute();
+
+	await db
+		.deleteFrom('template_report')
+		.where('template_id', '=', templateId)
+		.execute();
+}
+
+export function paginateTemplates(
+	data: TemplateRow[],
+	afterId: string | undefined,
+	pageSize: number
+): FetchTemplatesResult {
+	const mine = afterId ? [] : data.filter((t) => t.is_mine);
+	const others = data.filter((t) => !t.is_mine);
+	const hasMore = others.length > pageSize;
+	return {
+		hasMore,
+		templates: [...mine, ...others.slice(0, pageSize)]
+	};
+}
+
+export async function submitTemplateReport(
+	params: { message?: string; templateId: string; },
+	userId: string
+): Promise<void> {
+	const { message, templateId } = params;
+
+	const template = await db
+		.selectFrom('template')
+		.select(['id', 'user_id', 'storage_path', 'safe_marked_at'])
+		.where('id', '=', templateId)
+		.executeTakeFirst();
+
+	const existing = await db
+		.selectFrom('template_report')
+		.select('id')
+		.where('template_id', '=', templateId)
+		.where('reporter_user_id', '=', userId)
+		.executeTakeFirst();
+	validateCanReport(template, userId, existing);
+
+	const insertResult = await tryResultAsync(
+		db
+			.insertInto('template_report')
+			.values({
+				message: message ?? null,
+				reporter_user_id: userId,
+				template_id: templateId
+			})
+			.execute(),
+		BerichtgenError,
+		ECommonServerError.DATABASE_ERROR
+	);
+	if (!insertResult.ok) {
+		Sentry.captureException(insertResult.error);
+		throw svelteApiError(ECommonServerError.DATABASE_ERROR);
+	}
+}
+
 export async function uploadTemplateFile(
-	params: { name: string; type: string; data: Uint8Array; isPublic: boolean },
+	params: { data: Uint8Array; isPublic: boolean; name: string; type: string; },
 	userId: string
 ): Promise<void> {
 	const storagePath = `${userId}/${params.name}`;
@@ -169,89 +235,23 @@ export async function uploadTemplateFile(
 		await db
 			.insertInto('template')
 			.values({
-				user_id: userId,
+				is_public: params.isPublic,
 				storage_path: storagePath,
-				is_public: params.isPublic
+				user_id: userId
 			})
 			.execute();
 	}
 }
 
-export async function deleteTemplateFile(storagePath: string): Promise<void> {
-	const { error } = await supabaseAdmin.storage
-		.from('templates')
-		.remove([storagePath]);
-	if (error)
-		throw svelteApiError(ECommonServerError.DATABASE_ERROR, error.message);
-	await db
-		.deleteFrom('template')
-		.where('storage_path', '=', storagePath)
-		.execute();
-}
-
-export async function deleteTemplateReport(
-	templateId: string,
-	userId: string
-): Promise<void> {
-	const deleteResult = await tryResultAsync(
-		db
-			.deleteFrom('template_report')
-			.where('template_id', '=', templateId)
-			.where('reporter_user_id', '=', userId)
-			.execute(),
-		BerichtgenError,
-		ECommonServerError.DATABASE_ERROR
-	);
-	if (!deleteResult.ok) throw svelteApiError(ECommonServerError.DATABASE_ERROR);
-}
-
-export async function submitTemplateReport(
-	params: { templateId: string; message?: string },
-	userId: string
-): Promise<void> {
-	const { templateId, message } = params;
-
-	const template = await db
-		.selectFrom('template')
-		.select(['id', 'user_id', 'storage_path', 'safe_marked_at'])
-		.where('id', '=', templateId)
-		.executeTakeFirst();
-
-	const existing = await db
-		.selectFrom('template_report')
-		.select('id')
-		.where('template_id', '=', templateId)
-		.where('reporter_user_id', '=', userId)
-		.executeTakeFirst();
-	validateCanReport(template, userId, existing);
-
-	const insertResult = await tryResultAsync(
-		db
-			.insertInto('template_report')
-			.values({
-				template_id: templateId,
-				reporter_user_id: userId,
-				message: message ?? null
-			})
-			.execute(),
-		BerichtgenError,
-		ECommonServerError.DATABASE_ERROR
-	);
-	if (!insertResult.ok) {
-		Sentry.captureException(insertResult.error);
-		throw svelteApiError(ECommonServerError.DATABASE_ERROR);
-	}
-}
-
-export async function markTemplateSafeById(templateId: string): Promise<void> {
-	await db
-		.updateTable('template')
-		.set({ safe_marked_at: new Date().toISOString() })
-		.where('id', '=', templateId)
-		.execute();
-
-	await db
-		.deleteFrom('template_report')
-		.where('template_id', '=', templateId)
-		.execute();
+export function validateCanReport(
+	template: Pick<TemplateRow, 'safe_marked_at' | 'user_id'> | undefined,
+	userId: string,
+	existing: undefined | { id: string }
+): void {
+	if (!template) throw svelteApiError(ETemplateError.TEMPLATE_NOT_FOUND);
+	if (template.user_id === userId)
+		throw svelteApiError(ETemplateError.CANNOT_REPORT_OWN);
+	if (template.safe_marked_at !== null)
+		throw svelteApiError(ETemplateError.TEMPLATE_SAFE);
+	if (existing) throw svelteApiError(ETemplateError.ALREADY_REPORTED);
 }

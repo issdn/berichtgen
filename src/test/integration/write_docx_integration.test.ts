@@ -3,32 +3,33 @@
  * Exercises docx-templates + QuickJS without touching the browser download API.
  */
 
-import { describe, test, expect } from 'vitest';
-import { getQuickJS } from 'quickjs-emscripten';
-import { generateReportBytes } from '$wizard/write/write_docx';
-import { Ort } from '$wizard/enums';
-import type { Entry } from '$wizard/types';
-import * as fs from 'node:fs';
-import JSZip from 'jszip';
 import type { KyselyDatabase } from '$lib/schema';
+import type { Entry } from '$wizard/types';
+
+import { Ort } from '$wizard/enums';
+import { generateReportBytes } from '$wizard/write/write_docx';
+import JSZip from 'jszip';
+import * as fs from 'node:fs';
+import { getQuickJS } from 'quickjs-emscripten';
+import { describe, expect, test } from 'vitest';
 
 const TEMPLATE_PATH = './src/test/fixtures/template.docx';
 
 const entries = [
 	{
-		qualifikationen: ['Allgemeinbildende Fächer'],
-		text: 'Test Eintrag',
 		datum: '2025-01-06',
 		ort: Ort.SCHULE,
-		stunden: 40
+		qualifikationen: ['Allgemeinbildende Fächer'],
+		stunden: 40,
+		text: 'Test Eintrag'
 	}
 ];
 
 const userMetadata: KyselyDatabase['user_metadata'] = {
-	user_id: 'test-user',
-	full_name: 'Max Mustermann',
+	abteilung: 'IT',
 	ausbildungsberuf: 'Fachinformatiker',
-	abteilung: 'IT'
+	full_name: 'Max Mustermann',
+	user_id: 'test-user'
 };
 
 describe('generateReportBytes integration', () => {

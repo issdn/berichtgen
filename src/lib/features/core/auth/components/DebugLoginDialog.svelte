@@ -22,9 +22,6 @@
 	let open = $state(false);
 
 	const form = superForm(defaults(zod4(debugLoginSchema)), {
-		SPA: true,
-		validators: zod4(debugLoginSchema),
-		validationMethod: 'oninput',
 		async onUpdate({ form }) {
 			if (!form.valid) return;
 			const { error } = await page.data.supabase.auth.signInWithPassword({
@@ -37,10 +34,13 @@
 			}
 			open = false;
 			goto(resolve('/board'), { invalidateAll: true });
-		}
+		},
+		SPA: true,
+		validationMethod: 'oninput',
+		validators: zod4(debugLoginSchema)
 	});
 
-	const { form: formData, enhance, submitting } = form;
+	const { enhance, form: formData, submitting } = form;
 </script>
 
 <Dialog.Root bind:open>

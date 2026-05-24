@@ -8,22 +8,22 @@
  * into SvelteKit remote functions.
  */
 
-import db from '$lib/server/db';
-import * as Sentry from '@sentry/sveltekit';
+import { env } from '$env/dynamic/private';
+import { GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
+import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
 import { BerichtgenError, ECommonServerError } from '$lib/errors';
 import { tryResult, tryResultAsync } from '$lib/result';
+import db from '$lib/server/db';
+import { itemToContentPart, runCompletion } from '$wizard/completion/gemini';
 import { ECompletionException, EWizardError } from '$wizard/errors';
 import {
 	type BatchCompletionApiResponse,
 	type BatchCompletionItem
 } from '$wizard/schemas';
-import { itemToContentPart, runCompletion } from '$wizard/completion/gemini';
-import { GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
-import { env } from '$env/dynamic/private';
-import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
-import * as genai from '@google/genai';
-import { sql } from 'kysely';
 import { Storage } from '@google-cloud/storage';
+import * as genai from '@google/genai';
+import * as Sentry from '@sentry/sveltekit';
+import { sql } from 'kysely';
 
 /**
  * Checks whether a template with the given storage path still exists in the database.
@@ -66,16 +66,16 @@ export async function runBatchCompletion(
 	const modelLocation = env.GEMINI_MODEL_LOCATION ?? MODEL_LOCATION;
 
 	const ai = new genai.GoogleGenAI({
-		vertexai: true,
-		location: modelLocation,
-		project: credentials.project_id,
 		googleAuthOptions: {
 			credentials: {
 				client_email: credentials.client_email,
 				private_key: credentials.private_key
 			},
 			projectId: credentials.project_id
-		}
+		},
+		location: modelLocation,
+		project: credentials.project_id,
+		vertexai: true
 	});
 
 	const tokenCounts = await Promise.all(
@@ -108,8 +108,8 @@ export async function runBatchCompletion(
 		throw new BerichtgenError(ECompletionException.UNKNOWN_THIRD_PARTY_ERROR);
 	}
 
-	const { results, parseErrorCount } = parseGeminiResponses(
-		geminiResults as PromiseFulfilledResult<string[] | null>[],
+	const { parseErrorCount, results } = parseGeminiResponses(
+		geminiResults as PromiseFulfilledResult<null | string[]>[],
 		budget.fittingIndices,
 		items.length
 	);
@@ -122,8 +122,8 @@ export async function runBatchCompletion(
 	await deleteProcessedGcsFilesBestEffort(items, budget.fittingIndices, userId);
 
 	return {
-		results,
-		insufficient_tokens: budget.insufficientTokens
+		insufficient_tokens: budget.insufficientTokens,
+		results
 	};
 }
 
@@ -134,47 +134,10 @@ async function countItemTokens(
 ): Promise<number> {
 	const part = itemToContentPart(item);
 	const result = await ai.models.countTokens({
-		model,
-		contents: [{ parts: [part] }]
+		contents: [{ parts: [part] }],
+		model
 	});
 	return result.totalTokens ?? 0;
-}
-
-async function readUserBalance(userId: string): Promise<number | undefined> {
-	const row = await db
-		.selectFrom('user_token_count')
-		.select('tokens')
-		.where('user_id', '=', userId)
-		.executeTakeFirst();
-	return row?.tokens;
-}
-
-function selectItemsWithinBudget(
-	tokenCounts: number[],
-	availableTokens: number
-): {
-	fittingIndices: number[];
-	totalTokens: number;
-	insufficientTokens: boolean;
-} {
-	const fittingIndices: number[] = [];
-	let totalTokens = 0;
-	let remaining = availableTokens;
-
-	for (let i = 0; i < tokenCounts.length; i++) {
-		const cost = tokenCounts[i];
-		if (cost && remaining >= cost) {
-			fittingIndices.push(i);
-			totalTokens += cost;
-			remaining -= cost;
-		}
-	}
-
-	return {
-		fittingIndices,
-		totalTokens,
-		insufficientTokens: fittingIndices.length < tokenCounts.length
-	};
 }
 
 async function deductUserTokens(userId: string, amount: number): Promise<void> {
@@ -196,46 +159,6 @@ async function deductUserTokens(userId: string, amount: number): Promise<void> {
 			.where('user_id', '=', userId)
 			.execute();
 	});
-}
-
-async function refundUserTokens(userId: string, amount: number): Promise<void> {
-	if (amount <= 0) return;
-	await db
-		.updateTable('user_token_count')
-		.set({ tokens: sql`tokens + ${amount}` })
-		.where('user_id', '=', userId)
-		.execute();
-}
-
-function parseGeminiResponses(
-	settled: PromiseFulfilledResult<string[] | null>[],
-	fittingIndices: number[],
-	totalItems: number
-): { results: (string[] | null)[]; parseErrorCount: number } {
-	const results: (string[] | null)[] = new Array(totalItems).fill(null);
-	let parseErrorCount = 0;
-
-	for (let i = 0; i < fittingIndices.length; i++) {
-		const parsed = settled[i].value;
-		if (parsed === null) {
-			parseErrorCount++;
-			Sentry.captureMessage(
-				'Gemini response could not be parsed for a batch item'
-			);
-			continue;
-		}
-		results[fittingIndices[i]] = parsed;
-	}
-
-	return { results, parseErrorCount };
-}
-
-function parseGsUri(
-	fileUri: string
-): { bucket: string; objectPath: string } | null {
-	const match = /^gs:\/\/([^/]+)\/(.+)$/.exec(fileUri);
-	if (!match) return null;
-	return { bucket: match[1], objectPath: match[2] };
 }
 
 async function deleteProcessedGcsFilesBestEffort(
@@ -286,9 +209,86 @@ async function deleteProcessedGcsFilesBestEffort(
 			);
 			if (!deleteResult.ok) {
 				Sentry.captureException(deleteResult.error, {
-					extra: { uri, objectPath: parsed.objectPath }
+					extra: { objectPath: parsed.objectPath, uri }
 				});
 			}
 		})
 	);
+}
+
+function parseGeminiResponses(
+	settled: PromiseFulfilledResult<null | string[]>[],
+	fittingIndices: number[],
+	totalItems: number
+): { parseErrorCount: number; results: (null | string[])[]; } {
+	const results: (null | string[])[] = new Array(totalItems).fill(null);
+	let parseErrorCount = 0;
+
+	for (let i = 0; i < fittingIndices.length; i++) {
+		const parsed = settled[i].value;
+		if (parsed === null) {
+			parseErrorCount++;
+			Sentry.captureMessage(
+				'Gemini response could not be parsed for a batch item'
+			);
+			continue;
+		}
+		results[fittingIndices[i]] = parsed;
+	}
+
+	return { parseErrorCount, results };
+}
+
+function parseGsUri(
+	fileUri: string
+): null | { bucket: string; objectPath: string } {
+	const match = /^gs:\/\/([^/]+)\/(.+)$/.exec(fileUri);
+	if (!match) return null;
+	return { bucket: match[1], objectPath: match[2] };
+}
+
+async function readUserBalance(userId: string): Promise<number | undefined> {
+	const row = await db
+		.selectFrom('user_token_count')
+		.select('tokens')
+		.where('user_id', '=', userId)
+		.executeTakeFirst();
+	return row?.tokens;
+}
+
+async function refundUserTokens(userId: string, amount: number): Promise<void> {
+	if (amount <= 0) return;
+	await db
+		.updateTable('user_token_count')
+		.set({ tokens: sql`tokens + ${amount}` })
+		.where('user_id', '=', userId)
+		.execute();
+}
+
+function selectItemsWithinBudget(
+	tokenCounts: number[],
+	availableTokens: number
+): {
+	fittingIndices: number[];
+	insufficientTokens: boolean;
+	totalTokens: number;
+} {
+	const fittingIndices: number[] = [];
+	let totalTokens = 0;
+	let remaining = availableTokens;
+
+	for (let i = 0; i < tokenCounts.length; i++) {
+		const cost = tokenCounts[i];
+		if (cost && remaining >= cost) {
+			fittingIndices.push(i);
+			totalTokens += cost;
+			remaining -= cost;
+		}
+	}
+
+	return {
+		fittingIndices,
+		insufficientTokens: fittingIndices.length < tokenCounts.length,
+		totalTokens
+	};
 }

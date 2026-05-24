@@ -1,13 +1,15 @@
 <script lang="ts">
-	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import type { getTemplates } from '$templates/api/templates.remote';
+
+	import berichtgenStore from '$core/stores/berichtgen.svelte';
+	import * as Empty from '$ui/empty';
 	import EmptyError from '$ui/EmptyError.svelte';
+	import ProgressBar from '$ui/ProgressBar.svelte';
+	import { ScrollArea } from '$ui/scroll-area';
 	import { Skeleton } from '$ui/skeleton';
 	import { Spinner } from '$ui/spinner';
+
 	import Template from './Template.svelte';
-	import { ScrollArea } from '$ui/scroll-area';
-	import ProgressBar from '$ui/ProgressBar.svelte';
-	import * as Empty from '$ui/empty';
 
 	/** Resolved type of a single template row. */
 	type TemplateItem = Awaited<
@@ -19,20 +21,20 @@
 
 	/** Discriminated union so error state is always explicit. */
 	type PageResult =
-		| { ok: true; data: PageData }
-		| { ok: false; error: unknown };
+		| { data: PageData; ok: true; }
+		| { error: unknown; ok: false; };
 
 	const {
-		pages,
+		mutationCount = 0,
 		onLoadMore,
-		mutationCount = 0
+		pages
 	}: {
-		/** Unawaited page queries owned by the parent. One entry per loaded page. */
-		pages: ReturnType<typeof getTemplates>[];
-		/** Called with the last template's ID when the user scrolls near the bottom. */
-		onLoadMore: (afterId: string) => void;
 		/** Number of in-flight mutations signalled by descendants via context. */
 		mutationCount?: number;
+		/** Called with the last template's ID when the user scrolls near the bottom. */
+		onLoadMore: (afterId: string) => void;
+		/** Unawaited page queries owned by the parent. One entry per loaded page. */
+		pages: ReturnType<typeof getTemplates>[];
 	} = $props();
 
 	/**
@@ -40,7 +42,7 @@
 	 * null = nothing has loaded yet (first mount). Drives the outer state checks
 	 * (skeleton / error / empty) so no async await is needed in the template.
 	 */
-	let lastPageSnapshot = $state<PageResult | null>(null);
+	let lastPageSnapshot = $state<null | PageResult>(null);
 
 	/**
 	 * The page queries currently being rendered. Updated only AFTER the last page
@@ -75,12 +77,12 @@
 			.at(-1)!
 			.then((data) => {
 				displayPages = snapshot;
-				lastPageSnapshot = { ok: true, data };
+				lastPageSnapshot = { data, ok: true };
 				isListLoading = false;
 				pendingLoadMore = false;
 			})
 			.catch((e) => {
-				lastPageSnapshot = { ok: false, error: e };
+				lastPageSnapshot = { error: e, ok: false };
 				isListLoading = false;
 				pendingLoadMore = false;
 			});

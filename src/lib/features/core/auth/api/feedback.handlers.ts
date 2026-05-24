@@ -1,7 +1,7 @@
 import { ECommonServerError, svelteApiError } from '$lib/errors';
-import db from '$lib/server/db';
-import { tryResultAsync } from '$lib/result';
 import { BerichtgenError } from '$lib/errors';
+import { tryResultAsync } from '$lib/result';
+import db from '$lib/server/db';
 
 export async function submitFeedback(
 	{ message }: { message: string },
@@ -13,8 +13,8 @@ export async function submitFeedback(
 		db
 			.insertInto('user_feedback')
 			.values({
-				user_id: userId!,
-				message
+				message,
+				user_id: userId!
 			})
 			.execute(),
 		BerichtgenError,

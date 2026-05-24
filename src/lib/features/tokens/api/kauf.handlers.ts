@@ -8,40 +8,19 @@
  * into SvelteKit remote functions.
  */
 
-import Stripe from 'stripe';
 import { STRIPE_SECRET_KEY } from '$env/static/private';
-import * as Sentry from '@sentry/sveltekit';
-import db from '$lib/server/db';
+import { PRICE_PER_MILLION_TOKENS_CENTS } from '$lib/constants';
 import {
 	BerichtgenError,
 	ECommonServerError,
 	svelteApiError
 } from '$lib/errors';
-import { PRICE_PER_MILLION_TOKENS_CENTS } from '$lib/constants';
 import { tryResultAsync } from '$lib/result';
+import db from '$lib/server/db';
+import * as Sentry from '@sentry/sveltekit';
+import Stripe from 'stripe';
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
-
-/**
- * Looks up the user's active cart quantity and creates or returns the
- * corresponding PaymentIntent. Used for the SSR-safe initial page load.
- *
- * @param userId - Validated, authenticated user ID.
- * @returns Client secret and the quantity that was used.
- */
-export async function handleGetPaymentIntent(
-	userId: string
-): Promise<{ clientSecret: string | null; quantity: number }> {
-	const cart = await db
-		.selectFrom('cart')
-		.select('quantity')
-		.where('user_id', '=', userId)
-		.executeTakeFirst();
-
-	const quantity = cart?.quantity ?? 1;
-	const result = await handleCreatePaymentIntent(userId, quantity);
-	return { ...result, quantity };
-}
 
 /**
  * Creates or updates a Stripe PaymentIntent for the given authenticated user.
@@ -56,7 +35,7 @@ export async function handleGetPaymentIntent(
 export async function handleCreatePaymentIntent(
 	userId: string,
 	quantity: number
-): Promise<{ clientSecret: string | null }> {
+): Promise<{ clientSecret: null | string }> {
 	const existing = await db
 		.selectFrom('cart')
 		.select('intent_id')
@@ -108,8 +87,29 @@ export async function handleCreatePaymentIntent(
 
 	await db
 		.insertInto('cart')
-		.values({ intent_id: paymentIntent.id, user_id: userId, quantity })
+		.values({ intent_id: paymentIntent.id, quantity, user_id: userId })
 		.execute();
 
 	return { clientSecret: paymentIntent.client_secret };
+}
+
+/**
+ * Looks up the user's active cart quantity and creates or returns the
+ * corresponding PaymentIntent. Used for the SSR-safe initial page load.
+ *
+ * @param userId - Validated, authenticated user ID.
+ * @returns Client secret and the quantity that was used.
+ */
+export async function handleGetPaymentIntent(
+	userId: string
+): Promise<{ clientSecret: null | string; quantity: number }> {
+	const cart = await db
+		.selectFrom('cart')
+		.select('quantity')
+		.where('user_id', '=', userId)
+		.executeTakeFirst();
+
+	const quantity = cart?.quantity ?? 1;
+	const result = await handleCreatePaymentIntent(userId, quantity);
+	return { ...result, quantity };
 }

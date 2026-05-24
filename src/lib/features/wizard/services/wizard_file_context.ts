@@ -1,15 +1,15 @@
+import type { BerichtgenError } from '$lib/errors';
+
+import { BerichtgenError as BerichtgenErrorClass } from '$lib/errors';
+
+import type { DateRangeSchema } from '../schemas';
 import type { WizardDirectoryEntry } from '../types';
 import type { Entry, ResultEntry } from '../types';
-import type { DateRangeSchema } from '../schemas';
 import type { FileRouting } from './file_routing';
-import type { BerichtgenError } from '$lib/errors';
-import { BerichtgenError as BerichtgenErrorClass } from '$lib/errors';
 import type { WizardPersistedFile } from './types';
 
 export class WizardFileContext {
-	snapshot: FileRouting | Entry[] | ResultEntry[] | undefined;
-
-	finished: ResultEntry[] | null = null;
+	cancelled: boolean = false;
 
 	dateRanges: DateRangeSchema | null = null;
 
@@ -17,7 +17,9 @@ export class WizardFileContext {
 
 	file: WizardDirectoryEntry;
 
-	cancelled: boolean = false;
+	finished: null | ResultEntry[] = null;
+
+	snapshot: Entry[] | FileRouting | ResultEntry[] | undefined;
 
 	constructor(file: WizardDirectoryEntry) {
 		this.file = file;

@@ -1,18 +1,18 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { AsyncResource } from '$core/async.svelte';
+	import { PUBLIC_STRIPE_KEY } from '$env/static/public';
+	import { LANGUAGE_CODE } from '$lib/constants';
+	import { Button } from '$ui/button/index.js';
+	import { failed } from '$ui/snippets.svelte';
+	import { Spinner } from '$ui/spinner/index.js';
 	import {
 		loadStripe,
 		type Stripe,
 		type StripeElements
 	} from '@stripe/stripe-js';
-	import { PUBLIC_STRIPE_KEY } from '$env/static/public';
-	import { Button } from '$ui/button/index.js';
 	import { toast } from 'svelte-sonner';
-	import { Spinner } from '$ui/spinner/index.js';
-	import { resolve } from '$app/paths';
-	import { Elements, Address, PaymentElement } from 'svelte-stripe';
-	import { LANGUAGE_CODE } from '$lib/constants';
-	import { AsyncResource } from '$core/async.svelte';
-	import { failed } from '$ui/snippets.svelte';
+	import { Address, Elements, PaymentElement } from 'svelte-stripe';
 
 	let { clientSecret, total }: { clientSecret: string; total: number } =
 		$props();
@@ -25,11 +25,11 @@
 		}
 
 		const { error: confirmError } = await stripe!.confirmPayment({
-			elements,
 			clientSecret,
 			confirmParams: {
 				return_url: `${window.location.origin}${resolve('/board/user/kauf/callback')}`
-			}
+			},
+			elements
 		});
 
 		if (confirmError) {
@@ -40,9 +40,9 @@
 	let mutation = new AsyncResource(submit, {
 		onError(e) {
 			toast.error(e.message, {
+				closeButton: true,
 				description: e.cause,
-				duration: 10_000,
-				closeButton: true
+				duration: 10_000
 			});
 		}
 		// onSuccess: Stripe redirects the browser to return_url — never reached.
@@ -50,7 +50,7 @@
 
 	// Top-level await — Svelte buffers UI updates until both settle atomically.
 	// The enclosing <svelte:boundary> shows the pending snippet in the meantime.
-	const stripe: Stripe | null = await loadStripe(PUBLIC_STRIPE_KEY, {
+	const stripe: null | Stripe = await loadStripe(PUBLIC_STRIPE_KEY, {
 		locale: LANGUAGE_CODE
 	});
 
@@ -68,7 +68,7 @@
 		locale={LANGUAGE_CODE}
 		stripe={stripe!}
 		{clientSecret}
-		appearance={{ theme: 'night', labels: 'floating' }}
+		appearance={{ labels: 'floating', theme: 'night' }}
 		bind:elements
 	>
 		<div class="flex flex-col gap-y-3">

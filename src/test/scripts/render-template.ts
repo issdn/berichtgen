@@ -5,10 +5,10 @@
  * Usage: bun src/test/scripts/render-template.ts
  */
 
+import { Ort } from '$wizard/enums';
+import { createReport } from 'docx-templates';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createReport } from 'docx-templates';
-import { Ort } from '$wizard/enums';
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -16,20 +16,20 @@ import { Ort } from '$wizard/enums';
 
 const berichte = [
 	{
-		qualifikationen: ['Allgemeinbildende Fächer'],
-		text: 'Im Fach C# Programmierung habe ich gelernt, wie man mit if-Bedingungen einfache Entscheidungsstrukturen programmiert.',
-		datum: '2025-01-06',
+		ausbildungsjahr: '2025',
 		bisDatum: '2025-01-10',
+		datum: '2025-01-06',
 		ort: Ort.SCHULE,
+		qualifikationen: ['Allgemeinbildende Fächer'],
 		stunden: 40,
-		ausbildungsjahr: '2025'
+		text: 'Im Fach C# Programmierung habe ich gelernt, wie man mit if-Bedingungen einfache Entscheidungsstrukturen programmiert.'
 	}
 ];
 
 const userMetadata = {
-	fullName: 'Max Mustermann',
+	abteilung: 'Softwareentwicklung',
 	ausbildungsberuf: 'Fachinformatiker für Anwendungsentwicklung',
-	abteilung: 'Softwareentwicklung'
+	fullName: 'Max Mustermann'
 };
 
 // ---------------------------------------------------------------------------
@@ -44,14 +44,14 @@ const template = new Uint8Array(readFileSync(templatePath));
 
 const result = await createReport({
 	cmdDelimiter: ['{{', '}}'],
-	template,
-	noSandbox: true,
 	data: {
-		berichte,
-		fullName: userMetadata.fullName,
+		abteilung: userMetadata.abteilung,
 		ausbildungsberuf: userMetadata.ausbildungsberuf,
-		abteilung: userMetadata.abteilung
-	}
+		berichte,
+		fullName: userMetadata.fullName
+	},
+	noSandbox: true,
+	template
 });
 
 writeFileSync(outputPath, result);

@@ -1,9 +1,10 @@
-import { Parser } from './parser';
+import type { ImageLike, Scheduler } from 'tesseract.js';
+
+import { EParserError, ParserError } from '$core/parser/errors';
 import { WizardFileContext } from '$wizard/services/wizard_file_context';
-import type { Scheduler, ImageLike } from 'tesseract.js';
-import { ParserError, EParserError } from '$core/parser/errors';
 import { XMLParser } from 'fast-xml-parser';
 import JSZip from 'jszip';
+
 import type {
 	DocxBodyNode,
 	DocxCell,
@@ -16,24 +17,30 @@ import type {
 	DocxTable
 } from './docx_ast';
 
+import { Parser } from './parser';
+
 export type DOCXFileData = {
+	/** Document-level relationships: rId → target bare filename. */
+	docRels: Map<string, string>;
+	/** All footer XML strings keyed by bare filename. */
+	footerXmls: Map<string, string>;
+	/** All header XML strings keyed by bare filename (e.g. "header1.xml"). */
+	headerXmls: Map<string, string>;
 	images: Map<string, Uint8Array<ArrayBufferLike>>;
 	imgRels: Map<string, string>;
-	textsOrRelIds: (string | [string])[];
+	/** Resolved paragraph properties keyed by styleId (inheritance already applied). */
+	stylePprs: Map<string, Record<string, unknown>>;
+	/** Resolved run properties keyed by styleId (inheritance already applied). */
+	styleRprs: Map<string, Record<string, unknown>>;
+	textsOrRelIds: ([string] | string)[];
 	xml: Record<string, unknown>;
 	/** Raw word/document.xml string, kept for the preserveOrder body-ordering pass. */
 	xmlStr: string;
-	/** Resolved run properties keyed by styleId (inheritance already applied). */
-	styleRprs: Map<string, Record<string, unknown>>;
-	/** Resolved paragraph properties keyed by styleId (inheritance already applied). */
-	stylePprs: Map<string, Record<string, unknown>>;
-	/** All header XML strings keyed by bare filename (e.g. "header1.xml"). */
-	headerXmls: Map<string, string>;
-	/** All footer XML strings keyed by bare filename. */
-	footerXmls: Map<string, string>;
-	/** Document-level relationships: rId → target bare filename. */
-	docRels: Map<string, string>;
 };
+
+type CellPadding = { bottom: number; left: number; right: number; top: number; };
+
+// --- helpers ---
 
 export class DOCXParser extends Parser {
 	data: DOCXFileData | null = null;
@@ -50,12 +57,12 @@ export class DOCXParser extends Parser {
 		const zip = new JSZip();
 		const docx = await zip.loadAsync(data);
 		const parser = new XMLParser({
-			ignoreAttributes: false,
 			attributeNamePrefix: '@_',
+			ignoreAttributes: false,
 			trimValues: false
 		});
 
-		const textsOrRelIds: (string | [string])[] = [];
+		const textsOrRelIds: ([string] | string)[] = [];
 
 		const [fileData, stylesData] = await Promise.all([
 			docx.files['word/document.xml'].async('string'),
@@ -103,12 +110,12 @@ export class DOCXParser extends Parser {
 
 		this.data = {
 			...imagesAndRels,
+			docRels,
+			footerXmls,
+			headerXmls,
 			textsOrRelIds,
 			xml,
 			xmlStr: fileData,
-			headerXmls,
-			footerXmls,
-			docRels,
 			...stylesData
 		};
 
@@ -151,8 +158,8 @@ export class DOCXParser extends Parser {
 		// Note: orderedXml is an array that may start with the XML declaration
 		// node, so we must find() the w:document entry rather than using [0].
 		const orderedParser = new XMLParser({
-			ignoreAttributes: false,
 			attributeNamePrefix: '@_',
+			ignoreAttributes: false,
 			preserveOrder: true,
 			trimValues: false
 		});
@@ -204,18 +211,18 @@ export class DOCXParser extends Parser {
 				? Number(pgMar['@_w:footer']) / 20
 				: 35.4;
 		const pageMargins = {
-			top:
-				pgMar?.['@_w:top'] !== undefined ? Number(pgMar['@_w:top']) / 20 : 72,
-			right:
-				pgMar?.['@_w:right'] !== undefined
-					? Number(pgMar['@_w:right']) / 20
-					: 90,
 			bottom:
 				pgMar?.['@_w:bottom'] !== undefined
 					? Number(pgMar['@_w:bottom']) / 20
 					: 72,
 			left:
-				pgMar?.['@_w:left'] !== undefined ? Number(pgMar['@_w:left']) / 20 : 90
+				pgMar?.['@_w:left'] !== undefined ? Number(pgMar['@_w:left']) / 20 : 90,
+			right:
+				pgMar?.['@_w:right'] !== undefined
+					? Number(pgMar['@_w:right']) / 20
+					: 90,
+			top:
+				pgMar?.['@_w:top'] !== undefined ? Number(pgMar['@_w:top']) / 20 : 72
 		};
 
 		// Default font size from w:docDefaults rPr (half-points → pt).
@@ -225,8 +232,8 @@ export class DOCXParser extends Parser {
 
 		// Resolve default header/footer via sectPr > w:headerReference / w:footerReference.
 		const hfParser = new XMLParser({
-			ignoreAttributes: false,
 			attributeNamePrefix: '@_',
+			ignoreAttributes: false,
 			trimValues: false
 		});
 		const parseHF = (
@@ -264,18 +271,83 @@ export class DOCXParser extends Parser {
 
 		return {
 			body: orderedNodes,
-			images: this.data.images as Map<string, Uint8Array>,
-			imgRels: this.data.imgRels,
-			pageWidth,
-			pageHeight,
-			pageMargins,
-			headerDistance,
-			footerDistance,
 			defaultFontSize,
 			fontsUsed,
+			footer: footer.length ? footer : undefined,
+			footerDistance,
 			header: header.length ? header : undefined,
-			footer: footer.length ? footer : undefined
+			headerDistance,
+			images: this.data.images as Map<string, Uint8Array>,
+			imgRels: this.data.imgRels,
+			pageHeight,
+			pageMargins,
+			pageWidth
 		};
+	}
+
+	private async findAllWT(
+		obj: Record<string, unknown>,
+		results: ([string] | string)[] = [],
+		withImages: boolean
+	) {
+		if (typeof obj === 'object') {
+			for (const key in obj) {
+				if (key === 'w:t') {
+					const text = obj[key] as string;
+					if (text.length > 3) results.push(text);
+				} else if (key === 'a:blip' && withImages) {
+					results.push([(obj[key] as Record<string, string>)['@_r:embed']]);
+				} else {
+					this.findAllWT(
+						obj[key] as Record<string, unknown>,
+						results,
+						withImages
+					);
+				}
+			}
+		}
+		return results;
+	}
+
+	private async mapImagesToRels(docx: JSZip, parser: XMLParser) {
+		const images: Map<string, Uint8Array> = new Map();
+		const imgRels: Map<string, string> = new Map();
+
+		const mediaFiles = Object.keys(docx.files).filter(
+			(fileName) =>
+				fileName.startsWith('word/media/') || fileName.startsWith('media/')
+		);
+
+		const relsFiles = Object.keys(docx.files).filter(
+			(fileName) =>
+				fileName.startsWith('word/_rels/document.xml.rels') ||
+				fileName.startsWith('_rels/document.xml.rels')
+		);
+
+		await Promise.all(
+			mediaFiles.map(async (fileName) => {
+				const fileData = await docx.files[fileName].async('uint8array');
+				images.set(fileName.split('/').at(-1)!, fileData);
+			})
+		);
+
+		await Promise.all(
+			relsFiles.map(async (fileName) => {
+				const fileData = await docx.files[fileName].async('string');
+				const xml = parser.parse(fileData);
+
+				for (const rel of xml.Relationships.Relationship) {
+					if (
+						rel['@_Target'].startsWith('media/image') ||
+						rel['@_Target'].startsWith('/media/image')
+					) {
+						imgRels.set(rel['@_Id'], rel['@_Target'].split('/').at(-1)!);
+					}
+				}
+			})
+		);
+
+		return { images, imgRels };
 	}
 
 	private mapParagraph(
@@ -316,13 +388,13 @@ export class DOCXParser extends Parser {
 		let lineSpacing: DocxParagraph['lineSpacing'];
 		if (spacingNode?.['@_w:line'] !== undefined) {
 			const rawRule = spacingNode['@_w:lineRule'] as string | undefined;
-			const rule: 'auto' | 'exact' | 'atLeast' =
+			const rule: 'atLeast' | 'auto' | 'exact' =
 				rawRule === 'exact'
 					? 'exact'
 					: rawRule === 'atLeast'
 						? 'atLeast'
 						: 'auto';
-			lineSpacing = { value: Number(spacingNode['@_w:line']), rule };
+			lineSpacing = { rule, value: Number(spacingNode['@_w:line']) };
 		}
 
 		// Left indent.
@@ -343,7 +415,7 @@ export class DOCXParser extends Parser {
 			const ilvl = Number(
 				(rawNumPr['w:ilvl'] as Record<string, unknown>)?.['@_w:val'] ?? 0
 			);
-			numPr = { numId, ilvl };
+			numPr = { ilvl, numId };
 		}
 
 		const runs: DocxInline[] = [];
@@ -356,7 +428,7 @@ export class DOCXParser extends Parser {
 			if (drawing) {
 				const relId = findBlipEmbed(drawing);
 				if (relId) {
-					runs.push({ type: 'image', relId } satisfies DocxImage);
+					runs.push({ relId, type: 'image' } satisfies DocxImage);
 					continue;
 				}
 			}
@@ -378,29 +450,29 @@ export class DOCXParser extends Parser {
 			if (fontFamily) fontsUsed.add(fontFamily);
 
 			runs.push({
-				type: 'run',
-				text,
 				bold: hasProp(effectiveRpr, 'w:b'),
-				italic: hasProp(effectiveRpr, 'w:i'),
-				underline: hasProp(effectiveRpr, 'w:u'),
 				color: (
 					effectiveRpr['w:color'] as Record<string, string> | undefined
 				)?.['@_w:val'],
+				fontFamily: fontFamily || undefined,
+				italic: hasProp(effectiveRpr, 'w:i'),
 				size: numVal(effectiveRpr['w:sz']),
-				fontFamily: fontFamily || undefined
+				text,
+				type: 'run',
+				underline: hasProp(effectiveRpr, 'w:u')
 			} satisfies DocxRun);
 		}
 
 		return {
-			type: 'paragraph',
-			style,
 			alignment,
-			numPr,
-			spacingBefore,
-			spacingAfter,
 			indent,
 			lineSpacing,
-			runs
+			numPr,
+			runs,
+			spacingAfter,
+			spacingBefore,
+			style,
+			type: 'paragraph'
 		};
 	}
 
@@ -479,21 +551,21 @@ export class DOCXParser extends Parser {
 					this.mapParagraph(p as Record<string, unknown>, fontsUsed)
 				);
 				cells.push({
-					paragraphs,
-					colspan: colspan && colspan > 1 ? colspan : undefined,
-					rowspan,
 					bgColor: cellBg,
+					colspan: colspan && colspan > 1 ? colspan : undefined,
 					padding: cellMar,
+					paragraphs,
+					rowspan,
 					vAlign
 				} satisfies DocxCell);
 			}
-			rows.push({ cells, height, bgColor: rowBg });
+			rows.push({ bgColor: rowBg, cells, height });
 		}
 		const tableWidth = colWidths?.reduce((sum, w) => sum + w, 0);
-		return { type: 'table', rows, colWidths, tableWidth };
+		return { colWidths, rows, tableWidth, type: 'table' };
 	}
 
-	private async parseChunk(textOrId: string | [string]) {
+	private async parseChunk(textOrId: [string] | string) {
 		if (Array.isArray(textOrId)) {
 			const rel = this.data!.imgRels.get(textOrId[0]);
 			if (rel === undefined) {
@@ -517,44 +589,20 @@ export class DOCXParser extends Parser {
 		}
 	}
 
-	private async findAllWT(
-		obj: Record<string, unknown>,
-		results: (string | [string])[] = [],
-		withImages: boolean
-	) {
-		if (typeof obj === 'object') {
-			for (const key in obj) {
-				if (key === 'w:t') {
-					const text = obj[key] as string;
-					if (text.length > 3) results.push(text);
-				} else if (key === 'a:blip' && withImages) {
-					results.push([(obj[key] as Record<string, string>)['@_r:embed']]);
-				} else {
-					this.findAllWT(
-						obj[key] as Record<string, unknown>,
-						results,
-						withImages
-					);
-				}
-			}
-		}
-		return results;
-	}
-
 	private async parseStyles(
 		docx: JSZip,
 		parser: XMLParser
 	): Promise<{
-		styleRprs: Map<string, Record<string, unknown>>;
 		stylePprs: Map<string, Record<string, unknown>>;
+		styleRprs: Map<string, Record<string, unknown>>;
 	}> {
 		const stylesFile = docx.files['word/styles.xml'];
-		if (!stylesFile) return { styleRprs: new Map(), stylePprs: new Map() };
+		if (!stylesFile) return { stylePprs: new Map(), styleRprs: new Map() };
 
 		const fileData = await stylesFile.async('string');
 		const xml = parser.parse(fileData) as Record<string, unknown>;
 		const stylesRoot = xml['w:styles'] as Record<string, unknown> | undefined;
-		if (!stylesRoot) return { styleRprs: new Map(), stylePprs: new Map() };
+		if (!stylesRoot) return { stylePprs: new Map(), styleRprs: new Map() };
 
 		// Document-level defaults used as the base of all inheritance chains.
 		const docDefaults = stylesRoot['w:docDefaults'] as
@@ -568,9 +616,9 @@ export class DOCXParser extends Parser {
 		)?.['w:pPr'] ?? {}) as Record<string, unknown>;
 
 		type RawStyle = {
-			rPr: Record<string, unknown>;
-			pPr: Record<string, unknown>;
 			basedOn?: string;
+			pPr: Record<string, unknown>;
+			rPr: Record<string, unknown>;
 		};
 		const rawStyles = new Map<string, RawStyle>();
 
@@ -579,11 +627,11 @@ export class DOCXParser extends Parser {
 			const styleId = s['@_w:styleId'] as string | undefined;
 			if (!styleId) continue;
 			rawStyles.set(styleId, {
-				rPr: (s['w:rPr'] as Record<string, unknown>) ?? {},
-				pPr: (s['w:pPr'] as Record<string, unknown>) ?? {},
 				basedOn: (s['w:basedOn'] as Record<string, string> | undefined)?.[
 					'@_w:val'
-				]
+				],
+				pPr: (s['w:pPr'] as Record<string, unknown>) ?? {},
+				rPr: (s['w:rPr'] as Record<string, unknown>) ?? {}
 			});
 		}
 
@@ -626,52 +674,21 @@ export class DOCXParser extends Parser {
 			resolvePpr(styleId);
 		}
 
-		return { styleRprs: resolvedRprs, stylePprs: resolvedPprs };
-	}
-
-	private async mapImagesToRels(docx: JSZip, parser: XMLParser) {
-		const images: Map<string, Uint8Array> = new Map();
-		const imgRels: Map<string, string> = new Map();
-
-		const mediaFiles = Object.keys(docx.files).filter(
-			(fileName) =>
-				fileName.startsWith('word/media/') || fileName.startsWith('media/')
-		);
-
-		const relsFiles = Object.keys(docx.files).filter(
-			(fileName) =>
-				fileName.startsWith('word/_rels/document.xml.rels') ||
-				fileName.startsWith('_rels/document.xml.rels')
-		);
-
-		await Promise.all(
-			mediaFiles.map(async (fileName) => {
-				const fileData = await docx.files[fileName].async('uint8array');
-				images.set(fileName.split('/').at(-1)!, fileData);
-			})
-		);
-
-		await Promise.all(
-			relsFiles.map(async (fileName) => {
-				const fileData = await docx.files[fileName].async('string');
-				const xml = parser.parse(fileData);
-
-				for (const rel of xml.Relationships.Relationship) {
-					if (
-						rel['@_Target'].startsWith('media/image') ||
-						rel['@_Target'].startsWith('/media/image')
-					) {
-						imgRels.set(rel['@_Id'], rel['@_Target'].split('/').at(-1)!);
-					}
-				}
-			})
-		);
-
-		return { images, imgRels };
+		return { stylePprs: resolvedPprs, styleRprs: resolvedRprs };
 	}
 }
 
-// --- helpers ---
+function findBlipEmbed(drawing: Record<string, unknown>): string | undefined {
+	if (typeof drawing !== 'object' || drawing === null) return undefined;
+	for (const key of Object.keys(drawing)) {
+		if (key === 'a:blip') {
+			return (drawing[key] as Record<string, string>)['@_r:embed'];
+		}
+		const nested = findBlipEmbed(drawing[key] as Record<string, unknown>);
+		if (nested) return nested;
+	}
+	return undefined;
+}
 
 function hasPageBreak(p: Record<string, unknown>): boolean {
 	// Also detect w:pageBreakBefore on the paragraph itself.
@@ -690,11 +707,6 @@ function hasPageBreak(p: Record<string, unknown>): boolean {
 	});
 }
 
-function toArray<T>(val: T | T[] | undefined | null): T[] {
-	if (val === undefined || val === null) return [];
-	return Array.isArray(val) ? val : [val];
-}
-
 function hasProp(obj: unknown, key: string): boolean {
 	return obj !== null && typeof obj === 'object' && key in obj;
 }
@@ -705,12 +717,10 @@ function numVal(obj: unknown): number | undefined {
 	return v !== undefined ? Number(v) : undefined;
 }
 
-type CellPadding = { top: number; right: number; bottom: number; left: number };
-
 /** Parses a w:tcMar or w:tblCellMar node into pt values (twips ÷ 20). */
 function parseCellMar(
 	mar: Record<string, unknown> | undefined,
-	fallback: CellPadding = { top: 0, right: 0, bottom: 0, left: 0 }
+	fallback: CellPadding = { bottom: 0, left: 0, right: 0, top: 0 }
 ): CellPadding {
 	if (!mar) return fallback;
 	const edge = (key: string, def: number) => {
@@ -718,10 +728,10 @@ function parseCellMar(
 		return node?.['@_w:w'] !== undefined ? Number(node['@_w:w']) / 20 : def;
 	};
 	return {
-		top: edge('w:top', fallback.top),
-		right: edge('w:right', fallback.right),
 		bottom: edge('w:bottom', fallback.bottom),
-		left: edge('w:left', fallback.left)
+		left: edge('w:left', fallback.left),
+		right: edge('w:right', fallback.right),
+		top: edge('w:top', fallback.top)
 	};
 }
 
@@ -732,14 +742,7 @@ function shdFill(shd: Record<string, unknown> | undefined): string | undefined {
 	return fill && fill !== 'auto' ? fill : undefined;
 }
 
-function findBlipEmbed(drawing: Record<string, unknown>): string | undefined {
-	if (typeof drawing !== 'object' || drawing === null) return undefined;
-	for (const key of Object.keys(drawing)) {
-		if (key === 'a:blip') {
-			return (drawing[key] as Record<string, string>)['@_r:embed'];
-		}
-		const nested = findBlipEmbed(drawing[key] as Record<string, unknown>);
-		if (nested) return nested;
-	}
-	return undefined;
+function toArray<T>(val: null | T | T[] | undefined): T[] {
+	if (val === undefined || val === null) return [];
+	return Array.isArray(val) ? val : [val];
 }

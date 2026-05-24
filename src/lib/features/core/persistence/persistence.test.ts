@@ -1,11 +1,11 @@
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 type StoreRecord = {
+	data: unknown;
 	key: string;
 	scope: string;
-	version: number;
 	updatedAt: number;
-	data: unknown;
+	version: number;
 };
 
 function createIndexedDbMock() {
@@ -13,33 +13,33 @@ function createIndexedDbMock() {
 
 	function makeDb() {
 		return {
+			createObjectStore: vi.fn(),
 			objectStoreNames: {
 				contains: (_name: string) => true
 			},
-			createObjectStore: vi.fn(),
 			transaction: (_store: string, _mode: 'readonly' | 'readwrite') => {
 				const tx: {
+					objectStore: (_name: string) => {
+						delete: (key: string) => void;
+						get: (key: string) => {
+							onerror?: () => void;
+							onsuccess?: () => void;
+						};
+						put: (value: StoreRecord) => void;
+					};
 					oncomplete?: () => void;
 					onerror?: () => void;
-					objectStore: (_name: string) => {
-						put: (value: StoreRecord) => void;
-						get: (key: string) => {
-							onsuccess?: () => void;
-							onerror?: () => void;
-						};
-						delete: (key: string) => void;
-					};
 				} = {
 					objectStore: () => ({
-						put: (value: StoreRecord) => {
-							store.set(value.key, value);
+						delete: (key: string) => {
+							store.delete(key);
 							queueMicrotask(() => tx.oncomplete?.());
 						},
 						get: (key: string) => {
 							const req: {
-								result?: StoreRecord;
-								onsuccess?: () => void;
 								onerror?: () => void;
+								onsuccess?: () => void;
+								result?: StoreRecord;
 							} = {};
 							queueMicrotask(() => {
 								req.result = store.get(key);
@@ -47,8 +47,8 @@ function createIndexedDbMock() {
 							});
 							return req;
 						},
-						delete: (key: string) => {
-							store.delete(key);
+						put: (value: StoreRecord) => {
+							store.set(value.key, value);
 							queueMicrotask(() => tx.oncomplete?.());
 						}
 					})
@@ -61,10 +61,10 @@ function createIndexedDbMock() {
 	const indexedDB = {
 		open: vi.fn((_name: string, _version: number) => {
 			const req: {
-				result?: ReturnType<typeof makeDb>;
-				onupgradeneeded?: () => void;
-				onsuccess?: () => void;
 				onerror?: () => void;
+				onsuccess?: () => void;
+				onupgradeneeded?: () => void;
+				result?: ReturnType<typeof makeDb>;
 			} = {};
 
 			queueMicrotask(() => {

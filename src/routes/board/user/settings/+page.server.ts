@@ -1,14 +1,14 @@
-import { fail, message, superValidate } from 'sveltekit-superforms';
-import { zod4 } from 'sveltekit-superforms/adapters';
-import { redirect, type Actions } from '@sveltejs/kit';
-import * as Sentry from '@sentry/sveltekit';
+import { profileNameSchema, userMetadataSchema } from '$core/settings/schemas';
 import { BerichtgenError, ECommonServerError } from '$lib/errors';
+import { tryResultAsync } from '$lib/result';
 import { supabaseAdmin } from '$lib/server/admin';
 import db from '$lib/server/db';
-import { profileNameSchema, userMetadataSchema } from '$core/settings/schemas';
-import { tryResultAsync } from '$lib/result';
+import * as Sentry from '@sentry/sveltekit';
+import { type Actions, redirect } from '@sveltejs/kit';
+import { fail, message, superValidate } from 'sveltekit-superforms';
+import { zod4 } from 'sveltekit-superforms/adapters';
 
-export const load = async ({ parent, locals: { user } }) => {
+export const load = async ({ locals: { user }, parent }) => {
 	const { tokenCount } = await parent();
 
 	const [userMetadataForm, profileNameForm, userMetadata, profile] =
@@ -29,9 +29,9 @@ export const load = async ({ parent, locals: { user } }) => {
 
 	if (userMetadata) {
 		userMetadataForm.data = {
-			fullName: userMetadata.full_name ?? '',
+			abteilung: userMetadata.abteilung ?? '',
 			ausbildungsberuf: userMetadata.ausbildungsberuf ?? '',
-			abteilung: userMetadata.abteilung ?? ''
+			fullName: userMetadata.full_name ?? ''
 		};
 	}
 
@@ -39,11 +39,11 @@ export const load = async ({ parent, locals: { user } }) => {
 		profileNameForm.data = { fullName: profile.full_name ?? '' };
 	}
 
-	return { tokenCount, userMetadataForm, profileNameForm, userMetadata };
+	return { profileNameForm, tokenCount, userMetadata, userMetadataForm };
 };
 
 export const actions: Actions = {
-	removeAccount: async ({ locals: { user, supabase } }) => {
+	removeAccount: async ({ locals: { supabase, user } }) => {
 		const { error: signOutError } = await supabase.auth.signOut();
 		if (signOutError) {
 			return fail(406);
@@ -55,7 +55,41 @@ export const actions: Actions = {
 		}
 		throw redirect(303, '/');
 	},
-	updateProfile: async ({ request, locals: { user } }) => {
+	updateMetadata: async ({ locals: { user }, request }) => {
+		const form = await superValidate(request, zod4(userMetadataSchema));
+
+		if (!form.valid) {
+			return message(form, 'Daten sind ungültig.', { status: 400 });
+		}
+
+		const updateMetadataResult = await tryResultAsync(
+			db
+				.insertInto('user_metadata')
+				.values({
+					abteilung: form.data.abteilung || null,
+					ausbildungsberuf: form.data.ausbildungsberuf || null,
+					full_name: form.data.fullName || null,
+					user_id: user!.id
+				})
+				.onConflict((oc) =>
+					oc.column('user_id').doUpdateSet({
+						abteilung: form.data.abteilung || null,
+						ausbildungsberuf: form.data.ausbildungsberuf || null,
+						full_name: form.data.fullName || null
+					})
+				)
+				.execute(),
+			BerichtgenError,
+			ECommonServerError.DATABASE_ERROR
+		);
+		if (!updateMetadataResult.ok) {
+			Sentry.captureException(updateMetadataResult.error);
+			return message(form, 'Fehler beim Speichern der Daten.', { status: 500 });
+		}
+
+		return message(form, 'Profildaten erfolgreich gespeichert!');
+	},
+	updateProfile: async ({ locals: { user }, request }) => {
 		const form = await superValidate(request, zod4(profileNameSchema));
 
 		if (!form.valid) {
@@ -74,40 +108,6 @@ export const actions: Actions = {
 		if (!updateProfileResult.ok) {
 			Sentry.captureException(updateProfileResult.error);
 			return message(form, 'Fehler beim Speichern.', { status: 500 });
-		}
-
-		return message(form, 'Profildaten erfolgreich gespeichert!');
-	},
-	updateMetadata: async ({ request, locals: { user } }) => {
-		const form = await superValidate(request, zod4(userMetadataSchema));
-
-		if (!form.valid) {
-			return message(form, 'Daten sind ungültig.', { status: 400 });
-		}
-
-		const updateMetadataResult = await tryResultAsync(
-			db
-				.insertInto('user_metadata')
-				.values({
-					user_id: user!.id,
-					full_name: form.data.fullName || null,
-					ausbildungsberuf: form.data.ausbildungsberuf || null,
-					abteilung: form.data.abteilung || null
-				})
-				.onConflict((oc) =>
-					oc.column('user_id').doUpdateSet({
-						full_name: form.data.fullName || null,
-						ausbildungsberuf: form.data.ausbildungsberuf || null,
-						abteilung: form.data.abteilung || null
-					})
-				)
-				.execute(),
-			BerichtgenError,
-			ECommonServerError.DATABASE_ERROR
-		);
-		if (!updateMetadataResult.ok) {
-			Sentry.captureException(updateMetadataResult.error);
-			return message(form, 'Fehler beim Speichern der Daten.', { status: 500 });
 		}
 
 		return message(form, 'Profildaten erfolgreich gespeichert!');

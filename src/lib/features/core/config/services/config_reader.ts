@@ -1,6 +1,7 @@
-import { ParserError, EParserError } from '$core/parser/errors';
-import { type Result, tryResultAsync } from '$lib/result';
 import type { CSVConfig } from '$wizard/types';
+
+import { EParserError, ParserError } from '$core/parser/errors';
+import { type Result, tryResultAsync } from '$lib/result';
 import { Ort } from '$wizard/enums';
 import { csvConfigSchema } from '$wizard/schemas';
 import { parseDate } from '@internationalized/date';
@@ -36,11 +37,11 @@ export function readCsvConfigFromText(text: string): CSVConfig {
 		const ranges = values.map((value) => {
 			const [start, end, stunden] = value.split(';').map((part) => part.trim());
 			return {
-				daterange: { start: parseDate(start), end: parseDate(end) },
+				daterange: { end: parseDate(end), start: parseDate(start) },
 				stunden: stunden ? parseInt(stunden) : undefined
 			};
 		});
-		data.push({ ort, file, ranges });
+		data.push({ file, ort, ranges });
 	}
 
 	return csvConfigSchema.parse(data);

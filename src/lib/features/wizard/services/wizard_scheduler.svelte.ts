@@ -1,35 +1,31 @@
 import type { WizardStep } from '$wizard/enums';
 import type {
 	Entry,
-	WizardDirectoryEntry,
 	WizardDirectories,
+	WizardDirectoryEntry,
 	WizardProcessStateMachine
 } from '$wizard/types';
+
 import type { WizardPersistedFile } from './types';
 
 type FilesStates = Record<WizardStep, number>;
 
 export class WizardScheduler {
-	schedule: WizardProcessStateMachine[] | null = $state(null);
-
-	numberOfFiles = $derived.by(() => {
-		if (this.schedule === null) return 0;
-		return this.schedule.length;
-	});
+	schedule: null | WizardProcessStateMachine[] = $state(null);
 
 	filesStates = $derived.by<FilesStates | null>(() => {
 		if (this.schedule === null) return null;
 
 		const counts: FilesStates = {
+			batch_pending: 0,
+			cancelled: 0,
+			completion: 0,
+			done: 0,
+			error: 0,
 			init: 0,
 			process: 0,
-			waiting: 0,
-			batch_pending: 0,
-			completion: 0,
 			time_spread: 0,
-			done: 0,
-			cancelled: 0,
-			error: 0
+			waiting: 0
 		};
 
 		for (const process of this.schedule) {
@@ -39,12 +35,13 @@ export class WizardScheduler {
 		return counts;
 	});
 
+	numberOfFiles = $derived.by(() => {
+		if (this.schedule === null) return 0;
+		return this.schedule.length;
+	});
+
 	clear() {
 		this.schedule = null;
-	}
-
-	setSchedule(schedule: WizardProcessStateMachine[] | null) {
-		this.schedule = schedule;
 	}
 
 	createSchedule(
@@ -56,7 +53,7 @@ export class WizardScheduler {
 			.map((entry) => createProcess(entry));
 	}
 
-	findById(id: string): WizardProcessStateMachine | undefined {
+	findById(id: string): undefined | WizardProcessStateMachine {
 		return this.schedule?.find((file) => file.id === id);
 	}
 
@@ -66,6 +63,10 @@ export class WizardScheduler {
 			if (context.finished != null) return [...prev, context.finished];
 			return prev;
 		}, [] as Required<Entry>[][]);
+	}
+
+	setSchedule(schedule: null | WizardProcessStateMachine[]) {
+		this.schedule = schedule;
 	}
 
 	toPersistedFiles(): WizardPersistedFile[] {
