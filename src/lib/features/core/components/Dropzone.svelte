@@ -116,6 +116,12 @@
 			await extractAndHandleFiles(dt.files);
 			return;
 		}
+		if (text) {
+			const dt = new DataTransfer();
+			dt.items.add(new File([text], 'clipboard.txt', { type: FileTypes.TXT }));
+			await extractAndHandleFiles(dt.files);
+			return;
+		}
 		if (!e.clipboardData?.files.length) return;
 		await extractAndHandleFiles(e.clipboardData);
 	}

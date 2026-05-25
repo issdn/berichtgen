@@ -14,13 +14,8 @@ import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
 import { BerichtgenError, ECommonServerError } from '$lib/errors';
 import { tryResult, tryResultAsync } from '$lib/result';
 import db from '$lib/server/db';
-import { itemToContentPart, runCompletion } from '$wizard/completion/gemini';
-import {
-	ECompletionException,
-	EGCSError,
-	EWizardError,
-	WizardError
-} from '$wizard/errors';
+import { countItemTokens, runCompletion } from '$wizard/completion/gemini';
+import { ECompletionException, EGCSError, EWizardError } from '$wizard/errors';
 import {
 	type BatchCompletionApiResponse,
 	type BatchCompletionItem
@@ -40,15 +35,14 @@ import { createHash } from 'node:crypto';
 export async function checkPreferredTemplateExists(
 	storagePath: string
 ): Promise<boolean> {
-	const templateResult = await tryResultAsync(
-		db
+	const templateResult = await tryResultAsync({
+		apiError: ECommonServerError.DATABASE_ERROR,
+		promise: db
 			.selectFrom('template')
 			.select('storage_path')
 			.where('storage_path', '=', storagePath)
-			.executeTakeFirst(),
-		BerichtgenError,
-		ECommonServerError.DATABASE_ERROR
-	);
+			.executeTakeFirst()
+	});
 	if (!templateResult.ok) {
 		Sentry.captureException(templateResult.error);
 		return false;
@@ -74,28 +68,26 @@ export async function requestGcsUploadTarget({
 	const objectPath = `${userId}/${hash}`;
 	const fileUri = `gs://${GCS_BUCKET_NAME}/${objectPath}`;
 
-	const storageResult = tryResult(
-		() => {
+	const storageResult = tryResult({
+		apiError: ECommonServerError.INTERNAL_ERROR,
+		run: () => {
 			const credentials = JSON.parse(
 				GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, '')
 			);
 			return new Storage({ credentials });
-		},
-		WizardError,
-		ECommonServerError.INTERNAL_ERROR
-	);
+		}
+	});
 	if (!storageResult.ok) throw storageResult.error;
 
-	const signedUploadResult = await tryResultAsync(
-		createSignedUploadPayload({
+	const signedUploadResult = await tryResultAsync({
+		apiError: EGCSError.INTERNAL_SERVER_ERROR,
+		promise: createSignedUploadPayload({
 			contentType,
 			fileUri,
 			objectPath,
 			storage: storageResult.data
-		}),
-		BerichtgenError,
-		EGCSError.INTERNAL_SERVER_ERROR
-	);
+		})
+	});
 	if (!signedUploadResult.ok) throw signedUploadResult.error;
 
 	return signedUploadResult.data;
@@ -105,11 +97,12 @@ export async function runBatchCompletion(
 	items: BatchCompletionItem[],
 	userId: string
 ): Promise<BatchCompletionApiResponse> {
-	const credentialsResult = await tryResultAsync(
-		Promise.resolve(JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''))),
-		BerichtgenError,
-		ECompletionException.INTERNAL
-	);
+	const credentialsResult = await tryResultAsync({
+		apiError: ECompletionException.INTERNAL,
+		promise: Promise.resolve(
+			JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''))
+		)
+	});
 	if (!credentialsResult.ok) throw credentialsResult.error;
 	const credentials = credentialsResult.data;
 
@@ -143,11 +136,10 @@ export async function runBatchCompletion(
 		throw new BerichtgenError(ECompletionException.NOT_ENOUGH_TOKENS);
 	}
 
-	const deductResult = await tryResultAsync(
-		deductUserTokens(userId, budget.totalTokens),
-		BerichtgenError,
-		ECompletionException.INTERNAL
-	);
+	const deductResult = await tryResultAsync({
+		apiError: ECompletionException.INTERNAL,
+		promise: deductUserTokens(userId, budget.totalTokens)
+	});
 	if (!deductResult.ok) throw deductResult.error;
 
 	const geminiResults = await Promise.allSettled(
@@ -176,19 +168,6 @@ export async function runBatchCompletion(
 		insufficient_tokens: budget.insufficientTokens,
 		results
 	};
-}
-
-async function countItemTokens(
-	item: BatchCompletionItem,
-	ai: genai.GoogleGenAI,
-	model: string
-): Promise<number> {
-	const part = itemToContentPart(item);
-	const result = await ai.models.countTokens({
-		contents: [{ parts: [part] }],
-		model
-	});
-	return result.totalTokens ?? 0;
 }
 
 async function createSignedUploadPayload({
@@ -253,11 +232,10 @@ async function deleteProcessedGcsFilesBestEffort(
 	}
 	if (gcsUris.size === 0) return;
 
-	const credentialsResult = tryResult(
-		() => JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, '')),
-		BerichtgenError,
-		ECompletionException.INTERNAL
-	);
+	const credentialsResult = tryResult({
+		apiError: ECompletionException.INTERNAL,
+		run: () => JSON.parse(GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, ''))
+	});
 	if (!credentialsResult.ok) {
 		Sentry.captureException(credentialsResult.error);
 		return;
@@ -278,14 +256,13 @@ async function deleteProcessedGcsFilesBestEffort(
 
 			if (!parsed.objectPath.startsWith(`${userId}/`)) return;
 
-			const deleteResult = await tryResultAsync(
-				storage
+			const deleteResult = await tryResultAsync({
+				apiError: ECompletionException.INTERNAL,
+				promise: storage
 					.bucket(parsed.bucket)
 					.file(parsed.objectPath)
-					.delete({ ignoreNotFound: true }),
-				BerichtgenError,
-				ECompletionException.INTERNAL
-			);
+					.delete({ ignoreNotFound: true })
+			});
 			if (!deleteResult.ok) {
 				Sentry.captureException(deleteResult.error, {
 					extra: { objectPath: parsed.objectPath, uri }

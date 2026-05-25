@@ -3,9 +3,10 @@ import type { Entry, ResultEntry, WizardDirectoryEntry } from '$wizard/types';
 import { invalidate } from '$app/navigation';
 import berichtgenStore from '$core/stores/berichtgen.svelte';
 import { GCS_MAX_BYTES, INLINE_MAX_BYTES } from '$lib/constants';
+import { BerichtgenError } from '$lib/errors';
 import { errResult, okResult, tryResultAsync } from '$lib/result';
 import { FileTypes, WizardStep } from '$wizard/enums';
-import { EFileRoutingError, WizardError } from '$wizard/errors';
+import { EFileRoutingError } from '$wizard/errors';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
 import { fullResultSchema } from '$wizard/schemas';
 import { uploadToGcs } from '$wizard/services/gcs_service';
@@ -78,7 +79,6 @@ export function createStateMachineForContext({
 			[WizardStep.CANCELLED]: {
 				_enter() {
 					scheduler.persistSoon();
-					scheduler.onFileCancelled();
 				},
 				init: () => WizardStep.INITIALISING,
 				next() {
@@ -97,14 +97,12 @@ export function createStateMachineForContext({
 			[WizardStep.ERROR]: {
 				_enter() {
 					scheduler.persistSoon();
-					scheduler.onFileErrored();
 				}
 			},
 
 			[WizardStep.INITIALISING]: {
 				next: WizardStep.PROCESSING
 			},
-
 			[WizardStep.PROCESSING]: {
 				_enter() {
 					if ('url' in context.entry) {
@@ -187,32 +185,33 @@ async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
 		entry.file.type === FileTypes.JSON &&
 		!berichtgenStore.get('rewordJSON')
 	) {
-		return tryResultAsync(
-			entry.file.text().then((text) => {
+		return tryResultAsync({
+			apiError: EFileRoutingError.FORMAT_NOT_SUPPORTED,
+			promise: entry.file.text().then((text) => {
 				const parsed = JSON.parse(text);
 				const validated = fullResultSchema.safeParse(parsed);
 				if (!validated.success) {
-					throw new WizardError(EFileRoutingError.FORMAT_NOT_SUPPORTED);
+					throw new BerichtgenError(EFileRoutingError.FORMAT_NOT_SUPPORTED);
 				}
 				return validated.data as ResultEntry[];
-			}),
-			WizardError,
-			EFileRoutingError.FORMAT_NOT_SUPPORTED
-		);
+			})
+		});
 	}
 
 	if (entry.type === 'url') return okResult(new UrlRouting({ url: entry.url }));
 
 	if (entry.file.size > GCS_MAX_BYTES) {
-		return errResult(WizardError, EFileRoutingError.FILE_TOO_LARGE);
+		return errResult(EFileRoutingError.FILE_TOO_LARGE);
 	}
 
-	if (entry.file.size <= INLINE_MAX_BYTES) {
-		const text = await tryResultAsync(
-			entry.file.text(),
-			WizardError,
-			EFileRoutingError.FILE_READ_FAILED
-		);
+	if (entry.file.type === FileTypes.TXT) {
+		if (entry.file.size > INLINE_MAX_BYTES) {
+			return errResult(EFileRoutingError.INLINE_TXT_TOO_LARGE);
+		}
+		const text = await tryResultAsync({
+			apiError: EFileRoutingError.FILE_READ_FAILED,
+			promise: entry.file.text()
+		});
 		if (!text.ok) return text;
 
 		return okResult(

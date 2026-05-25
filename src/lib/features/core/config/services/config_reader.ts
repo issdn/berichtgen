@@ -1,20 +1,19 @@
 import type { CSVConfig } from '$wizard/types';
 
-import { EParserError, ParserError } from '$core/parser/errors';
+import { EParserError } from '$core/parser/errors';
 import { type Result, tryResultAsync } from '$lib/result';
 import { Ort } from '$wizard/enums';
 import { csvConfigSchema } from '$wizard/schemas';
 import { parseDate } from '@internationalized/date';
 
 export function readCsvConfig(file: File): Promise<Result<CSVConfig>> {
-	return tryResultAsync(
-		file.arrayBuffer().then((buffer) => {
+	return tryResultAsync({
+		apiError: EParserError.PARSE_FAILED,
+		promise: file.arrayBuffer().then((buffer) => {
 			const text = new TextDecoder().decode(buffer);
 			return readCsvConfigFromText(text);
-		}),
-		ParserError,
-		EParserError.PARSE_FAILED
-	);
+		})
+	});
 }
 
 // ort, file, start;end;stunden

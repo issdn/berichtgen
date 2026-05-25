@@ -2,7 +2,8 @@ import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type z from 'zod';
 
 import { command, getRequestEvent, query } from '$app/server';
-import { ECommonServerError, svelteApiError } from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
+import { svelteApiError } from '$server/errors';
 
 export function guardedCommand<S extends z.ZodTypeAny, T>(
 	schema: S,

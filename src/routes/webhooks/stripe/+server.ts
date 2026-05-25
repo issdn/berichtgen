@@ -1,11 +1,8 @@
 import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from '$env/static/private';
-import {
-	BerichtgenError,
-	ECommonServerError,
-	svelteApiError
-} from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
 import { tryResult, tryResultAsync } from '$lib/result';
 import db from '$lib/server/db';
+import { svelteApiError } from '$server/errors';
 import * as Sentry from '@sentry/sveltekit';
 import { json } from '@sveltejs/kit';
 import { sql } from 'kysely';
@@ -25,12 +22,11 @@ export async function POST({ request }) {
 		);
 	}
 
-	const eventResult = tryResult(
-		() =>
-			stripe.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET),
-		BerichtgenError,
-		ECommonServerError.VALIDATION_ERROR
-	);
+	const eventResult = tryResult({
+		apiError: ECommonServerError.VALIDATION_ERROR,
+		run: () =>
+			stripe.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET)
+	});
 	if (!eventResult.ok) {
 		Sentry.captureException(eventResult.error);
 		throw svelteApiError(
@@ -53,8 +49,9 @@ export async function POST({ request }) {
 		const { quantity, user_id: userId } = cart;
 		const tokensToCredit = quantity * 1_000_000;
 
-		const insertPurchaseResult = await tryResultAsync(
-			db
+		const insertPurchaseResult = await tryResultAsync({
+			apiError: ECommonServerError.DATABASE_ERROR,
+			promise: db
 				.insertInto('purchase')
 				.values({
 					quantity,
@@ -63,21 +60,18 @@ export async function POST({ request }) {
 					tokens_credited: tokensToCredit,
 					user_id: userId
 				})
-				.execute(),
-			BerichtgenError,
-			ECommonServerError.DATABASE_ERROR
-		);
+				.execute()
+		});
 		if (!insertPurchaseResult.ok) return json({}, { status: 200 });
 
-		const tokenUpdateResult = await tryResultAsync(
-			db
+		const tokenUpdateResult = await tryResultAsync({
+			apiError: ECommonServerError.DATABASE_ERROR,
+			promise: db
 				.updateTable('user_token_count')
 				.set({ tokens: sql`tokens + ${tokensToCredit}` })
 				.where('user_id', '=', userId)
-				.execute(),
-			BerichtgenError,
-			ECommonServerError.DATABASE_ERROR
-		);
+				.execute()
+		});
 		if (!tokenUpdateResult.ok) {
 			Sentry.captureException(tokenUpdateResult.error);
 			throw svelteApiError(

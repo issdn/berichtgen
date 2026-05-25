@@ -1,5 +1,5 @@
 import { profileNameSchema, userMetadataSchema } from '$core/settings/schemas';
-import { BerichtgenError, ECommonServerError } from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
 import { tryResultAsync } from '$lib/result';
 import { supabaseAdmin } from '$lib/server/admin';
 import db from '$lib/server/db';
@@ -62,8 +62,9 @@ export const actions: Actions = {
 			return message(form, 'Daten sind ungültig.', { status: 400 });
 		}
 
-		const updateMetadataResult = await tryResultAsync(
-			db
+		const updateMetadataResult = await tryResultAsync({
+			apiError: ECommonServerError.DATABASE_ERROR,
+			promise: db
 				.insertInto('user_metadata')
 				.values({
 					abteilung: form.data.abteilung || null,
@@ -78,10 +79,8 @@ export const actions: Actions = {
 						full_name: form.data.fullName || null
 					})
 				)
-				.execute(),
-			BerichtgenError,
-			ECommonServerError.DATABASE_ERROR
-		);
+				.execute()
+		});
 		if (!updateMetadataResult.ok) {
 			Sentry.captureException(updateMetadataResult.error);
 			return message(form, 'Fehler beim Speichern der Daten.', { status: 500 });
@@ -96,15 +95,14 @@ export const actions: Actions = {
 			return message(form, 'Daten sind ungültig.', { status: 400 });
 		}
 
-		const updateProfileResult = await tryResultAsync(
-			db
+		const updateProfileResult = await tryResultAsync({
+			apiError: ECommonServerError.DATABASE_ERROR,
+			promise: db
 				.updateTable('profile')
 				.set({ full_name: form.data.fullName || null })
 				.where('id', '=', user!.id)
-				.execute(),
-			BerichtgenError,
-			ECommonServerError.DATABASE_ERROR
-		);
+				.execute()
+		});
 		if (!updateProfileResult.ok) {
 			Sentry.captureException(updateProfileResult.error);
 			return message(form, 'Fehler beim Speichern.', { status: 500 });

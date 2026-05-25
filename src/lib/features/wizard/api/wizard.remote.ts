@@ -3,19 +3,15 @@
  */
 
 import { getRequestEvent, query } from '$app/server';
-import {
-	BerichtgenError,
-	ECommonServerError,
-	svelteApiError
-} from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
 import { tryResultAsync } from '$lib/result';
 import { guardedCommand } from '$lib/server/remote';
+import { svelteApiError } from '$server/errors';
 import {
 	checkPreferredTemplateExists,
 	requestGcsUploadTarget,
 	runBatchCompletion
 } from '$wizard/api/wizard.handlers';
-import { WizardError } from '$wizard/errors';
 import {
 	batchCompletionApiSchema,
 	uploadUrlRequestSchema
@@ -40,15 +36,14 @@ export const requestGcsUploadCommand = guardedCommand(
 			locals: { user }
 		} = getRequestEvent();
 
-		const storageResult = await tryResultAsync(
-			requestGcsUploadTarget({
+		const storageResult = await tryResultAsync({
+			apiError: ECommonServerError.INTERNAL_ERROR,
+			promise: requestGcsUploadTarget({
 				contentType,
 				fullFilePath,
 				userId: user!.id
-			}),
-			WizardError,
-			ECommonServerError.INTERNAL_ERROR
-		);
+			})
+		});
 		if (!storageResult.ok) throw svelteApiError(storageResult.error.apiError);
 		return storageResult.data;
 	}
@@ -65,11 +60,10 @@ export const submitBatchCompletionCommand = guardedCommand(
 		} = getRequestEvent();
 		if (!user) throw svelteApiError(ECommonServerError.UNAUTHORIZED);
 
-		const result = await tryResultAsync(
-			runBatchCompletion(items, user!.id),
-			BerichtgenError,
-			ECommonServerError.INTERNAL_ERROR
-		);
+		const result = await tryResultAsync({
+			apiError: ECommonServerError.INTERNAL_ERROR,
+			promise: runBatchCompletion(items, user!.id)
+		});
 		if (!result.ok) {
 			throw svelteApiError(result.error.apiError);
 		}

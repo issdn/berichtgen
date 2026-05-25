@@ -1,6 +1,7 @@
 import type { ImageLike, Scheduler } from 'tesseract.js';
 
-import { EParserError, ParserError } from '$core/parser/errors';
+import { EParserError } from '$core/parser/errors';
+import { BerichtgenError } from '$lib/errors';
 import { WizardFileContext } from '$wizard/services/wizard_file_context';
 import { XMLParser } from 'fast-xml-parser';
 import JSZip from 'jszip';
@@ -38,7 +39,7 @@ export type DOCXFileData = {
 	xmlStr: string;
 };
 
-type CellPadding = { bottom: number; left: number; right: number; top: number; };
+type CellPadding = { bottom: number; left: number; right: number; top: number };
 
 // --- helpers ---
 
@@ -126,7 +127,7 @@ export class DOCXParser extends Parser {
 
 	async parse() {
 		if (this.data === null)
-			throw new ParserError(EParserError.DEVELOPERS_FAULT);
+			throw new BerichtgenError(EParserError.DEVELOPERS_FAULT);
 		const result = [];
 		for (let i = 0; i < this.data.textsOrRelIds.length; i += this.batchSize) {
 			if (this.context.cancelled) break;
@@ -146,7 +147,7 @@ export class DOCXParser extends Parser {
 
 	parseAST(): DocxDocument {
 		if (this.data === null)
-			throw new ParserError(EParserError.DEVELOPERS_FAULT);
+			throw new BerichtgenError(EParserError.DEVELOPERS_FAULT);
 
 		const docBody =
 			((this.data.xml['w:document'] as Record<string, unknown>)?.[
@@ -221,8 +222,7 @@ export class DOCXParser extends Parser {
 				pgMar?.['@_w:right'] !== undefined
 					? Number(pgMar['@_w:right']) / 20
 					: 90,
-			top:
-				pgMar?.['@_w:top'] !== undefined ? Number(pgMar['@_w:top']) / 20 : 72
+			top: pgMar?.['@_w:top'] !== undefined ? Number(pgMar['@_w:top']) / 20 : 72
 		};
 
 		// Default font size from w:docDefaults rPr (half-points → pt).

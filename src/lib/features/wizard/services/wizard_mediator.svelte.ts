@@ -22,11 +22,7 @@ import {
 	sendBatchCompletion
 } from '$wizard/completion/completion';
 import { WizardStep } from '$wizard/enums';
-import {
-	ECompletionException,
-	EWizardError,
-	WizardError
-} from '$wizard/errors';
+import { ECompletionException, EWizardError } from '$wizard/errors';
 import { combineJSONs } from '$wizard/postprocess/combine';
 import { type FileRouting } from '$wizard/services/routing';
 import { Context } from 'runed';
@@ -135,7 +131,6 @@ export class WizardMediator {
 			restart() {
 				context.cancelled = false;
 				machine.send('next');
-				machine.send('next');
 			}
 		};
 		return process;
@@ -241,14 +236,6 @@ export class WizardMediator {
 		this.persistSoon();
 	};
 
-	onFileCancelled = () => {
-		this.persistSoon();
-	};
-
-	onFileErrored = () => {
-		this.persistSoon();
-	};
-
 	async persistNow() {
 		await Persistence.save(
 			WIZARD_PERSISTENCE_STORE,
@@ -281,7 +268,9 @@ export class WizardMediator {
 			const result = fileResults.get(fileIndex);
 			const entries = result ? result.map((text) => ({ text })) : null;
 			if (entries === null) {
-				process.context.error = new WizardError(EWizardError.COMPLETION_FAILED);
+				process.context.error = new BerichtgenError(
+					EWizardError.COMPLETION_FAILED
+				);
 				process.machine.send('error');
 			} else {
 				process.context.snapshot = entries;
@@ -351,7 +340,9 @@ export class WizardMediator {
 				this.collectBatchResults(batch, result.data.results, fileResults);
 
 				if (result.data.insufficient_tokens) {
-					globalError = new WizardError(ECompletionException.NOT_ENOUGH_TOKENS);
+					globalError = new BerichtgenError(
+						ECompletionException.NOT_ENOUGH_TOKENS
+					);
 					return;
 				}
 			}

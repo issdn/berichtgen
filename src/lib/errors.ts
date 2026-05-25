@@ -1,13 +1,33 @@
-import { error } from '@sveltejs/kit';
+export const errorRegistry = new Map<string, Record<string, AnyErrorValue>>();
 
-// ---------------------------------------------------------------------------
-// Core types
-// ---------------------------------------------------------------------------
+export const ECommonServerError = buildError('core.server', {
+	DATABASE_ERROR: { httpCode: 500, message: 'Datenbankfehler.' },
+	INTERNAL_ERROR: { httpCode: 500, message: 'Interner Serverfehler.' },
+	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' },
+	UNAUTHORIZED: {
+		cause: 'Muss angemeldet sein, um diese Aktion durchzuführen.',
+		httpCode: 401,
+		message: 'Nicht autorisiert.'
+	},
+	UNKNOWN_ERROR: {
+		httpCode: 500,
+		message: 'Ein unbekannter Fehler ist aufgetreten.'
+	},
+	VALIDATION_ERROR: { httpCode: 400, message: 'Validierungsfehler.' }
+} as const);
+
+export const EBaseErrors = buildError('core.base', {
+	UNKNOWN_ERROR: {
+		httpCode: 500,
+		message: 'Ein unbekannter Fehler ist aufgetreten.'
+	}
+} as const);
 
 /** Structural type satisfied by every value produced by {@link buildError}. */
 export type AnyErrorValue = {
 	readonly cause?: string;
 	readonly code: string;
+	readonly feature: string;
 	readonly httpCode: number;
 	readonly message: string;
 };
@@ -42,52 +62,43 @@ type OmitErrorField<T extends EnumError, F extends keyof T[keyof T]> = {
 // Builder
 // ---------------------------------------------------------------------------
 
-export function buildError<T extends OmitErrorField<EnumError, 'code'>>(
-	error: T
-) {
-	return Object.freeze(
-		Object.fromEntries(
-			Object.entries(error).map(([key, val]) => [key, { ...val, code: key }])
-		)
-	) as {
-		readonly [K in keyof T]: Omit<T[K], 'cause'> & {
-			readonly cause?: string;
-			readonly code: K & string;
-		};
-	};
-}
-
-// ---------------------------------------------------------------------------
-// Common (cross-cutting) errors — used across routes and modules
-// ---------------------------------------------------------------------------
-
-export const ECommonServerError = buildError({
-	DATABASE_ERROR: { httpCode: 500, message: 'Datenbankfehler.' },
-	INTERNAL_ERROR: { httpCode: 500, message: 'Interner Serverfehler.' },
-	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' },
-	UNAUTHORIZED: {
-		cause: 'Muss angemeldet sein, um diese Aktion durchzuführen.',
-		httpCode: 401,
-		message: 'Nicht autorisiert.'
-	},
-	VALIDATION_ERROR: { httpCode: 400, message: 'Validierungsfehler.' }
-} as const);
-
-// ---------------------------------------------------------------------------
-// Base error class
-// ---------------------------------------------------------------------------
-
 export class BerichtgenError extends Error {
 	constructor(public readonly apiError: AnyErrorValue) {
 		super(apiError.message);
 	}
 
-	static fromCode(code: string): BerichtgenError {
-		const match = (Object.values(ECommonServerError) as AnyErrorValue[]).find(
-			(e) => e.code === code
-		);
-		return new BerichtgenError(match ?? ECommonServerError.INTERNAL_ERROR);
+	static fromCode(feature: string, code: string): BerichtgenError {
+		const match = errorRegistry.get(feature)?.[code];
+
+		return new BerichtgenError(match ?? EBaseErrors.UNKNOWN_ERROR);
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Base error class
+// ---------------------------------------------------------------------------
+
+export function buildError<T extends OmitErrorField<EnumError, 'code'>>(
+	feature: string,
+	error: T
+) {
+	const built = Object.freeze(
+		Object.fromEntries(
+			Object.entries(error).map(([key, val]) => [
+				key,
+				{ ...val, code: key, feature }
+			])
+		)
+	) as {
+		readonly [K in keyof T]: Omit<T[K], 'cause'> & {
+			readonly cause?: string;
+			readonly code: K & string;
+			readonly feature: string;
+		};
+	};
+
+	errorRegistry.set(feature, built as Record<string, AnyErrorValue>);
+	return built;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,34 +115,17 @@ export function errorByHttpCode<T extends EnumError>(
 	return entry ? (entry[1] as T[keyof T]) : null;
 }
 
-export function svelteApiError(e: AnyErrorValue, cause?: string) {
-	return error(e.httpCode, {
-		cause,
-		code: e.code,
-		message: e.message
-	});
-}
-
 export function toErrorBody(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
+	if (e instanceof BerichtgenError) return e.apiError;
+
 	if (e !== null && typeof e === 'object') {
 		// 1. SvelteKit HttpError: { body: { code, message, cause? } }
 		if ('body' in e)
-			return parseRecord(e.body) ?? parseRecord(e) ?? fallback(e);
+			return parseRecord(e.body) ?? parseRecord(e) ?? EBaseErrors.UNKNOWN_ERROR;
 		// 2. Flat structured object or native Error
-		return parseRecord(e) ?? fallback(e);
+		return parseRecord(e) ?? EBaseErrors.UNKNOWN_ERROR;
 	}
-	return fallback(e);
-}
-
-function fallback(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
-	return {
-		cause: undefined,
-		code: 'INTERNAL_ERROR',
-		message:
-			e instanceof Error
-				? e.message
-				: 'Ein unbekannter Fehler ist aufgetreten.'
-	};
+	return EBaseErrors.UNKNOWN_ERROR;
 }
 
 /**
@@ -151,6 +145,10 @@ function parseRecord(obj: unknown): null | Omit<AnyErrorValue, 'httpCode'> {
 	return {
 		cause: typeof cause === 'string' ? cause : undefined,
 		code,
+		feature:
+			typeof (obj as { feature?: unknown }).feature === 'string'
+				? (obj as { feature: string }).feature
+				: 'core.server',
 		message
 	};
 }

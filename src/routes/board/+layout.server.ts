@@ -1,4 +1,4 @@
-import { BerichtgenError, ECommonServerError } from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
 import { tryResultAsync } from '$lib/result';
 import db from '$server/db';
 import * as Sentry from '@sentry/sveltekit';
@@ -28,16 +28,15 @@ export const load: LayoutServerLoad = loadFlash(
 		if (tokenRow) {
 			tokenCount = tokenRow.tokens;
 		} else {
-			const insertedResult = await tryResultAsync(
-				db
+			const insertedResult = await tryResultAsync({
+				apiError: ECommonServerError.DATABASE_ERROR,
+				promise: db
 					.insertInto('user_token_count')
 					.values({ tokens: 0, user_id: user.id })
 					.onConflict((oc) => oc.column('user_id').doNothing())
 					.returning('tokens')
-					.executeTakeFirst(),
-				BerichtgenError,
-				ECommonServerError.DATABASE_ERROR
-			);
+					.executeTakeFirst()
+			});
 			if (insertedResult.ok) {
 				tokenCount = insertedResult.data?.tokens ?? 0;
 			} else {

@@ -1,8 +1,13 @@
 import type { Ort } from '$wizard/enums';
 import type { BatchCompletionItem } from '$wizard/schemas';
 
-import { EWizardError, WizardError } from '$wizard/errors';
-import { batchCompletionItemSchema } from '$wizard/schemas';
+import { BerichtgenError } from '$lib/errors';
+import { EWizardError } from '$wizard/errors';
+import {
+	fileApiItemSchema,
+	inlineItemSchema,
+	urlItemSchema
+} from '$wizard/schemas';
 
 export interface FileRouting {
 	getSize(): number;
@@ -33,14 +38,18 @@ export class GcsRouting implements FileRouting {
 		this.signedUrl = signedUrl;
 	}
 
-	static restore({
-		value
-	}: {
-		value: Extract<BatchCompletionItem, { type: 'gcs' }>;
-	}): FileRouting {
+	static restore({ value }: { value: unknown }): FileRouting {
+		const decoded = fileApiItemSchema.safeParse(value);
+		if (!decoded.success) {
+			throw new BerichtgenError({
+				...EWizardError.REHYDRATION_FAILED,
+				cause: 'Ungültige GCS-Routing-Daten.'
+			});
+		}
+
 		return new GcsRouting({
-			fileUri: value.fileUri,
-			mimeType: value.mimeType,
+			fileUri: decoded.data.fileUri,
+			mimeType: decoded.data.mimeType,
 			signedUrl: null
 		});
 	}
@@ -72,14 +81,18 @@ export class InlineRouting implements FileRouting {
 		this.mimeType = mimeType;
 	}
 
-	static restore({
-		value
-	}: {
-		value: Extract<BatchCompletionItem, { type: 'inline' }>;
-	}): FileRouting {
+	static restore({ value }: { value: unknown }): FileRouting {
+		const decoded = inlineItemSchema.safeParse(value);
+		if (!decoded.success) {
+			throw new BerichtgenError({
+				...EWizardError.REHYDRATION_FAILED,
+				cause: 'Ungültige Inline-Routing-Daten.'
+			});
+		}
+
 		return new InlineRouting({
-			data: value.data,
-			mimeType: value.mimeType
+			data: decoded.data.data,
+			mimeType: decoded.data.mimeType
 		});
 	}
 
@@ -108,12 +121,16 @@ export class UrlRouting implements FileRouting {
 		this.url = url;
 	}
 
-	static restore({
-		value
-	}: {
-		value: Extract<BatchCompletionItem, { type: 'url' }>;
-	}): FileRouting {
-		return new UrlRouting({ url: value.url });
+	static restore({ value }: { value: unknown }): FileRouting {
+		const decoded = urlItemSchema.safeParse(value);
+		if (!decoded.success) {
+			throw new BerichtgenError({
+				...EWizardError.REHYDRATION_FAILED,
+				cause: 'Ungültige URL-Routing-Daten.'
+			});
+		}
+
+		return new UrlRouting({ url: decoded.data.url });
 	}
 
 	getSize(): number {
@@ -130,21 +147,28 @@ export class UrlRouting implements FileRouting {
 }
 
 export function restoreFileRouting({ value }: { value: unknown }): FileRouting {
-	const decoded = batchCompletionItemSchema.safeParse(value);
-	if (!decoded.success) {
-		throw new WizardError({
+	if (value === null || typeof value !== 'object') {
+		throw new BerichtgenError({
 			...EWizardError.REHYDRATION_FAILED,
-			cause: decoded.error.message
+			cause: 'Der Routing-Snapshot muss ein Objekt sein.'
 		});
 	}
+	const type = (value as { type?: unknown }).type;
 
-	if (decoded.data.type === UrlRouting.type) {
-		return UrlRouting.restore({ value: decoded.data });
+	if (type === UrlRouting.type) {
+		return UrlRouting.restore({ value });
 	}
-	if (decoded.data.type === InlineRouting.type) {
-		return InlineRouting.restore({ value: decoded.data });
+	if (type === InlineRouting.type) {
+		return InlineRouting.restore({ value });
 	}
-	return GcsRouting.restore({ value: decoded.data });
+	if (type === GcsRouting.type) {
+		return GcsRouting.restore({ value });
+	}
+
+	throw new BerichtgenError({
+		...EWizardError.REHYDRATION_FAILED,
+		cause: `Nicht unterstützter Routing-Typ: ${String(type)}`
+	});
 }
 
 function getByteSize(value: string): number {

@@ -4,11 +4,10 @@ import type {
 	BatchCompletionItem
 } from '$wizard/schemas';
 import type { FileRouting } from '$wizard/services/routing';
-import type { BatchItem } from '$wizard/types';
 
 import { type Result, tryResultAsync } from '$lib/result';
 import { submitBatchCompletionCommand } from '$wizard/api/wizard.remote';
-import { EWizardError, WizardError } from '$wizard/errors';
+import { EWizardError } from '$wizard/errors';
 
 /** Maximum total UTF-8 byte size for a single batch request (4 MB). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
@@ -18,16 +17,29 @@ export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
  * byte size of all texts in each batch does not exceed `maxBytes`.
  * An item whose text alone exceeds `maxBytes` forms a batch by itself.
  */
-export function createBatchesBySize(
-	items: BatchItem[],
-	maxBytes: number = MAX_BATCH_BYTES
+export function createBatchesBySize<T>(
+	items: T[],
+	maxBytes: number = MAX_BATCH_BYTES,
+	getItemSize: ({ item }: { item: T }) => number = ({ item }) => {
+		const candidate = item as {
+			data?: unknown;
+			routing?: { getSize: () => number };
+			text?: unknown;
+		};
+		if (candidate.routing && typeof candidate.routing.getSize === 'function') {
+			return candidate.routing.getSize();
+		}
+		if (typeof candidate.data === 'string') return getByteSize(candidate.data);
+		if (typeof candidate.text === 'string') return getByteSize(candidate.text);
+		return getByteSize(JSON.stringify(item));
+	}
 ) {
-	const batches: BatchItem[][] = [];
-	let currentBatch: BatchItem[] = [];
+	const batches: T[][] = [];
+	let currentBatch: T[] = [];
 	let currentSize = 0;
 
 	for (const item of items) {
-		const size = item.routing.getSize();
+		const size = getItemSize({ item });
 		if (currentBatch.length > 0 && currentSize + size > maxBytes) {
 			batches.push(currentBatch);
 			currentBatch = [item];
@@ -62,9 +74,12 @@ export function sendBatchCompletion(
 		routing.toBatchCompletionItem({ ort })
 	);
 
-	return tryResultAsync(
-		submitBatchCompletionCommand({ items: mapped }),
-		WizardError,
-		EWizardError.INVALID_JSON_FROM_AI
-	);
+	return tryResultAsync({
+		apiError: EWizardError.INVALID_JSON_FROM_AI,
+		promise: submitBatchCompletionCommand({ items: mapped })
+	});
+}
+
+function getByteSize(text: string): number {
+	return new TextEncoder().encode(text).byteLength;
 }

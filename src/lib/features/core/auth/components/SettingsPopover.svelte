@@ -8,11 +8,7 @@
 	import { emailSchema } from '$core/auth/schemas';
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
-	import {
-		BerichtgenError,
-		ECommonServerError,
-		toErrorBody
-	} from '$lib/errors';
+	import { ECommonServerError, toErrorBody } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
 	import { getUserDisplayName } from '$lib/utils';
 	import * as Avatar from '$ui/avatar';
@@ -60,7 +56,7 @@
 	);
 
 	const verifyOtpResource = new AsyncResource(
-		async (params: { email: string; token: string; }) => {
+		async (params: { email: string; token: string }) => {
 			const { error } = await page.data.supabase.auth.verifyOtp({
 				email: params.email,
 				token: params.token,
@@ -155,11 +151,10 @@
 
 	async function submitFeedback() {
 		feedbackPending = true;
-		const result = await tryResultAsync(
-			submitUserFeedback({ message: feedbackMessage }),
-			BerichtgenError,
-			ECommonServerError.INTERNAL_ERROR
-		);
+		const result = await tryResultAsync({
+			apiError: ECommonServerError.INTERNAL_ERROR,
+			promise: submitUserFeedback({ message: feedbackMessage })
+		});
 		if (result.ok) {
 			feedbackMessage = '';
 			feedbackDialogOpen = false;

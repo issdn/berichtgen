@@ -13,8 +13,12 @@
 	import { readCsvConfig } from '$core/config/services/config_reader';
 	import { scanDroppedInput } from '$core/scan/file_scan';
 	import { ScanReturnValue } from '$core/types';
-	import { CONFIG_FILENAME_REGEX, GCS_MAX_BYTES } from '$lib/constants';
-	import { BerichtgenError, ECommonServerError } from '$lib/errors';
+	import {
+		CONFIG_FILENAME_REGEX,
+		GCS_MAX_BYTES,
+		INLINE_MAX_BYTES
+	} from '$lib/constants';
+	import { ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
 	import { FileTypes } from '$wizard/enums';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
@@ -29,6 +33,8 @@
 
 	const isValidFile = (file: File): boolean => {
 		if (file.type === FileTypes.URI_LIST) return true;
+		if (file.type === FileTypes.TXT && file.size > INLINE_MAX_BYTES)
+			return false;
 		return (
 			file.type.length > 0 &&
 			accept.includes(file.type) &&
@@ -37,11 +43,10 @@
 	};
 
 	async function handleFiles(items: DataTransferItemList | FileList) {
-		const scanResult = await tryResultAsync(
-			scanDroppedInput(items, ScanReturnValue.FILE, isValidFile),
-			BerichtgenError,
-			ECommonServerError.INTERNAL_ERROR
-		);
+		const scanResult = await tryResultAsync({
+			apiError: ECommonServerError.INTERNAL_ERROR,
+			promise: scanDroppedInput(items, ScanReturnValue.FILE, isValidFile)
+		});
 		if (!scanResult.ok) {
 			toast.error('Fehler beim Scannen der Dateien', {
 				description: scanResult.error.message

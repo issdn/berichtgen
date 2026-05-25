@@ -10,9 +10,7 @@
 	}: { error: unknown } & WithElementRef<HTMLAttributes<HTMLDivElement>> =
 		$props();
 
-	const typeSafeError = $derived(
-		error instanceof BerichtgenError ? error.apiError : toErrorBody(error)
-	);
+	const typeSafeError = $derived(toErrorBody(error));
 </script>
 
 <Alert.Root {...restProps} variant="destructive">

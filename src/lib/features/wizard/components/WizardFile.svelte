@@ -3,8 +3,6 @@
 
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-	import ErrorAlert from '$ui/ErrorAlert.svelte';
 	import { Spinner } from '$ui/spinner';
 	import { WizardStep } from '$wizard/enums';
 	import {
@@ -19,6 +17,7 @@
 		XIcon
 	} from '@lucide/svelte';
 
+	import ErrorModal from './ErrorModal.svelte';
 	import TimeSpreadDialog from './TimeSpreadDialog.svelte';
 
 	const {
@@ -54,6 +53,7 @@
 	}
 
 	let step = $derived(machine.current);
+	let errorModalOpen = $state(false);
 
 	let { icon: Icon, label } = $derived.by(() => statusFromStep(step));
 </script>
@@ -87,20 +87,14 @@
 	<div class="flex flex-row justify-between">
 		<div class="flex flex-row items-center gap-x-1">
 			{#if step === WizardStep.ERROR}
-				<Tooltip.Provider delayDuration={100}>
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<Badge variant="default" class="gap-x-2">
-								<Icon size={18} /><span class="text-sm font-medium"
-									>{label}</span
-								>
-							</Badge>
-						</Tooltip.Trigger>
-						<Tooltip.Content>
-							<ErrorAlert class="border-none" error={context.error!} />
-						</Tooltip.Content>
-					</Tooltip.Root>
-				</Tooltip.Provider>
+				<Badge
+					variant="default"
+					class="cursor-pointer gap-x-2"
+					onclick={() => (errorModalOpen = true)}
+				>
+					<Icon size={18} /><span class="text-sm font-medium">{label}</span>
+				</Badge>
+				<ErrorModal bind:open={errorModalOpen} error={context.error!} />
 			{:else}
 				<Badge
 					data-testid="wizard-file-status"

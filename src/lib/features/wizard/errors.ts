@@ -1,6 +1,6 @@
-import { BerichtgenError, buildError, type UnionOf } from '$lib/errors';
+import { buildError } from '$lib/errors';
 
-export const EFileRoutingError = buildError({
+export const EFileRoutingError = buildError('wizard.routing', {
 	FILE_CORRUPTED: {
 		httpCode: 400,
 		message: 'Die Datei scheint beschädigt zu sein.'
@@ -21,10 +21,14 @@ export const EFileRoutingError = buildError({
 	GCS_UPLOAD_URL_FAILED: {
 		httpCode: 500,
 		message: 'Upload-URL konnte nicht erstellt werden.'
+	},
+	INLINE_TXT_TOO_LARGE: {
+		httpCode: 413,
+		message: 'TXT-Datei ist größer als 2 MB.'
 	}
 } as const);
 
-export const EWizardError = buildError({
+export const EWizardError = buildError('wizard.runtime', {
 	COMPLETION_FAILED: {
 		httpCode: 500,
 		message: 'Vervollständigung fehlgeschlagen.'
@@ -40,7 +44,7 @@ export const EWizardError = buildError({
 	SPREAD_FAILED: { httpCode: 500, message: 'Zeitverteilung fehlgeschlagen.' }
 } as const);
 
-export const ECompletionException = buildError({
+export const ECompletionException = buildError('wizard.completion', {
 	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' },
 	NOT_ENOUGH_TOKENS: { httpCode: 402, message: 'Nicht genug Tokens.' },
 	TOO_MANY_REQUESTS: { httpCode: 429, message: 'Zu viele Anfragen.' },
@@ -50,17 +54,50 @@ export const ECompletionException = buildError({
 	}
 } as const);
 
-export const EGenAIError = buildError({
-	DEADLINE_EXCEEDED: { httpCode: 504, message: 'Zeitlimit überschritten.' },
-	INTERNAL: { httpCode: 500, message: 'Interner Serverfehler.' },
-	INVALID_ARGUMENT: { httpCode: 400, message: 'Ungültiges Argument.' },
-	NOT_FOUND: { httpCode: 404, message: 'Nicht gefunden.' },
-	PERMISSION_DENIED: { httpCode: 403, message: 'Zugriff verweigert.' },
-	RESOURCE_EXHAUSTED: { httpCode: 429, message: 'Ratenlimit überschritten.' },
-	UNAVAILABLE: { httpCode: 503, message: 'Dienst nicht verfügbar.' }
+export const EGenAIError = buildError('wizard.genai', {
+	CONFLICT: {
+		httpCode: 409,
+		message: 'Konflikt mit bestehender Ressource.'
+	},
+	DEADLINE_EXCEEDED: {
+		httpCode: 504,
+		message: 'Zeitlimit überschritten.'
+	},
+	FAILED_PRECONDITION: {
+		httpCode: 412,
+		message: 'Voraussetzungen nicht erfüllt.'
+	},
+	INTERNAL: {
+		httpCode: 500,
+		message: 'Interner Serverfehler.'
+	},
+	INVALID_ARGUMENT: {
+		httpCode: 400,
+		message: 'Ungültige Anfrage.'
+	},
+	NOT_FOUND: {
+		httpCode: 404,
+		message: 'Ressource nicht gefunden.'
+	},
+	PERMISSION_DENIED: {
+		httpCode: 403,
+		message: 'Zugriff verweigert.'
+	},
+	RESOURCE_EXHAUSTED: {
+		httpCode: 429,
+		message: 'Limit überschritten.'
+	},
+	UNAUTHENTICATED: {
+		httpCode: 401,
+		message: 'Authentifizierung fehlgeschlagen.'
+	},
+	UNAVAILABLE: {
+		httpCode: 503,
+		message: 'Dienst nicht verfügbar.'
+	}
 } as const);
 
-export const ETemplateError = buildError({
+export const ETemplateError = buildError('templates', {
 	ALREADY_REPORTED: {
 		httpCode: 409,
 		message: 'Du hast dieses Template bereits gemeldet.'
@@ -76,7 +113,7 @@ export const ETemplateError = buildError({
 	}
 } as const);
 
-export const EGCSError = buildError({
+export const EGCSError = buildError('wizard.gcs', {
 	BAD_REQUEST: {
 		cause: 'badRequest',
 		httpCode: 400,
@@ -148,36 +185,3 @@ export const EGCSError = buildError({
 		message: 'Authentifizierung erforderlich.'
 	}
 } as const);
-
-type WizardErrorValue = UnionOf<
-	[
-		typeof EWizardError,
-		typeof ECompletionException,
-		typeof EGenAIError,
-		typeof ETemplateError,
-		typeof EFileRoutingError,
-		typeof EGCSError
-	]
->;
-
-export class WizardError extends BerichtgenError {
-	declare readonly apiError: WizardErrorValue;
-
-	constructor(apiError: WizardErrorValue) {
-		super(apiError);
-	}
-
-	static fromCode(code: string): WizardError {
-		const match = (
-			[
-				...Object.values(EWizardError),
-				...Object.values(ECompletionException),
-				...Object.values(EGenAIError),
-				...Object.values(ETemplateError),
-				...Object.values(EFileRoutingError),
-				...Object.values(EGCSError)
-			] as WizardErrorValue[]
-		).find((e) => e.code === code);
-		return new WizardError(match ?? EWizardError.COMPLETION_FAILED);
-	}
-}

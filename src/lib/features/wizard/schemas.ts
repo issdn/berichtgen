@@ -88,7 +88,7 @@ const ortEnum = z.enum([
 ]);
 
 /** Completion item carrying a base64-encoded file (≤ 1 MB). */
-const inlineItemSchema = z.object({
+export const inlineItemSchema = z.object({
 	/** Base64-encoded file content. */
 	data: z.string().nonempty(),
 	mimeType: z.string().nonempty(),
@@ -96,7 +96,7 @@ const inlineItemSchema = z.object({
 });
 
 /** Completion item referencing a file uploaded to the Gemini Files API. */
-const fileApiItemSchema = z.object({
+export const fileApiItemSchema = z.object({
 	/** Gemini Files API URI returned after a resumable upload. */
 	fileUri: z.url(),
 	mimeType: z.string().nonempty(),
@@ -104,7 +104,7 @@ const fileApiItemSchema = z.object({
 });
 
 /** Completion item referencing a web URL — Gemini fetches it via Google Search grounding. */
-const urlItemSchema = z.object({
+export const urlItemSchema = z.object({
 	type: z.literal('url'),
 	url: z.url()
 });

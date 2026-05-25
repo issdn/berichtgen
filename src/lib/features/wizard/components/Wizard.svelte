@@ -36,7 +36,9 @@
 
 	let flushLoading = $state(false);
 
-	let canRunFlush = $derived((wizardMediator.filesStates?.waiting ?? 0) > 0);
+	let canRunFlush = $derived(
+		(wizardMediator.filesStates?.batch_pending ?? 0) > 0
+	);
 
 	$effect(() => {
 		if (wizardMediator.result !== null) {

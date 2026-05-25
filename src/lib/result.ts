@@ -5,7 +5,6 @@ export type Result<T> =
 	| { error: BerichtgenError; ok: false };
 
 export function errResult(
-	errorClass: typeof BerichtgenError,
 	apiError: AnyErrorValue,
 	error?: unknown
 ): Result<never> {
@@ -13,7 +12,7 @@ export function errResult(
 		error:
 			error instanceof BerichtgenError
 				? error
-				: new errorClass({ ...apiError, ...toErrorBody(error) }),
+				: new BerichtgenError({ ...apiError, ...toErrorBody(error) }),
 		ok: false
 	};
 }
@@ -22,26 +21,70 @@ export function okResult<T>(data: T): Result<T> {
 	return { data, ok: true };
 }
 
-export function tryResult<T>(
-	run: () => T,
-	errorClass: typeof BerichtgenError,
-	apiError: AnyErrorValue
-): Result<T> {
+export function tryResult<T>({
+	apiError,
+	run
+}: {
+	apiError: AnyErrorValue;
+	run: () => T;
+}): Result<T>;
+export function tryResult<T>({
+	convertError,
+	run
+}: {
+	convertError: (e: unknown) => BerichtgenError;
+	run: () => T;
+}): Result<T>;
+export function tryResult<T>({
+	apiError,
+	convertError,
+	run
+}: {
+	apiError?: AnyErrorValue;
+	convertError?: (e: unknown) => BerichtgenError;
+	run: () => T;
+}): Result<T> {
 	try {
 		return okResult(run());
 	} catch (e) {
-		return errResult(errorClass, apiError, e);
+		if (convertError) {
+			const converted = convertError(e);
+			return errResult(converted.apiError, converted);
+		}
+		return errResult(apiError!, e);
 	}
 }
 
-export async function tryResultAsync<T>(
-	promise: Promise<T>,
-	errorClass: typeof BerichtgenError,
-	apiError: AnyErrorValue
-): Promise<Result<T>> {
+export async function tryResultAsync<T>({
+	apiError,
+	promise
+}: {
+	apiError: AnyErrorValue;
+	promise: Promise<T>;
+}): Promise<Result<T>>;
+export async function tryResultAsync<T>({
+	convertError,
+	promise
+}: {
+	convertError: (e: unknown) => BerichtgenError;
+	promise: Promise<T>;
+}): Promise<Result<T>>;
+export async function tryResultAsync<T>({
+	apiError,
+	convertError,
+	promise
+}: {
+	apiError?: AnyErrorValue;
+	convertError?: (e: unknown) => BerichtgenError;
+	promise: Promise<T>;
+}): Promise<Result<T>> {
 	try {
 		return okResult(await promise);
 	} catch (e) {
-		return errResult(errorClass, apiError, e);
+		if (convertError) {
+			const converted = convertError(e);
+			return errResult(converted.apiError, converted);
+		}
+		return errResult(apiError!, e);
 	}
 }

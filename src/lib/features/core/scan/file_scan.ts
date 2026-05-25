@@ -1,7 +1,8 @@
 import type { WizardRawDirectories, WizardRawDirectory } from '$wizard/types';
 
-import { EParserError, ParserError } from '$core/parser/errors';
+import { EParserError } from '$core/parser/errors';
 import { type ScanReturnType, ScanReturnValue } from '$core/types';
+import { BerichtgenError } from '$lib/errors';
 
 export function extractFilesSimple(
 	input: DataTransferItemList | FileList
@@ -27,7 +28,7 @@ export async function get2DimensionalDirectories(
 	} else if (returnType === ScanReturnValue.DATA_TRANSFER_ITEM) {
 		return _get2DimensionalDirectories(items, scanSystemFileEntries);
 	} else {
-		throw new ParserError(EParserError.INVALID_FILE);
+		throw new BerichtgenError(EParserError.INVALID_FILE);
 	}
 }
 
@@ -79,7 +80,7 @@ async function _get2DimensionalDirectories<T>(
 ): Promise<T[][]> {
 	const entries = [...items].map((item) => {
 		const entry = item.webkitGetAsEntry();
-		if (entry === null) throw new ParserError(EParserError.INVALID_FILE);
+		if (entry === null) throw new BerichtgenError(EParserError.INVALID_FILE);
 		return entry;
 	});
 

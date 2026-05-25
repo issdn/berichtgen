@@ -10,13 +10,10 @@
 
 import { STRIPE_SECRET_KEY } from '$env/static/private';
 import { PRICE_PER_MILLION_TOKENS_CENTS } from '$lib/constants';
-import {
-	BerichtgenError,
-	ECommonServerError,
-	svelteApiError
-} from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
 import { tryResultAsync } from '$lib/result';
 import db from '$lib/server/db';
+import { svelteApiError } from '$server/errors';
 import * as Sentry from '@sentry/sveltekit';
 import Stripe from 'stripe';
 
@@ -49,13 +46,12 @@ export async function handleCreatePaymentIntent(
 			.where('user_id', '=', userId)
 			.execute();
 
-		const paymentIntentResult = await tryResultAsync(
-			stripe.paymentIntents.update(existing.intent_id, {
+		const paymentIntentResult = await tryResultAsync({
+			apiError: ECommonServerError.STRIPE_ERROR,
+			promise: stripe.paymentIntents.update(existing.intent_id, {
 				amount: quantity * PRICE_PER_MILLION_TOKENS_CENTS
-			}),
-			BerichtgenError,
-			ECommonServerError.STRIPE_ERROR
-		);
+			})
+		});
 		if (paymentIntentResult.ok) {
 			const paymentIntent = paymentIntentResult.data;
 			return { clientSecret: paymentIntent.client_secret };
@@ -67,15 +63,14 @@ export async function handleCreatePaymentIntent(
 		);
 	}
 
-	const paymentIntentResult = await tryResultAsync(
-		stripe.paymentIntents.create({
+	const paymentIntentResult = await tryResultAsync({
+		apiError: ECommonServerError.STRIPE_ERROR,
+		promise: stripe.paymentIntents.create({
 			amount: quantity * PRICE_PER_MILLION_TOKENS_CENTS,
 			currency: 'eur',
 			payment_method_types: ['card']
-		}),
-		BerichtgenError,
-		ECommonServerError.STRIPE_ERROR
-	);
+		})
+	});
 	if (!paymentIntentResult.ok) {
 		Sentry.captureException(paymentIntentResult.error);
 		throw svelteApiError(

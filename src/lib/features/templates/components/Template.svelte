@@ -6,11 +6,7 @@
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 	import { LOCALE } from '$lib/constants';
-	import {
-		BerichtgenError,
-		ECommonServerError,
-		toErrorBody
-	} from '$lib/errors';
+	import { ECommonServerError, toErrorBody } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
 	import { getUserDisplayName } from '$lib/utils';
 	import * as AlertDialog from '$ui/alert-dialog';
@@ -122,15 +118,16 @@
 
 	async function undoReport() {
 		mutation?.start();
-		const result = await tryResultAsync(
-			deleteReport({ templateId: template.id }).updates(reportOverride(false)),
-			BerichtgenError,
-			ECommonServerError.INTERNAL_ERROR
-		);
+		const result = await tryResultAsync({
+			apiError: ECommonServerError.INTERNAL_ERROR,
+			promise: deleteReport({ templateId: template.id }).updates(
+				reportOverride(false)
+			)
+		});
 		if (result.ok) {
-			toast.success('Meldung zur�ckgezogen.');
+			toast.success('Meldung zurückgezogen.');
 		} else {
-			toast.error('Fehler beim Zur�ckziehen.', {
+			toast.error('Fehler beim Zurückziehen.', {
 				description: toErrorBody(result.error).message
 			});
 		}
@@ -140,20 +137,19 @@
 	async function submitDelete() {
 		deletePending = true;
 		mutation?.start();
-		const result = await tryResultAsync(
-			deleteTemplate({ storagePath: template.storage_path }).updates(
+		const result = await tryResultAsync({
+			apiError: ECommonServerError.INTERNAL_ERROR,
+			promise: deleteTemplate({ storagePath: template.storage_path }).updates(
 				query.withOverride((result) => ({
 					...result,
 					templates: result.templates.filter((t) => t.id !== template.id)
 				}))
-			),
-			BerichtgenError,
-			ECommonServerError.INTERNAL_ERROR
-		);
+			)
+		});
 		if (result.ok) {
-			toast.success('Datei erfolgreich gel�scht.');
+			toast.success('Datei erfolgreich gelöscht.');
 		} else {
-			toast.error('Fehler beim L�schen der Datei.', {
+			toast.error('Fehler beim Löschen der Datei.', {
 				description: toErrorBody(result.error).message
 			});
 		}
@@ -164,19 +160,18 @@
 	async function submitReport() {
 		reportPending = true;
 		mutation?.start();
-		const result = await tryResultAsync(
-			reportTemplate({
+		const result = await tryResultAsync({
+			apiError: ECommonServerError.INTERNAL_ERROR,
+			promise: reportTemplate({
 				message: reportMessage || undefined,
 				templateId: template.id
-			}).updates(reportOverride(true)),
-			BerichtgenError,
-			ECommonServerError.INTERNAL_ERROR
-		);
+			}).updates(reportOverride(true))
+		});
 		if (result.ok) {
 			reportDialogOpen = false;
 			reportMessage = '';
 			toast.success('Template gemeldet.', {
-				action: { label: 'R�ckg�ngig', onClick: undoReport }
+				action: { label: 'Rückgängig', onClick: undoReport }
 			});
 		} else {
 			toast.error('Fehler beim Melden.', {
@@ -217,7 +212,7 @@
 			<Button
 				variant="default"
 				size="icon"
-				title="Als Template ausw�hlen"
+				title="Als Template auswählen"
 				onclick={() => {
 					if (hasPendingReport) {
 						confirmSelectOpen = true;
@@ -253,7 +248,7 @@
 			href="https://docs.google.com/viewer?url={encodeURIComponent(filepath)}"
 			target="_blank"
 			rel="noopener noreferrer"
-			title="In Word Online �ffnen"
+			title="In Word Online öffnen"
 		>
 			<Button variant="ghost" size="icon" tabindex={-1}>
 				<ExternalLink size={16} />
@@ -275,7 +270,7 @@
 				<Button
 					variant="destructive"
 					size="icon"
-					title="Template l�schen"
+					title="Template löschen"
 					disabled={deletePending}
 					onclick={() => (confirmDeleteOpen = true)}
 				>
@@ -287,7 +282,7 @@
 				<Button
 					variant="ghost"
 					size="icon"
-					title="Meldung zur�ckziehen"
+					title="Meldung zurückziehen"
 					onclick={undoReport}
 				>
 					<FlagOff size={16} />
@@ -305,8 +300,8 @@
 						<Dialog.Header>
 							<Dialog.Title>Template melden</Dialog.Title>
 							<Dialog.Description>
-								Melde dieses Template als potenziell sch�dlich. Die Meldung wird
-								von einem Admin gepr�ft.
+								Melde dieses Template als potenziell schädlich. Die Meldung wird
+								von einem Admin geprüft.
 							</Dialog.Description>
 						</Dialog.Header>
 						<div>
@@ -342,9 +337,9 @@
 <AlertDialog.Root bind:open={confirmSelectOpen}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Gemeldetes Template ausw�hlen?</AlertDialog.Title>
+			<AlertDialog.Title>Gemeldetes Template auswählen?</AlertDialog.Title>
 			<AlertDialog.Description>
-				Dieses Template wurde gemeldet und wird noch �berpr�ft. Die Nutzung
+				Dieses Template wurde gemeldet und wird noch überprüft. Die Nutzung
 				erfolgt auf eigenes Risiko.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
@@ -356,7 +351,7 @@
 					confirmSelectOpen = false;
 				}}
 			>
-				Trotzdem ausw�hlen
+				Trotzdem auswählen
 			</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
@@ -365,14 +360,14 @@
 <AlertDialog.Root bind:open={confirmDeleteOpen}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Template l�schen?</AlertDialog.Title>
+			<AlertDialog.Title>Template löschen?</AlertDialog.Title>
 			<AlertDialog.Description>
-				�{name}" wird unwiderruflich gel�scht.
+				"{name}" wird unwiderruflich gelöscht.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Abbrechen</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={submitDelete}>L�schen</AlertDialog.Action>
+			<AlertDialog.Action onclick={submitDelete}>Löschen</AlertDialog.Action>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

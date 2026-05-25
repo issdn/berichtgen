@@ -27,8 +27,8 @@ export const WIZARD_PERSISTENCE_STORE = 'wizard_sessions';
 /** Maximum milliseconds a single template JS expression may run before being interrupted. (write_docx.ts) */
 export const JS_EXECUTION_TIMEOUT_MS = 5_000;
 
-/** Files at or below this size are sent inline (base64) in the completion request. */
-export const INLINE_MAX_BYTES = 1 * 1024 * 1024; // 1 MB
+/** Only TXT files at or below this size are sent inline in the completion request. */
+export const INLINE_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 
 /** Strict max file size for wizard processing. */
 export const GCS_MAX_BYTES = 50 * 1024 * 1024; // 50 MB

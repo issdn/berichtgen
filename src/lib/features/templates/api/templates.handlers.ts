@@ -1,11 +1,8 @@
-import {
-	BerichtgenError,
-	ECommonServerError,
-	svelteApiError
-} from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
 import { tryResultAsync } from '$lib/result';
 import { supabaseAdmin } from '$lib/server/admin';
 import db from '$lib/server/db';
+import { svelteApiError } from '$server/errors';
 import { ETemplateError } from '$wizard/errors';
 import * as Sentry from '@sentry/sveltekit';
 import { sql } from 'kysely';
@@ -66,15 +63,14 @@ export async function deleteTemplateReport(
 	templateId: string,
 	userId: string
 ): Promise<void> {
-	const deleteResult = await tryResultAsync(
-		db
+	const deleteResult = await tryResultAsync({
+		apiError: ECommonServerError.DATABASE_ERROR,
+		promise: db
 			.deleteFrom('template_report')
 			.where('template_id', '=', templateId)
 			.where('reporter_user_id', '=', userId)
-			.execute(),
-		BerichtgenError,
-		ECommonServerError.DATABASE_ERROR
-	);
+			.execute()
+	});
 	if (!deleteResult.ok) throw svelteApiError(ECommonServerError.DATABASE_ERROR);
 }
 
@@ -168,7 +164,7 @@ export function paginateTemplates(
 }
 
 export async function submitTemplateReport(
-	params: { message?: string; templateId: string; },
+	params: { message?: string; templateId: string },
 	userId: string
 ): Promise<void> {
 	const { message, templateId } = params;
@@ -187,18 +183,17 @@ export async function submitTemplateReport(
 		.executeTakeFirst();
 	validateCanReport(template, userId, existing);
 
-	const insertResult = await tryResultAsync(
-		db
+	const insertResult = await tryResultAsync({
+		apiError: ECommonServerError.DATABASE_ERROR,
+		promise: db
 			.insertInto('template_report')
 			.values({
 				message: message ?? null,
 				reporter_user_id: userId,
 				template_id: templateId
 			})
-			.execute(),
-		BerichtgenError,
-		ECommonServerError.DATABASE_ERROR
-	);
+			.execute()
+	});
 	if (!insertResult.ok) {
 		Sentry.captureException(insertResult.error);
 		throw svelteApiError(ECommonServerError.DATABASE_ERROR);
@@ -206,7 +201,7 @@ export async function submitTemplateReport(
 }
 
 export async function uploadTemplateFile(
-	params: { data: Uint8Array; isPublic: boolean; name: string; type: string; },
+	params: { data: Uint8Array; isPublic: boolean; name: string; type: string },
 	userId: string
 ): Promise<void> {
 	const storagePath = `${userId}/${params.name}`;

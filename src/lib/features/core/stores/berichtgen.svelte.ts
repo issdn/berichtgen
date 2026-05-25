@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { BerichtgenError, ECommonServerError } from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
 import { tryResult } from '$lib/result';
 import { SvelteMap } from 'svelte/reactivity';
 
@@ -48,11 +48,10 @@ function parseStoredSetting<K extends keyof App.BerichtgenSettings>(
 	if (!browser) return null;
 	const raw = localStorage.getItem(key);
 	if (raw === null) return null;
-	const parsed = tryResult(
-		() => JSON.parse(raw) as App.BerichtgenSettings[K],
-		BerichtgenError,
-		ECommonServerError.INTERNAL_ERROR
-	);
+	const parsed = tryResult({
+		apiError: ECommonServerError.INTERNAL_ERROR,
+		run: () => JSON.parse(raw) as App.BerichtgenSettings[K]
+	});
 	return parsed.ok ? parsed.data : null;
 }
 

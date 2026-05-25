@@ -1,25 +1,26 @@
+import { BerichtgenError } from '$lib/errors';
 import { okResult, tryResultAsync } from '$lib/result';
 import { requestGcsUploadCommand } from '$wizard/api/wizard.remote';
-import { EFileRoutingError, WizardError } from '$wizard/errors';
+import { EFileRoutingError } from '$wizard/errors';
 
 export async function uploadToGcs(file: File) {
-	const result = await tryResultAsync(
-		requestGcsUploadCommand({
+	const result = await tryResultAsync({
+		apiError: EFileRoutingError.GCS_UPLOAD_URL_FAILED,
+		promise: requestGcsUploadCommand({
 			contentType: file.type,
 			fileName: file.name,
 			fileSize: file.size,
 			fullFilePath: file.webkitRelativePath || file.name
-		}),
-		WizardError,
-		EFileRoutingError.GCS_UPLOAD_URL_FAILED
-	);
+		})
+	});
 
 	if (!result.ok) return result;
 
 	if (result.data.signedUrl === null) return okResult(result.data);
 
-	return tryResultAsync(
-		fetch(result.data.signedUrl, {
+	return tryResultAsync({
+		apiError: EFileRoutingError.GCS_UPLOAD_FAILED,
+		promise: fetch(result.data.signedUrl, {
 			body: file,
 			headers: {
 				'Content-Type': file.type,
@@ -27,10 +28,9 @@ export async function uploadToGcs(file: File) {
 			},
 			method: 'PUT'
 		}).then((res) => {
-			if (!res.ok) throw new WizardError(EFileRoutingError.GCS_UPLOAD_FAILED);
+			if (!res.ok)
+				throw new BerichtgenError(EFileRoutingError.GCS_UPLOAD_FAILED);
 			return { fileUri: result.data.fileUri, signedUrl: result.data.signedUrl };
-		}),
-		WizardError,
-		EFileRoutingError.GCS_UPLOAD_FAILED
-	);
+		})
+	});
 }

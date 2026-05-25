@@ -15,7 +15,8 @@
  */
 
 import { command, getRequestEvent, query } from '$app/server';
-import { ECommonServerError, svelteApiError } from '$lib/errors';
+import { ECommonServerError } from '$lib/errors';
+import { svelteApiError } from '$server/errors';
 import * as z from 'zod';
 
 import {

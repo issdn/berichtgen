@@ -1,4 +1,5 @@
-import { ECommonServerError, svelteApiError } from '$lib/errors.js';
+import { ECommonServerError } from '$lib/errors.js';
+import { svelteApiError } from '$server/errors';
 import { redirect } from 'sveltekit-flash-message/server';
 
 export const load = async ({ cookies, url }) => {
