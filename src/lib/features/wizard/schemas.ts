@@ -39,7 +39,7 @@ export const dateRangeSchema = z.object({
 			daterange: z.custom<BerichtgenDateRange>(
 				(data) => {
 					if (typeof data !== 'object' || data === null) return false;
-					const { end, start } = data as { end: unknown; start: unknown; };
+					const { end, start } = data as { end: unknown; start: unknown };
 					return start !== undefined && end !== undefined;
 				},
 				{ message: 'Mindestens eine Woche muss gewählt werden.' }
@@ -92,7 +92,6 @@ const inlineItemSchema = z.object({
 	/** Base64-encoded file content. */
 	data: z.string().nonempty(),
 	mimeType: z.string().nonempty(),
-	ort: ortEnum,
 	type: z.literal('inline')
 });
 
@@ -101,25 +100,25 @@ const fileApiItemSchema = z.object({
 	/** Gemini Files API URI returned after a resumable upload. */
 	fileUri: z.url(),
 	mimeType: z.string().nonempty(),
-	ort: ortEnum,
 	type: z.literal('gcs')
 });
 
 /** Completion item referencing a web URL — Gemini fetches it via Google Search grounding. */
 const urlItemSchema = z.object({
-	ort: ortEnum,
 	type: z.literal('url'),
 	url: z.url()
 });
 
 /** One item in a batch completion request — inline file, GCS file, or URL. */
 export const batchCompletionItemSchema = z.discriminatedUnion('type', [
-	inlineItemSchema,
-	fileApiItemSchema,
-	urlItemSchema
+	z.object({ ...inlineItemSchema.shape, ort: ortEnum }),
+	z.object({ ...fileApiItemSchema.shape, ort: ortEnum }),
+	z.object({ ...urlItemSchema.shape, ort: ortEnum })
 ]);
 
-export type BatchCompletionItem = z.infer<typeof batchCompletionItemSchema>;
+export type BatchCompletionItem = z.infer<typeof batchCompletionItemSchema> & {
+	ort: Ort;
+};
 
 /** Schema for the batch completion endpoint request body. */
 export const batchCompletionApiSchema = z.object({

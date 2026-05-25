@@ -1,6 +1,7 @@
 import type { BerichtgenError } from '$lib/errors';
 
 import { BerichtgenError as BerichtgenErrorClass } from '$lib/errors';
+import { restoreFileRouting } from '$wizard/services/routing';
 
 import type { DateRangeSchema } from '../schemas';
 import type { FileRouting, WizardDirectoryEntry } from '../types';
@@ -27,7 +28,15 @@ export class WizardFileContext {
 
 	static rehydrate(file: WizardPersistedFile) {
 		const context = new WizardFileContext(file.entry);
-		context.snapshot = file.snapshot ?? undefined;
+		if (
+			file.snapshot !== null &&
+			typeof file.snapshot === 'object' &&
+			'type' in file.snapshot
+		) {
+			context.snapshot = restoreFileRouting({ value: file.snapshot });
+		} else {
+			context.snapshot = file.snapshot ?? undefined;
+		}
 		context.finished = file.finished;
 		context.cancelled = file.cancelled;
 		context.error = file.error

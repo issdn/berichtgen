@@ -1,7 +1,9 @@
 import type {
-	FileRouting,
+	BatchErrorScope,
+	BatchItem,
 	ResultEntry,
 	WizardDirectories,
+	WizardPersistedSession,
 	WizardProcessStateMachine
 } from '$wizard/types';
 
@@ -19,17 +21,16 @@ import {
 	MAX_BATCH_BYTES,
 	sendBatchCompletion
 } from '$wizard/completion/completion';
-import { Ort, WizardStep } from '$wizard/enums';
+import { WizardStep } from '$wizard/enums';
 import {
 	ECompletionException,
 	EWizardError,
 	WizardError
 } from '$wizard/errors';
 import { combineJSONs } from '$wizard/postprocess/combine';
+import { type FileRouting } from '$wizard/services/routing';
 import { Context } from 'runed';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-
-import type { BatchErrorScope, WizardPersistedSession } from './types';
 
 import { createStateMachineForContext } from './state_machine';
 import { WizardBatcher } from './wizard_batcher';
@@ -38,19 +39,10 @@ import { WizardScheduler } from './wizard_scheduler.svelte';
 
 const MAX_PARALLEL_REQUESTS = 5;
 
-type BatchItem = {
-	data: string;
-	fileIndex: number;
-	ort: Ort;
-	routing: FileRouting;
-};
-
 export class WizardMediator {
 	readonly batcher: WizardBatcher;
 
 	flushRequested = $state(false);
-
-	isRunning = $derived.by(() => this.batcher.isRunning);
 
 	persistedSessionPromise: Promise<null | WizardPersistedSession>;
 
@@ -75,7 +67,8 @@ export class WizardMediator {
 	get isDone() {
 		return (
 			this.schedulerState.schedule !== null &&
-			this.filesStates?.done === this.schedulerState.numberOfFiles
+			this.filesStates!.done + this.filesStates!.error ===
+				this.schedulerState.numberOfFiles
 		);
 	}
 
@@ -200,22 +193,13 @@ export class WizardMediator {
 			const routing = process.context.snapshot as FileRouting;
 			const ort = process.context.dateRanges!.ort;
 			return {
-				data:
-					routing.type === 'url'
-						? routing.url
-						: routing.type === 'gcs'
-							? routing.fileUri
-							: routing.data,
 				fileIndex,
 				ort,
 				routing
 			};
 		});
 
-		const batches = createBatchesBySize<BatchItem>(
-			pendingItems,
-			MAX_BATCH_BYTES
-		);
+		const batches = createBatchesBySize(pendingItems, MAX_BATCH_BYTES);
 
 		const fileResults = new SvelteMap<number, string[]>();
 		const fileErrors = new SvelteMap<number, BerichtgenError>();

@@ -9,13 +9,18 @@
  */
 
 import { env } from '$env/dynamic/private';
-import { GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
+import { GCS_BUCKET_NAME, GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
 import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
 import { BerichtgenError, ECommonServerError } from '$lib/errors';
 import { tryResult, tryResultAsync } from '$lib/result';
 import db from '$lib/server/db';
 import { itemToContentPart, runCompletion } from '$wizard/completion/gemini';
-import { ECompletionException, EWizardError } from '$wizard/errors';
+import {
+	ECompletionException,
+	EGCSError,
+	EWizardError,
+	WizardError
+} from '$wizard/errors';
 import {
 	type BatchCompletionApiResponse,
 	type BatchCompletionItem
@@ -24,6 +29,7 @@ import { Storage } from '@google-cloud/storage';
 import * as genai from '@google/genai';
 import * as Sentry from '@sentry/sveltekit';
 import { sql } from 'kysely';
+import { createHash } from 'node:crypto';
 
 /**
  * Checks whether a template with the given storage path still exists in the database.
@@ -48,6 +54,51 @@ export async function checkPreferredTemplateExists(
 		return false;
 	}
 	return templateResult.data !== undefined;
+}
+
+export async function requestGcsUploadTarget({
+	contentType,
+	fullFilePath,
+	userId
+}: {
+	contentType: string;
+	fullFilePath: string;
+	userId: string;
+}): Promise<{ fileUri: string; signedUrl: null | string }> {
+	if (!GCS_BUCKET_NAME) {
+		throw new BerichtgenError(ECommonServerError.INTERNAL_ERROR);
+	}
+
+	const normalizedFullPath = fullFilePath.replace(/\\/g, '/');
+	const hash = createHash('sha256').update(normalizedFullPath).digest('hex');
+	const objectPath = `${userId}/${hash}`;
+	const fileUri = `gs://${GCS_BUCKET_NAME}/${objectPath}`;
+
+	const storageResult = tryResult(
+		() => {
+			const credentials = JSON.parse(
+				GCS_SERVICE_ACCOUNT_KEY.replace(/\n/g, '')
+			);
+			return new Storage({ credentials });
+		},
+		WizardError,
+		ECommonServerError.INTERNAL_ERROR
+	);
+	if (!storageResult.ok) throw storageResult.error;
+
+	const signedUploadResult = await tryResultAsync(
+		createSignedUploadPayload({
+			contentType,
+			fileUri,
+			objectPath,
+			storage: storageResult.data
+		}),
+		BerichtgenError,
+		EGCSError.INTERNAL_SERVER_ERROR
+	);
+	if (!signedUploadResult.ok) throw signedUploadResult.error;
+
+	return signedUploadResult.data;
 }
 
 export async function runBatchCompletion(
@@ -140,6 +191,34 @@ async function countItemTokens(
 	return result.totalTokens ?? 0;
 }
 
+async function createSignedUploadPayload({
+	contentType,
+	fileUri,
+	objectPath,
+	storage
+}: {
+	contentType: string;
+	fileUri: string;
+	objectPath: string;
+	storage: Storage;
+}): Promise<{ fileUri: string; signedUrl: null | string }> {
+	const file = storage.bucket(GCS_BUCKET_NAME).file(objectPath);
+	const [exists] = await file.exists();
+	if (exists) return { fileUri, signedUrl: null };
+
+	const [signedUrl] = await file.getSignedUrl({
+		action: 'write',
+		contentType,
+		expires: Date.now() + 5 * 60 * 1000,
+		extensionHeaders: {
+			'x-goog-if-generation-match': '0'
+		},
+		version: 'v4'
+	});
+
+	return { fileUri, signedUrl };
+}
+
 async function deductUserTokens(userId: string, amount: number): Promise<void> {
 	await db.transaction().execute(async (trx) => {
 		const current = await trx
@@ -220,7 +299,7 @@ function parseGeminiResponses(
 	settled: PromiseFulfilledResult<null | string[]>[],
 	fittingIndices: number[],
 	totalItems: number
-): { parseErrorCount: number; results: (null | string[])[]; } {
+): { parseErrorCount: number; results: (null | string[])[] } {
 	const results: (null | string[])[] = new Array(totalItems).fill(null);
 	let parseErrorCount = 0;
 

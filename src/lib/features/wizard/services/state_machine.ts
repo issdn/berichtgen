@@ -9,6 +9,11 @@ import { EFileRoutingError, WizardError } from '$wizard/errors';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
 import { fullResultSchema } from '$wizard/schemas';
 import { uploadToGcs } from '$wizard/services/gcs_service';
+import {
+	GcsRouting,
+	InlineRouting,
+	UrlRouting
+} from '$wizard/services/routing';
 import { FiniteStateMachine } from 'runed';
 
 import type { WizardFileContext } from './wizard_file_context';
@@ -103,7 +108,7 @@ export function createStateMachineForContext({
 			[WizardStep.PROCESSING]: {
 				_enter() {
 					if ('url' in context.entry) {
-						context.snapshot = { type: 'url' as const, url: context.entry.url };
+						context.snapshot = new UrlRouting({ url: context.entry.url });
 						scheduler.persistSoon();
 						machine.send('next');
 						return;
@@ -196,8 +201,7 @@ async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
 		);
 	}
 
-	if (entry.type === 'url')
-		return okResult({ type: 'url' as const, url: entry.url });
+	if (entry.type === 'url') return okResult(new UrlRouting({ url: entry.url }));
 
 	if (entry.file.size > GCS_MAX_BYTES) {
 		return errResult(WizardError, EFileRoutingError.FILE_TOO_LARGE);
@@ -211,21 +215,21 @@ async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
 		);
 		if (!text.ok) return text;
 
-		return okResult({
-			data: text.data,
-			mimeType: entry.file.type,
-			type: 'inline' as const
-		});
+		return okResult(
+			new InlineRouting({ data: text.data, mimeType: entry.file.type })
+		);
 	}
 
 	const urls = await uploadToGcs(entry.file);
 
 	if (urls.ok) {
-		return okResult({
-			...urls.data,
-			mimeType: entry.file.type,
-			type: 'gcs' as const
-		});
+		return okResult(
+			new GcsRouting({
+				fileUri: urls.data.fileUri,
+				mimeType: entry.file.type,
+				signedUrl: urls.data.signedUrl
+			})
+		);
 	}
 
 	return null as never;

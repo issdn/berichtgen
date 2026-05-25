@@ -1,8 +1,20 @@
+import type { Attributes, ReplaceAttr } from '$core/types';
+import type { BerichtgenError } from '$lib/errors';
 import type { Ort } from '$wizard/enums';
+import type { WizardStep } from '$wizard/enums';
 import type { DateRangeSchema } from '$wizard/schemas';
+import type { FileRouting } from '$wizard/services/routing';
 import type { StateMachineSignature } from '$wizard/services/state_machine';
 import type { WizardFileContext } from '$wizard/services/wizard_file_context';
 import type { DateValue } from '@internationalized/date';
+
+export type BatchErrorScope = 'file_scoped' | 'global';
+
+export type BatchItem = {
+	fileIndex: number;
+	ort: Ort;
+	routing: FileRouting;
+};
 
 export interface BerichtgenWeightedDateRange {
 	daterange: {
@@ -36,31 +48,7 @@ export interface Entry {
 	text: string;
 }
 
-/** Discriminated union of all possible file routing strategies. */
-export type FileRouting = GcsRouting | InlineRouting | UrlRouting;
-
-/** The file was uploaded directly to Google Cloud Storage. null means file already exists in the storage */
-export type GcsRouting = {
-	fileUri: string;
-	mimeType: string;
-	signedUrl: null | string;
-	type: 'gcs';
-};
-
-/** The file is small enough (= 1 MB) to be sent inline as base64. */
-export type InlineRouting = {
-	data: string;
-	mimeType: string;
-	type: 'inline';
-};
-
 export type ResultEntry = Required<Entry>;
-
-/** A web URL pasted by the user or specified in the config file. */
-export type UrlRouting = {
-	type: 'url';
-	url: string;
-};
 
 export type WizardDirectories = WizardDirectory[];
 
@@ -74,6 +62,22 @@ export type WizardFileEntry = {
 	type: 'file';
 };
 
+export type WizardPersistedFile = ReplaceAttr<
+	Attributes<WizardFileContext>,
+	'error',
+	BerichtgenError['apiError'] | undefined
+> & {
+	id: string;
+	step: WizardStep;
+};
+
+export type WizardPersistedSession = {
+	files: WizardPersistedFile[];
+	flushRequested: boolean;
+	sessionId: string;
+	updatedAt: number;
+};
+
 export type WizardProcessStateMachine = {
 	/** Sets cancelled and advances the machine — call instead of mutating context directly. */
 	cancel: () => void;
@@ -85,9 +89,7 @@ export type WizardProcessStateMachine = {
 	/** Clears cancelled and re-enqueues the machine — call instead of mutating context directly. */
 	restart: () => void;
 };
-
 export type WizardRawDirectories = File[][];
-
 export type WizardRawDirectory = WizardRawDirectories[number];
 
 export type WizardUrlEntry = {

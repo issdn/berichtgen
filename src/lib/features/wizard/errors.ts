@@ -33,6 +33,10 @@ export const EWizardError = buildError({
 		httpCode: 500,
 		message: 'Ungültige JSON-Antwort von der KI.'
 	},
+	REHYDRATION_FAILED: {
+		httpCode: 500,
+		message: 'Datenwiederherstellung fehlgeschlagen.'
+	},
 	SPREAD_FAILED: { httpCode: 500, message: 'Zeitverteilung fehlgeschlagen.' }
 } as const);
 

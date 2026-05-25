@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { WizardPersistedSession } from '$wizard/services/types';
 	import type { WizardProcessStateMachine } from '$wizard/types';
 
 	import { page } from '$app/state';
@@ -7,7 +6,6 @@
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import * as AlertDialog from '$ui/alert-dialog';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
 	import Docx from '$ui/svg/DOCX.svelte';
@@ -29,13 +27,12 @@
 	import { flip } from 'svelte/animate';
 
 	import WizardFile from './WizardFile.svelte';
+	import WizardRestoreSessionDialog from './WizardRestoreSessionDialog.svelte';
 	import WizardSettingsPopover from './WizardSettingsPopover.svelte';
 
 	const wizardMediator = wizardMediatorContext.get();
 
 	let hasAnyResult = $state(false);
-
-	let restoreDismissed = $state(false);
 
 	let flushLoading = $state(false);
 
@@ -50,16 +47,6 @@
 			});
 		}
 	});
-
-	async function discardRestoredSession() {
-		restoreDismissed = true;
-		await wizardMediator.clearPersistedSession();
-	}
-
-	function restoreSession(session: WizardPersistedSession) {
-		wizardMediator.processInit = wizardMediator.init(session);
-		restoreDismissed = true;
-	}
 
 	function handleDndConsider(
 		e: CustomEvent<DndEvent<WizardProcessStateMachine>>
@@ -235,26 +222,8 @@
 
 <svelte:boundary>
 	{@const persistedSession = await wizardMediator.persistedSessionPromise}
-	{#if persistedSession !== null && !restoreDismissed}
-		<AlertDialog.Root open={true}>
-			<AlertDialog.Content>
-				<AlertDialog.Header>
-					<AlertDialog.Title>Vorherige Sitzung gefunden</AlertDialog.Title>
-					<AlertDialog.Description>
-						{persistedSession.files.length} Dateien, zuletzt gespeichert am&nbsp;
-						{new Date(persistedSession.updatedAt).toLocaleString()}.
-					</AlertDialog.Description>
-				</AlertDialog.Header>
-				<AlertDialog.Footer>
-					<AlertDialog.Cancel onclick={discardRestoredSession}>
-						Verwerfen
-					</AlertDialog.Cancel>
-					<AlertDialog.Action onclick={() => restoreSession(persistedSession)}
-						>Fortsetzen</AlertDialog.Action
-					>
-				</AlertDialog.Footer>
-			</AlertDialog.Content>
-		</AlertDialog.Root>
+	{#if persistedSession !== null}
+		<WizardRestoreSessionDialog session={persistedSession} />
 	{/if}
 	{#snippet pending()}
 		<!-- no-op pending UI for initial persisted-session lookup -->

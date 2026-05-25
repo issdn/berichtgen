@@ -3,10 +3,9 @@ import type {
 	Entry,
 	WizardDirectories,
 	WizardDirectoryEntry,
+	WizardPersistedFile,
 	WizardProcessStateMachine
 } from '$wizard/types';
-
-import type { WizardPersistedFile } from './types';
 
 type FilesStates = Record<WizardStep, number>;
 

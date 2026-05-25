@@ -51,7 +51,7 @@
 )}
 	<LabeledSwitch
 		checked={berichtgenStore.get(key)}
-		disabled={wizardMediator.isRunning}
+		disabled={!wizardMediator.isDone}
 		onchange={(value) => berichtgenStore.set(key, value)}
 		{id}
 		{label}
