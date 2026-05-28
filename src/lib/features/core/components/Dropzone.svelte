@@ -1,5 +1,10 @@
 <script lang="ts">
+	import type { FileValidator } from '$core/scan/file_scan';
+
+	import { EParserError } from '$core/parser/errors';
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
+	import { BerichtgenError } from '$lib/errors';
+	import { tryResult } from '$lib/result';
 	import { cn } from '$lib/utils';
 	import * as Kbd from '$ui/kbd';
 	import { FileTypes } from '$wizard/enums';
@@ -19,7 +24,7 @@
 		disabled?: boolean;
 		filesNumber?: null | number;
 		handleFiles: (files: DataTransferItemList | FileList) => Promise<void>;
-		isValidFile?: (file: File) => boolean;
+		isValidFile?: FileValidator;
 	} = $props();
 
 	let isDraggingIn = $state(false);
@@ -29,12 +34,35 @@
 		type === FileTypes.URI_LIST ||
 		(type.length > 0 && (accept ? accept.includes(type) : false));
 
-	function isFileValid(file: File): boolean {
-		return matchesAccept(file.type) && (isValidFile ? isValidFile(file) : true);
+	function validateFile(file: File): ReturnType<FileValidator> {
+		if (!matchesAccept(file.type)) {
+			throw new BerichtgenError({
+				...EParserError.INVALID_FILE,
+				cause: `"${file.name}" hat einen nicht erlaubten Dateityp (${file.type || 'leer'}).`
+			});
+		}
+		if (isValidFile) isValidFile(file);
 	}
 
-	function areFilesValid(files: FileList): boolean {
-		return [...files].every(isFileValid);
+	function isFileValid(file: File): boolean {
+		const result = tryResult({
+			apiError: EParserError.INVALID_FILE,
+			run: () => validateFile(file)
+		});
+		return result.ok;
+	}
+
+	function getFirstValidationError(files: FileList): BerichtgenError | null {
+		for (const file of [...files]) {
+			const result = tryResult({
+				apiError: EParserError.INVALID_FILE,
+				run: () => validateFile(file)
+			});
+			if (!result.ok) {
+				return result.error;
+			}
+		}
+		return null;
 	}
 
 	async function extractAndHandleFiles(
@@ -48,8 +76,11 @@
 			}
 			await handleFiles(maybeItems);
 		} else if (dataTransfer instanceof FileList) {
-			if (!areFilesValid(dataTransfer)) {
-				toast.error('Ungueltige Datei(en) erkannt');
+			const validationError = getFirstValidationError(dataTransfer);
+			if (validationError !== null) {
+				toast.error(validationError.message, {
+					description: validationError.apiError.cause
+				});
 				return;
 			}
 			await handleFiles(dataTransfer);

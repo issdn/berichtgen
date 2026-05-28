@@ -19,18 +19,13 @@ vi.mock('$core/stores/berichtgen.svelte', () => ({
 	}
 }));
 
-const mockResolveFileRouting = vi.hoisted(() => vi.fn());
-vi.mock('$wizard/services/file_routing', async (importOriginal) => ({
-	...((await importOriginal()) as object),
-	resolveFileRouting: mockResolveFileRouting
-}));
-
 const mockSendBatch = vi.hoisted(() => vi.fn());
 vi.mock('$wizard/completion/completion', async (importOriginal) => ({
 	...((await importOriginal()) as object),
 	sendBatchCompletion: mockSendBatch
 }));
 
+import type { WizardPersistenceController } from '$core/persistence/wizard_persistence_controller.svelte';
 import type { DateRangeSchema } from '$wizard/schemas';
 
 import { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
@@ -42,21 +37,27 @@ function flush() {
 const DUMMY_TEXT = 'Montag: Programmieren';
 const AI_RESULT = 'KI: Montag: Programmieren';
 
+function createPersistenceMock(): WizardPersistenceController {
+	return {
+		clearWizardSession: vi.fn(async () => {}),
+		isRehydrating: false,
+		loadWizardSession: vi.fn(async () => null),
+		mutation: null,
+		saveWizardSession: vi.fn(async () => {}),
+		status: 'loading'
+	} as unknown as WizardPersistenceController;
+}
+
 describe('State machine full lifecycle', () => {
 	test('INITIALISING -> PROCESSING -> WAITING -> BATCH_PENDING -> AI_COMPLETION -> TIME_SPREADING -> DONE', async () => {
-		mockResolveFileRouting.mockResolvedValue(
-			okResult({
-				data: btoa(DUMMY_TEXT),
-				mimeType: 'text/plain',
-				type: 'inline'
-			})
-		);
-
 		mockSendBatch.mockResolvedValue(
 			okResult({ insufficient_tokens: false, results: [[AI_RESULT]] })
 		);
 
-		const scheduler = WizardMediator.createDefault();
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
 		const file = new File([DUMMY_TEXT], 'test.txt', { type: 'text/plain' });
 		scheduler.createSchedule([[{ file }]]);
 
@@ -91,6 +92,9 @@ describe('State machine full lifecycle', () => {
 		await flush();
 
 		expect(machine.current).toBe(WizardStep.DONE);
-		expect(context.finished![0].text).toBe(AI_RESULT);
+		expect(Array.isArray(context.snapshot)).toBe(true);
+		expect((context.snapshot as Array<{ text: string }>)[0].text).toContain(
+			AI_RESULT
+		);
 	});
 });

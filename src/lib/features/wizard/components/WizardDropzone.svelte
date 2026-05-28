@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import type {
 		CSVConfigFile,
 		WizardDirectory,
@@ -18,7 +18,7 @@
 		GCS_MAX_BYTES,
 		INLINE_MAX_BYTES
 	} from '$lib/constants';
-	import { ECommonServerError } from '$lib/errors';
+	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
 	import { FileTypes } from '$wizard/enums';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
@@ -31,15 +31,26 @@
 		page.data.loggedIn ? Object.values(FileTypes).join(',') : FileTypes.JSON
 	);
 
-	const isValidFile = (file: File): boolean => {
-		if (file.type === FileTypes.URI_LIST) return true;
-		if (file.type === FileTypes.TXT && file.size > INLINE_MAX_BYTES)
-			return false;
-		return (
-			file.type.length > 0 &&
-			accept.includes(file.type) &&
-			file.size <= GCS_MAX_BYTES
-		);
+	const isValidFile = (file: File): void => {
+		if (file.type === FileTypes.URI_LIST) return;
+		if (file.type === FileTypes.TXT && file.size > INLINE_MAX_BYTES) {
+			throw new BerichtgenError({
+				...ECommonServerError.VALIDATION_ERROR,
+				cause: `"${file.name}" ist zu groß für direkten Text-Upload (max. 2MB für TXT).`
+			});
+		}
+		if (file.type.length === 0 || !accept.includes(file.type)) {
+			throw new BerichtgenError({
+				...ECommonServerError.VALIDATION_ERROR,
+				cause: `"${file.name}" hat einen nicht erlaubten Dateityp (${file.type || 'leer'}).`
+			});
+		}
+		if (file.size > GCS_MAX_BYTES) {
+			throw new BerichtgenError({
+				...ECommonServerError.VALIDATION_ERROR,
+				cause: `"${file.name}" überschreitet die maximale Dateigröße von 50MB.`
+			});
+		}
 	};
 
 	async function handleFiles(items: DataTransferItemList | FileList) {
@@ -48,8 +59,8 @@
 			promise: scanDroppedInput(items, ScanReturnValue.FILE, isValidFile)
 		});
 		if (!scanResult.ok) {
-			toast.error('Fehler beim Scannen der Dateien', {
-				description: scanResult.error.message
+			toast.error(scanResult.error.message, {
+				description: scanResult.error.apiError.cause
 			});
 			return;
 		}

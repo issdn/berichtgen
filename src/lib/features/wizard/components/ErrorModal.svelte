@@ -1,12 +1,15 @@
 <script lang="ts">
+	import type { DialogRootPropsWithoutHTML } from 'bits-ui';
+
 	import CopyButton from '$core/components/CopyButton.svelte';
 	import { toErrorBody } from '$lib/errors';
 	import * as Dialog from '$ui/dialog';
 
 	let {
 		error,
-		open = $bindable(false)
-	}: {
+		open = $bindable(false),
+		...rest
+	}: DialogRootPropsWithoutHTML & {
 		error: unknown;
 		open?: boolean;
 	} = $props();
@@ -14,7 +17,7 @@
 	let normalized = $derived(toErrorBody(error));
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open {...rest}>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title class="text-destructive">{normalized.message}</Dialog.Title>

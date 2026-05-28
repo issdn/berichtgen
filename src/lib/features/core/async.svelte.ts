@@ -18,20 +18,25 @@ export class AsyncResource<T, P extends unknown[]> {
 	get data(): null | T {
 		return this.#data;
 	}
+
 	get error(): null | ReturnType<typeof toErrorBody> {
 		return this.#error;
 	}
+
 	get loading(): boolean {
 		return this.#loading;
 	}
 
 	#asyncFn: (...args: P) => Promise<T>;
+
 	#data = $state<null | T>(null);
 
 	#error = $state<null | ReturnType<typeof toErrorBody>>(null);
 
 	#loading = $state(false);
+
 	#options: AsyncOptions<T>;
+
 	constructor(
 		asyncFn: (...args: P) => Promise<T>,
 		options: AsyncOptions<T> = {}
@@ -59,7 +64,6 @@ export class AsyncResource<T, P extends unknown[]> {
 			this.#options.onSuccess?.(result);
 			return result;
 		} catch (e: unknown) {
-			console.log(e, typeof e);
 			const body = toErrorBody(e);
 			this.#error = body;
 			this.#options.onError?.(body);

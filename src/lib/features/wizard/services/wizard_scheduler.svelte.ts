@@ -1,11 +1,13 @@
-import type { WizardStep } from '$wizard/enums';
 import type {
 	Entry,
+	ResultEntry,
 	WizardDirectories,
 	WizardDirectoryEntry,
 	WizardPersistedFile,
 	WizardProcessStateMachine
 } from '$wizard/types';
+
+import { WizardStep } from '$wizard/enums';
 
 type FilesStates = Record<WizardStep, number>;
 
@@ -58,8 +60,9 @@ export class WizardScheduler {
 
 	getFinishedDirectories(): Required<Entry>[][] {
 		if (!this.schedule) return [];
-		return this.schedule.reduce((prev, { context }) => {
-			if (context.finished != null) return [...prev, context.finished];
+		return this.schedule.reduce((prev, { context, machine }) => {
+			if (machine.current === WizardStep.DONE)
+				return [...prev, context.snapshot as ResultEntry[]];
 			return prev;
 		}, [] as Required<Entry>[][]);
 	}

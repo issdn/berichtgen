@@ -1,19 +1,12 @@
+import type { WizardPersistenceController } from '$core/persistence/wizard_persistence_controller.svelte';
 import type {
 	BatchErrorScope,
 	BatchItem,
-	ResultEntry,
 	WizardDirectories,
 	WizardPersistedSession,
 	WizardProcessStateMachine
 } from '$wizard/types';
 
-import Persistence from '$core/persistence';
-import berichtgenStore from '$core/stores/berichtgen.svelte';
-import {
-	WIZARD_PERSISTENCE_STORE,
-	WIZARD_PERSISTENCE_TTL_MS,
-	WIZARD_PERSISTENCE_VERSION
-} from '$lib/constants';
 import { BerichtgenError } from '$lib/errors';
 import { debounce } from '$lib/utils';
 import {
@@ -23,7 +16,6 @@ import {
 } from '$wizard/completion/completion';
 import { WizardStep } from '$wizard/enums';
 import { ECompletionException, EWizardError } from '$wizard/errors';
-import { combineJSONs } from '$wizard/postprocess/combine';
 import { type FileRouting } from '$wizard/services/routing';
 import { Context } from 'runed';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
@@ -37,18 +29,18 @@ const MAX_PARALLEL_REQUESTS = 5;
 
 export class WizardMediator {
 	readonly batcher: WizardBatcher;
-
 	flushRequested = $state(false);
 
 	persistedSessionPromise: Promise<null | WizardPersistedSession>;
 
+	readonly persistence: WizardPersistenceController;
+
 	persistSoon = debounce(() => {
+		if (this.persistence.isRehydrating) return;
 		void this.persistNow();
 	}, 250);
 
 	processInit = $state<null | Promise<void>>(null);
-
-	result = $state<null | Promise<ResultEntry[]>>(null);
 
 	readonly schedulerState: WizardScheduler;
 
@@ -83,24 +75,33 @@ export class WizardMediator {
 	constructor(
 		schedulerState: WizardScheduler,
 		batcher: WizardBatcher,
+		persistence: WizardPersistenceController,
 		userId?: null | string
 	) {
 		this.schedulerState = schedulerState;
 		this.batcher = batcher;
+		this.persistence = persistence;
 		this.userKey = userId ? `user:${userId}` : 'anon';
 		this.persistedSessionPromise = this.loadPersistedSession();
 	}
 
-	static createDefault(userId?: null | string) {
+	static createDefault({
+		persistence,
+		userId
+	}: {
+		persistence: WizardPersistenceController;
+		userId: null | undefined;
+	}) {
 		return new WizardMediator(
 			new WizardScheduler(),
 			new WizardBatcher(),
+			persistence,
 			userId
 		);
 	}
 
 	async clearPersistedSession() {
-		await Persistence.clear(WIZARD_PERSISTENCE_STORE, this.userKey);
+		await this.persistence.clearWizardSession({ key: this.userKey });
 	}
 
 	createProcessStateMachine = (
@@ -117,7 +118,6 @@ export class WizardMediator {
 
 		const process: WizardProcessStateMachine = {
 			cancel() {
-				context.cancelled = true;
 				machine.send('cancel');
 			},
 			confirmDateRanges() {
@@ -129,7 +129,6 @@ export class WizardMediator {
 			id,
 			machine,
 			restart() {
-				context.cancelled = false;
 				machine.send('next');
 			}
 		};
@@ -156,15 +155,7 @@ export class WizardMediator {
 	}
 
 	finish = () => {
-		this.result = (async () => {
-			const finishedDirectories = this.schedulerState.getFinishedDirectories();
-			const combined = combineJSONs(
-				finishedDirectories,
-				berichtgenStore.get('constantHours')
-			);
-			await this.clearPersistedSession();
-			return combined;
-		})();
+		void this.clearPersistedSession();
 	};
 
 	async flushAiCompletion(): Promise<void> {
@@ -210,23 +201,17 @@ export class WizardMediator {
 		this.applyResults(pendingList, fileResults, fileErrors, globalError);
 	}
 
-	init = async (session: null | WizardPersistedSession = null) => {
+	init = (session: null | WizardPersistedSession = null) => {
 		this.resetRuntimeState();
 		if (session) {
 			this.rehydrateFromSnapshot(session);
 			return;
 		}
 		this.sessionId = crypto.randomUUID();
-		this.persistSoon();
 	};
 
 	async loadPersistedSession(): Promise<null | WizardPersistedSession> {
-		return Persistence.load<WizardPersistedSession>(
-			WIZARD_PERSISTENCE_STORE,
-			this.userKey,
-			WIZARD_PERSISTENCE_VERSION,
-			WIZARD_PERSISTENCE_TTL_MS
-		);
+		return this.persistence.loadWizardSession({ key: this.userKey });
 	}
 
 	onFileBatchPending = (id: string) => {
@@ -236,13 +221,16 @@ export class WizardMediator {
 		this.persistSoon();
 	};
 
+	onFileCancelled = ({ id }: { id: string }) => {
+		this.batcher.unregister({ id });
+		this.persistSoon();
+	};
+
 	async persistNow() {
-		await Persistence.save(
-			WIZARD_PERSISTENCE_STORE,
-			this.userKey,
-			this.exportSnapshot(),
-			WIZARD_PERSISTENCE_VERSION
-		);
+		await this.persistence.saveWizardSession({
+			key: this.userKey,
+			payload: this.exportSnapshot()
+		});
 	}
 
 	private applyResults(
@@ -353,6 +341,7 @@ export class WizardMediator {
 	}
 
 	private rehydrateFromSnapshot(snapshot: WizardPersistedSession): void {
+		this.persistence.isRehydrating = true;
 		this.sessionId = snapshot.sessionId;
 		this.flushRequested = snapshot.flushRequested ?? false;
 		this.resetRuntimeState();
@@ -381,13 +370,12 @@ export class WizardMediator {
 			}
 		}
 		if (this.isDone) this.finish();
-		this.persistSoon();
+		this.persistence.isRehydrating = false;
 	}
 
 	private resetRuntimeState() {
 		this.batcher.reset();
 		this.schedulerState.clear();
-		this.result = null;
 		this.flushRequested = false;
 	}
 

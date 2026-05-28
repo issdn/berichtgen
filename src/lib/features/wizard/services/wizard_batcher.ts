@@ -26,4 +26,8 @@ export class WizardBatcher {
 		this.pendingById.clear();
 		return ids;
 	}
+
+	unregister({ id }: { id: string }) {
+		this.pendingById.delete(id);
+	}
 }

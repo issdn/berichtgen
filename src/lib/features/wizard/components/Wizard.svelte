@@ -12,6 +12,7 @@
 	import Pdf from '$ui/svg/PDF.svelte';
 	import Png from '$ui/svg/PNG.svelte';
 	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
+	import { combineJSONs } from '$wizard/postprocess/combine';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { handleDOCXDownload } from '$wizard/write/write_docx';
 	import { handleJSONDownload } from '$wizard/write/write_json';
@@ -32,23 +33,14 @@
 
 	const wizardMediator = wizardMediatorContext.get();
 
-	let hasAnyResult = $state(false);
-
 	let flushLoading = $state(false);
 
 	let canRunFlush = $derived(
 		(wizardMediator.filesStates?.batch_pending ?? 0) > 0
 	);
-
-	$effect(() => {
-		if (wizardMediator.result !== null) {
-			wizardMediator.result?.then((items) => {
-				if (items.length > 0) {
-					hasAnyResult = true;
-				}
-			});
-		}
-	});
+	let atLeastOneFileDone = $derived(
+		(wizardMediator.filesStates?.done ?? 0) > 0
+	);
 
 	function handleDndConsider(
 		e: CustomEvent<DndEvent<WizardProcessStateMachine>>
@@ -70,7 +62,11 @@
 
 	const downloadJSON = new AsyncResource(
 		async () => {
-			await handleJSONDownload(wizardMediator.result!);
+			const combined = combineJSONs(
+				wizardMediator.schedulerState.getFinishedDirectories(),
+				berichtgenStore.get('constantHours')
+			);
+			await handleJSONDownload(Promise.resolve(combined));
 		},
 		{
 			onError: (error) => {
@@ -111,8 +107,12 @@
 				return;
 			}
 			const uintarray = new Uint8Array(await templateResult.data.arrayBuffer());
+			const combined = combineJSONs(
+				wizardMediator.schedulerState.getFinishedDirectories(),
+				berichtgenStore.get('constantHours')
+			);
 			await handleDOCXDownload({
-				entries: wizardMediator.result!,
+				entries: Promise.resolve(combined),
 				template: uintarray,
 				userMetadata: page.data.userMetadata
 			});
@@ -152,13 +152,18 @@
 				{/if}
 				Ausführen
 			</Button>
-			<Dialog.Root open={hasAnyResult}>
+			<Dialog.Root open={atLeastOneFileDone}>
 				<Dialog.Trigger
 					class={buttonVariants({ variant: 'default' })}
 					data-testid="wizard-completion-button"
-					disabled={!hasAnyResult}><FileCheck2 /></Dialog.Trigger
+					disabled={!atLeastOneFileDone}><FileCheck2 /></Dialog.Trigger
 				>
-				<Dialog.Content {children} {childrenBehind} class="max-w-min" />
+				<Dialog.Content
+					data-testid="wizard-dialog-content"
+					{children}
+					{childrenBehind}
+					class="max-w-min"
+				/>
 			</Dialog.Root>
 		</div>
 	</div>
@@ -199,7 +204,7 @@
 		<div class="flex w-fit flex-col gap-y-2">
 			<Button
 				onclick={downloadJSON.execute}
-				disabled={!hasAnyResult || downloadJSON.loading}
+				disabled={!atLeastOneFileDone || downloadJSON.loading}
 				data-testid="wizard-json-download"
 			>
 				{#if downloadJSON.loading}
@@ -210,7 +215,7 @@
 			</Button>
 			<Button
 				onclick={downloadDOCX.execute}
-				disabled={!hasAnyResult || downloadDOCX.loading}
+				disabled={!atLeastOneFileDone || downloadDOCX.loading}
 			>
 				{#if downloadDOCX.loading}
 					<Spinner size="sm" />

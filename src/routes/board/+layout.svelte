@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import PersistenceIndicator from '$core/persistence/PersistenceIndicator.svelte';
+	import { WizardPersistenceController } from '$core/persistence/wizard_persistence_controller.svelte';
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import {
 		WizardMediator,
@@ -10,7 +12,11 @@
 
 	let { children } = $props();
 
-wizardMediatorContext.set(WizardMediator.createDefault(page.data.user?.id));
+	const persistence = new WizardPersistenceController();
+
+	wizardMediatorContext.set(
+		WizardMediator.createDefault({ persistence, userId: page.data.user?.id })
+	);
 
 	const flash = getFlash(page);
 
@@ -37,3 +43,4 @@ wizardMediatorContext.set(WizardMediator.createDefault(page.data.user?.id));
 </script>
 
 {@render children()}
+<PersistenceIndicator controller={persistence} />

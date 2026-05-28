@@ -4,6 +4,12 @@ import { EParserError } from '$core/parser/errors';
 import { type ScanReturnType, ScanReturnValue } from '$core/types';
 import { BerichtgenError } from '$lib/errors';
 
+/**
+ * Validates a file and must throw (typically `BerichtgenError`) when invalid.
+ * Returning normally means the file is valid.
+ */
+export type FileValidator = (file: File) => void;
+
 export function extractFilesSimple(
 	input: DataTransferItemList | FileList
 ): File[] {
@@ -19,7 +25,7 @@ export function extractFilesSimple(
 export async function get2DimensionalDirectories(
 	items: DataTransferItemList,
 	returnType: ScanReturnType,
-	isFileValid?: (file: File) => boolean
+	isFileValid?: FileValidator
 ) {
 	if (returnType === ScanReturnValue.FILE) {
 		return _get2DimensionalDirectories(items, (entry) =>
@@ -34,11 +40,11 @@ export async function get2DimensionalDirectories(
 
 export function getFileListWithPreserverFolderStructure(
 	files: FileList,
-	isFileValid?: (file: File) => boolean
+	isFileValid?: FileValidator
 ): WizardRawDirectories {
 	const directories = new Map<string, WizardRawDirectory>(
 		[...files].reduce((acc, file) => {
-			if (isFileValid && !isFileValid(file)) return acc;
+			validateFile({ file, isFileValid });
 			const pathParts = file.webkitRelativePath.split('/');
 			const directoryPath = pathParts.slice(0, -1).join('/');
 			if (!acc.has(directoryPath)) {
@@ -54,7 +60,7 @@ export function getFileListWithPreserverFolderStructure(
 export async function scanDroppedInput(
 	input: DataTransferItemList | FileList,
 	returnType: (typeof ScanReturnValue)['FILE'],
-	isFileValid?: (file: File) => boolean
+	isFileValid?: FileValidator
 ): Promise<WizardRawDirectories>;
 export async function scanDroppedInput(
 	input: DataTransferItemList | FileList,
@@ -63,7 +69,7 @@ export async function scanDroppedInput(
 export async function scanDroppedInput(
 	input: DataTransferItemList | FileList,
 	returnType: ScanReturnType,
-	isFileValid?: (file: File) => boolean
+	isFileValid?: FileValidator
 ): Promise<(File | FileSystemFileEntry)[][] | WizardRawDirectories> {
 	if (input instanceof FileList) {
 		if (returnType === ScanReturnValue.FILE) {
@@ -73,7 +79,6 @@ export async function scanDroppedInput(
 	}
 	return get2DimensionalDirectories(input, returnType, isFileValid);
 }
-
 async function _get2DimensionalDirectories<T>(
 	items: DataTransferItemList,
 	scanFunction: (item: FileSystemEntry, items?: T[][]) => Promise<T[][]>
@@ -100,7 +105,7 @@ async function _get2DimensionalDirectories<T>(
 async function scanFiles(
 	item: FileSystemEntry,
 	items: WizardRawDirectories = [],
-	isFileValid?: (file: File) => boolean
+	isFileValid?: FileValidator
 ) {
 	if (item.isDirectory) {
 		const directoryReader = (item as FileSystemDirectoryEntry).createReader();
@@ -132,7 +137,7 @@ async function scanFiles(
 		const file = await new Promise<File>((resolve, reject) =>
 			(item as FileSystemFileEntry).file(resolve, reject)
 		);
-		if (isFileValid && !isFileValid(file)) return [] as WizardRawDirectories;
+		validateFile({ file, isFileValid });
 		return [[file]] as WizardRawDirectories;
 	}
 	return items;
@@ -172,4 +177,15 @@ async function scanSystemFileEntries(
 		return [[item as FileSystemFileEntry]];
 	}
 	return items;
+}
+
+function validateFile({
+	file,
+	isFileValid
+}: {
+	file: File;
+	isFileValid?: FileValidator;
+}): void {
+	if (!isFileValid) return;
+	isFileValid(file);
 }

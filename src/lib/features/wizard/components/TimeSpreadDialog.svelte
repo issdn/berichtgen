@@ -67,7 +67,7 @@
 			><Calendar /></Button
 		></Dialog.Trigger
 	>
-	<Dialog.Content class="w-full px-4">
+	<Dialog.Content data-testid="time-spread-dialog" class="w-full px-4">
 		<Dialog.Header class="px-2">
 			<Dialog.Title>Wähle Datumbereiche!</Dialog.Title>
 			<Dialog.Description

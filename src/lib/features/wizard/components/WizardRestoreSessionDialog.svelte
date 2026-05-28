@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { WizardPersistedSession } from '$wizard/services/types';
+	import type { WizardPersistedSession } from '$wizard/types';
 
 	import { AsyncResource } from '$core/async.svelte';
 	import * as AlertDialog from '$ui/alert-dialog';
@@ -19,7 +19,9 @@
 
 	const restoreSessionMutation = new AsyncResource(
 		async ({ session }: { session: WizardPersistedSession }) => {
-			wizardMediator.processInit = wizardMediator.init(session);
+			wizardMediator.processInit = Promise.resolve(
+				wizardMediator.init(session)
+			);
 			await wizardMediator.processInit;
 			dismissed = true;
 		}
@@ -28,7 +30,7 @@
 
 {#if !dismissed}
 	<AlertDialog.Root open={true}>
-		<AlertDialog.Content>
+		<AlertDialog.Content data-testid="wizard-restore-dialog">
 			<AlertDialog.Header>
 				<AlertDialog.Title>Vorherige Sitzung gefunden</AlertDialog.Title>
 				<AlertDialog.Description>
@@ -42,10 +44,14 @@
 				</AlertDialog.Description>
 			</AlertDialog.Header>
 			<AlertDialog.Footer>
-				<AlertDialog.Cancel onclick={discardRestoredSession}>
+				<AlertDialog.Cancel
+					data-testid="wizard-restore-discard"
+					onclick={discardRestoredSession}
+				>
 					Verwerfen
 				</AlertDialog.Cancel>
 				<AlertDialog.Action
+					data-testid="wizard-restore-resume"
 					disabled={restoreSessionMutation.loading ||
 						restoreSessionMutation.error !== null}
 					onclick={() => restoreSessionMutation.execute({ session })}

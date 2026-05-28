@@ -42,18 +42,15 @@ export function createStateMachineForContext({
 		{
 			[WizardStep.AI_COMPLETION]: {
 				cancel: () => {
-					scheduler.persistSoon();
 					return WizardStep.CANCELLED;
 				},
 				error: () => {
-					scheduler.persistSoon();
 					return WizardStep.ERROR;
 				},
 				next(...args: unknown[]) {
 					const entries = args[0] as Entry[];
 					context.snapshot = entries;
 					invalidate('user:tokenCount');
-					scheduler.persistSoon();
 					return WizardStep.TIME_SPREADING;
 				}
 			},
@@ -63,51 +60,44 @@ export function createStateMachineForContext({
 					scheduler.onFileBatchPending(id);
 				},
 				cancel: () => {
-					scheduler.persistSoon();
 					return WizardStep.CANCELLED;
 				},
 				error: () => {
-					scheduler.persistSoon();
 					return WizardStep.ERROR;
 				},
 				start: () => {
-					scheduler.persistSoon();
 					return WizardStep.AI_COMPLETION;
 				}
 			},
 
 			[WizardStep.CANCELLED]: {
-				_enter() {
-					scheduler.persistSoon();
+				_enter(meta) {
+					context.lastState = meta.from;
+					scheduler.onFileCancelled({ id });
 				},
-				init: () => WizardStep.INITIALISING,
 				next() {
-					return WizardStep.INITIALISING;
+					return context.lastState ?? WizardStep.INITIALISING;
 				}
 			},
 
 			[WizardStep.DONE]: {
 				_enter: () => {
-					context.finished = context.snapshot as ResultEntry[];
-					scheduler.persistSoon();
 					if (scheduler.isDone) scheduler.finish();
 				}
 			},
 
-			[WizardStep.ERROR]: {
-				_enter() {
-					scheduler.persistSoon();
-				}
-			},
+			[WizardStep.ERROR]: {},
 
 			[WizardStep.INITIALISING]: {
+				cancel: () => {
+					return WizardStep.CANCELLED;
+				},
 				next: WizardStep.PROCESSING
 			},
 			[WizardStep.PROCESSING]: {
 				_enter() {
 					if ('url' in context.entry) {
 						context.snapshot = new UrlRouting({ url: context.entry.url });
-						scheduler.persistSoon();
 						machine.send('next');
 						return;
 					}
@@ -115,25 +105,20 @@ export function createStateMachineForContext({
 					processFile({ entry: context.entry }).then((result) => {
 						if (!result.ok) {
 							context.error = result.error;
-							scheduler.persistSoon();
 							machine.send('error');
 						} else {
 							context.snapshot = result.data;
-							scheduler.persistSoon();
 							machine.send('next');
 						}
 					});
 				},
 				cancel: () => {
-					scheduler.persistSoon();
 					return WizardStep.CANCELLED;
 				},
 				error: () => {
-					scheduler.persistSoon();
 					return WizardStep.ERROR;
 				},
 				next: () => {
-					scheduler.persistSoon();
 					return WizardStep.WAITING;
 				}
 			},
@@ -144,11 +129,12 @@ export function createStateMachineForContext({
 						context.snapshot as Entry[],
 						context.dateRanges!
 					);
-					scheduler.persistSoon();
 					machine.send('next');
 				},
+				cancel: () => {
+					return WizardStep.CANCELLED;
+				},
 				next: () => {
-					scheduler.persistSoon();
 					return WizardStep.DONE;
 				}
 			},
@@ -160,7 +146,6 @@ export function createStateMachineForContext({
 					}
 				},
 				cancel: () => {
-					scheduler.persistSoon();
 					return WizardStep.CANCELLED;
 				},
 				next() {
@@ -169,7 +154,6 @@ export function createStateMachineForContext({
 							? WizardStep.DONE
 							: WizardStep.TIME_SPREADING;
 					}
-					scheduler.persistSoon();
 					return WizardStep.BATCH_PENDING;
 				}
 			}

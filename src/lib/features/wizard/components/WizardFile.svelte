@@ -76,11 +76,19 @@
 					onValidChange={(data) => (context.dateRanges = data)}
 				/>
 			{/if}
-			{#if step === WizardStep.WAITING || step === WizardStep.INITIALISING}
-				<Button variant="destructive" onclick={cancel}><XIcon /></Button>
+			{#if step !== WizardStep.PROCESSING && step !== WizardStep.AI_COMPLETION && step !== WizardStep.CANCELLED && step !== WizardStep.DONE}
+				<Button
+					data-testid="wizard-file-cancel"
+					variant="destructive"
+					onclick={cancel}><XIcon /></Button
+				>
 			{/if}
 			{#if step === WizardStep.CANCELLED}
-				<Button variant="default" onclick={restart}><RotateCcw /></Button>
+				<Button
+					data-testid="wizard-file-restart"
+					variant="default"
+					onclick={restart}><RotateCcw /></Button
+				>
 			{/if}
 		</div>
 	</div>
@@ -88,6 +96,7 @@
 		<div class="flex flex-row items-center gap-x-1">
 			{#if step === WizardStep.ERROR}
 				<Badge
+					data-testid="wizard-file-status"
 					variant="default"
 					class="cursor-pointer gap-x-2"
 					onclick={() => (errorModalOpen = true)}

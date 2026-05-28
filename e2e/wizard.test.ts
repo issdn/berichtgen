@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import * as devalue from 'devalue';
 
 const TXT_CONTENT =
@@ -17,22 +17,6 @@ async function assignDateRangesForAllVisibleFiles({
 }) {
 	for (let i = 0; i < fileCount; i++) {
 		await setDateRangeForFileCard({ fileIndex: i, page, startIsoDate });
-	}
-}
-
-async function debugLocator({
-	label,
-	locator
-}: {
-	label: string;
-	locator: Locator;
-}) {
-	const count = await locator.count();
-	console.log(`[debug] ${label} count=${count}`);
-	for (let i = 0; i < count; i++) {
-		console.log(
-			`[debug] ${label}[${i}] text=${await locator.nth(i).innerText()}`
-		);
 	}
 }
 
@@ -70,6 +54,14 @@ function decodeRemotePayload({ value }: { value: unknown }): unknown {
 	return resolve(wire[0], true);
 }
 
+async function dismissRestoreSessionDialogIfPresent({ page }: { page: Page }) {
+	const restoreDialog = page.getByTestId('wizard-restore-dialog');
+	if ((await restoreDialog.count()) === 0) return;
+	if (!(await restoreDialog.first().isVisible())) return;
+	await page.getByTestId('wizard-restore-discard').first().click();
+	await expect(restoreDialog.first()).not.toBeVisible({ timeout: 10_000 });
+}
+
 function extractCompletionItemCount({
 	request
 }: {
@@ -103,11 +95,88 @@ function getMonthStartIsoDate({
 	return `${year}-${month}-01`;
 }
 
+async function getWizardFileByName({
+	fileName,
+	page
+}: {
+	fileName: string;
+	page: Page;
+}) {
+	const cards = page.getByTestId('wizard-file');
+	const count = await cards.count();
+	for (let i = 0; i < count; i++) {
+		const card = cards.nth(i);
+		const name = (
+			await card.getByTestId('wizard-file-name').innerText()
+		).trim();
+		if (name === fileName) return card;
+	}
+	throw new Error(`wizard-file not found for "${fileName}"`);
+}
+
 function makePaddedTxtBuffer({ targetBytes }: { targetBytes: number }): Buffer {
 	const base = Buffer.from(TXT_CONTENT, 'utf-8');
 	const buffer = Buffer.alloc(targetBytes, 0x20);
 	base.copy(buffer, 0);
 	return buffer;
+}
+
+async function readPersistedWizardSessions({ page }: { page: Page }) {
+	return page.evaluate(async () => {
+		const req = indexedDB.open('berichtgen', 1);
+		const db = await new Promise<IDBDatabase>((resolve, reject) => {
+			req.onsuccess = () => resolve(req.result);
+			req.onerror = () => reject(req.error);
+		});
+
+		const tx = db.transaction('persistence', 'readonly');
+		const store = tx.objectStore('persistence');
+		const items = await new Promise<unknown[]>((resolve, reject) => {
+			const getAllReq = store.getAll();
+			getAllReq.onsuccess = () =>
+				resolve((getAllReq.result ?? []) as unknown[]);
+			getAllReq.onerror = () => reject(getAllReq.error);
+		});
+
+		return items.filter((entry) => {
+			if (!entry || typeof entry !== 'object') return false;
+			const key = (entry as { key?: unknown }).key;
+			return typeof key === 'string' && key.startsWith('wizard_sessions:');
+		});
+	});
+}
+
+async function setDateRangeForFileByName({
+	fileName,
+	page,
+	startIsoDate
+}: {
+	fileName: string;
+	page: Page;
+	startIsoDate: string;
+}) {
+	const fileCard = await getWizardFileByName({ fileName, page });
+
+	await expect(fileCard).toBeVisible({ timeout: 30_000 });
+	await expect(fileCard.getByTestId('wizard-file-status')).toContainText(
+		'Warten auf Eingabe',
+		{ timeout: 90_000 }
+	);
+
+	const timeSpreadTrigger = fileCard.getByTestId('time-spread-trigger');
+	await expect(timeSpreadTrigger).toBeVisible({ timeout: 30_000 });
+	await timeSpreadTrigger.click({ force: true });
+	const dialog = page.getByTestId('time-spread-dialog');
+	await expect(dialog).toBeVisible({ timeout: 10_000 });
+	await dialog.getByTestId('date-range-trigger').first().click();
+
+	const calendarGrid = page.locator('[role="grid"]').first();
+	await calendarGrid
+		.locator(`[role="button"][data-value="${startIsoDate}"]`)
+		.click();
+
+	await page.keyboard.press('Escape');
+	await page.keyboard.press('Escape');
 }
 
 async function setDateRangeForFileCard({
@@ -126,7 +195,8 @@ async function setDateRangeForFileCard({
 	);
 
 	await fileCard.getByTestId('time-spread-trigger').click();
-	const dialog = page.getByRole('dialog');
+	const dialog = page.getByTestId('time-spread-dialog');
+	await expect(dialog).toBeVisible({ timeout: 10_000 });
 	await dialog.getByTestId('date-range-trigger').first().click();
 
 	const calendarGrid = page.locator('[role="grid"]').first();
@@ -140,9 +210,11 @@ async function setDateRangeForFileCard({
 
 async function setupWizardMocks({
 	mode,
+	onSubmitBatch,
 	page
 }: {
 	mode: 'always-success' | 'one-success-then-fail';
+	onSubmitBatch?: ({ itemCount }: { itemCount: number }) => void;
 	page: Page;
 }) {
 	await page.route('**/*', async (route) => {
@@ -173,6 +245,7 @@ async function setupWizardMocks({
 			const itemCount = extractCompletionItemCount({
 				request: route.request()
 			});
+			onSubmitBatch?.({ itemCount });
 			const results =
 				mode === 'one-success-then-fail'
 					? Array.from({ length: itemCount }, (_, index) =>
@@ -213,6 +286,7 @@ test.describe('Wizard — full state-machine flow', () => {
 		await setupWizardMocks({ mode: 'always-success', page });
 
 		await page.goto('/board', { waitUntil: 'networkidle' });
+		await dismissRestoreSessionDialogIfPresent({ page });
 		await page.getByTestId('dropzone').setInputFiles({
 			buffer: Buffer.from(TXT_CONTENT, 'utf-8'),
 			mimeType: 'text/plain',
@@ -227,6 +301,12 @@ test.describe('Wizard — full state-machine flow', () => {
 			page,
 			startIsoDate: getMonthStartIsoDate()
 		});
+		const persistedBeforeFlush = (await readPersistedWizardSessions({
+			page
+		})) as [] | Array<{ data?: { files?: unknown[] } }>;
+		expect(persistedBeforeFlush.length).toBeGreaterThan(0);
+		expect(persistedBeforeFlush[0]?.data?.files?.length ?? 0).toBe(1);
+
 		await flushPendingCompletions({ page });
 
 		await expect(page.getByTestId('wizard-file-status').first()).toContainText(
@@ -240,6 +320,7 @@ test.describe('Wizard — full state-machine flow', () => {
 		page
 	}) => {
 		await page.goto('/board', { waitUntil: 'networkidle' });
+		await dismissRestoreSessionDialogIfPresent({ page });
 
 		await uploadFiles({
 			files: Array.from({ length: 6 }, (_, i) => ({
@@ -258,31 +339,32 @@ test.describe('Wizard — full state-machine flow', () => {
 		).toContainText('Warten auf Eingabe', { timeout: 12_000 });
 	});
 
-	test('processes 3 large TXT files (>4 MB, 3 MB, 2 MB) through batching to DONE', async ({
+	test('processes 3 large files (>4 MB, 3 MB, 2 MB) through batching to DONE', async ({
 		page
 	}) => {
 		test.setTimeout(120_000);
 		await setupWizardMocks({ mode: 'always-success', page });
 
 		await page.goto('/board', { waitUntil: 'networkidle' });
+		await dismissRestoreSessionDialogIfPresent({ page });
 		await uploadFiles({
 			files: [
 				{
 					buffer: makePaddedTxtBuffer({
 						targetBytes: Math.ceil(4.5 * 1024 * 1024)
 					}),
-					mimeType: 'text/plain',
-					name: 'bericht1.txt'
+					mimeType: 'application/pdf',
+					name: 'bericht1.pdf'
 				},
 				{
 					buffer: makePaddedTxtBuffer({ targetBytes: 3 * 1024 * 1024 }),
-					mimeType: 'text/plain',
-					name: 'bericht2.txt'
+					mimeType: 'application/pdf',
+					name: 'bericht2.pdf'
 				},
 				{
 					buffer: makePaddedTxtBuffer({ targetBytes: 2 * 1024 * 1024 }),
-					mimeType: 'text/plain',
-					name: 'bericht3.txt'
+					mimeType: 'application/pdf',
+					name: 'bericht3.pdf'
 				}
 			],
 			page
@@ -296,6 +378,12 @@ test.describe('Wizard — full state-machine flow', () => {
 			page,
 			startIsoDate: getMonthStartIsoDate()
 		});
+		const persistedBeforeFlush = (await readPersistedWizardSessions({
+			page
+		})) as [] | Array<{ data?: { files?: unknown[] } }>;
+		expect(persistedBeforeFlush.length).toBeGreaterThan(0);
+		expect(persistedBeforeFlush[0]?.data?.files?.length ?? 0).toBe(3);
+
 		await flushPendingCompletions({ page });
 
 		for (let i = 0; i < 3; i++) {
@@ -313,17 +401,18 @@ test.describe('Wizard — full state-machine flow', () => {
 		await setupWizardMocks({ mode: 'one-success-then-fail', page });
 
 		await page.goto('/board', { waitUntil: 'networkidle' });
+		await dismissRestoreSessionDialogIfPresent({ page });
 		await uploadFiles({
 			files: [
 				{
 					buffer: makePaddedTxtBuffer({ targetBytes: 3 * 1024 * 1024 }),
-					mimeType: 'text/plain',
-					name: 'tokens-1.txt'
+					mimeType: 'application/pdf',
+					name: 'tokens-1.pdf'
 				},
 				{
 					buffer: makePaddedTxtBuffer({ targetBytes: 3 * 1024 * 1024 }),
-					mimeType: 'text/plain',
-					name: 'tokens-2.txt'
+					mimeType: 'application/pdf',
+					name: 'tokens-2.pdf'
 				}
 			],
 			page
@@ -339,30 +428,95 @@ test.describe('Wizard — full state-machine flow', () => {
 		});
 		await flushPendingCompletions({ page });
 
-		const firstFile = page
-			.getByTestId('wizard-file')
-			.filter({ hasText: 'tokens-1.txt' })
-			.first();
-		const secondFile = page
-			.getByTestId('wizard-file')
-			.filter({ hasText: 'tokens-2.txt' })
-			.first();
-
-		await debugLocator({
-			label: 'wizard-file',
-			locator: page.getByTestId('wizard-file')
+		const firstFile = await getWizardFileByName({
+			fileName: 'tokens-1.pdf',
+			page
 		});
-		await debugLocator({
-			label: 'wizard-file-status',
-			locator: page.getByTestId('wizard-file-status')
+		const secondFile = await getWizardFileByName({
+			fileName: 'tokens-2.pdf',
+			page
 		});
-		await debugLocator({ label: 'tokens-1-file', locator: firstFile });
-		await debugLocator({ label: 'tokens-2-file', locator: secondFile });
 
 		await expect(firstFile).toBeVisible({ timeout: 10_000 });
 		await expect(secondFile).toBeVisible({ timeout: 10_000 });
 		await expect(firstFile).toContainText('Fertig', { timeout: 10_000 });
 		await expect(secondFile).toContainText('Fehler', { timeout: 10_000 });
 		await expect(page.getByTestId('wizard-completion-button')).toBeEnabled();
+	});
+
+	test('cancels one of two files and sends only one file per flush', async ({
+		page
+	}) => {
+		test.setTimeout(120_000);
+		const completionItemCounts: number[] = [];
+		await setupWizardMocks({
+			mode: 'always-success',
+			onSubmitBatch: ({ itemCount }) => completionItemCounts.push(itemCount),
+			page
+		});
+
+		await page.goto('/board', { waitUntil: 'networkidle' });
+		await dismissRestoreSessionDialogIfPresent({ page });
+		await uploadFiles({
+			files: [
+				{
+					buffer: Buffer.from(TXT_CONTENT, 'utf-8'),
+					mimeType: 'text/plain',
+					name: 'cancel-1.txt'
+				},
+				{
+					buffer: Buffer.from(TXT_CONTENT, 'utf-8'),
+					mimeType: 'text/plain',
+					name: 'cancel-2.txt'
+				}
+			],
+			page
+		});
+
+		await expect(page.getByTestId('wizard-file')).toHaveCount(2, {
+			timeout: 15_000
+		});
+
+		const firstFile = await getWizardFileByName({
+			fileName: 'cancel-1.txt',
+			page
+		});
+		const secondFile = await getWizardFileByName({
+			fileName: 'cancel-2.txt',
+			page
+		});
+
+		await setDateRangeForFileByName({
+			fileName: 'cancel-2.txt',
+			page,
+			startIsoDate: getMonthStartIsoDate()
+		});
+
+		await firstFile.getByTestId('wizard-file-cancel').click();
+		await expect(firstFile).toContainText('Abgebrochen', { timeout: 10_000 });
+
+		await flushPendingCompletions({ page });
+		await expect(secondFile).toContainText('Fertig', { timeout: 15_000 });
+		expect(completionItemCounts[0]).toBe(1);
+
+		await expect(page.getByTestId('wizard-dialog-content')).toBeVisible({
+			timeout: 10_000
+		});
+		await page.keyboard.press('Escape');
+		await expect(page.getByTestId('wizard-dialog-content')).not.toBeVisible({
+			timeout: 10_000
+		});
+
+		await firstFile.getByTestId('wizard-file-restart').click();
+
+		await setDateRangeForFileByName({
+			fileName: 'cancel-1.txt',
+			page,
+			startIsoDate: getMonthStartIsoDate()
+		});
+
+		await flushPendingCompletions({ page });
+		await expect(firstFile).toContainText('Fertig', { timeout: 15_000 });
+		expect(completionItemCounts[1]).toBe(1);
 	});
 });

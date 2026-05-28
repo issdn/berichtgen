@@ -1,4 +1,6 @@
 import { browser } from '$app/environment';
+import { EPersistenceError } from '$core/persistence/errors';
+import { BerichtgenError } from '$lib/errors';
 
 const DB_NAME = 'berichtgen';
 const STORE_NAME = 'persistence';
@@ -14,11 +16,17 @@ type Envelope<T> = {
 async function clear(storeName: string, key: string): Promise<void> {
 	const db = await openDb();
 	if (!db) return;
-	await new Promise<void>((resolve) => {
+	await new Promise<void>((resolve, reject) => {
 		const tx = db.transaction(STORE_NAME, 'readwrite');
 		tx.objectStore(STORE_NAME).delete(`${storeName}:${key}`);
 		tx.oncomplete = () => resolve();
-		tx.onerror = () => resolve();
+		tx.onerror = () =>
+			reject(
+				new BerichtgenError({
+					...EPersistenceError.CLEAR_FAILED,
+					cause: tx.error?.message ?? EPersistenceError.CLEAR_FAILED.cause
+				})
+			);
 	});
 }
 
@@ -71,7 +79,7 @@ async function save<T>(
 ): Promise<void> {
 	const db = await openDb();
 	if (!db) return;
-	await new Promise<void>((resolve) => {
+	await new Promise<void>((resolve, reject) => {
 		const tx = db.transaction(STORE_NAME, 'readwrite');
 		tx.objectStore(STORE_NAME).put({
 			data,
@@ -81,7 +89,13 @@ async function save<T>(
 			version
 		} satisfies Envelope<T>);
 		tx.oncomplete = () => resolve();
-		tx.onerror = () => resolve();
+		tx.onerror = () =>
+			reject(
+				new BerichtgenError({
+					...EPersistenceError.SAVE_FAILED,
+					cause: tx.error?.message ?? EPersistenceError.SAVE_FAILED.cause
+				})
+			);
 	});
 }
 

@@ -1,29 +1,31 @@
 import type { BerichtgenError } from '$lib/errors';
 
 import { BerichtgenError as BerichtgenErrorClass } from '$lib/errors';
-import { restoreFileRouting } from '$wizard/services/routing';
+import { WizardStep } from '$wizard/enums';
+import { type FileRouting, restoreFileRouting } from '$wizard/services/routing';
 
 import type { DateRangeSchema } from '../schemas';
-import type { FileRouting, WizardDirectoryEntry } from '../types';
+import type { WizardDirectoryEntry, WizardPersistedFile } from '../types';
 import type { Entry, ResultEntry } from '../types';
-import type { WizardPersistedFile } from './types';
 
 export class WizardFileContext {
-	cancelled: boolean = false;
-
 	dateRanges: DateRangeSchema | null = null;
 
 	entry: WizardDirectoryEntry;
 
 	error?: BerichtgenError;
 
-	finished: null | ResultEntry[] = null;
+	lastState: null | WizardStep = null;
 
 	snapshot: Entry[] | FileRouting | ResultEntry[] | undefined;
 
-	constructor(entry: WizardDirectoryEntry) {
+	constructor(
+		entry: WizardDirectoryEntry,
+		lastState: null | WizardStep = null
+	) {
 		this.entry = entry;
 		this.dateRanges = entry.config ?? null;
+		this.lastState = lastState;
 	}
 
 	static rehydrate(file: WizardPersistedFile) {
@@ -37,11 +39,10 @@ export class WizardFileContext {
 		} else {
 			context.snapshot = file.snapshot ?? undefined;
 		}
-		context.finished = file.finished;
-		context.cancelled = file.cancelled;
 		context.error = file.error
 			? new BerichtgenErrorClass(file.error)
 			: undefined;
+		context.lastState = file.step;
 		return context;
 	}
 }
