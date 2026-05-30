@@ -1,0 +1,60 @@
+name: Daily Database Backup to GCS
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      GCS_BACKUP_BUCKET_NAME: ${{ secrets.GCS_BACKUP_BUCKET_NAME }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${GCS_BACKUP_BUCKET_NAME}" || { echo "Missing secret: GCS_BACKUP_BUCKET_NAME"; exit 1; }
+          test -n "${DATABASE_URL}" || { echo "Missing secret: DATABASE_URL"; exit 1; }
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCS_BACKUP_ACCOUNT_KEY }}
+
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create compressed database dump
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backups
+          TIMESTAMP="$(date -u +'%Y-%m-%dT%H-%M-%SZ')"
+          BACKUP_FILE="backups/db-backup-${TIMESTAMP}.sql.gz"
+
+          pg_dump "${DATABASE_URL}" --no-owner --no-privileges | gzip -9 > "${BACKUP_FILE}"
+
+          echo "BACKUP_FILE=${BACKUP_FILE}" >> "$GITHUB_ENV"
+
+      - name: Upload backup to GCS
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud storage cp "${BACKUP_FILE}" "gs://${GCS_BACKUP_BUCKET_NAME}/database/"

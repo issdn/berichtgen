@@ -1,4 +1,25 @@
-﻿### ENVs
+﻿### Configuration
+# GCS
+
+Backups
+```ps1
+gcloud storage buckets create gs://[bucket name] \
+    --default-storage-class=NEARLINE \
+    --location=EU \
+    --uniform-bucket-level-access \
+    --public-access-prevention
+```
+
+Wizard Vertex AI process
+```ps1
+gcloud storage buckets create gs://[bucket name] \
+    --default-storage-class=STANDARD \
+    --location=EUROPE-WEST3 \
+    --uniform-bucket-level-access \
+    --public-access-prevention
+```
+
+### ENVs
 
 | Variable                          | Benötigt | Beschreibung                         |
 | --------------------------------- | -------- | ------------------------------------ |
@@ -22,6 +43,8 @@
 | `SMTP_PASS`                       | Ja       | SMTP Passwort                        |
 | `SMTP_SENDER_NAME`                | Ja       | SMTP Sender Name                     |
 | `SMTP_ADMIN_EMAIL`                | Ja       | SMTP Admin E-Mail                    |
+| `GCS_BACKUP_ACCOUNT_KEY`          | Nein     |                                      |
+| `GCS_BACKUP_BUCKET_NAME`          | Nein     |                                      |
 
 # Cost breakdown (GCP + Vercel)
 
@@ -33,7 +56,7 @@ A txt file with the same amount of text is 5KB and around 1000 LLM tokens (dynam
 _gemini-3.1-flash-lite-preview_ costs $0.25 per 1M input and $1.5 output tokens
 1M input tokens is therefore ~1786 input PDF files or a ~1000 TXT files.
 
-### Google Cloud Storage for minimizing the compute of the cloud functions
+### Google Cloud Storage
 
 1. Data Storage - total amount of storage is negligible because the files are immediatelly deleted - less than $0.1/mo.
 2. Data processing - 1.000 class A operations (uploading files above 1 MB) = $0,005; 1.000 class B operations (Vertex AI getting the file from URL to process) = $0.0004
