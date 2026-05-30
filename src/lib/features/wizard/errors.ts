@@ -106,6 +106,10 @@ export const ETemplateError = buildError('templates', {
 		httpCode: 403,
 		message: 'Du kannst dein eigenes Template nicht melden.'
 	},
+	MAX_TEMPLATES_REACHED: {
+		httpCode: 409,
+		message: 'Du kannst maximal 3 Templates hochladen.'
+	},
 	TEMPLATE_NOT_FOUND: { httpCode: 404, message: 'Template nicht gefunden.' },
 	TEMPLATE_SAFE: {
 		httpCode: 403,

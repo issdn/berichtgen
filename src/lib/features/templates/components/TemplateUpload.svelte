@@ -6,6 +6,10 @@
 	import Dropzone from '$core/components/Dropzone.svelte';
 	import { extractFilesSimple } from '$core/scan/file_scan';
 	import {
+		TEMPLATE_MAX_BYTES,
+		TEMPLATE_MAX_COUNT_PER_USER
+	} from '$lib/constants';
+	import {
 		getTemplates,
 		uploadTemplate
 	} from '$templates/api/templates.remote';
@@ -39,10 +43,12 @@
 		}
 	];
 
-	let pendingFile = $state<File | null>(null);
-	let pendingFileBytes = $state<null | Uint8Array<ArrayBuffer>>(null);
-	let pendingPreviewUrl = $state<null | string>(null);
-	let pendingReplace = $state(false);
+	let pendingPreparedFile = $state<null | {
+		bytes: Uint8Array<ArrayBuffer>;
+		file: File;
+		isDuplicate: boolean;
+		previewUrl: string;
+	}>(null);
 	let previewOpen = $state(false);
 	let isPublic = $state(false);
 
@@ -107,13 +113,10 @@
 	const isPending = $derived(preparePreview.loading || uploadMutation.loading);
 
 	function clearPendingPreview() {
-		if (pendingPreviewUrl) {
-			URL.revokeObjectURL(pendingPreviewUrl);
+		if (pendingPreparedFile?.previewUrl) {
+			URL.revokeObjectURL(pendingPreparedFile.previewUrl);
 		}
-		pendingFile = null;
-		pendingFileBytes = null;
-		pendingPreviewUrl = null;
-		pendingReplace = false;
+		pendingPreparedFile = null;
 	}
 
 	onDestroy(() => {
@@ -121,7 +124,7 @@
 	});
 
 	$effect(() => {
-		if (!previewOpen && pendingFile !== null) {
+		if (!previewOpen && pendingPreparedFile !== null) {
 			clearPendingPreview();
 		}
 	});
@@ -136,8 +139,23 @@
 			return;
 		}
 
-		if (firstFile.size > 10 * 1024 * 1024) {
-			toast.error('Die Datei darf maximal 10MB groß sein.');
+		if (firstFile.size > TEMPLATE_MAX_BYTES) {
+			toast.error('Die Datei darf maximal 5MB groß sein.');
+			return;
+		}
+
+		const ownTemplates =
+			query.current?.templates
+				.filter((template) => template.is_mine)
+				.slice(0, TEMPLATE_MAX_COUNT_PER_USER) ?? [];
+		const isDuplicateOwnTemplate = ownTemplates.some((template) =>
+			template.storage_path.endsWith(`/${firstFile.name}`)
+		);
+		if (
+			!isDuplicateOwnTemplate &&
+			ownTemplates.length >= TEMPLATE_MAX_COUNT_PER_USER
+		) {
+			toast.error('Du kannst maximal 3 Templates hochladen.');
 			return;
 		}
 
@@ -145,21 +163,18 @@
 		if (!prepared) return;
 
 		clearPendingPreview();
-		pendingFile = prepared.file;
-		pendingFileBytes = prepared.bytes;
-		pendingPreviewUrl = prepared.previewUrl;
-		pendingReplace = prepared.isDuplicate;
+		pendingPreparedFile = prepared;
 		previewOpen = true;
 	}
 
 	async function submitUpload(): Promise<boolean> {
-		if (!pendingFile || !pendingFileBytes) return false;
+		if (!pendingPreparedFile) return false;
 
 		const uploaded = await uploadMutation.execute({
-			data: pendingFileBytes,
+			data: pendingPreparedFile.bytes,
 			isPublic,
-			name: pendingFile.name,
-			type: pendingFile.type
+			name: pendingPreparedFile.file.name,
+			type: pendingPreparedFile.file.type
 		});
 
 		if (!uploaded) return false;
@@ -178,15 +193,15 @@
 	<Dropzone disabled={isPending} {handleFiles} class="min-h-48" />
 </div>
 
-{#if pendingPreviewUrl}
+{#if pendingPreparedFile}
 	<TemplateDocxPreviewDialog
 		bind:open={previewOpen}
 		title="Template vor dem Upload prüfen"
-		description={pendingReplace
-			? `„${pendingFile?.name}" existiert bereits und wird beim Upload überschrieben.`
+		description={pendingPreparedFile.isDuplicate
+			? `Das Template "${pendingPreparedFile.file.name}" existiert bereits und wird beim Upload überschrieben.`
 			: 'Prüfe die gerenderte Beispielausgabe und bestätige danach den Upload.'}
-		fileUrl={pendingPreviewUrl}
-		confirmLabel={pendingReplace ? 'Ersetzen' : 'Hochladen'}
+		fileUrl={pendingPreparedFile.previewUrl}
+		confirmLabel={pendingPreparedFile.isDuplicate ? 'Ersetzen' : 'Hochladen'}
 		confirmDisabled={isPending}
 		onConfirm={submitUpload}
 	/>

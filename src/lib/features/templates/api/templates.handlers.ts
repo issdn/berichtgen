@@ -1,3 +1,7 @@
+import {
+	TEMPLATE_MAX_COUNT_PER_USER,
+	TEMPLATE_PAGE_SIZE
+} from '$lib/constants';
 import { ECommonServerError } from '$lib/errors';
 import { tryResultAsync } from '$lib/result';
 import { supabaseAdmin } from '$lib/server/admin';
@@ -6,8 +10,6 @@ import { svelteApiError } from '$server/errors';
 import { ETemplateError } from '$wizard/errors';
 import * as Sentry from '@sentry/sveltekit';
 import { sql } from 'kysely';
-
-export const PAGE_SIZE = 30;
 
 export type FetchTemplatesParams = {
 	afterId?: string;
@@ -52,7 +54,10 @@ export async function deleteTemplateFile(storagePath: string): Promise<void> {
 		.from('templates')
 		.remove([storagePath]);
 	if (error)
-		throw svelteApiError(ECommonServerError.DATABASE_ERROR, error.message);
+		throw svelteApiError({
+			...ECommonServerError.DATABASE_ERROR,
+			cause: error.message
+		});
 	await db
 		.deleteFrom('template')
 		.where('storage_path', '=', storagePath)
@@ -112,7 +117,7 @@ export async function fetchTemplates(
 				WHERE t.user_id != ${userId} AND t.is_public = true ${searchCond} ${afterIdCond} ${hideReportedCond}
 				GROUP BY t.id, p.id
 				ORDER BY t.id DESC
-				LIMIT ${PAGE_SIZE + 1}
+				LIMIT ${TEMPLATE_PAGE_SIZE + 1}
 			)
 			ORDER BY is_mine DESC, id DESC
 		`.execute(db);
@@ -128,12 +133,12 @@ export async function fetchTemplates(
 			WHERE t.is_public = true ${searchCond} ${afterIdCond} ${hideReportedCond}
 			GROUP BY t.id, p.id
 			ORDER BY t.id DESC
-			LIMIT ${PAGE_SIZE + 1}
+			LIMIT ${TEMPLATE_PAGE_SIZE + 1}
 		`.execute(db);
 		data = result.rows;
 	}
 
-	return paginateTemplates(data, afterId, PAGE_SIZE);
+	return paginateTemplates(data, afterId, TEMPLATE_PAGE_SIZE);
 }
 
 export async function markTemplateSafeById(templateId: string): Promise<void> {
@@ -212,13 +217,21 @@ export async function uploadTemplateFile(
 			upsert: true
 		});
 	if (error)
-		throw svelteApiError(ECommonServerError.DATABASE_ERROR, error.message);
+		throw svelteApiError({
+			...ECommonServerError.DATABASE_ERROR,
+			cause: error.message
+		});
 
 	const existing = await db
 		.selectFrom('template')
 		.select('id')
 		.where('storage_path', '=', storagePath)
 		.executeTakeFirst();
+
+	await validateCanCreateTemplate({
+		existingTemplateId: existing?.id,
+		userId
+	});
 
 	if (existing) {
 		await db
@@ -235,6 +248,28 @@ export async function uploadTemplateFile(
 				user_id: userId
 			})
 			.execute();
+	}
+}
+
+/**
+ * Enforces per-user template creation limits while allowing overwrite of existing paths.
+ */
+export async function validateCanCreateTemplate({
+	existingTemplateId,
+	userId
+}: {
+	existingTemplateId?: string;
+	userId: string;
+}): Promise<void> {
+	if (existingTemplateId) return;
+	const templateCount = await db
+		.selectFrom('template')
+		.select((eb) => eb.fn.count('id').as('count'))
+		.where('user_id', '=', userId)
+		.executeTakeFirst();
+	const count = Number(templateCount?.count ?? 0);
+	if (count >= TEMPLATE_MAX_COUNT_PER_USER) {
+		throw svelteApiError(ETemplateError.MAX_TEMPLATES_REACHED);
 	}
 }
 

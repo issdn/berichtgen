@@ -32,3 +32,22 @@ export const INLINE_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 
 /** Strict max file size for wizard processing. */
 export const GCS_MAX_BYTES = 50 * 1024 * 1024; // 50 MB
+
+/**
+ * Max number of templates a single user can persist.
+ * Used in: `src/lib/features/templates/api/templates.handlers.ts` (`validateCanCreateTemplate`).
+ */
+export const TEMPLATE_MAX_COUNT_PER_USER = 3;
+
+/**
+ * Max allowed upload size for a template `.docx` in bytes.
+ * Used in: `src/lib/features/templates/components/TemplateUpload.svelte` (client pre-check)
+ * and mirrored in Supabase bucket migration `supabase/migrations/20250529175914_1.sql`.
+ */
+export const TEMPLATE_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
+/**
+ * Number of non-owner templates loaded per page in template browsing.
+ * Used in: `src/lib/features/templates/api/templates.handlers.ts` pagination queries.
+ */
+export const TEMPLATE_PAGE_SIZE = 30;

@@ -14,6 +14,7 @@
  * Run with:  pnpm vitest run src/lib/server/templates.test.ts
  */
 
+import { TEMPLATE_PAGE_SIZE } from '$lib/constants';
 import { ECommonServerError } from '$lib/errors';
 import { ETemplateError } from '$wizard/errors';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -62,10 +63,10 @@ vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
 import {
 	deleteTemplateReport,
 	markTemplateSafeById,
-	PAGE_SIZE,
 	paginateTemplates,
 	submitTemplateReport,
 	type TemplateRow,
+	uploadTemplateFile,
 	validateCanReport
 } from '$templates/api/templates.handlers';
 
@@ -92,14 +93,18 @@ function makeRow(overrides: Partial<TemplateRow> = {}): TemplateRow {
 
 describe('paginateTemplates', () => {
 	const mine = makeRow({ id: 'mine-1', is_mine: true });
-	const others = Array.from({ length: PAGE_SIZE + 1 }, (_, i) =>
+	const others = Array.from({ length: TEMPLATE_PAGE_SIZE + 1 }, (_, i) =>
 		makeRow({ id: `other-${i}`, is_mine: false })
 	);
 
 	test('first page includes mine and PAGE_SIZE others', () => {
-		const result = paginateTemplates([mine, ...others], undefined, PAGE_SIZE);
+		const result = paginateTemplates(
+			[mine, ...others],
+			undefined,
+			TEMPLATE_PAGE_SIZE
+		);
 		expect(result.hasMore).toBe(true);
-		expect(result.templates).toHaveLength(PAGE_SIZE + 1); // mine + PAGE_SIZE others
+		expect(result.templates).toHaveLength(TEMPLATE_PAGE_SIZE + 1); // mine + PAGE_SIZE others
 		expect(result.templates[0]).toEqual(mine);
 	});
 
@@ -107,36 +112,38 @@ describe('paginateTemplates', () => {
 		const result = paginateTemplates(
 			[mine, ...others],
 			'some-cursor-id',
-			PAGE_SIZE
+			TEMPLATE_PAGE_SIZE
 		);
 		expect(result.templates.every((t) => !t.is_mine)).toBe(true);
 	});
 
 	test('hasMore is false when others fit within page size', () => {
-		const fewOthers = others.slice(0, PAGE_SIZE - 1);
+		const fewOthers = others.slice(0, TEMPLATE_PAGE_SIZE - 1);
 		const result = paginateTemplates(
 			[mine, ...fewOthers],
 			undefined,
-			PAGE_SIZE
+			TEMPLATE_PAGE_SIZE
 		);
 		expect(result.hasMore).toBe(false);
 	});
 
 	test('hasMore is true when DB returns PAGE_SIZE + 1 others', () => {
 		// DB is asked for LIMIT PAGE_SIZE + 1 — if it returns that many, there is a next page
-		const result = paginateTemplates(others, undefined, PAGE_SIZE);
+		const result = paginateTemplates(others, undefined, TEMPLATE_PAGE_SIZE);
 		expect(result.hasMore).toBe(true);
-		expect(result.templates.filter((t) => !t.is_mine)).toHaveLength(PAGE_SIZE);
+		expect(result.templates.filter((t) => !t.is_mine)).toHaveLength(
+			TEMPLATE_PAGE_SIZE
+		);
 	});
 
 	test('empty result set returns empty templates and hasMore false', () => {
-		const result = paginateTemplates([], undefined, PAGE_SIZE);
+		const result = paginateTemplates([], undefined, TEMPLATE_PAGE_SIZE);
 		expect(result.templates).toHaveLength(0);
 		expect(result.hasMore).toBe(false);
 	});
 
 	test('only mine and no others returns mine with hasMore false', () => {
-		const result = paginateTemplates([mine], undefined, PAGE_SIZE);
+		const result = paginateTemplates([mine], undefined, TEMPLATE_PAGE_SIZE);
 		expect(result.templates).toEqual([mine]);
 		expect(result.hasMore).toBe(false);
 	});
@@ -355,5 +362,51 @@ describe('markTemplateSafeById', () => {
 		expect(storageMock.remove).not.toHaveBeenCalled();
 		expect(dbMock.updateTable).toHaveBeenCalledWith('template');
 		expect(dbMock.deleteFrom).toHaveBeenCalledWith('template_report');
+	});
+});
+
+describe('uploadTemplateFile', () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	test('rejects new template insert when user already has 3 templates', async () => {
+		dbMock.executeTakeFirst
+			.mockResolvedValueOnce(undefined)
+			.mockResolvedValueOnce({ count: 3 });
+
+		await expect(
+			uploadTemplateFile(
+				{
+					data: new Uint8Array([1, 2, 3]),
+					isPublic: false,
+					name: 'new-template.docx',
+					type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+				},
+				'user-1'
+			)
+		).rejects.toMatchObject({
+			status: ETemplateError.MAX_TEMPLATES_REACHED.httpCode
+		});
+	});
+
+	test('allows overwrite when storage_path already exists even if user has 3 templates', async () => {
+		dbMock.executeTakeFirst.mockResolvedValueOnce({
+			id: 'existing-template-id'
+		});
+		dbMock.execute.mockResolvedValue({});
+
+		await expect(
+			uploadTemplateFile(
+				{
+					data: new Uint8Array([1, 2, 3]),
+					isPublic: true,
+					name: 'existing-template.docx',
+					type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+				},
+				'user-1'
+			)
+		).resolves.toBeUndefined();
+
+		expect(dbMock.updateTable).toHaveBeenCalledWith('template');
+		expect(dbMock.insertInto).not.toHaveBeenCalledWith('template');
 	});
 });

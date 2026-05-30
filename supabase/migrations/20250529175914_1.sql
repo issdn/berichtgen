@@ -107,7 +107,7 @@ SELECT
     'templates',
     'templates',
     true,
-    10485760,
+    5242880, -- 5MB (mirror of src/lib/constants.ts -> TEMPLATE_MAX_BYTES)
     ARRAY['application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 WHERE NOT EXISTS (
     SELECT 1 FROM storage.buckets WHERE id = 'templates'
