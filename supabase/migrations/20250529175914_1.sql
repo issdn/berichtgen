@@ -20,6 +20,7 @@ $$ LANGUAGE sql VOLATILE;
 
 -- Enable the pg_cron extension (if not already enabled)
 CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Schedule the cron job to run every day at midnight
 SELECT cron.schedule(
@@ -45,10 +46,12 @@ CREATE TABLE private.user_token_count (
 
 CREATE TABLE private.cart (
     user_id uuid PRIMARY KEY REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    intent_id text NOT NULL,
+    intent_id text UNIQUE NOT NULL,
     quantity integer DEFAULT 1 NOT NULL,
     created_at timestamp DEFAULT now()
 );
+
+CREATE INDEX cart_created_at_idx ON private.cart (created_at);
 
 CREATE TABLE private.purchase (
     id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,7 +66,7 @@ CREATE TABLE private.purchase (
 CREATE TABLE private.template (
     id uuid PRIMARY KEY DEFAULT private.uuidv7(),
     user_id uuid NOT NULL REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    storage_path text NOT NULL,
+    storage_path text UNIQUE NOT NULL,
     is_public boolean NOT NULL DEFAULT false,
     safe_marked_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -71,6 +74,8 @@ CREATE TABLE private.template (
 );
 
 CREATE INDEX IF NOT EXISTS template_user_id_idx ON private.template (user_id);
+CREATE INDEX template_public_id_desc_idx ON private.template (is_public, id DESC);
+CREATE INDEX template_storage_path_trgm_idx ON private.template USING gin (storage_path gin_trgm_ops);
 
 CREATE TABLE private.user_metadata (
     user_id uuid PRIMARY KEY REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -93,10 +98,12 @@ CREATE TABLE private.template_report (
     template_id uuid NOT NULL REFERENCES private.template(id) ON DELETE CASCADE ON UPDATE CASCADE,
     reporter_user_id uuid NOT NULL REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
     message text,
-    created_at timestamptz NOT NULL DEFAULT now()
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (template_id, reporter_user_id)
 );
 
 CREATE INDEX template_report_template_id_idx ON private.template_report (template_id);
+CREATE UNIQUE INDEX template_report_template_reporter_uidx ON private.template_report (template_id, reporter_user_id);
 
 -- ============================================================
 -- Storage buckets
