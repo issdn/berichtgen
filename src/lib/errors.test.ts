@@ -14,6 +14,7 @@ describe('toErrorBody', () => {
 			expect(toErrorBody(httpError)).toEqual({
 				cause: 'connection timeout',
 				code: 'DATABASE_ERROR',
+				feature: 'core.server',
 				message: 'Datenbankfehler.'
 			});
 		});
@@ -29,6 +30,7 @@ describe('toErrorBody', () => {
 			expect(toErrorBody(httpError)).toEqual({
 				cause: undefined,
 				code: 'UNAUTHORIZED',
+				feature: 'core.server',
 				message: 'Nicht autorisiert.'
 			});
 		});
@@ -36,8 +38,9 @@ describe('toErrorBody', () => {
 		it('falls through when body is missing code or message', () => {
 			const httpError = { body: { message: 'oops' } };
 			expect(toErrorBody(httpError)).toEqual({
-				cause: undefined,
-				code: 'INTERNAL_ERROR',
+				code: 'UNKNOWN_ERROR',
+				feature: 'core.base',
+				httpCode: 500,
 				message: 'Ein unbekannter Fehler ist aufgetreten.'
 			});
 		});
@@ -46,9 +49,11 @@ describe('toErrorBody', () => {
 	describe('native Error', () => {
 		it('uses the error message and falls back to INTERNAL_ERROR code', () => {
 			expect(toErrorBody(new Error('something broke'))).toEqual({
-				cause: undefined,
-				code: 'INTERNAL_ERROR',
-				message: 'something broke'
+				cause: 'something broke',
+				code: 'UNKNOWN_ERROR',
+				feature: 'core.base',
+				httpCode: 500,
+				message: 'Ein unbekannter Fehler ist aufgetreten.'
 			});
 		});
 	});
@@ -58,8 +63,9 @@ describe('toErrorBody', () => {
 			'returns the generic fallback for %s',
 			(value) => {
 				expect(toErrorBody(value)).toEqual({
-					cause: undefined,
-					code: 'INTERNAL_ERROR',
+					code: 'UNKNOWN_ERROR',
+					feature: 'core.base',
+					httpCode: 500,
 					message: 'Ein unbekannter Fehler ist aufgetreten.'
 				});
 			}

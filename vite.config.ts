@@ -1,20 +1,10 @@
 /// <reference types="vitest/config" />
 import { sentrySvelteKit } from '@sentry/sveltekit';
-import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
-import { playwright } from '@vitest/browser-playwright';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
-const dirname =
-	typeof __dirname !== 'undefined'
-		? __dirname
-		: path.dirname(fileURLToPath(import.meta.url));
-
-// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig(({ mode }) => ({
 	define: {
 		__APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0')
@@ -39,6 +29,9 @@ export default defineConfig(({ mode }) => ({
 		}),
 		sveltekit()
 	],
+	resolve: {
+		conditions: ['browser']
+	},
 	ssr: {
 		noExternal: ['@lucide/svelte']
 	},
@@ -60,31 +53,23 @@ export default defineConfig(({ mode }) => ({
 						canvas: new URL('./src/test/__mocks__/canvas.ts', import.meta.url)
 							.pathname
 					},
+					exclude: ['./src/lib/features/templates/templates.test.ts'],
 					include: ['./src/**/*.test.ts'],
 					name: 'unit'
 				}
 			},
 			{
 				extends: true,
-				plugins: [
-					// The plugin will run tests for the stories defined in your Storybook config
-					// See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
-					storybookTest({
-						configDir: path.join(dirname, '.storybook')
-					})
-				],
 				test: {
-					browser: {
-						enabled: true,
-						headless: true,
-						instances: [
-							{
-								browser: 'chromium'
-							}
-						],
-						provider: playwright()
+					alias: {
+						'@sentry/sveltekit': new URL(
+							'./src/test/__mocks__/sentry.sveltekit.ts',
+							import.meta.url
+						).pathname
 					},
-					name: 'storybook'
+					environment: 'jsdom',
+					include: ['./src/lib/features/templates/templates.test.ts'],
+					name: 'dom'
 				}
 			}
 		]

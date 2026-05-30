@@ -184,6 +184,8 @@
 </script>
 
 <div
+	data-testid="template-item"
+	data-template-id={template.id}
 	class="hover:bg-muted/50 flex items-center gap-3 rounded-md px-2 py-1.5 {isPreferred
 		? 'bg-muted'
 		: ''}"

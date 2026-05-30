@@ -118,6 +118,13 @@ export function errorByHttpCode<T extends EnumError>(
 export function toErrorBody(e: unknown): Omit<AnyErrorValue, 'httpCode'> {
 	if (e instanceof BerichtgenError) return e.apiError;
 
+	if (e instanceof Error) {
+		return {
+			...EBaseErrors.UNKNOWN_ERROR,
+			cause: e.message
+		};
+	}
+
 	if (e !== null && typeof e === 'object') {
 		// 1. SvelteKit HttpError: { body: { code, message, cause? } }
 		if ('body' in e)

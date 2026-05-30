@@ -21,8 +21,8 @@
 
 	/** Discriminated union so error state is always explicit. */
 	type PageResult =
-		| { data: PageData; ok: true; }
-		| { error: unknown; ok: false; };
+		| { data: PageData; ok: true }
+		| { error: unknown; ok: false };
 
 	const {
 		mutationCount = 0,
@@ -134,7 +134,10 @@
 	{:else if !lastPageSnapshot.ok}
 		<EmptyError error={lastPageSnapshot.error} />
 	{:else if lastPageSnapshot.data.templates.length === 0 && pages.length === 1 && !isListLoading}
-		<div class="flex h-48 items-center justify-center">
+		<div
+			data-testid="templates-empty"
+			class="flex h-48 items-center justify-center"
+		>
 			<Empty.Root>
 				<Empty.Header>
 					<Empty.Title>Keine Templates gefunden</Empty.Title>
@@ -146,6 +149,7 @@
 		</div>
 	{:else}
 		<ScrollArea
+			data-testid="templates-scroll-area"
 			type="auto"
 			orientation="vertical"
 			onscroll={handleScroll}
@@ -189,7 +193,10 @@
 			</ul>
 
 			{#if isListLoading && pages.length > 1}
-				<div class="flex w-full items-center justify-center py-2">
+				<div
+					data-testid="templates-spinner"
+					class="flex w-full items-center justify-center py-2"
+				>
 					<Spinner />
 				</div>
 			{/if}

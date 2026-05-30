@@ -77,7 +77,11 @@
 			<InputGroup.Addon>
 				<SearchIcon />
 			</InputGroup.Addon>
-			<InputGroup.Input placeholder="Suchen..." bind:value={searchInput} />
+			<InputGroup.Input
+				data-testid="templates-search-input"
+				placeholder="Suchen..."
+				bind:value={searchInput}
+			/>
 			{#if searchInput}
 				<InputGroup.Addon align="inline-end">
 					<InputGroup.Button
@@ -98,6 +102,7 @@
 
 		<div class="flex w-full gap-2">
 			<Toggle
+				data-testid="templates-hide-reported-toggle"
 				pressed={hideReported}
 				onPressedChange={(v) => (hideReported = v)}
 			>

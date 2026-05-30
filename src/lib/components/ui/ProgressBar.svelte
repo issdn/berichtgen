@@ -12,7 +12,7 @@
 		class?: string;
 	} = $props();
 
-	let show = $state(delay === 0 && visible);
+	let show = $derived(delay === 0 && visible);
 
 	$effect(() => {
 		if (!visible) {
@@ -31,7 +31,7 @@
 </script>
 
 {#if show}
-	<div class={cn('h-0.5 w-full overflow-hidden', className)}>
+	<div data-testid="templates-loading-bar" class={cn('h-0.5 w-full overflow-hidden', className)}>
 		<div class="animate-nav-beam bg-primary h-full w-1/3"></div>
 	</div>
 {/if}
