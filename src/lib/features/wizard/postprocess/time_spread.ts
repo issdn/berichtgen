@@ -1,5 +1,5 @@
 import type { ValidBerichtgenDateRanges } from '$wizard/schemas';
-import type { Entry, ResultEntry } from '$wizard/types';
+import type { GenaiCompletionResult, TimeSpreadResult } from '$wizard/types';
 
 import { LOCALE } from '$lib/constants';
 import { Ort } from '$wizard/enums';
@@ -17,9 +17,9 @@ import {
  *
  */
 export function spreadEntriesAcrossWeeks(
-	entries: Entry[],
+	entries: GenaiCompletionResult,
 	{ ort, ranges }: ValidBerichtgenDateRanges
-): Required<Entry>[] {
+): TimeSpreadResult {
 	const stundenSum = ranges.reduce(
 		(prev, { daterange, stunden }) =>
 			prev +
@@ -62,7 +62,7 @@ export function spreadEntriesAcrossWeeks(
 		stunden: week.stunden ?? 1
 	}));
 
-	const newEntries: Required<Entry>[] = [];
+	const newEntries: TimeSpreadResult = [];
 
 	let currWeekIndex = 0;
 	let entriesTotal = 0;
@@ -122,13 +122,13 @@ export function spreadEntriesAcrossWeeks(
 }
 
 function cloneObjectWithDate(
-	entry: Entry,
+	entry: GenaiCompletionResult[number],
 	date: CalendarDate,
 	ort: Ort,
 	stunden: number
-): ResultEntry {
+): TimeSpreadResult[number] {
 	return {
-		...entry,
+		text: entry,
 		ausbildungsjahr: date.year,
 		datum: date.toString(),
 		endDatum: date.add({ days: 7 }).toString(),

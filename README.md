@@ -1,7 +1,9 @@
 ﻿### Configuration
+
 # GCS
 
 Backups
+
 ```ps1
 gcloud storage buckets create gs://[bucket name] \
     --default-storage-class=NEARLINE \
@@ -11,6 +13,7 @@ gcloud storage buckets create gs://[bucket name] \
 ```
 
 Wizard Vertex AI process
+
 ```ps1
 gcloud storage buckets create gs://[bucket name] \
     --default-storage-class=STANDARD \

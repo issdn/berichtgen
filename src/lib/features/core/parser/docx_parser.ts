@@ -1,8 +1,5 @@
-import type { ImageLike, Scheduler } from 'tesseract.js';
-
 import { EParserError } from '$core/parser/errors';
 import { BerichtgenError } from '$lib/errors';
-import { WizardFileContext } from '$wizard/services/wizard_file_context';
 import { XMLParser } from 'fast-xml-parser';
 import JSZip from 'jszip';
 
@@ -18,8 +15,6 @@ import type {
 	DocxTable
 } from './docx_ast';
 
-import { Parser } from './parser';
-
 export type DOCXFileData = {
 	/** Document-level relationships: rId → target bare filename. */
 	docRels: Map<string, string>;
@@ -33,7 +28,7 @@ export type DOCXFileData = {
 	stylePprs: Map<string, Record<string, unknown>>;
 	/** Resolved run properties keyed by styleId (inheritance already applied). */
 	styleRprs: Map<string, Record<string, unknown>>;
-	textsOrRelIds: ([string] | string)[];
+	texts: string[];
 	xml: Record<string, unknown>;
 	/** Raw word/document.xml string, kept for the preserveOrder body-ordering pass. */
 	xmlStr: string;
@@ -43,16 +38,8 @@ type CellPadding = { bottom: number; left: number; right: number; top: number };
 
 // --- helpers ---
 
-export class DOCXParser extends Parser {
+export class DOCXParser {
 	data: DOCXFileData | null = null;
-
-	constructor(
-		context: WizardFileContext,
-		scheduler: Scheduler,
-		withImages: boolean = false
-	) {
-		super(context, scheduler, withImages);
-	}
 
 	async init(data: Uint8Array) {
 		const zip = new JSZip();
@@ -63,14 +50,14 @@ export class DOCXParser extends Parser {
 			trimValues: false
 		});
 
-		const textsOrRelIds: ([string] | string)[] = [];
+		const texts: string[] = [];
 
 		const [fileData, stylesData] = await Promise.all([
 			docx.files['word/document.xml'].async('string'),
 			this.parseStyles(docx, parser)
 		]);
 		const xml = parser.parse(fileData);
-		this.findAllWT(xml, textsOrRelIds, this.withImages);
+		this.findAllWT(xml, texts);
 
 		// Always map images/rels so the AST preview can render inline images.
 		const imagesAndRels = await this.mapImagesToRels(docx, parser);
@@ -114,35 +101,17 @@ export class DOCXParser extends Parser {
 			docRels,
 			footerXmls,
 			headerXmls,
-			textsOrRelIds,
+			texts,
 			xml,
 			xmlStr: fileData,
 			...stylesData
 		};
-
-		if (this.withImages) {
-			await this.createWorkerPool(this.data!.images.size);
-		}
 	}
 
 	async parse() {
 		if (this.data === null)
 			throw new BerichtgenError(EParserError.DEVELOPERS_FAULT);
-		const result = [];
-		for (let i = 0; i < this.data.textsOrRelIds.length; i += this.batchSize) {
-			if (this.context.cancelled) break;
-			result.push(
-				...(await Promise.all(
-					this.data.textsOrRelIds
-						.slice(i, i + this.batchSize)
-						.map(async (textOrId) =>
-							this.parseChunk(textOrId)
-						) as Promise<string>[]
-				))
-			);
-		}
-		this.freeWorkers();
-		return result.join('\n');
+		return this.data.texts.join('\n');
 	}
 
 	parseAST(): DocxDocument {
@@ -285,24 +254,14 @@ export class DOCXParser extends Parser {
 		};
 	}
 
-	private async findAllWT(
-		obj: Record<string, unknown>,
-		results: ([string] | string)[] = [],
-		withImages: boolean
-	) {
+	private findAllWT(obj: Record<string, unknown>, results: string[] = []) {
 		if (typeof obj === 'object') {
 			for (const key in obj) {
 				if (key === 'w:t') {
 					const text = obj[key] as string;
 					if (text.length > 3) results.push(text);
-				} else if (key === 'a:blip' && withImages) {
-					results.push([(obj[key] as Record<string, string>)['@_r:embed']]);
 				} else {
-					this.findAllWT(
-						obj[key] as Record<string, unknown>,
-						results,
-						withImages
-					);
+					this.findAllWT(obj[key] as Record<string, unknown>, results);
 				}
 			}
 		}
@@ -563,30 +522,6 @@ export class DOCXParser extends Parser {
 		}
 		const tableWidth = colWidths?.reduce((sum, w) => sum + w, 0);
 		return { colWidths, rows, tableWidth, type: 'table' };
-	}
-
-	private async parseChunk(textOrId: [string] | string) {
-		if (Array.isArray(textOrId)) {
-			const rel = this.data!.imgRels.get(textOrId[0]);
-			if (rel === undefined) {
-				return '';
-			}
-
-			const fileData = this.data!.images.get(rel);
-			if (fileData === undefined) {
-				return '';
-			}
-
-			if (this.withImages) {
-				const result = await this.scheduler!.addJob(
-					'recognize',
-					fileData as ImageLike
-				);
-				return result.data.text;
-			}
-		} else {
-			return textOrId;
-		}
 	}
 
 	private async parseStyles(

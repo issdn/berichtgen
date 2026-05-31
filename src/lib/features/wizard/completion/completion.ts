@@ -1,9 +1,7 @@
 import type { Ort } from '$wizard/enums';
-import type {
-	BatchCompletionApiResponse,
-	BatchCompletionItem
-} from '$wizard/schemas';
+import type { BatchCompletionItem } from '$wizard/schemas';
 import type { FileRouting } from '$wizard/services/routing';
+import type { BatchCompletionApiResponse } from '$wizard/types';
 
 import { type Result, tryResultAsync } from '$lib/result';
 import { submitBatchCompletionCommand } from '$wizard/api/wizard.remote';

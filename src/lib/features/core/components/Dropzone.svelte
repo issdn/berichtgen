@@ -8,11 +8,12 @@
 	import { cn } from '$lib/utils';
 	import * as Kbd from '$ui/kbd';
 	import { FileTypes } from '$wizard/enums';
+	import { genaiCompletionSchema } from '$wizard/schemas';
 	import { Clock, FileCheck, FileUp, FileX } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 
 	let {
-		accept,
+		accept = Object.values(FileTypes).join(','),
 		class: className,
 		disabled = false,
 		filesNumber = $bindable(null),
@@ -137,24 +138,33 @@
 	}
 
 	async function handlePaste(e: ClipboardEvent) {
-		// URL paste: wrap as FileTypes.URI_LIST so the wizard treats it like a URL entry.
-		// Pass dt.files (FileList) rather than dt so getFileListWithPreserverFolderStructure
-		// is used - webkitGetAsEntry() returns null for programmatically-added files.
 		const text = e.clipboardData?.getData('text/plain')?.trim();
-		if (text && URL.canParse(text)) {
-			const dt = new DataTransfer();
-			dt.items.add(new File([text], text, { type: FileTypes.URI_LIST }));
-			await extractAndHandleFiles(dt.files);
-			return;
-		}
 		if (text) {
-			const dt = new DataTransfer();
-			dt.items.add(new File([text], 'clipboard.txt', { type: FileTypes.TXT }));
-			await extractAndHandleFiles(dt.files);
-			return;
+			const completionEntries = parseGenaiCompletionJson(text);
+			if (completionEntries !== null) {
+				const dt = new DataTransfer();
+				dt.items.add(
+					new File([JSON.stringify(completionEntries)], 'zwischenablage.json', {
+						type: FileTypes.JSON
+					})
+				);
+				await extractAndHandleFiles(dt.files);
+				return;
+			}
 		}
 		if (!e.clipboardData?.files.length) return;
 		await extractAndHandleFiles(e.clipboardData);
+	}
+
+	function parseGenaiCompletionJson(text: string): null | string[] {
+		const parsedResult = tryResult({
+			apiError: EParserError.INVALID_FILE,
+			run: () => JSON.parse(text) as unknown
+		});
+
+		if (!parsedResult.ok) return null;
+		const validated = genaiCompletionSchema.safeParse(parsedResult.data);
+		return validated.success ? validated.data : null;
 	}
 </script>
 
@@ -168,6 +178,7 @@
 			'text-border hover:border-primary hover:text-primary',
 			'data-[dragging=true]:border-primary data-[dragging=true]:text-primary',
 			'data-[valid=false]:border-destructive data-[valid=false]:text-destructive data-[valid=false]:[&_kbd]:text-destructive',
+			'[&_svg]:pointer-events-none',
 			'relative flex min-h-64 w-full flex-col items-center justify-center gap-y-2 border-4 border-dashed',
 			'text-sm font-medium transition-colors duration-300',
 			className

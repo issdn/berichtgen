@@ -1,4 +1,4 @@
-import { Ort } from '$wizard/enums';
+﻿import { Ort } from '$wizard/enums';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
 import { parseDate } from '@internationalized/date';
 import { expect, test } from 'vitest';
@@ -7,10 +7,7 @@ import { testAIResponse } from '../../../../test/helpers/test_inputs';
 
 test('Spread single entry across multiple weeks.', () => {
 	const entries = [
-		{
-			datum: '2025-03-24',
-			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
-		}
+		'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 	];
 
 	const expected = [
@@ -37,18 +34,10 @@ test('Spread single entry across multiple weeks.', () => {
 
 test('Spread multiple entries across multiple weeks.', () => {
 	const entries = [
-		{
-			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
-		},
-		{
-			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
-		},
-		{
-			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
-		},
-		{
-			text: 'Risikomanagement in der Lieferkette:\nIdentifikation und Bewertung von Risiken bei der Zusammenarbeit mit Lieferanten.'
-		}
+		'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.',
+		'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.',
+		'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.',
+		'Risikomanagement in der Lieferkette:\nIdentifikation und Bewertung von Risiken bei der Zusammenarbeit mit Lieferanten.'
 	];
 
 	const expected = [
@@ -87,9 +76,7 @@ test('Spread multiple entries across multiple weeks.', () => {
 
 test('Spread one entry across multiple weeks.', () => {
 	const entries = [
-		{
-			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
-		}
+		'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
 	];
 
 	const expected = [
@@ -116,15 +103,9 @@ test('Spread one entry across multiple weeks.', () => {
 
 test('Spread multiple entries across one week.', () => {
 	const entries = [
-		{
-			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
-		},
-		{
-			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
-		},
-		{
-			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
-		}
+		'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.',
+		'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.',
+		'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 	];
 
 	const expected = [
@@ -159,15 +140,9 @@ test('Spread multiple entries across one week.', () => {
 
 test('Spread multiple entries across multiple week ranges.', () => {
 	const entries = [
-		{
-			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
-		},
-		{
-			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
-		},
-		{
-			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
-		}
+		'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.',
+		'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.',
+		'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
 	];
 
 	const expected = [
@@ -207,21 +182,11 @@ test('Spread multiple entries across multiple week ranges.', () => {
 
 test('spreads more entries than available weeks across multiple ranges with stunden', () => {
 	const entries = [
-		{
-			text: 'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.'
-		},
-		{
-			text: 'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.'
-		},
-		{
-			text: 'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.'
-		},
-		{
-			text: 'Lieferantencontrolling:\nMethoden und Kennzahlen zur Überwachung und Steuerung der Lieferantenleistung.'
-		},
-		{
-			text: 'Global Sourcing:\nVor- und Nachteile der weltweiten Beschaffung von Gütern und Dienstleistungen.'
-		}
+		'Prozesskette Lieferantenmanagement:\nDie verschiedenen Schritte im Lieferantenmanagement von der Analyse bis zur Auswahl.',
+		'Kriterien zur Analyse und Auswahl von Lieferanten:\nDie verschiedenen Kriterien zur Bewertung von Lieferanten wie Zuverlässigkeit, Fertigungsmöglichkeiten und Konditionen.',
+		'Lieferantenbeziehungsmanagement:\nLangfristige Strategien zur Pflege von Geschäftsbeziehungen mit Lieferanten.',
+		'Lieferantencontrolling:\nMethoden und Kennzahlen zur Überwachung und Steuerung der Lieferantenleistung.',
+		'Global Sourcing:\nVor- und Nachteile der weltweiten Beschaffung von Gütern und Dienstleistungen.'
 	];
 
 	const expected = [
@@ -271,18 +236,21 @@ test('spreads more entries than available weeks across multiple ranges with stun
 });
 
 test('Spread multiple entries across multiple week ranges with stunden.', () => {
-	const received = spreadEntriesAcrossWeeks(testAIResponse, {
-		ort: Ort.BETRIEB,
-		ranges: [
-			{
-				daterange: {
-					end: parseDate('2024-01-01'),
-					start: parseDate('2023-12-01')
-				},
-				stunden: 30
-			}
-		]
-	});
+	const received = spreadEntriesAcrossWeeks(
+		testAIResponse.map((entry) => entry.text),
+		{
+			ort: Ort.BETRIEB,
+			ranges: [
+				{
+					daterange: {
+						end: parseDate('2024-01-01'),
+						start: parseDate('2023-12-01')
+					},
+					stunden: 30
+				}
+			]
+		}
+	);
 
 	expect(received.length).toBe(testAIResponse.length);
 });

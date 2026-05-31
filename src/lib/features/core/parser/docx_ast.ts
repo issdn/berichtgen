@@ -5,7 +5,7 @@ export type DocxCell = {
 	bgColor?: string;
 	colspan?: number;
 	/** Cell padding in pt from w:tcMar (falls back to table-level w:tblCellMar). */
-	padding: { bottom: number; left: number; right: number; top: number; };
+	padding: { bottom: number; left: number; right: number; top: number };
 	paragraphs: DocxParagraph[];
 	rowspan?: number;
 	/** Vertical alignment from w:tcPr > w:vAlign @w:val ('top' | 'center' | 'bottom'). */
@@ -31,7 +31,7 @@ export type DocxDocument = {
 	/** Full page height in pt (from w:pgSz @w:h ÷ 20). Default: 792pt (Letter). */
 	pageHeight: number;
 	/** Page margins in pt (from w:pgMar ÷ 20). */
-	pageMargins: { bottom: number; left: number; right: number; top: number; };
+	pageMargins: { bottom: number; left: number; right: number; top: number };
 	/** Full page width in pt (from w:pgSz @w:w ÷ 20). Default: 612pt (Letter). */
 	pageWidth: number;
 };
@@ -55,8 +55,8 @@ export type DocxParagraph = {
 	 * rule='exact' → value is in twips (absolute height).
 	 * rule='atLeast' → minimum line height in twips.
 	 */
-	lineSpacing?: { rule: 'atLeast' | 'auto' | 'exact'; value: number; };
-	numPr?: { ilvl: number; numId: string; };
+	lineSpacing?: { rule: 'atLeast' | 'auto' | 'exact'; value: number };
+	numPr?: { ilvl: number; numId: string };
 	runs: DocxInline[];
 	/** Spacing below the paragraph in pt (from w:spacing @w:after ÷ 20). */
 	spacingAfter?: number;

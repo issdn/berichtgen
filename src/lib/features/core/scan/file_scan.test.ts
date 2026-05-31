@@ -47,7 +47,7 @@ function makeItemList(entries: FileSystemEntry[]): DataTransferItemList {
 }
 
 function makeItemListWithKinds(
-	items: Array<{ file: File | null; kind: string; }>
+	items: Array<{ file: File | null; kind: string }>
 ): DataTransferItemList {
 	const dataTransferItems = items.map((item) => ({
 		getAsFile: () => item.file,

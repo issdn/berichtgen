@@ -1,10 +1,10 @@
-import type { ResultEntry } from '$wizard/types';
+import type { TimeSpreadResult } from '$wizard/types';
 
 import { Ort } from '$wizard/enums';
 import { combineJSONs } from '$wizard/postprocess/combine';
 import { expect, test } from 'vitest';
 
-function makeEntry(text: string, datum: string): ResultEntry {
+function makeEntry(text: string, datum: string): TimeSpreadResult[number] {
 	return {
 		ausbildungsjahr: 1,
 		datum,

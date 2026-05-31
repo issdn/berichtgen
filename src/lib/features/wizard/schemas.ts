@@ -4,14 +4,21 @@ import { Ort } from '$wizard/enums';
 import { CalendarDate } from '@internationalized/date';
 import z from 'zod';
 
-export const completionSchema = z.preprocess(
-	(str: string) => JSON.parse(str),
-	z.array(z.string())
+export const genaiCompletionSchema = z.array(
+	z.string().nonempty({ message: 'Der Text darf nicht leer sein.' }),
+	{ error: 'Die Liste darf nicht leer sein.' }
 );
+
+const ortEnum = z.enum([
+	Ort.SCHULE,
+	Ort.BETRIEB,
+	Ort.UNTERWEISUNG,
+	Ort['SCHULE/BETRIEB']
+]);
 
 export const fullResultSchema = z
 	.object({
-		datum: z.string({ message: 'Dass Object muss ein Datum enthalten!' }),
+		datum: z.string({ message: 'Das Object muss ein Datum enthalten!' }),
 		ort: z
 			.enum(Ort, { message: 'Das Objekt muss einen Ort enthalten!' })
 			.optional(),
@@ -28,12 +35,7 @@ export type fullResultSchema = z.infer<typeof fullResultSchema>;
 // -------------------------------------------------
 
 export const dateRangeSchema = z.object({
-	ort: z.enum([
-		Ort.SCHULE,
-		Ort.BETRIEB,
-		Ort.UNTERWEISUNG,
-		Ort['SCHULE/BETRIEB']
-	]),
+	ort: ortEnum,
 	ranges: z
 		.object({
 			daterange: z.custom<BerichtgenDateRange>(
@@ -73,19 +75,14 @@ type RemoveUndefined<T> = {
 
 // ------------------------------------------------
 
-export const completionApiSchema = z.object({
-	ort: z.enum([Ort.SCHULE, Ort.BETRIEB]),
-	text: z.string().nonempty()
-});
+export const completionResultSchema = z.array(
+	z.object({
+		ort: ortEnum,
+		text: z.string().nonempty()
+	})
+);
 
 // ------------------------------------------------
-
-const ortEnum = z.enum([
-	Ort.SCHULE,
-	Ort.BETRIEB,
-	Ort.UNTERWEISUNG,
-	Ort['SCHULE/BETRIEB']
-]);
 
 /** Completion item carrying a base64-encoded file (≤ 1 MB). */
 export const inlineItemSchema = z.object({
@@ -134,16 +131,6 @@ export const uploadUrlRequestSchema = z.object({
 	fileSize: z.number().int().positive(),
 	fullFilePath: z.string().nonempty()
 });
-
-/**
- * Response from the batch completion endpoint.
- * `results[i]` is `null` when item i was not processed due to an insufficient token budget.
- * `insufficient_tokens` is true when some items were skipped for that reason.
- */
-export type BatchCompletionApiResponse = {
-	insufficient_tokens: boolean;
-	results: (null | string[])[];
-};
 
 export const csvConfigSchema = z
 	.object({

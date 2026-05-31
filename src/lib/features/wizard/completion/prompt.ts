@@ -1,7 +1,7 @@
 import { Ort } from '$wizard/enums';
 
 // Maybe will do something with it
- 
+
 export function getContextPrompt(ort: Ort) {
 	const location = ort === Ort.SCHULE ? 'Unterrichten' : 'Arbeitstagen';
 

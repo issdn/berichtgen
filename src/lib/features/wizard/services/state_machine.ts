@@ -1,14 +1,16 @@
-import type { Entry, ResultEntry, WizardDirectoryEntry } from '$wizard/types';
+import type {
+	GenaiCompletionResult,
+	WizardDirectoryEntry
+} from '$wizard/types';
 
 import { invalidate } from '$app/navigation';
 import berichtgenStore from '$core/stores/berichtgen.svelte';
 import { GCS_MAX_BYTES, INLINE_MAX_BYTES } from '$lib/constants';
-import { BerichtgenError } from '$lib/errors';
-import { errResult, okResult, tryResultAsync } from '$lib/result';
+import { errResult, okResult, tryResult, tryResultAsync } from '$lib/result';
 import { FileTypes, WizardStep } from '$wizard/enums';
 import { EFileRoutingError } from '$wizard/errors';
 import { spreadEntriesAcrossWeeks } from '$wizard/postprocess/time_spread';
-import { fullResultSchema } from '$wizard/schemas';
+import { genaiCompletionSchema } from '$wizard/schemas';
 import { uploadToGcs } from '$wizard/services/gcs_service';
 import {
 	GcsRouting,
@@ -40,54 +42,6 @@ export function createStateMachineForContext({
 	const machine = new FiniteStateMachine<WizardStep, WizardMachineEvent>(
 		initialStep,
 		{
-			[WizardStep.AI_COMPLETION]: {
-				cancel: () => {
-					return WizardStep.CANCELLED;
-				},
-				error: () => {
-					return WizardStep.ERROR;
-				},
-				next(...args: unknown[]) {
-					const entries = args[0] as Entry[];
-					context.snapshot = entries;
-					invalidate('user:tokenCount');
-					return WizardStep.TIME_SPREADING;
-				}
-			},
-
-			[WizardStep.BATCH_PENDING]: {
-				_enter() {
-					scheduler.onFileBatchPending(id);
-				},
-				cancel: () => {
-					return WizardStep.CANCELLED;
-				},
-				error: () => {
-					return WizardStep.ERROR;
-				},
-				start: () => {
-					return WizardStep.AI_COMPLETION;
-				}
-			},
-
-			[WizardStep.CANCELLED]: {
-				_enter(meta) {
-					context.lastState = meta.from;
-					scheduler.onFileCancelled({ id });
-				},
-				next() {
-					return context.lastState ?? WizardStep.INITIALISING;
-				}
-			},
-
-			[WizardStep.DONE]: {
-				_enter: () => {
-					if (scheduler.isDone) scheduler.finish();
-				}
-			},
-
-			[WizardStep.ERROR]: {},
-
 			[WizardStep.INITIALISING]: {
 				cancel: () => {
 					return WizardStep.CANCELLED;
@@ -122,11 +76,54 @@ export function createStateMachineForContext({
 					return WizardStep.WAITING;
 				}
 			},
-
+			[WizardStep.WAITING]: {
+				_enter() {
+					if (context.dateRanges !== null) {
+						machine.send('next');
+					}
+				},
+				cancel: () => {
+					return WizardStep.CANCELLED;
+				},
+				next() {
+					if (shouldSkipAiCompletion(context)) {
+						return WizardStep.TIME_SPREADING;
+					}
+					return WizardStep.BATCH_PENDING;
+				}
+			},
+			[WizardStep.BATCH_PENDING]: {
+				_enter() {
+					scheduler.onFileBatchPending(id);
+				},
+				cancel: () => {
+					return WizardStep.CANCELLED;
+				},
+				error: () => {
+					return WizardStep.ERROR;
+				},
+				start: () => {
+					return WizardStep.AI_COMPLETION;
+				}
+			},
+			[WizardStep.AI_COMPLETION]: {
+				cancel: () => {
+					return WizardStep.CANCELLED;
+				},
+				error: () => {
+					return WizardStep.ERROR;
+				},
+				next(...args: unknown[]) {
+					const entries = args[0] as GenaiCompletionResult;
+					context.snapshot = entries;
+					invalidate('user:tokenCount');
+					return WizardStep.TIME_SPREADING;
+				}
+			},
 			[WizardStep.TIME_SPREADING]: {
 				_enter() {
 					context.snapshot = spreadEntriesAcrossWeeks(
-						context.snapshot as Entry[],
+						context.snapshot as GenaiCompletionResult,
 						context.dateRanges!
 					);
 					machine.send('next');
@@ -138,25 +135,21 @@ export function createStateMachineForContext({
 					return WizardStep.DONE;
 				}
 			},
-
-			[WizardStep.WAITING]: {
-				_enter() {
-					if (shouldSkipAiCompletion(context) || context.dateRanges !== null) {
-						machine.send('next');
-					}
-				},
-				cancel: () => {
-					return WizardStep.CANCELLED;
+			[WizardStep.CANCELLED]: {
+				_enter(meta) {
+					context.lastState = meta.from;
+					scheduler.onFileCancelled({ id });
 				},
 				next() {
-					if (shouldSkipAiCompletion(context)) {
-						return context.dateRanges === null
-							? WizardStep.DONE
-							: WizardStep.TIME_SPREADING;
-					}
-					return WizardStep.BATCH_PENDING;
+					return context.lastState ?? WizardStep.INITIALISING;
 				}
-			}
+			},
+			[WizardStep.DONE]: {
+				_enter: () => {
+					if (scheduler.isDone) scheduler.finish();
+				}
+			},
+			[WizardStep.ERROR]: {}
 		}
 	);
 
@@ -169,17 +162,19 @@ async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
 		entry.file.type === FileTypes.JSON &&
 		!berichtgenStore.get('rewordJSON')
 	) {
-		return tryResultAsync({
+		const text = await tryResultAsync({
 			apiError: EFileRoutingError.FORMAT_NOT_SUPPORTED,
-			promise: entry.file.text().then((text) => {
-				const parsed = JSON.parse(text);
-				const validated = fullResultSchema.safeParse(parsed);
-				if (!validated.success) {
-					throw new BerichtgenError(EFileRoutingError.FORMAT_NOT_SUPPORTED);
-				}
-				return validated.data as ResultEntry[];
-			})
+			promise: entry.file.text()
 		});
+
+		if (!text.ok) return text;
+
+		const parsed = tryResult({
+			apiError: EFileRoutingError.FORMAT_NOT_SUPPORTED,
+			run: () => genaiCompletionSchema.parse(JSON.parse(text.data))
+		});
+
+		return parsed;
 	}
 
 	if (entry.type === 'url') return okResult(new UrlRouting({ url: entry.url }));
@@ -205,17 +200,17 @@ async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
 
 	const urls = await uploadToGcs(entry.file);
 
-	if (urls.ok) {
-		return okResult(
-			new GcsRouting({
-				fileUri: urls.data.fileUri,
-				mimeType: entry.file.type,
-				signedUrl: urls.data.signedUrl
-			})
-		);
+	if (!urls.ok) {
+		return urls;
 	}
 
-	return null as never;
+	return okResult(
+		new GcsRouting({
+			fileUri: urls.data.fileUri,
+			mimeType: entry.file.type,
+			signedUrl: urls.data.signedUrl
+		})
+	);
 }
 
 function shouldSkipAiCompletion(context: WizardFileContext): boolean {

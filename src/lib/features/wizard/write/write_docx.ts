@@ -1,5 +1,5 @@
 import type { KyselyDatabase } from '$lib/schema';
-import type { Entry, ResultEntry } from '$wizard/types';
+import type { CompletionResult, TimeSpreadResult } from '$wizard/types';
 import type { QuickJSContext } from 'quickjs-emscripten';
 
 import { JS_EXECUTION_TIMEOUT_MS } from '$lib/constants';
@@ -53,7 +53,7 @@ export function buildRunJs(vm: QuickJSContext, injected: Map<string, string>) {
 
 export async function generateReportBytes(
 	template: Uint8Array<ArrayBufferLike>,
-	entries: Promise<Required<Entry>[]>,
+	entries: Promise<CompletionResult>,
 	userMetadata: KyselyDatabase['user_metadata'] | undefined,
 	injected: Map<string, string>,
 	vm: QuickJSContext
@@ -80,7 +80,7 @@ export async function handleDOCXDownload({
 	template,
 	userMetadata
 }: {
-	entries: Promise<ResultEntry[]>;
+	entries: Promise<TimeSpreadResult>;
 	filename?: string;
 	template: Uint8Array<ArrayBufferLike>;
 	userMetadata?: KyselyDatabase['user_metadata'];
@@ -94,7 +94,7 @@ export async function renderDocxBlob({
 	template,
 	userMetadata
 }: {
-	entries: Promise<Required<Entry>[]>;
+	entries: Promise<CompletionResult>;
 	template: Uint8Array<ArrayBufferLike>;
 	userMetadata?: KyselyDatabase['user_metadata'];
 }): Promise<Blob> {

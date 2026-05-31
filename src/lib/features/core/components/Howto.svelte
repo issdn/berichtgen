@@ -1,5 +1,5 @@
 <script lang="ts">
-	import FilesToConfigModal from '$core/config/components/FilesToConfigModal.svelte';
+	import FilesToConfigDialog from '$core/config/components/FilesToConfigDialog.svelte';
 	import Button from '$ui/button/button.svelte';
 	import * as Card from '$ui/card';
 	import { getContextPrompt } from '$wizard/completion/prompt';
@@ -66,7 +66,7 @@
 						>SCHULE,rwc.docx,2024-08-26;2024-10-16;40,2025-01-01;2025-03-01;30</code
 					>
 					<div class="flex flex-row pt-4">
-						<FilesToConfigModal />
+						<FilesToConfigDialog />
 					</div>
 				</Card.Content>
 			</Card.Root>

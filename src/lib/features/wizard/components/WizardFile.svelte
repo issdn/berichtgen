@@ -17,7 +17,7 @@
 		XIcon
 	} from '@lucide/svelte';
 
-	import ErrorModal from './ErrorModal.svelte';
+	import ErrorDialog from './ErrorDialog.svelte';
 	import TimeSpreadDialog from './TimeSpreadDialog.svelte';
 
 	const {
@@ -53,7 +53,7 @@
 	}
 
 	let step = $derived(machine.current);
-	let errorModalOpen = $state(false);
+	let errorDialogOpen = $state(false);
 
 	let { icon: Icon, label } = $derived.by(() => statusFromStep(step));
 </script>
@@ -99,11 +99,11 @@
 					data-testid="wizard-file-status"
 					variant="default"
 					class="cursor-pointer gap-x-2"
-					onclick={() => (errorModalOpen = true)}
+					onclick={() => (errorDialogOpen = true)}
 				>
 					<Icon size={18} /><span class="text-sm font-medium">{label}</span>
 				</Badge>
-				<ErrorModal bind:open={errorModalOpen} error={context.error!} />
+				<ErrorDialog bind:open={errorDialogOpen} error={context.error!} />
 			{:else}
 				<Badge
 					data-testid="wizard-file-status"

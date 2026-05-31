@@ -1,6 +1,5 @@
 import type {
-	Entry,
-	ResultEntry,
+	TimeSpreadResult,
 	WizardDirectories,
 	WizardDirectoryEntry,
 	WizardPersistedFile,
@@ -58,13 +57,13 @@ export class WizardScheduler {
 		return this.schedule?.find((file) => file.id === id);
 	}
 
-	getFinishedDirectories(): Required<Entry>[][] {
+	getFinishedDirectories() {
 		if (!this.schedule) return [];
 		return this.schedule.reduce((prev, { context, machine }) => {
 			if (machine.current === WizardStep.DONE)
-				return [...prev, context.snapshot as ResultEntry[]];
+				return [...prev, context.snapshot as TimeSpreadResult];
 			return prev;
-		}, [] as Required<Entry>[][]);
+		}, [] as TimeSpreadResult[]);
 	}
 
 	setSchedule(schedule: null | WizardProcessStateMachine[]) {

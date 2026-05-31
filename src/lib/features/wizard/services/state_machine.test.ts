@@ -1,4 +1,4 @@
-import { okResult } from '$lib/result';
+﻿import { okResult } from '$lib/result';
 import { WizardStep } from '$wizard/enums';
 import { CalendarDate } from '@internationalized/date';
 import { describe, expect, test, vi } from 'vitest';
@@ -59,7 +59,7 @@ describe('State machine full lifecycle', () => {
 			userId: null
 		});
 		const file = new File([DUMMY_TEXT], 'test.txt', { type: 'text/plain' });
-		scheduler.createSchedule([[{ file }]]);
+		scheduler.createSchedule([[{ file, type: 'file' }]]);
 
 		const { context, machine } = scheduler.schedule![0];
 
@@ -96,5 +96,70 @@ describe('State machine full lifecycle', () => {
 		expect((context.snapshot as Array<{ text: string }>)[0].text).toContain(
 			AI_RESULT
 		);
+	});
+
+	test('JSON completion input skips AI and produces dated entries after TIME_SPREADING', async () => {
+		const completionPayload = ['Tag 1: API gebaut.', 'Tag 2: Tests ergänzt.'];
+		const jsonFile = new File(
+			[JSON.stringify(completionPayload)],
+			'input.json',
+			{
+				type: 'application/json'
+			}
+		);
+
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		scheduler.createSchedule([[{ file: jsonFile, type: 'file' }]]);
+
+		const { context, machine } = scheduler.schedule![0];
+		expect(machine.current).toBe(WizardStep.PROCESSING);
+
+		await flush();
+
+		expect(machine.current).toBe(WizardStep.WAITING);
+
+		context.dateRanges = {
+			ort: 'BETRIEB',
+			ranges: [
+				{
+					daterange: {
+						end: new CalendarDate(2024, 1, 14),
+						start: new CalendarDate(2024, 1, 1)
+					},
+					id: 0,
+					stunden: null
+				}
+			]
+		} as unknown as DateRangeSchema;
+
+		machine.send('next');
+		await flush();
+
+		expect(machine.current).toBe(WizardStep.DONE);
+		expect(Array.isArray(context.snapshot)).toBe(true);
+
+		const dated = context.snapshot as Array<{
+			ausbildungsjahr: number;
+			datum: string;
+			endDatum: string;
+			ort: string;
+			stunden: number;
+			text: string;
+		}>;
+
+		expect(dated).toHaveLength(2);
+		expect(dated[0].text).toContain('Tag 1: API gebaut.');
+		expect(dated[1].text).toContain('Tag 2: Tests ergänzt.');
+		expect(dated[0].ort).toBe('BETRIEB');
+		expect(dated[1].ort).toBe('BETRIEB');
+		expect(dated[0].stunden).toBeGreaterThan(0);
+		expect(dated[1].stunden).toBeGreaterThan(0);
+		expect(dated[0].datum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(dated[1].datum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(dated[0].endDatum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(dated[1].endDatum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 	});
 });

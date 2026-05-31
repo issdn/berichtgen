@@ -3,7 +3,7 @@
 
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Spinner } from '$ui/spinner';
-	import ErrorModal from '$wizard/components/ErrorModal.svelte';
+	import ErrorDialog from '$wizard/components/ErrorDialog.svelte';
 	import { CircleCheck, CircleX } from '@lucide/svelte';
 	import { fly } from 'svelte/transition';
 
@@ -13,7 +13,7 @@
 		controller: WizardPersistenceController;
 	} = $props();
 
-	let errorModalOpen = $state(false);
+	let errorDialogOpen = $state(false);
 	let hasError = $derived((controller.mutation?.error ?? null) !== null);
 </script>
 
@@ -26,11 +26,11 @@
 		{#if hasError}
 			<CircleX class="text-destructive size-4" />
 			<span class="text-destructive">Speichern fehlgeschlagen</span>
-			<Button variant="ghost" onclick={() => (errorModalOpen = true)}>
+			<Button variant="ghost" onclick={() => (errorDialogOpen = true)}>
 				Details
 			</Button>
-			<ErrorModal
-				bind:open={errorModalOpen}
+			<ErrorDialog
+				bind:open={errorDialogOpen}
 				error={controller.mutation.error}
 			/>
 		{:else if controller.status === 'saved'}

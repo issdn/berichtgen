@@ -57,10 +57,10 @@ export async function handleCreatePaymentIntent(
 			return { clientSecret: paymentIntent.client_secret };
 		}
 		Sentry.captureException(paymentIntentResult.error);
-		throw svelteApiError(
-			ECommonServerError.STRIPE_ERROR,
-			paymentIntentResult.error.message
-		);
+		throw svelteApiError({
+			...ECommonServerError.STRIPE_ERROR,
+			cause: paymentIntentResult.error.message
+		});
 	}
 
 	const paymentIntentResult = await tryResultAsync({
@@ -73,10 +73,10 @@ export async function handleCreatePaymentIntent(
 	});
 	if (!paymentIntentResult.ok) {
 		Sentry.captureException(paymentIntentResult.error);
-		throw svelteApiError(
-			ECommonServerError.STRIPE_ERROR,
-			paymentIntentResult.error.message
-		);
+		throw svelteApiError({
+			...ECommonServerError.STRIPE_ERROR,
+			cause: paymentIntentResult.error.message
+		});
 	}
 	const paymentIntent = paymentIntentResult.data;
 

@@ -8,6 +8,8 @@
  * into SvelteKit remote functions.
  */
 
+import type { GenaiCompletionResult } from '$wizard/types';
+
 import { env } from '$env/dynamic/private';
 import { GCS_BUCKET_NAME, GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
 import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
@@ -16,10 +18,7 @@ import { tryResult, tryResultAsync } from '$lib/result';
 import db from '$lib/server/db';
 import { countItemTokens, runCompletion } from '$wizard/completion/gemini';
 import { ECompletionException, EGCSError, EWizardError } from '$wizard/errors';
-import {
-	type BatchCompletionApiResponse,
-	type BatchCompletionItem
-} from '$wizard/schemas';
+import { type BatchCompletionItem } from '$wizard/schemas';
 import { Storage } from '@google-cloud/storage';
 import * as genai from '@google/genai';
 import * as Sentry from '@sentry/sveltekit';
@@ -96,7 +95,7 @@ export async function requestGcsUploadTarget({
 export async function runBatchCompletion(
 	items: BatchCompletionItem[],
 	userId: string
-): Promise<BatchCompletionApiResponse> {
+) {
 	const credentialsResult = await tryResultAsync({
 		apiError: ECompletionException.INTERNAL,
 		promise: Promise.resolve(
@@ -152,7 +151,7 @@ export async function runBatchCompletion(
 	}
 
 	const { parseErrorCount, results } = parseGeminiResponses(
-		geminiResults as PromiseFulfilledResult<null | string[]>[],
+		geminiResults as PromiseFulfilledResult<GenaiCompletionResult>[],
 		budget.fittingIndices,
 		items.length
 	);
@@ -273,11 +272,11 @@ async function deleteProcessedGcsFilesBestEffort(
 }
 
 function parseGeminiResponses(
-	settled: PromiseFulfilledResult<null | string[]>[],
+	settled: PromiseFulfilledResult<GenaiCompletionResult>[],
 	fittingIndices: number[],
 	totalItems: number
-): { parseErrorCount: number; results: (null | string[])[] } {
-	const results: (null | string[])[] = new Array(totalItems).fill(null);
+) {
+	const results: GenaiCompletionResult[] = new Array(totalItems).fill(null);
 	let parseErrorCount = 0;
 
 	for (let i = 0; i < fittingIndices.length; i++) {

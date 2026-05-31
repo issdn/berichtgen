@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ResultEntry } from '$wizard/types';
+	import type { TimeSpreadResult } from '$wizard/types';
 
 	import { page } from '$app/state';
 	import { AsyncResource } from '$core/async.svelte';
@@ -32,9 +32,9 @@
 	} = $props();
 
 	/** Minimal sample data used to render uploaded templates before submitting them. */
-	const TEMPLATE_PREVIEW_ENTRIES: ResultEntry[] = [
+	const TEMPLATE_PREVIEW_ENTRIES: TimeSpreadResult = [
 		{
-			ausbildungsjahr: 2,
+			ausbildungsjahr: 2025,
 			datum: '2025-01-06',
 			endDatum: '2025-01-12',
 			ort: 'BETRIEB',

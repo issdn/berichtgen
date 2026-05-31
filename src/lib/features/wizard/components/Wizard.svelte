@@ -1,18 +1,25 @@
-<script lang="ts">
-	import type { WizardProcessStateMachine } from '$wizard/types';
+﻿<script lang="ts">
+	import type {
+		WizardDirectoryEntry,
+		WizardProcessStateMachine
+	} from '$wizard/types';
 
 	import { page } from '$app/state';
 	import { AsyncResource } from '$core/async.svelte';
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { INLINE_MAX_BYTES } from '$lib/constants';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
 	import Docx from '$ui/svg/DOCX.svelte';
 	import Pdf from '$ui/svg/PDF.svelte';
 	import Png from '$ui/svg/PNG.svelte';
 	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
+	import { FileTypes } from '$wizard/enums';
 	import { combineJSONs } from '$wizard/postprocess/combine';
+	import { genaiCompletionSchema } from '$wizard/schemas';
+	import { WizardFileContext } from '$wizard/services/wizard_file_context';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { handleDOCXDownload } from '$wizard/write/write_docx';
 	import { handleJSONDownload } from '$wizard/write/write_json';
@@ -28,19 +35,113 @@
 	import { flip } from 'svelte/animate';
 
 	import WizardFile from './WizardFile.svelte';
+	import WizardManualInputDialog from './WizardManualInputDialog.svelte';
 	import WizardRestoreSessionDialog from './WizardRestoreSessionDialog.svelte';
 	import WizardSettingsPopover from './WizardSettingsPopover.svelte';
 
 	const wizardMediator = wizardMediatorContext.get();
 
 	let flushLoading = $state(false);
-
 	let canRunFlush = $derived(
 		(wizardMediator.filesStates?.batch_pending ?? 0) > 0
 	);
 	let atLeastOneFileDone = $derived(
 		(wizardMediator.filesStates?.done ?? 0) > 0
 	);
+
+	function toWizardEntry(
+		value: string,
+		index: number
+	): null | WizardDirectoryEntry {
+		const trimmed = value.trim();
+		if (!trimmed) return null;
+		const completionJson = parseGenaiCompletionJson(trimmed);
+		if (completionJson !== null) {
+			return {
+				file: new File(
+					[JSON.stringify(completionJson)],
+					`manueller-json-${index + 1}.json`,
+					{
+						type: FileTypes.JSON
+					}
+				),
+				type: 'file'
+			};
+		}
+		if (URL.canParse(trimmed)) {
+			return { type: 'url', url: trimmed };
+		}
+		const bytes = new TextEncoder().encode(trimmed);
+		if (bytes.byteLength > INLINE_MAX_BYTES) {
+			throw new Error(`Text ${index + 1} überschreitet 2MB.`);
+		}
+		return {
+			file: new File([trimmed], `manueller-text-${index + 1}.txt`, {
+				type: FileTypes.TXT
+			}),
+			type: 'file'
+		};
+	}
+
+	function parseGenaiCompletionJson(text: string): null | string[] {
+		let parsedResult: unknown;
+		try {
+			parsedResult = JSON.parse(text) as unknown;
+		} catch {
+			return null;
+		}
+		const validated = genaiCompletionSchema.safeParse(parsedResult);
+		return validated.success ? validated.data : null;
+	}
+
+	async function addManualInputsToWizard(values: string[]) {
+		if (!page.data.loggedIn) {
+			toast.error('Du musst angemeldet sein um Text oder URLs zu verarbeiten.');
+			return;
+		}
+
+		const entries: WizardDirectoryEntry[] = [];
+		try {
+			for (let index = 0; index < values.length; index++) {
+				const entry = toWizardEntry(values[index], index);
+				if (entry !== null) entries.push(entry);
+			}
+		} catch (error) {
+			toast.error((error as Error).message);
+			return;
+		}
+		if (entries.length === 0) {
+			toast.error('Bitte gib mindestens einen Text oder eine URL ein.');
+			return;
+		}
+
+		if (
+			wizardMediator.schedule === null ||
+			wizardMediator.processInit === null
+		) {
+			wizardMediator.processInit = (async () => {
+				await wizardMediator.clearPersistedSession();
+				await wizardMediator.init();
+				const initial = entries.map((entry) =>
+					wizardMediator.createProcessStateMachine(new WizardFileContext(entry))
+				);
+				for (const process of initial) {
+					process.machine.send('next');
+				}
+				wizardMediator.schedule = initial;
+				wizardMediator.persistSoon();
+			})();
+		} else {
+			const appended = entries.map((entry) =>
+				wizardMediator.createProcessStateMachine(new WizardFileContext(entry))
+			);
+			for (const process of appended) {
+				process.machine.send('next');
+			}
+			wizardMediator.schedule = [...wizardMediator.schedule, ...appended];
+			wizardMediator.persistSoon();
+		}
+	}
 
 	function handleDndConsider(
 		e: CustomEvent<DndEvent<WizardProcessStateMachine>>
@@ -66,7 +167,7 @@
 				wizardMediator.schedulerState.getFinishedDirectories(),
 				berichtgenStore.get('constantHours')
 			);
-			await handleJSONDownload(Promise.resolve(combined));
+			handleJSONDownload(combined);
 		},
 		{
 			onError: (error) => {
@@ -139,6 +240,20 @@
 			<WizardSettingsPopover />
 		</div>
 		<div class="flex flex-row gap-x-2">
+			<Dialog.Root open={atLeastOneFileDone}>
+				<Dialog.Trigger
+					class={buttonVariants({ variant: 'ghost' })}
+					data-testid="wizard-completion-button"
+					disabled={!atLeastOneFileDone}><FileCheck2 /></Dialog.Trigger
+				>
+				<Dialog.Content
+					data-testid="wizard-dialog-content"
+					{children}
+					{childrenBehind}
+					class="max-w-min"
+				/>
+			</Dialog.Root>
+			<WizardManualInputDialog onSubmit={addManualInputsToWizard} />
 			<Button
 				variant="default"
 				disabled={flushLoading || !canRunFlush}
@@ -152,19 +267,6 @@
 				{/if}
 				Ausführen
 			</Button>
-			<Dialog.Root open={atLeastOneFileDone}>
-				<Dialog.Trigger
-					class={buttonVariants({ variant: 'default' })}
-					data-testid="wizard-completion-button"
-					disabled={!atLeastOneFileDone}><FileCheck2 /></Dialog.Trigger
-				>
-				<Dialog.Content
-					data-testid="wizard-dialog-content"
-					{children}
-					{childrenBehind}
-					class="max-w-min"
-				/>
-			</Dialog.Root>
 		</div>
 	</div>
 	{#if wizardMediator.schedule !== null && wizardMediator.processInit !== null}

@@ -1,4 +1,4 @@
-import type { Entry } from '$wizard/types';
+import type { CompletionResult } from '$wizard/types';
 
 export const testAIResponse = [
 	{
@@ -101,4 +101,4 @@ export const testAIResponse = [
 		],
 		text: 'Optimale Bestellhäufigkeit für einen Rohstoff berechnen'
 	}
-] as unknown as Entry[];
+] as unknown as CompletionResult;

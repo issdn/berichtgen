@@ -1,12 +1,12 @@
-import type { ResultEntry } from '$wizard/types';
+import type { TimeSpreadResult } from '$wizard/types';
 
 import { parseDate } from '@internationalized/date';
 
 export function combineJSONs(
-	jsons: ResultEntry[][],
+	jsons: TimeSpreadResult[],
 	constantHours: boolean = false
 ) {
-	const byDateMap = new Map<string, ResultEntry[]>();
+	const byDateMap = new Map<string, TimeSpreadResult>();
 	jsons.forEach((json) => {
 		json.forEach((entry) => {
 			const date = entry.datum;

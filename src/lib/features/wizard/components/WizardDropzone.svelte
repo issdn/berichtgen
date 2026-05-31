@@ -33,6 +33,13 @@
 
 	const isValidFile = (file: File): void => {
 		if (file.type === FileTypes.URI_LIST) return;
+		if (!page.data.loggedIn && file.type !== FileTypes.JSON) {
+			throw new BerichtgenError({
+				...ECommonServerError.UNAUTHORIZED,
+				cause:
+					'Du musst angemeldet sein, um Dateien zu verarbeiten. Ohne Login ist nur das Datieren von JSON-Dateien erlaubt.'
+			});
+		}
 		if (file.type === FileTypes.TXT && file.size > INLINE_MAX_BYTES) {
 			throw new BerichtgenError({
 				...ECommonServerError.VALIDATION_ERROR,

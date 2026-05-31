@@ -53,8 +53,8 @@ const admin = createClient<SupabaseDatabase, 'private'>(
 );
 
 const db = new Kysely<{
-	template: { storage_path: string; user_id: string; };
-	user_token_count: { tokens: number; user_id: string; };
+	template: { storage_path: string; user_id: string };
+	user_token_count: { tokens: number; user_id: string };
 }>({
 	dialect: new PostgresDialect({
 		pool: new pg.Pool({

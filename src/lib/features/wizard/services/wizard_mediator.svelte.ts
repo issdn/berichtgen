@@ -2,6 +2,7 @@ import type { WizardPersistenceController } from '$core/persistence/wizard_persi
 import type {
 	BatchErrorScope,
 	BatchItem,
+	GenaiCompletionResult,
 	WizardDirectories,
 	WizardPersistedSession,
 	WizardProcessStateMachine
@@ -187,7 +188,7 @@ export class WizardMediator {
 
 		const batches = createBatchesBySize(pendingItems, MAX_BATCH_BYTES);
 
-		const fileResults = new SvelteMap<number, string[]>();
+		const fileResults = new SvelteMap<number, GenaiCompletionResult>();
 		const fileErrors = new SvelteMap<number, BerichtgenError>();
 		const startedFileIndices = new SvelteSet<number>();
 		const globalError = await this.processBatches(
@@ -235,7 +236,7 @@ export class WizardMediator {
 
 	private applyResults(
 		pendingList: WizardProcessStateMachine[],
-		fileResults: Map<number, string[]>,
+		fileResults: Map<number, GenaiCompletionResult>,
 		fileErrors: Map<number, BerichtgenError>,
 		globalError: BerichtgenError | null
 	) {
@@ -253,8 +254,7 @@ export class WizardMediator {
 				continue;
 			}
 
-			const result = fileResults.get(fileIndex);
-			const entries = result ? result.map((text) => ({ text })) : null;
+			const entries = fileResults.get(fileIndex) ?? null;
 			if (entries === null) {
 				process.context.error = new BerichtgenError(
 					EWizardError.COMPLETION_FAILED
@@ -279,8 +279,8 @@ export class WizardMediator {
 
 	private collectBatchResults(
 		batch: BatchItem[],
-		results: (null | string[])[],
-		fileResults: SvelteMap<number, string[]>
+		results: GenaiCompletionResult[],
+		fileResults: SvelteMap<number, GenaiCompletionResult>
 	) {
 		for (let i = 0; i < batch.length; i++) {
 			const { fileIndex } = batch[i];
@@ -293,7 +293,7 @@ export class WizardMediator {
 		batches: BatchItem[][],
 		pendingList: WizardProcessStateMachine[],
 		startedFileIndices: SvelteSet<number>,
-		fileResults: SvelteMap<number, string[]>,
+		fileResults: SvelteMap<number, GenaiCompletionResult>,
 		fileErrors: SvelteMap<number, BerichtgenError>
 	): Promise<BerichtgenError | null> {
 		if (batches.length === 0) return null;

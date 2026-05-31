@@ -1,9 +1,39 @@
-/// <reference types="vitest/config" />
+import type { TestProjectConfiguration } from 'vitest/config';
+
 import { sentrySvelteKit } from '@sentry/sveltekit';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
 import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+
+const unitProject = {
+	extends: true,
+	test: {
+		alias: {
+			canvas: new URL('./src/test/__mocks__/canvas.ts', import.meta.url)
+				.pathname
+		},
+		exclude: ['./src/lib/features/templates/templates.test.ts'],
+		include: ['./src/**/*.test.ts'],
+		name: 'unit'
+	}
+} satisfies TestProjectConfiguration;
+
+const domProject = {
+	extends: true,
+	test: {
+		alias: {
+			'@sentry/sveltekit': new URL(
+				'./src/test/__mocks__/sentry.sveltekit	.ts',
+				import.meta.url
+			).pathname
+		},
+		environment: 'jsdom',
+		include: ['./src/lib/features/templates/templates.test.ts'],
+		name: 'dom'
+	}
+} satisfies TestProjectConfiguration;
 
 export default defineConfig(({ mode }) => ({
 	define: {
@@ -27,11 +57,9 @@ export default defineConfig(({ mode }) => ({
 				project: 'berichtgen'
 			}
 		}),
-		sveltekit()
+		sveltekit(),
+		svelteTesting()
 	],
-	resolve: {
-		conditions: ['browser']
-	},
 	ssr: {
 		noExternal: ['@lucide/svelte']
 	},
@@ -45,33 +73,6 @@ export default defineConfig(({ mode }) => ({
 			],
 			provider: 'v8'
 		},
-		projects: [
-			{
-				extends: true,
-				test: {
-					alias: {
-						canvas: new URL('./src/test/__mocks__/canvas.ts', import.meta.url)
-							.pathname
-					},
-					exclude: ['./src/lib/features/templates/templates.test.ts'],
-					include: ['./src/**/*.test.ts'],
-					name: 'unit'
-				}
-			},
-			{
-				extends: true,
-				test: {
-					alias: {
-						'@sentry/sveltekit': new URL(
-							'./src/test/__mocks__/sentry.sveltekit.ts',
-							import.meta.url
-						).pathname
-					},
-					environment: 'jsdom',
-					include: ['./src/lib/features/templates/templates.test.ts'],
-					name: 'dom'
-				}
-			}
-		]
+		projects: [unitProject, domProject]
 	}
 }));

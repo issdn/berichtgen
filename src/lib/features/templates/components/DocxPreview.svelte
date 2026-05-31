@@ -24,11 +24,7 @@
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 		const bytes = new Uint8Array(await res.arrayBuffer());
 
-		const parser = new DOCXParser(
-			{ cancelled: false } as never,
-			null as never,
-			false
-		);
+		const parser = new DOCXParser();
 		await parser.init(bytes);
 		const doc: DocxDocument = parser.parseAST();
 

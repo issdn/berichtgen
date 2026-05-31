@@ -5,8 +5,12 @@ import { WizardStep } from '$wizard/enums';
 import { type FileRouting, restoreFileRouting } from '$wizard/services/routing';
 
 import type { DateRangeSchema } from '../schemas';
-import type { WizardDirectoryEntry, WizardPersistedFile } from '../types';
-import type { Entry, ResultEntry } from '../types';
+import type {
+	GenaiCompletionResult,
+	WizardDirectoryEntry,
+	WizardPersistedFile
+} from '../types';
+import type { CompletionResult } from '../types';
 
 export class WizardFileContext {
 	dateRanges: DateRangeSchema | null = null;
@@ -17,7 +21,7 @@ export class WizardFileContext {
 
 	lastState: null | WizardStep = null;
 
-	snapshot: Entry[] | FileRouting | ResultEntry[] | undefined;
+	snapshot: CompletionResult | FileRouting | GenaiCompletionResult | undefined;
 
 	constructor(
 		entry: WizardDirectoryEntry,

@@ -4,7 +4,7 @@
  */
 
 import type { KyselyDatabase } from '$lib/schema';
-import type { Entry } from '$wizard/types';
+import type { CompletionResult } from '$wizard/types';
 
 import { Ort } from '$wizard/enums';
 import { generateReportBytes } from '$wizard/write/write_docx';
@@ -46,7 +46,7 @@ describe('generateReportBytes integration', () => {
 		try {
 			result = await generateReportBytes(
 				template,
-				Promise.resolve(entries as Required<Entry>[]),
+				Promise.resolve(entries as CompletionResult),
 				userMetadata,
 				injected,
 				vm
@@ -74,7 +74,7 @@ describe('generateReportBytes integration', () => {
 		try {
 			result = await generateReportBytes(
 				template,
-				Promise.resolve(entries as Required<Entry>[]),
+				Promise.resolve(entries as CompletionResult),
 				userMetadata,
 				injected,
 				vm
@@ -100,7 +100,7 @@ describe('generateReportBytes integration', () => {
 		try {
 			result = await generateReportBytes(
 				template,
-				Promise.resolve(entries as Required<Entry>[]),
+				Promise.resolve(entries as CompletionResult),
 				userMetadata,
 				injected,
 				vm

@@ -16,10 +16,10 @@ export async function POST({ request }) {
 
 	if (!signature) {
 		Sentry.captureException(new Error('No stripe signature found'));
-		throw svelteApiError(
-			ECommonServerError.VALIDATION_ERROR,
-			'No stripe signature found'
-		);
+		throw svelteApiError({
+			...ECommonServerError.VALIDATION_ERROR,
+			cause: 'Stripe-Signatur fehlt im Request-Header.'
+		});
 	}
 
 	const eventResult = tryResult({
@@ -29,10 +29,10 @@ export async function POST({ request }) {
 	});
 	if (!eventResult.ok) {
 		Sentry.captureException(eventResult.error);
-		throw svelteApiError(
-			ECommonServerError.VALIDATION_ERROR,
-			'Invalid request'
-		);
+		throw svelteApiError({
+			...ECommonServerError.VALIDATION_ERROR,
+			cause: 'Ungültiger Stripe-Webhook-Request.'
+		});
 	}
 	const event = eventResult.data;
 
@@ -74,10 +74,10 @@ export async function POST({ request }) {
 		});
 		if (!tokenUpdateResult.ok) {
 			Sentry.captureException(tokenUpdateResult.error);
-			throw svelteApiError(
-				ECommonServerError.DATABASE_ERROR,
-				"Couldn't update token balance"
-			);
+			throw svelteApiError({
+				...ECommonServerError.DATABASE_ERROR,
+				cause: 'Token-Kontostand konnte nicht aktualisiert werden.'
+			});
 		}
 
 		await db.deleteFrom('cart').where('intent_id', '=', pi.id).execute();

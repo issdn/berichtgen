@@ -1,8 +1,11 @@
 import { BerichtgenError, errorByHttpCode, toErrorBody } from '$lib/errors';
-import { tryResultAsync } from '$lib/result';
+import { tryResult, tryResultAsync } from '$lib/result';
 import { svelteApiError } from '$server/errors';
-import { EGenAIError } from '$wizard/errors';
-import { type BatchCompletionItem, completionSchema } from '$wizard/schemas';
+import { EGenAIError, EWizardError } from '$wizard/errors';
+import {
+	type BatchCompletionItem,
+	genaiCompletionSchema
+} from '$wizard/schemas';
 import { ApiError as GcsApiError } from '@google-cloud/storage';
 import * as genai from '@google/genai';
 import { ApiError as GenaiApiError } from '@google/genai';
@@ -63,17 +66,24 @@ export async function runCompletion(
 	item: BatchCompletionItem,
 	ai: genai.GoogleGenAI,
 	model: string
-): Promise<null | string[]> {
+) {
 	const response = await ai.models.generateContent({
 		config: {
 			responseMimeType: 'application/json',
-			responseSchema: completionSchema.toJSONSchema(),
+			responseSchema: genaiCompletionSchema.toJSONSchema(),
 			systemInstruction: getContextPrompt(item.ort),
 			...(item.type === 'url' ? { tools: [{ googleSearch: {} }] } : {})
 		},
 		contents: [{ parts: [itemToContentPart(item)], role: 'user' }],
 		model
 	});
-	const parsed = completionSchema.safeParse(response.text);
-	return parsed.success ? parsed.data : null;
+
+	const parsed = tryResult({
+		apiError: EWizardError.INVALID_JSON_FROM_AI,
+		run: () => genaiCompletionSchema.parse(JSON.parse(response.text!))
+	});
+
+	if (!parsed.ok) throw parsed.error;
+
+	return parsed.data;
 }
