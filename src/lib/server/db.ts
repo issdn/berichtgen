@@ -1,17 +1,20 @@
 import type { KyselyQueryDatabase } from '$lib/schema';
 
 import { dev } from '$app/environment';
-import { DATABASE_URL } from '$env/static/private';
+import { DATABASE_URL, SUPABASE_CA } from '$env/static/private';
 import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
 
-const ca = process.env.SUPABASE_CA;
-
-if (!dev && !ca) {
-	console.warn('SUPABASE_CA is not set.');
+if (!dev && !SUPABASE_CA) {
+	throw new Error('SUPABASE_CA is required in production');
 }
 
-const ssl = ca ? { ca, rejectUnauthorized: true } : undefined;
+const ssl = SUPABASE_CA
+	? {
+			ca: SUPABASE_CA,
+			rejectUnauthorized: true
+		}
+	: undefined;
 
 const db = new Kysely<KyselyQueryDatabase>({
 	dialect: new PostgresDialect({
