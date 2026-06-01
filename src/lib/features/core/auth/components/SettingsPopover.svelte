@@ -67,7 +67,7 @@
 		{
 			onError: (e) => {
 				token = '';
-				toast.error(e.message);
+				toast.error(e.message, { description: e.cause });
 			},
 			onSuccess: () => {
 				token = '';

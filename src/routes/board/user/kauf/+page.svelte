@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import { AsyncResource } from '$core/async.svelte';
 	import * as Alert from '$lib/components/ui/alert';
 	import { Badge } from '$lib/components/ui/badge';
@@ -201,10 +201,9 @@
 											class="text-muted-foreground cursor-pointer text-sm leading-relaxed"
 											for="terms-checkbox"
 										>
-											Ich stimme ausdrücklich zu, dass die Ausführung des
-											Vertrags vor Ablauf der Widerrufsfrist beginnt und ich mit
-											vollständiger Bereitstellung der Tokens mein
-											Widerrufsrecht verliere.
+											Ich stimme ausdrücklich zu, dass ich mein
+											Rückerstattungsrecht verliere, sobald ich die Tokens nutze
+											oder zwei Wochen seit dem Kauf vergangen sind.
 										</Label>
 									</div>
 								</Card.Content>

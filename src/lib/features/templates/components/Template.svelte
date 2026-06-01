@@ -245,7 +245,7 @@
 			{/snippet}
 		</TemplateDocxPreviewDialog>
 
-		<!-- Open in Microsoft Word Online -->
+		<!-- Open in Google Docs -->
 		<a
 			href="https://docs.google.com/viewer?url={encodeURIComponent(filepath)}"
 			target="_blank"

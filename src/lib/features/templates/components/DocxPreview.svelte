@@ -76,21 +76,20 @@
 	}
 
 	// svelte-ignore state_referenced_locally
-	const docPromise = loadDocx(fileUrl);
-	let loadedDoc: LoadedDocx | null = $state(null);
+	const doc = await loadDocx(fileUrl);
 
 	/** Revoke all object URLs when the component is destroyed. */
 	$effect(() => () => {
-		for (const objectUrl of loadedDoc?.imageUrls.values() ?? []) {
+		for (const objectUrl of doc?.imageUrls.values() ?? []) {
 			URL.revokeObjectURL(objectUrl);
 		}
 	});
 
 	/** Resolves a relationship ID to a pre-built object URL. */
 	function resolveImage(relId: string): string | undefined {
-		if (!loadedDoc) return undefined;
-		const filename = loadedDoc.doc.imgRels.get(relId);
-		return filename ? loadedDoc.imageUrls.get(filename) : undefined;
+		if (!doc) return undefined;
+		const filename = doc.doc.imgRels.get(relId);
+		return filename ? doc.imageUrls.get(filename) : undefined;
 	}
 
 	/** Maps a DOCX paragraph style name to an HTML heading tag. */
@@ -202,98 +201,112 @@
 	{/if}
 {/snippet}
 
+{#snippet tableNode(
+	node: Extract<DocxDocument['body'][number], { type: 'table' }>
+)}
+	<table
+		class="border-collapse text-sm"
+		style="width:{node.tableWidth
+			? `${node.tableWidth}pt`
+			: '100%'};table-layout:fixed"
+	>
+		{#if node.colWidths}
+			<colgroup>
+				{#each node.colWidths as w, ci (ci)}
+					<col style="width:{w}pt" />
+				{/each}
+			</colgroup>
+		{/if}
+		<tbody>
+			{#each node.rows as row, ri (ri)}
+				<tr
+					style="{row.height ? `height:${row.height}pt;` : ''}{row.bgColor
+						? `background:#${row.bgColor}`
+						: ''}"
+				>
+					{#each row.cells as cell, ci (ci)}
+						<td
+							class="border border-gray-300"
+							style="word-break:break-word;overflow-wrap:break-word;padding:{cell
+								.padding.top}pt {cell.padding.right}pt {cell.padding
+								.bottom}pt {cell.padding.left}pt;vertical-align:{cell.vAlign ===
+							'center'
+								? 'middle'
+								: (cell.vAlign ?? 'top')};{cell.bgColor
+								? `background:#${cell.bgColor}`
+								: ''}"
+							colspan={cell.colspan}
+							rowspan={cell.rowspan}
+						>
+							{#each cell.paragraphs as cp, cpi (cpi)}
+								<p class="min-h-[1em]" style={paragraphStyle(cp)}>
+									{@render inlines(cp.runs)}
+								</p>
+							{/each}
+						</td>
+					{/each}
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+{/snippet}
+
+{#snippet bodyNode(node: DocxDocument['body'][number])}
+	{#if node.type === 'paragraph'}
+		{@render para(node)}
+	{:else if node.type === 'table'}
+		{@render tableNode(node)}
+	{/if}
+{/snippet}
+
+{#snippet headerBlock(doc: DocxDocument)}
+	{#if doc.header?.length}
+		<div
+			class="absolute"
+			style="top:{doc.headerDistance}pt;left:{doc.pageMargins.left}pt;right:{doc
+				.pageMargins.right}pt"
+		>
+			{#each doc.header as node, i (i)}
+				{@render para(node)}
+			{/each}
+		</div>
+	{/if}
+{/snippet}
+
+{#snippet footerBlock(doc: DocxDocument)}
+	{#if doc.footer?.length}
+		<div
+			class="absolute"
+			style="bottom:{doc.footerDistance}pt;left:{doc.pageMargins
+				.left}pt;right:{doc.pageMargins.right}pt"
+		>
+			{#each doc.footer as node, i (i)}
+				{@render para(node)}
+			{/each}
+		</div>
+	{/if}
+{/snippet}
+
 <svelte:boundary>
-	{#await docPromise}
+	{#snippet pending()}
 		<div class="flex min-h-24 items-center justify-center">
 			<Spinner class="size-6" />
 		</div>
-	{:then parsed}
-		{@const _ = loadedDoc = parsed}
-		<div class="flex flex-col items-center gap-6">
-			{#each loadedDoc.pages as page, pi (pi)}
-				<div
-					class="docx-preview relative shadow-md"
-					style={loadedDoc.pageStyle}
-				>
-					{#if loadedDoc.doc.header?.length}
-						<div
-							class="absolute"
-							style="top:{loadedDoc.doc.headerDistance}pt;left:{loadedDoc.doc
-								.pageMargins.left}pt;right:{loadedDoc.doc.pageMargins.right}pt"
-						>
-							{#each loadedDoc.doc.header as node, i (i)}
-								{@render para(node)}
-							{/each}
-						</div>
-					{/if}
+	{/snippet}
 
-					{#each page as node, ni (ni)}
-						{#if node.type === 'paragraph'}
-							{@render para(node)}
-						{:else if node.type === 'table'}
-							<table
-								class="border-collapse text-sm"
-								style="width:{node.tableWidth
-									? `${node.tableWidth}pt`
-									: '100%'};table-layout:fixed"
-							>
-								{#if node.colWidths}
-									<colgroup>
-										{#each node.colWidths as w, ci (ci)}
-											<col style="width:{w}pt" />
-										{/each}
-									</colgroup>
-								{/if}
-								<tbody>
-									{#each node.rows as row, ri (ri)}
-										<tr
-											style="{row.height
-												? `height:${row.height}pt;`
-												: ''}{row.bgColor ? `background:#${row.bgColor}` : ''}"
-										>
-											{#each row.cells as cell, ci (ci)}
-												<td
-													class="border border-gray-300"
-													style="word-break:break-word;overflow-wrap:break-word;padding:{cell
-														.padding.top}pt {cell.padding.right}pt {cell.padding
-														.bottom}pt {cell.padding
-														.left}pt;vertical-align:{cell.vAlign === 'center'
-														? 'middle'
-														: (cell.vAlign ?? 'top')};{cell.bgColor
-														? `background:#${cell.bgColor}`
-														: ''}"
-													colspan={cell.colspan}
-													rowspan={cell.rowspan}
-												>
-													{#each cell.paragraphs as cp, cpi (cpi)}
-														<p class="min-h-[1em]" style={paragraphStyle(cp)}>
-															{@render inlines(cp.runs)}
-														</p>
-													{/each}
-												</td>
-											{/each}
-										</tr>
-									{/each}
-								</tbody>
-							</table>
-						{/if}
-					{/each}
+	<div class="flex flex-col items-center gap-6">
+		{#each doc.pages as page, pi (pi)}
+			<div class="docx-preview relative shadow-md" style={doc.pageStyle}>
+				{@render headerBlock(doc.doc)}
 
-					{#if loadedDoc.doc.footer?.length}
-						<div
-							class="absolute"
-							style="bottom:{loadedDoc.doc.footerDistance}pt;left:{loadedDoc.doc
-								.pageMargins.left}pt;right:{loadedDoc.doc.pageMargins.right}pt"
-						>
-							{#each loadedDoc.doc.footer as node, i (i)}
-								{@render para(node)}
-							{/each}
-						</div>
-					{/if}
-				</div>
-			{/each}
-		</div>
-	{/await}
+				{#each page as node, ni (ni)}
+					{@render bodyNode(node)}
+				{/each}
+
+				{@render footerBlock(doc.doc)}
+			</div>
+		{/each}
+	</div>
 
 	{#snippet failed(error)}
 		<ErrorAlert {error} />

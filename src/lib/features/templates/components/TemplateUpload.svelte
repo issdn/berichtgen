@@ -76,8 +76,10 @@
 		},
 		{
 			onError: (error) => {
-				toast.error('Vorschau konnte nicht erstellt werden.', {
-					description: error.message
+				toast.error(error.message, {
+					description: error.cause,
+					closeButton: true,
+					duration: Infinity
 				});
 			}
 		}

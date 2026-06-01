@@ -87,7 +87,7 @@
 					)}"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="underline">Microsoft Word Online</a
+					class="underline">Google Docs</a
 				>.
 			{/if}
 		</div>
