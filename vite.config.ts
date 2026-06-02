@@ -14,7 +14,10 @@ const unitProject = {
 			canvas: new URL('./src/test/__mocks__/canvas.ts', import.meta.url)
 				.pathname
 		},
-		exclude: ['./src/lib/features/templates/templates.test.ts'],
+		exclude: [
+			'./src/lib/features/templates/templates.test.ts',
+			'./src/lib/features/wizard/components/WizardFile.test.ts'
+		],
 		include: ['./src/**/*.test.ts'],
 		name: 'unit'
 	}
@@ -30,7 +33,10 @@ const domProject = {
 			).pathname
 		},
 		environment: 'jsdom',
-		include: ['./src/lib/features/templates/templates.test.ts'],
+		include: [
+			'./src/lib/features/templates/templates.test.ts',
+			'./src/lib/features/wizard/components/WizardFile.test.ts'
+		],
 		name: 'dom'
 	}
 } satisfies TestProjectConfiguration;

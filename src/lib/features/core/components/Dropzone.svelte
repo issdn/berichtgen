@@ -140,6 +140,12 @@
 	async function handlePaste(e: ClipboardEvent) {
 		const text = e.clipboardData?.getData('text/plain')?.trim();
 		if (text) {
+			if (URL.canParse(text)) {
+				const dt = new DataTransfer();
+				dt.items.add(new File([text], text, { type: FileTypes.URI_LIST }));
+				await extractAndHandleFiles(dt.files);
+				return;
+			}
 			const completionEntries = parseGenaiCompletionJson(text);
 			if (completionEntries !== null) {
 				const dt = new DataTransfer();

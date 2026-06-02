@@ -13,6 +13,7 @@
 		Clock,
 		Coffee,
 		RotateCcw,
+		Trash,
 		WandSparkles,
 		XIcon
 	} from '@lucide/svelte';
@@ -26,6 +27,7 @@
 		context,
 		id,
 		machine,
+		remove,
 		restart
 	}: ReturnType<WizardMediator['createProcessStateMachine']> = $props();
 
@@ -53,7 +55,19 @@
 	}
 
 	let step = $derived(machine.current);
+
 	let errorDialogOpen = $state(false);
+
+	let showRemoveButton = $derived(
+		step === WizardStep.INITIALISING ||
+			step === WizardStep.PROCESSING ||
+			step === WizardStep.WAITING ||
+			step === WizardStep.BATCH_PENDING
+	);
+
+	let showCancelButton = $derived(
+		step === WizardStep.TIME_SPREADING || step === WizardStep.DONE
+	);
 
 	let { icon: Icon, label } = $derived.by(() => statusFromStep(step));
 </script>
@@ -76,7 +90,14 @@
 					onValidChange={(data) => (context.dateRanges = data)}
 				/>
 			{/if}
-			{#if step !== WizardStep.PROCESSING && step !== WizardStep.AI_COMPLETION && step !== WizardStep.CANCELLED && step !== WizardStep.DONE}
+			{#if showRemoveButton}
+				<Button
+					data-testid="wizard-file-remove"
+					variant="destructive"
+					onclick={remove}><Trash /></Button
+				>
+			{/if}
+			{#if showCancelButton}
 				<Button
 					data-testid="wizard-file-cancel"
 					variant="destructive"

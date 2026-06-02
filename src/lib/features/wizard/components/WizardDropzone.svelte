@@ -26,7 +26,6 @@
 
 	const wizardMediator = wizardMediatorContext.get();
 
-	let filesNumber = $state(0);
 	let accept = $derived(
 		page.data.loggedIn ? Object.values(FileTypes).join(',') : FileTypes.JSON
 	);
@@ -73,8 +72,7 @@
 		}
 
 		const directories = scanResult.data;
-		filesNumber = directories.flat().length;
-		if (filesNumber === 0) {
+		if (directories.flat().length === 0) {
 			toast.error('Keine gueltigen Dateien gefunden.');
 			return;
 		}
@@ -180,6 +178,6 @@
 	class="h-64 min-h-0 md:h-full"
 	{accept}
 	{handleFiles}
-	{filesNumber}
+	filesNumber={wizardMediator.schedule?.length}
 	{isValidFile}
 />

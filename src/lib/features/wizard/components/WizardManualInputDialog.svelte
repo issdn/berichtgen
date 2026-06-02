@@ -1,5 +1,6 @@
 ﻿<script lang="ts">
 	import { page } from '$app/state';
+	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { buttonVariants } from '$ui/button';
@@ -14,6 +15,8 @@
 		onSubmit: (values: string[]) => Promise<void> | void;
 		open?: boolean;
 	} = $props();
+
+	let textareaContainer: HTMLDivElement | null = null;
 
 	let inputs = $state(['']);
 
@@ -39,6 +42,19 @@
 
 	async function submitInputs() {
 		await onSubmit(inputs);
+		open = false;
+	}
+
+	async function handlePaste(e: ClipboardEvent) {
+		const active = document.activeElement;
+		const isTextareaFocused =
+			active instanceof HTMLTextAreaElement &&
+			textareaContainer?.contains(active);
+		if (isTextareaFocused) return;
+
+		const text = e.clipboardData?.getData('text/plain')?.trim();
+		if (!text) return;
+		inputs = [...inputs, text];
 	}
 </script>
 
@@ -59,24 +75,30 @@
 		<Dialog.Header>
 			<Dialog.Title>Text oder URL hinzufügen</Dialog.Title>
 		</Dialog.Header>
-		<div class="flex max-h-96 flex-col gap-y-2 overflow-y-auto pt-2">
-			{#each visualInputs as _, index (index)}
-				<div transition:slide>
-					<Textarea
-						data-testid={`wizard-manual-input-${index}`}
-						class="min-h-none resize-none"
-						bind:value={inputs[index]}
-						onblur={() => removeEmptyIntermediateOnBlur(index)}
-						placeholder="Text oder https://... eingeben"
-					/>
-				</div>
-			{/each}
-		</div>
-		<div class="mt-4 flex justify-end gap-x-2">
-			<Button variant="ghost" onclick={() => (open = false)}>Abbrechen</Button>
-			<Button data-testid="wizard-manual-input-submit" onclick={submitInputs}>
-				Hinzufügen
-			</Button>
-		</div>
+		<GlobalPasteHandler {handlePaste}>
+			<div
+				class="flex max-h-96 flex-col gap-y-2 overflow-y-auto pt-2"
+				bind:this={textareaContainer}
+			>
+				{#each visualInputs as _, index (index)}
+					<div transition:slide>
+						<Textarea
+							data-testid={`wizard-manual-input-${index}`}
+							class="min-h-none resize-none"
+							bind:value={inputs[index]}
+							onblur={() => removeEmptyIntermediateOnBlur(index)}
+							placeholder="Text oder https://... eingeben"
+						/>
+					</div>
+				{/each}
+			</div>
+			<div class="mt-4 flex justify-end gap-x-2">
+				<Button variant="ghost" onclick={() => (open = false)}>Abbrechen</Button
+				>
+				<Button data-testid="wizard-manual-input-submit" onclick={submitInputs}>
+					Hinzufügen
+				</Button>
+			</div>
+		</GlobalPasteHandler>
 	</Dialog.Content>
 </Dialog.Root>

@@ -30,7 +30,6 @@ const MAX_PARALLEL_REQUESTS = 5;
 
 export class WizardMediator {
 	readonly batcher: WizardBatcher;
-	flushRequested = $state(false);
 
 	persistedSessionPromise: Promise<null | WizardPersistedSession>;
 
@@ -129,6 +128,9 @@ export class WizardMediator {
 			context,
 			id,
 			machine,
+			remove: () => {
+				this.removeProcess({ id });
+			},
 			restart() {
 				machine.send('next');
 			}
@@ -149,7 +151,6 @@ export class WizardMediator {
 	exportSnapshot(): WizardPersistedSession {
 		return {
 			files: this.schedulerState.toPersistedFiles(),
-			flushRequested: this.flushRequested,
 			sessionId: this.sessionId,
 			updatedAt: Date.now()
 		};
@@ -170,7 +171,6 @@ export class WizardMediator {
 			if (step === WizardStep.WAITING) return;
 		}
 
-		this.flushRequested = true;
 		this.persistSoon();
 
 		const pendingList = this.takePendingProcesses();
@@ -200,6 +200,11 @@ export class WizardMediator {
 		);
 
 		this.applyResults(pendingList, fileResults, fileErrors, globalError);
+	}
+
+	/** Returns whether a process is still tracked in the active schedule. */
+	hasProcess({ id }: { id: string }): boolean {
+		return this.schedulerState.findById(id) !== undefined;
 	}
 
 	init = (session: null | WizardPersistedSession = null) => {
@@ -234,6 +239,23 @@ export class WizardMediator {
 		});
 	}
 
+	/** Removes a process from the active schedule and updates batching/persistence state. */
+	removeProcess({ id }: { id: string }): void {
+		const removed = this.schedulerState.removeById({ id });
+		if (!removed) return;
+
+		this.batcher.unregister({ id });
+
+		if (this.schedulerState.schedule === null) {
+			this.processInit = null;
+			void this.clearPersistedSession();
+			return;
+		}
+
+		this.persistSoon();
+		if (this.isDone) this.finish();
+	}
+
 	private applyResults(
 		pendingList: WizardProcessStateMachine[],
 		fileResults: Map<number, GenaiCompletionResult>,
@@ -242,6 +264,8 @@ export class WizardMediator {
 	) {
 		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
 			const process = pendingList[fileIndex];
+			if (!this.hasProcess({ id: process.id })) continue;
+
 			if (globalError !== null) {
 				process.context.error = globalError;
 				process.machine.send('error');
@@ -266,7 +290,6 @@ export class WizardMediator {
 			}
 		}
 
-		this.flushRequested = false;
 		this.persistSoon();
 		if (this.isDone) this.finish();
 	}
@@ -343,9 +366,7 @@ export class WizardMediator {
 	private rehydrateFromSnapshot(snapshot: WizardPersistedSession): void {
 		this.persistence.isRehydrating = true;
 		this.sessionId = snapshot.sessionId;
-		this.flushRequested = snapshot.flushRequested ?? false;
 		this.resetRuntimeState();
-		this.flushRequested = snapshot.flushRequested ?? false;
 
 		const restored: WizardProcessStateMachine[] = [];
 		for (const file of snapshot.files) {
@@ -376,7 +397,6 @@ export class WizardMediator {
 	private resetRuntimeState() {
 		this.batcher.reset();
 		this.schedulerState.clear();
-		this.flushRequested = false;
 	}
 
 	private startBatchFiles(

@@ -1,9 +1,15 @@
-﻿import { okResult } from '$lib/result';
+// @vitest-environment jsdom
+import type { WizardPersistenceController } from '$core/persistence/wizard_persistence_controller.svelte';
+import type { DateRangeSchema } from '$wizard/schemas';
+
+import { okResult } from '$lib/result';
 import { WizardStep } from '$wizard/enums';
+import { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
 import { CalendarDate } from '@internationalized/date';
-import { describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('$app/navigation', () => ({ invalidate: vi.fn() }));
+vi.mock('$wizard/api/wizard.remote', () => ({}));
 vi.mock('$core/stores/berichtgen.svelte', () => ({
 	default: {
 		get: (key: keyof App.BerichtgenSettings) => {
@@ -20,18 +26,25 @@ vi.mock('$core/stores/berichtgen.svelte', () => ({
 }));
 
 const mockSendBatch = vi.hoisted(() => vi.fn());
+const mockUploadToGcs = vi.hoisted(() => vi.fn());
 vi.mock('$wizard/completion/completion', async (importOriginal) => ({
 	...((await importOriginal()) as object),
 	sendBatchCompletion: mockSendBatch
 }));
-
-import type { WizardPersistenceController } from '$core/persistence/wizard_persistence_controller.svelte';
-import type { DateRangeSchema } from '$wizard/schemas';
-
-import { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
+vi.mock('$wizard/services/gcs_service', () => ({
+	uploadToGcs: mockUploadToGcs
+}));
 
 function flush() {
 	return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function deferred<T>() {
+	let resolve!: (value: T) => void;
+	const promise = new Promise<T>((res) => {
+		resolve = res;
+	});
+	return { promise, resolve };
 }
 
 const DUMMY_TEXT = 'Montag: Programmieren';
@@ -48,8 +61,28 @@ function createPersistenceMock(): WizardPersistenceController {
 	} as unknown as WizardPersistenceController;
 }
 
+function createDateRanges(): DateRangeSchema {
+	return {
+		ort: 'BETRIEB',
+		ranges: [
+			{
+				daterange: {
+					end: new CalendarDate(2024, 1, 14),
+					start: new CalendarDate(2024, 1, 1)
+				},
+				id: 0,
+				stunden: null
+			}
+		]
+	} as unknown as DateRangeSchema;
+}
+
+beforeEach(() => {
+	vi.clearAllMocks();
+});
+
 describe('State machine full lifecycle', () => {
-	test('INITIALISING -> PROCESSING -> WAITING -> BATCH_PENDING -> AI_COMPLETION -> TIME_SPREADING -> DONE', async () => {
+	test('INITIALISING -> WAITING -> PROCESSING -> BATCH_PENDING -> AI_COMPLETION -> TIME_SPREADING -> DONE', async () => {
 		mockSendBatch.mockResolvedValue(
 			okResult({ insufficient_tokens: false, results: [[AI_RESULT]] })
 		);
@@ -63,31 +96,18 @@ describe('State machine full lifecycle', () => {
 
 		const { context, machine } = scheduler.schedule![0];
 
-		expect(machine.current).toBe(WizardStep.PROCESSING);
+		expect(machine.current).toBe(WizardStep.WAITING);
 
+		context.dateRanges = createDateRanges();
+
+		machine.send('next');
 		await flush();
 
-		expect(machine.current).toBe(WizardStep.WAITING);
+		expect(machine.current).toBe(WizardStep.BATCH_PENDING);
 		expect(context.snapshot).toMatchObject({
 			mimeType: 'text/plain',
 			type: 'inline'
 		});
-
-		context.dateRanges = {
-			ort: 'BETRIEB',
-			ranges: [
-				{
-					daterange: {
-						end: new CalendarDate(2024, 1, 14),
-						start: new CalendarDate(2024, 1, 1)
-					},
-					id: 0,
-					stunden: null
-				}
-			]
-		} as unknown as DateRangeSchema;
-
-		machine.send('next');
 		await scheduler.flushAiCompletion();
 		await flush();
 
@@ -115,25 +135,9 @@ describe('State machine full lifecycle', () => {
 		scheduler.createSchedule([[{ file: jsonFile, type: 'file' }]]);
 
 		const { context, machine } = scheduler.schedule![0];
-		expect(machine.current).toBe(WizardStep.PROCESSING);
-
-		await flush();
-
 		expect(machine.current).toBe(WizardStep.WAITING);
 
-		context.dateRanges = {
-			ort: 'BETRIEB',
-			ranges: [
-				{
-					daterange: {
-						end: new CalendarDate(2024, 1, 14),
-						start: new CalendarDate(2024, 1, 1)
-					},
-					id: 0,
-					stunden: null
-				}
-			]
-		} as unknown as DateRangeSchema;
+		context.dateRanges = createDateRanges();
 
 		machine.send('next');
 		await flush();
@@ -161,5 +165,117 @@ describe('State machine full lifecycle', () => {
 		expect(dated[1].datum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		expect(dated[0].endDatum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		expect(dated[1].endDatum).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+	});
+
+	test('removing the last pre-AI file clears the active schedule completely', async () => {
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		const file = new File([DUMMY_TEXT], 'remove-me.txt', {
+			type: 'text/plain'
+		});
+
+		scheduler.createSchedule([[{ file, type: 'file' }]]);
+
+		const [process] = scheduler.schedule!;
+		process.remove();
+
+		expect(scheduler.schedule).toBeNull();
+		expect(scheduler.numberOfFiles).toBe(0);
+	});
+
+	test('removing a batch-pending file unregisters it before flush', async () => {
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		const file = new File([DUMMY_TEXT], 'pending.txt', { type: 'text/plain' });
+
+		scheduler.createSchedule([[{ file, type: 'file' }]]);
+
+		const [process] = scheduler.schedule!;
+		expect(process.machine.current).toBe(WizardStep.WAITING);
+
+		process.context.dateRanges = createDateRanges();
+		process.machine.send('next');
+		await flush();
+
+		expect(process.machine.current).toBe(WizardStep.BATCH_PENDING);
+		expect(scheduler.batcher.size).toBe(1);
+
+		process.remove();
+
+		expect(scheduler.batcher.size).toBe(0);
+		expect(scheduler.schedule).toBeNull();
+	});
+
+	test('file removed during PROCESSING ignores late async file routing result', async () => {
+		const uploadResult =
+			deferred<
+				ReturnType<typeof okResult<{ fileUri: string; signedUrl: string }>>
+			>();
+		mockUploadToGcs.mockReturnValueOnce(uploadResult.promise);
+
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		const file = new File(['pdf-bytes'], 'delayed.pdf', {
+			type: 'application/pdf'
+		});
+
+		scheduler.createSchedule([[{ file, type: 'file' }]]);
+
+		const [process] = scheduler.schedule!;
+		process.context.dateRanges = createDateRanges();
+		process.machine.send('next');
+		await flush();
+		expect(process.machine.current).toBe(WizardStep.PROCESSING);
+		process.remove();
+
+		uploadResult.resolve(
+			okResult({
+				fileUri: 'gs://bucket/delayed.pdf',
+				signedUrl: 'https://signed.example/delayed.pdf'
+			})
+		);
+		await flush();
+		await flush();
+
+		expect(scheduler.schedule).toBeNull();
+	});
+
+	test('removed file is not included in AI completion flush input', async () => {
+		mockSendBatch.mockResolvedValue(
+			okResult({ insufficient_tokens: false, results: [[AI_RESULT]] })
+		);
+
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		const first = new File([DUMMY_TEXT], 'first.txt', { type: 'text/plain' });
+		const second = new File([DUMMY_TEXT], 'second.txt', { type: 'text/plain' });
+
+		scheduler.createSchedule([
+			[
+				{ file: first, type: 'file' },
+				{ file: second, type: 'file' }
+			]
+		]);
+
+		for (const process of scheduler.schedule!) {
+			process.context.dateRanges = createDateRanges();
+			process.machine.send('next');
+		}
+		await flush();
+		await flush();
+
+		scheduler.schedule![1].remove();
+		await scheduler.flushAiCompletion();
+
+		expect(mockSendBatch).toHaveBeenCalledTimes(1);
+		expect(mockSendBatch.mock.calls[0][0]).toHaveLength(1);
 	});
 });

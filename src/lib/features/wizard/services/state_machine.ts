@@ -46,7 +46,20 @@ export function createStateMachineForContext({
 				cancel: () => {
 					return WizardStep.CANCELLED;
 				},
-				next: WizardStep.PROCESSING
+				next: WizardStep.WAITING
+			},
+			[WizardStep.WAITING]: {
+				_enter() {
+					if (context.dateRanges !== null) {
+						machine.send('next');
+					}
+				},
+				cancel: () => {
+					return WizardStep.CANCELLED;
+				},
+				next() {
+					return WizardStep.PROCESSING;
+				}
 			},
 			[WizardStep.PROCESSING]: {
 				_enter() {
@@ -57,6 +70,8 @@ export function createStateMachineForContext({
 					}
 
 					processFile({ entry: context.entry }).then((result) => {
+						if (!scheduler.hasProcess({ id })) return;
+
 						if (!result.ok) {
 							context.error = result.error;
 							machine.send('error');
@@ -71,19 +86,6 @@ export function createStateMachineForContext({
 				},
 				error: () => {
 					return WizardStep.ERROR;
-				},
-				next: () => {
-					return WizardStep.WAITING;
-				}
-			},
-			[WizardStep.WAITING]: {
-				_enter() {
-					if (context.dateRanges !== null) {
-						machine.send('next');
-					}
-				},
-				cancel: () => {
-					return WizardStep.CANCELLED;
 				},
 				next() {
 					if (shouldSkipAiCompletion(context)) {
@@ -145,6 +147,9 @@ export function createStateMachineForContext({
 				}
 			},
 			[WizardStep.DONE]: {
+				cancel: () => {
+					return WizardStep.CANCELLED;
+				},
 				_enter: () => {
 					if (scheduler.isDone) scheduler.finish();
 				}

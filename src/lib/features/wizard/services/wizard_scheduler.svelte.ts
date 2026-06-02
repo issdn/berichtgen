@@ -66,6 +66,17 @@ export class WizardScheduler {
 		}, [] as TimeSpreadResult[]);
 	}
 
+	/** Removes a single process from the current schedule by ID. */
+	removeById({ id }: { id: string }): boolean {
+		if (this.schedule === null) return false;
+
+		const next = this.schedule.filter((process) => process.id !== id);
+		if (next.length === this.schedule.length) return false;
+
+		this.schedule = next.length > 0 ? next : null;
+		return true;
+	}
+
 	setSchedule(schedule: null | WizardProcessStateMachine[]) {
 		this.schedule = schedule;
 	}
