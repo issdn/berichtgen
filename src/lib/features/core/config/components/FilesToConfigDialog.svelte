@@ -58,7 +58,7 @@
 	>
 	<Dialog.Content class="min-h-72">
 		<Dialog.Header>
-			<Dialog.Title>Config-Template generieren</Dialog.Title>
+			<Dialog.Title>Konfigurationsvorlage generieren</Dialog.Title>
 		</Dialog.Header>
 		<div class="pt-8 pb-4">
 			<Dropzone {handleFiles} {filesNumber} />

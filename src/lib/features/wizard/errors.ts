@@ -100,20 +100,20 @@ export const EGenAIError = buildError('wizard.genai', {
 export const ETemplateError = buildError('templates', {
 	ALREADY_REPORTED: {
 		httpCode: 409,
-		message: 'Du hast dieses Template bereits gemeldet.'
+		message: 'Du hast diese Vorlage bereits gemeldet.'
 	},
 	CANNOT_REPORT_OWN: {
 		httpCode: 403,
-		message: 'Du kannst dein eigenes Template nicht melden.'
+		message: 'Du kannst deine eigene Vorlage nicht melden.'
 	},
 	MAX_TEMPLATES_REACHED: {
 		httpCode: 409,
-		message: 'Du kannst maximal 3 Templates hochladen.'
+		message: 'Du kannst maximal 3 Vorlagen hochladen.'
 	},
-	TEMPLATE_NOT_FOUND: { httpCode: 404, message: 'Template nicht gefunden.' },
+	TEMPLATE_NOT_FOUND: { httpCode: 404, message: 'Vorlage nicht gefunden.' },
 	TEMPLATE_SAFE: {
 		httpCode: 403,
-		message: 'Dieses Template wurde als sicher markiert.'
+		message: 'Diese Vorlage wurde als sicher markiert.'
 	}
 } as const);
 

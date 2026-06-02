@@ -170,7 +170,7 @@
 		if (result.ok) {
 			reportDialogOpen = false;
 			reportMessage = '';
-			toast.success('Template gemeldet.', {
+			toast.success('Vorlage gemeldet.', {
 				action: { label: 'Rückgängig', onClick: undoReport }
 			});
 		} else {
@@ -193,7 +193,7 @@
 	<FileBox class={isPreferred ? 'text-primary' : 'text-muted'} />
 	<div class="flex min-w-0 flex-1 flex-col">
 		<span class="flex items-center gap-1.5 text-sm font-medium">
-			<span class="truncate" title={name ?? 'Template'}>
+			<span class="truncate" title={name ?? 'Vorlage'}>
 				{name}
 			</span>
 			{#if hasPendingReport}
@@ -214,7 +214,7 @@
 			<Button
 				variant="default"
 				size="icon"
-				title="Als Template auswählen"
+				title="Als Vorlage auswählen"
 				onclick={() => {
 					if (hasPendingReport) {
 						confirmSelectOpen = true;
@@ -228,7 +228,7 @@
 		{/if}
 
 		<TemplateDocxPreviewDialog
-			title={name ?? 'Template'}
+			title={name ?? 'Vorlage'}
 			description={`${profile.full_name ?? 'Anonym'} - Hochgeladen am ${new Date(
 				template.created_at
 			).toLocaleDateString(LOCALE)}${
@@ -260,7 +260,7 @@
 			href={filepath}
 			rel="external"
 			download={name}
-			title="Template herunterladen"
+			title="Vorlage herunterladen"
 		>
 			<Button variant="ghost" size="icon" tabindex={-1}>
 				<Download size={16} />
@@ -272,7 +272,7 @@
 				<Button
 					variant="destructive"
 					size="icon"
-					title="Template löschen"
+					title="Vorlage löschen"
 					disabled={deletePending}
 					onclick={() => (confirmDeleteOpen = true)}
 				>
@@ -294,15 +294,15 @@
 			{#if !isOwnTemplate && !isSafe && !isReportedByMe}
 				<Dialog.Root bind:open={reportDialogOpen}>
 					<Dialog.Trigger>
-						<Button variant="destructive" size="icon" title="Template melden">
+						<Button variant="destructive" size="icon" title="Vorlage melden">
 							<Flag size={16} />
 						</Button>
 					</Dialog.Trigger>
 					<Dialog.Content class="sm:max-w-md">
 						<Dialog.Header>
-							<Dialog.Title>Template melden</Dialog.Title>
+							<Dialog.Title>Vorlage melden</Dialog.Title>
 							<Dialog.Description>
-								Melde dieses Template als potenziell schädlich. Die Meldung wird
+								Melde diese Vorlage als potenziell schädlich. Die Meldung wird
 								von einem Admin geprüft.
 							</Dialog.Description>
 						</Dialog.Header>
@@ -339,9 +339,9 @@
 <AlertDialog.Root bind:open={confirmSelectOpen}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Gemeldetes Template auswählen?</AlertDialog.Title>
+			<AlertDialog.Title>Gemeldete Vorlage auswählen?</AlertDialog.Title>
 			<AlertDialog.Description>
-				Dieses Template wurde gemeldet und wird noch überprüft. Die Nutzung
+				Diese Vorlage wurde gemeldet und wird noch überprüft. Die Nutzung
 				erfolgt auf eigenes Risiko.
 			</AlertDialog.Description>
 		</AlertDialog.Header>
@@ -362,7 +362,7 @@
 <AlertDialog.Root bind:open={confirmDeleteOpen}>
 	<AlertDialog.Content>
 		<AlertDialog.Header>
-			<AlertDialog.Title>Template löschen?</AlertDialog.Title>
+			<AlertDialog.Title>Vorlage löschen?</AlertDialog.Title>
 			<AlertDialog.Description>
 				"{name}" wird unwiderruflich gelöscht.
 			</AlertDialog.Description>

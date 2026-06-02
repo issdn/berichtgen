@@ -89,6 +89,33 @@
 					>
 				</Card.Content>
 			</Card.Root>
+			<Card.Root class="relative inline-block w-full">
+				<Pin class="absolute -top-1 -right-1 rotate-45 " />
+				<Card.Header>
+					<Card.Title>Eigene DOCX Vorlagen</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					<p>
+						<a
+							href="https://www.npmjs.com/package/docx-templates"
+							target="_blank"
+							class="underline">docx-templates</a
+						>
+						ist eine Library, mit der du normale
+						<i class="bg-muted rounded-sm px-2">.docx</i>
+						Dateien als Vorlagen benutzen kannst. Du gestaltest das Layout in Word
+						und markierst nur die Stellen, an denen später dynamische Daten eingesetzt
+						werden sollen.
+					</p>
+					<br />
+					<p>
+						Wenn du eigene Vorlagen bauen willst, lies die Dokumentation dort.
+						Für konkrete Beispiele kannst du dir außerdem die Vorlagenliste hier
+						in der App anschauen und bestehende Vorlagen als Orientierung
+						verwenden.
+					</p>
+				</Card.Content>
+			</Card.Root>
 		</div>
 	</div>
 </div>

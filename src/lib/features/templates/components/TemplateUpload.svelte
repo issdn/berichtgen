@@ -157,7 +157,7 @@
 			!isDuplicateOwnTemplate &&
 			ownTemplates.length >= TEMPLATE_MAX_COUNT_PER_USER
 		) {
-			toast.error('Du kannst maximal 3 Templates hochladen.');
+			toast.error('Du kannst maximal 3 Vorlagen hochladen.');
 			return;
 		}
 
@@ -189,7 +189,7 @@
 	<div class="flex items-center gap-x-2">
 		<Checkbox id="template-public" bind:checked={isPublic} />
 		<Label for="template-public" class="text-sm">
-			Template für andere Nutzer öffentlich machen
+			Vorlage für andere Nutzer öffentlich machen
 		</Label>
 	</div>
 	<Dropzone disabled={isPending} {handleFiles} class="min-h-48" />
@@ -198,9 +198,9 @@
 {#if pendingPreparedFile}
 	<TemplateDocxPreviewDialog
 		bind:open={previewOpen}
-		title="Template vor dem Upload prüfen"
+		title="Vorlage vor dem Upload prüfen"
 		description={pendingPreparedFile.isDuplicate
-			? `Das Template "${pendingPreparedFile.file.name}" existiert bereits und wird beim Upload überschrieben.`
+			? `Die Vorlage "${pendingPreparedFile.file.name}" existiert bereits und wird beim Upload überschrieben.`
 			: 'Prüfe die gerenderte Beispielausgabe und bestätige danach den Upload.'}
 		fileUrl={pendingPreparedFile.previewUrl}
 		confirmLabel={pendingPreparedFile.isDuplicate ? 'Ersetzen' : 'Hochladen'}

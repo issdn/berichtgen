@@ -347,7 +347,7 @@
 						<strong>Fehlerdaten (Sentry):</strong> in der Regel bis zu 30 Tage
 					</li>
 					<li>
-						<strong>Von Ihnen bereitgestellte Templates:</strong>
+						<strong>Von Ihnen bereitgestellte Vorlagen:</strong>
 						solange dies für die Bereitstellung der Funktion oder bis zur Löschung
 						durch Sie bzw. uns erforderlich ist
 					</li>

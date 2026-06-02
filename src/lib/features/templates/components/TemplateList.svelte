@@ -140,9 +140,9 @@
 		>
 			<Empty.Root>
 				<Empty.Header>
-					<Empty.Title>Keine Templates gefunden</Empty.Title>
+					<Empty.Title>Keine Vorlagen gefunden</Empty.Title>
 					<Empty.Description
-						>Lade ein Template hoch, um loszulegen.</Empty.Description
+						>Lade eine Vorlage hoch, um loszulegen.</Empty.Description
 					>
 				</Empty.Header>
 			</Empty.Root>

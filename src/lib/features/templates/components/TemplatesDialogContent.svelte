@@ -70,7 +70,7 @@
 	}}
 >
 	<Dialog.Header>
-		<Dialog.Title>Templates</Dialog.Title>
+		<Dialog.Title>Vorlagen</Dialog.Title>
 	</Dialog.Header>
 	<div class="flex w-full flex-col gap-y-2">
 		<InputGroup.Root>

@@ -12,7 +12,7 @@
 	<Dialog.Trigger
 		data-testid="templates-dialog-trigger"
 		class={buttonVariants({ variant: 'outline' })}
-		><FileCode />Templates</Dialog.Trigger
+		><FileCode />Vorlagen</Dialog.Trigger
 	>
 	{#if open}
 		<TemplatesDialogContent />
