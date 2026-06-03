@@ -11,21 +11,31 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 export const load = async ({ locals: { user }, parent }) => {
 	const { tokenCount } = await parent();
 
-	const [userMetadataForm, profileNameForm, userMetadata, profile] =
-		await Promise.all([
-			superValidate(zod4(userMetadataSchema)),
-			superValidate(zod4(profileNameSchema)),
-			db
-				.selectFrom('user_metadata')
-				.selectAll()
-				.where('user_id', '=', user!.id)
-				.executeTakeFirst() ?? null,
-			db
-				.selectFrom('profile')
-				.select('full_name')
-				.where('id', '=', user!.id)
-				.executeTakeFirst() ?? null
-		]);
+	const [userMetadataForm, profileNameForm, row] = await Promise.all([
+		superValidate(zod4(userMetadataSchema)),
+		superValidate(zod4(profileNameSchema)),
+		db
+			.selectFrom('profile')
+			.leftJoin('user_metadata', 'user_metadata.user_id', 'profile.id')
+			.select([
+				'profile.full_name',
+				'user_metadata.abteilung',
+				'user_metadata.ausbildungsberuf',
+				'user_metadata.full_name as user_metadata_full_name',
+				'user_metadata.user_id'
+			])
+			.where('profile.id', '=', user!.id)
+			.executeTakeFirst()
+	]);
+
+	const userMetadata = row?.user_id
+		? {
+				abteilung: row.abteilung,
+				ausbildungsberuf: row.ausbildungsberuf,
+				full_name: row.user_metadata_full_name,
+				user_id: row.user_id
+			}
+		: null;
 
 	if (userMetadata) {
 		userMetadataForm.data = {
@@ -35,8 +45,10 @@ export const load = async ({ locals: { user }, parent }) => {
 		};
 	}
 
-	if (profile) {
-		profileNameForm.data = { fullName: profile.full_name ?? '' };
+	if (row) {
+		profileNameForm.data = {
+			fullName: row.full_name ?? ''
+		};
 	}
 
 	return { profileNameForm, tokenCount, userMetadata, userMetadataForm };
@@ -44,6 +56,32 @@ export const load = async ({ locals: { user }, parent }) => {
 
 export const actions: Actions = {
 	removeAccount: async ({ locals: { supabase, user } }) => {
+		const templatePathsResult = await tryResultAsync({
+			apiError: ECommonServerError.DATABASE_ERROR,
+			promise: db
+				.selectFrom('template')
+				.select('storage_path')
+				.where('user_id', '=', user!.id)
+				.execute()
+		});
+		if (!templatePathsResult.ok) {
+			Sentry.captureException(templatePathsResult.error);
+			return fail(500);
+		}
+
+		const templatePaths = templatePathsResult.data.map(
+			(template) => template.storage_path
+		);
+		if (templatePaths.length > 0) {
+			const { error: removeTemplatesError } = await supabaseAdmin.storage
+				.from('templates')
+				.remove(templatePaths);
+			if (removeTemplatesError) {
+				Sentry.captureException(removeTemplatesError);
+				return fail(500);
+			}
+		}
+
 		const { error: signOutError } = await supabase.auth.signOut();
 		if (signOutError) {
 			return fail(406);

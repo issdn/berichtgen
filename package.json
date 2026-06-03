@@ -1,7 +1,7 @@
 {
 	"name": "berichtgen",
 	"private": true,
-	"version": "0.0.1",
+	"version": "0.0.1-beta",
 	"type": "module",
 	"lint-staged": {
 		"*.{js,jsx,ts,tsx,svelte}": [

@@ -29,6 +29,17 @@ SELECT cron.schedule(
   $$DELETE FROM private.cart WHERE created_at < NOW() - INTERVAL '7 days'$$
 );
 
+SELECT cron.schedule(
+  'prune-deleted-user-consent-logs',
+  '15 0 * * *',
+  $$
+    DELETE FROM private.consent
+    WHERE user_id IS NULL
+      AND deleted_user_at IS NOT NULL
+      AND deleted_user_at < NOW() - INTERVAL '3 years'
+  $$
+);
+
 -- ============================================================
 -- Tables
 -- ============================================================
@@ -93,6 +104,21 @@ CREATE TABLE private.user_feedback (
 
 CREATE INDEX user_feedback_user_id_idx ON private.user_feedback (user_id);
 
+CREATE TABLE private.consent (
+    id uuid PRIMARY KEY DEFAULT private.uuidv7(),
+    user_id uuid REFERENCES private.profile(id) ON DELETE SET NULL ON UPDATE CASCADE DEFERRABLE INITIALLY DEFERRED,
+    consent_type text NOT NULL CHECK (consent_type IN ('privacy_policy', 'vertex_ai_file_analysis')),
+    status text NOT NULL CHECK (status IN ('granted', 'withdrawn')),
+    app_version text NOT NULL,
+    deleted_user_at timestamptz,
+    source text NOT NULL CHECK (source IN ('login_gate', 'settings', 'wizard')),
+    user_email text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX consent_user_type_created_desc_idx
+    ON private.consent (user_id, consent_type, created_at DESC, id DESC);
+
 CREATE TABLE private.template_report (
     id uuid PRIMARY KEY DEFAULT private.uuidv7(),
     template_id uuid NOT NULL REFERENCES private.template(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -123,7 +149,6 @@ WHERE NOT EXISTS (
 -- ============================================================
 -- Functions
 -- ============================================================
-
 -- Keeps profile in sync with auth.users metadata
 CREATE OR REPLACE FUNCTION private.sync_profile_from_auth()
 RETURNS trigger
@@ -131,7 +156,15 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = private
 AS $$
+DECLARE
+    consent_granted boolean;
+    privacy_consent_version text;
+    provider text;
 BEGIN
+    consent_granted := lower(COALESCE(NEW.raw_user_meta_data->>'consent_granted', 'false')) = 'true';
+    privacy_consent_version := NULLIF(NEW.raw_user_meta_data->>'privacy_consent_version', '');
+    provider := COALESCE(NEW.raw_app_meta_data->>'provider', '');
+
     IF TG_OP = 'INSERT' THEN
         INSERT INTO private.profile (id, full_name, avatar_url)
         VALUES (
@@ -140,6 +173,35 @@ BEGIN
             COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture')
         )
         ON CONFLICT (id) DO NOTHING;
+
+        IF provider = 'email' AND NOT consent_granted THEN
+            RAISE EXCEPTION 'Datenschutzeinwilligung fehlt.'
+                USING ERRCODE = 'P0001';
+        END IF;
+
+        IF provider = 'email' AND privacy_consent_version IS NULL THEN
+            RAISE EXCEPTION 'Datenschutzversionsstand fehlt.'
+                USING ERRCODE = 'P0001';
+        END IF;
+
+        IF provider = 'email' AND consent_granted AND privacy_consent_version IS NOT NULL THEN
+            INSERT INTO private.consent (
+                app_version,
+                consent_type,
+                source,
+                status,
+                user_email,
+                user_id
+            )
+            VALUES (
+                privacy_consent_version,
+                'privacy_policy',
+                'login_gate',
+                'granted',
+                NEW.email,
+                NEW.id
+            );
+        END IF;
         RETURN NEW;
     ELSIF TG_OP = 'UPDATE' THEN
         UPDATE private.profile SET
@@ -152,6 +214,24 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION private.mark_deleted_user_consents()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = private
+AS $$
+BEGIN
+    -- Stamp the deletion time before the profile row disappears. The FK on
+    -- `consent.user_id` is `ON DELETE SET NULL`, so this timestamp is the
+    -- anchor for the "delete 3 years after account deletion" retention job.
+    UPDATE private.consent
+    SET deleted_user_at = NOW()
+    WHERE user_id = OLD.id
+      AND deleted_user_at IS NULL;
+    RETURN OLD;
+END;
+$$;
+
 -- ============================================================
 -- Triggers
 -- ============================================================
@@ -159,6 +239,12 @@ $$;
 CREATE TRIGGER on_auth_user_change_sync_profile
     AFTER INSERT OR UPDATE ON auth.users
     FOR EACH ROW EXECUTE FUNCTION private.sync_profile_from_auth();
+
+CREATE TRIGGER on_profile_delete_mark_consents
+    -- Run before the FK nulls `consent.user_id`, otherwise the deleted
+    -- user's rows could no longer be matched for retention stamping.
+    BEFORE DELETE ON private.profile
+    FOR EACH ROW EXECUTE FUNCTION private.mark_deleted_user_consents();
 
 -- ============================================================
 -- RLS — tables are locked down; only service_role has access.
@@ -172,5 +258,7 @@ GRANT ALL ON private.user_token_count TO service_role;
 GRANT ALL ON private.template         TO service_role;
 GRANT ALL ON private.user_metadata    TO service_role;
 GRANT ALL ON private.user_feedback    TO service_role;
+GRANT ALL ON private.consent      TO service_role;
 GRANT ALL ON private.template_report  TO service_role;
 GRANT ALL ON private.purchase         TO service_role;
+

@@ -1,7 +1,16 @@
+import type { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
+
 import { WizardStep } from '$wizard/enums';
+import { createStateMachineForContext } from '$wizard/services/state_machine';
+import { WizardFileContext } from '$wizard/services/wizard_file_context';
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, test, vi } from 'vitest';
+
+vi.mock('$wizard/api/wizard.remote', () => ({}));
+vi.mock('./TimeSpreadDialog.svelte', () => ({
+	default: class TimeSpreadDialogStub {}
+}));
 
 import WizardFile from './WizardFile.svelte';
 
@@ -10,18 +19,31 @@ afterEach(() => {
 });
 
 function renderWizardFile({ step }: { step: WizardStep }) {
+	const context = new WizardFileContext({
+		file: new File(['hello'], 'beispiel.txt', { type: 'text/plain' }),
+		type: 'file'
+	});
+	const scheduler = {
+		finish: vi.fn(),
+		hasProcess: vi.fn(() => true),
+		isDone: false,
+		onFileBatchPending: vi.fn(),
+		onFileCancelled: vi.fn()
+	} as unknown as WizardMediator;
+	const machine = createStateMachineForContext({
+		context,
+		id: 'file-1',
+		initialStep: step,
+		scheduler
+	});
+
 	return render(WizardFile, {
 		props: {
 			cancel: vi.fn(),
 			confirmDateRanges: vi.fn(),
-			context: {
-				entry: {
-					file: new File(['hello'], 'beispiel.txt', { type: 'text/plain' }),
-					type: 'file'
-				}
-			},
+			context,
 			id: 'file-1',
-			machine: { current: step },
+			machine,
 			remove: vi.fn(),
 			restart: vi.fn()
 		}

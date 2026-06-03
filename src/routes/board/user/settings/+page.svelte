@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { invalidate } from '$app/navigation';
+	import { page } from '$app/state';
+	import { AsyncResource } from '$core/async.svelte';
+	import { appendConsentLogCommand } from '$core/auth/api/consent.remote';
 	import {
 		profileNameSchema,
 		userMetadataSchema
@@ -10,6 +14,10 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import {
+		VERTEX_AI_CONSENT_SOURCE_SETTINGS,
+		VERTEX_AI_CONSENT_TYPE
+	} from '$lib/constants';
 	import { HandCoins, Save, User, UserRoundX } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -64,13 +72,37 @@
 		form: metadataFormData,
 		submitting: metadataSubmitting
 	} = userMetadataForm;
+
+	const updateVertexAiConsent = new AsyncResource(
+		async ({ grant }: { grant: boolean }) => {
+			await appendConsentLogCommand({
+				appVersion: __APP_VERSION__,
+				consentType: VERTEX_AI_CONSENT_TYPE,
+				source: VERTEX_AI_CONSENT_SOURCE_SETTINGS,
+				status: grant ? 'granted' : 'withdrawn'
+			});
+			toast.success(
+				grant
+					? 'Die Vertex-AI-Einwilligung wurde erteilt.'
+					: 'Die Vertex-AI-Einwilligung wurde widerrufen.'
+			);
+			await invalidate('user:vertexAiConsent');
+		},
+		{
+			onError: (error) => {
+				toast.error(error.message, {
+					description: error.cause
+				});
+			}
+		}
+	);
 </script>
 
 <svelte:head>
 	<title>Einstellungen</title>
 </svelte:head>
 
-<div class="flex h-full flex-row justify-center">
+<div class="h-main flex flex-row justify-center pb-8">
 	<div class="flex w-full max-w-175 flex-col gap-y-8">
 		<Card.Root>
 			<Card.Header>
@@ -161,6 +193,44 @@
 				</form>
 			</Card.Content>
 		</Card.Root>
+
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>Vertex AI</Card.Title>
+				<Card.Description>
+					Die Einwilligung zur KI-Dateianalyse kann hier erteilt oder widerrufen
+					werden.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content class="flex flex-col gap-y-4">
+				<p class="text-sm">
+					Status:
+					<strong>
+						{page.data.vertexAiConsentGranted
+							? 'Einwilligung erteilt'
+							: 'Keine Einwilligung erteilt'}
+					</strong>
+				</p>
+				<div class="flex flex-row gap-x-2">
+					<Button
+						disabled={updateVertexAiConsent.loading ||
+							!!page.data.vertexAiConsentGranted}
+						onclick={() => updateVertexAiConsent.execute({ grant: true })}
+					>
+						Einwilligung erteilen
+					</Button>
+					<Button
+						variant="outline"
+						disabled={updateVertexAiConsent.loading ||
+							!page.data.vertexAiConsentGranted}
+						onclick={() => updateVertexAiConsent.execute({ grant: false })}
+					>
+						Einwilligung widerrufen
+					</Button>
+				</div>
+			</Card.Content>
+		</Card.Root>
+
 		<Card.Root>
 			<Card.Header>
 				<Card.Title>Konto Einstellungen</Card.Title>

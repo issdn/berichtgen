@@ -4,12 +4,19 @@
 		WizardProcessStateMachine
 	} from '$wizard/types';
 
+	import { invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { AsyncResource } from '$core/async.svelte';
+	import { appendConsentLogCommand } from '$core/auth/api/consent.remote';
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { INLINE_MAX_BYTES } from '$lib/constants';
+	import {
+		INLINE_MAX_BYTES,
+		VERTEX_AI_CONSENT_SOURCE_WIZARD,
+		VERTEX_AI_CONSENT_TYPE
+	} from '$lib/constants';
+	import { BerichtgenError } from '$lib/errors';
 	import { buttonVariants } from '$ui/button';
 	import { Spinner } from '$ui/spinner';
 	import Docx from '$ui/svg/DOCX.svelte';
@@ -17,6 +24,7 @@
 	import Png from '$ui/svg/PNG.svelte';
 	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
 	import { FileTypes } from '$wizard/enums';
+	import { EFileRoutingError } from '$wizard/errors';
 	import { combineJSONs } from '$wizard/postprocess/combine';
 	import { genaiCompletionSchema } from '$wizard/schemas';
 	import { WizardFileContext } from '$wizard/services/wizard_file_context';
@@ -38,10 +46,12 @@
 	import WizardManualInputDialog from './WizardManualInputDialog.svelte';
 	import WizardRestoreSessionDialog from './WizardRestoreSessionDialog.svelte';
 	import WizardSettingsPopover from './WizardSettingsPopover.svelte';
+	import WizardVertexAiConsentDialog from './WizardVertexAiConsentDialog.svelte';
 
 	const wizardMediator = wizardMediatorContext.get();
 
 	let flushLoading = $state(false);
+	let consentDialogOpen = $state(false);
 	let canRunFlush = $derived(
 		(wizardMediator.filesStates?.batch_pending ?? 0) > 0
 	);
@@ -73,7 +83,10 @@
 		}
 		const bytes = new TextEncoder().encode(trimmed);
 		if (bytes.byteLength > INLINE_MAX_BYTES) {
-			throw new Error(`Text ${index + 1} überschreitet 2MB.`);
+			throw new BerichtgenError({
+				...EFileRoutingError.FILE_TOO_LARGE,
+				cause: `Text ${index + 1} überschreitet 2MB.`
+			});
 		}
 		return {
 			file: new File([trimmed], `manueller-text-${index + 1}.txt`, {
@@ -156,10 +169,39 @@
 	}
 
 	async function flushAiCompletion() {
+		if (!page.data.vertexAiConsentGranted) {
+			consentDialogOpen = true;
+			return;
+		}
+		await runAiCompletion();
+	}
+
+	async function runAiCompletion() {
 		flushLoading = true;
 		await wizardMediator.flushAiCompletion();
 		flushLoading = false;
 	}
+
+	const acceptVertexAiConsent = new AsyncResource(
+		async () => {
+			await appendConsentLogCommand({
+				appVersion: __APP_VERSION__,
+				consentType: VERTEX_AI_CONSENT_TYPE,
+				source: VERTEX_AI_CONSENT_SOURCE_WIZARD,
+				status: 'granted'
+			});
+			await invalidate('user:vertexAiConsent');
+			consentDialogOpen = false;
+			await runAiCompletion();
+		},
+		{
+			onError: (error) => {
+				toast.error(error.message, {
+					description: error.cause
+				});
+			}
+		}
+	);
 
 	const downloadJSON = new AsyncResource(
 		async () => {
@@ -171,8 +213,8 @@
 		},
 		{
 			onError: (error) => {
-				toast.error('JSON konnte nicht heruntergeladen werden.', {
-					description: error.cause ?? error.message
+				toast.error(error.message, {
+					description: error.cause
 				});
 			}
 		}
@@ -220,8 +262,8 @@
 		},
 		{
 			onError: (error) => {
-				toast.error('DOCX konnte nicht heruntergeladen werden.', {
-					description: error.cause ?? error.message
+				toast.error(error.message, {
+					description: error.cause
 				});
 			}
 		}
@@ -297,6 +339,12 @@
 		/>
 	{/if}
 </div>
+
+<WizardVertexAiConsentDialog
+	bind:open={consentDialogOpen}
+	onAccept={acceptVertexAiConsent.execute}
+	pending={acceptVertexAiConsent.loading}
+/>
 
 {#snippet children()}
 	<Dialog.Header>

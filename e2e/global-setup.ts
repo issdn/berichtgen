@@ -5,6 +5,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import pg from 'pg';
 
+import {
+	PRIVACY_CONSENT_GRANTED_METADATA_KEY,
+	PRIVACY_CONSENT_VERSION_METADATA_KEY,
+	VERTEX_AI_CONSENT_SOURCE_WIZARD,
+	VERTEX_AI_CONSENT_TYPE
+} from '../src/lib/constants';
+
 /** Parse a .env file into process.env without overwriting existing values. */
 function loadEnvFile(filePath: string): void {
 	if (!fs.existsSync(filePath)) return;
@@ -61,6 +68,13 @@ async function globalSetup(config: FullConfig): Promise<void> {
 	});
 
 	const db = new Kysely<{
+		consent: {
+			app_version: string;
+			consent_type: string;
+			source: string;
+			status: 'granted' | 'withdrawn';
+			user_id: string;
+		};
 		template: { storage_path: string; user_id: string };
 		user_token_count: { tokens: number; user_id: string };
 	}>({
@@ -79,6 +93,13 @@ async function globalSetup(config: FullConfig): Promise<void> {
 
 	const { error: signUpError } = await supabase.auth.signUp({
 		email,
+		options: {
+			data: {
+				[PRIVACY_CONSENT_GRANTED_METADATA_KEY]: true,
+				[PRIVACY_CONSENT_VERSION_METADATA_KEY]:
+					process.env.npm_package_version ?? 'e2e'
+			}
+		},
 		password
 	});
 	if (signUpError) throw new Error(`signUp failed: ${signUpError.message}`);
@@ -135,6 +156,18 @@ async function globalSetup(config: FullConfig): Promise<void> {
 		.onConflict((oc) =>
 			oc.column('user_id').doUpdateSet({ tokens: 2_000_000_000 })
 		)
+		.execute();
+
+	await db
+		.insertInto('consent')
+		.values({
+			app_version: process.env.npm_package_version ?? 'e2e',
+			consent_type: VERTEX_AI_CONSENT_TYPE,
+			source: VERTEX_AI_CONSENT_SOURCE_WIZARD,
+			status: 'granted',
+			user_email: email,
+			user_id: userId
+		})
 		.execute();
 
 	// ── 5. Inject session cookies and save storage state ────────────────────

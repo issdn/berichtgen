@@ -1,4 +1,7 @@
 import type { WizardPersistenceController } from '$core/persistence/wizard_persistence_controller.svelte';
+import type { Ort } from '$wizard/enums';
+import type { BatchCompletionItem } from '$wizard/schemas';
+import type { FileRouting } from '$wizard/services/routing';
 import type {
 	BatchErrorScope,
 	BatchItem,
@@ -7,17 +10,18 @@ import type {
 	WizardPersistedSession,
 	WizardProcessStateMachine
 } from '$wizard/types';
+import type { BatchCompletionApiResponse } from '$wizard/types';
 
 import { BerichtgenError } from '$lib/errors';
+import { type Result, tryResultAsync } from '$lib/result';
 import { debounce } from '$lib/utils';
+import { submitBatchCompletionCommand } from '$wizard/api/wizard.remote';
 import {
 	createBatchesBySize,
-	MAX_BATCH_BYTES,
-	sendBatchCompletion
-} from '$wizard/completion/completion';
+	MAX_BATCH_BYTES
+} from '$wizard/completion/batching';
 import { WizardStep } from '$wizard/enums';
 import { ECompletionException, EWizardError } from '$wizard/errors';
-import { type FileRouting } from '$wizard/services/routing';
 import { Context } from 'runed';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
@@ -415,6 +419,29 @@ export class WizardMediator {
 		const pendingIds = this.batcher.takePendingIds();
 		return pendingIds.map((id) => this.schedulerState.findById(id)!);
 	}
+}
+
+/**
+ * Sends a single batch of completion items to the server endpoint.
+ * Returns the raw API response, including `insufficient_tokens` when the user's
+ * token budget could not cover all items.
+ *
+ * Each item carries a `FileRouting` descriptor that determines how it is sent:
+ * - `inline` -> `{ type: 'inline', data, mimeType, ort }`
+ * - `gcs`    -> `{ type: 'gcs', fileUri, mimeType, ort }`
+ * - `url`    -> `{ type: 'url', url, ort }`
+ */
+function sendBatchCompletion(
+	items: Array<{ ort: Ort; routing: FileRouting }>
+): Promise<Result<BatchCompletionApiResponse>> {
+	const mapped: BatchCompletionItem[] = items.map(({ ort, routing }) =>
+		routing.toBatchCompletionItem({ ort })
+	);
+
+	return tryResultAsync({
+		apiError: EWizardError.INVALID_JSON_FROM_AI,
+		promise: submitBatchCompletionCommand({ items: mapped })
+	});
 }
 
 export const wizardMediatorContext = new Context<WizardMediator>(

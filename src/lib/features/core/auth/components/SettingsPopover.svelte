@@ -1,13 +1,20 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { AsyncResource } from '$core/async.svelte';
+	import {
+		signInWithGoogleForm,
+		signOutForm
+	} from '$core/auth/api/auth.remote';
 	import { submitUserFeedback } from '$core/auth/api/feedback.remote';
 	import { emailSchema } from '$core/auth/schemas';
 	import berichtgenStore from '$core/stores/berichtgen.svelte';
 	import GlobalPasteHandler from '$lib/components/GlobalPasteHandler.svelte';
+	import {
+		PRIVACY_CONSENT_GRANTED_METADATA_KEY,
+		PRIVACY_CONSENT_VERSION_METADATA_KEY
+	} from '$lib/constants';
 	import { ECommonServerError, toErrorBody } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
 	import { getUserDisplayName } from '$lib/utils';
@@ -130,6 +137,10 @@
 					const { error } = await page.data.supabase.auth.signInWithOtp({
 						email: form.data.mail!,
 						options: {
+							data: {
+								[PRIVACY_CONSENT_GRANTED_METADATA_KEY]: true,
+								[PRIVACY_CONSENT_VERSION_METADATA_KEY]: __APP_VERSION__
+							},
 							emailRedirectTo: page.url.origin + '/board'
 						}
 					});
@@ -203,8 +214,7 @@
 		{/if}
 		{#if page.data.loggedIn}
 			<Separator />
-			<form method="POST" action="/auth?/signout">
-				<input type="hidden" name="redirectTo" value="/" />
+			<form {...signOutForm}>
 				<Button type="submit" class="w-full"><LogOut />Abmelden</Button>
 			</form>
 		{:else}
@@ -227,9 +237,17 @@
 					>
 				</Label>
 			</div>
-			<form method="POST" action="/auth?/signin" use:enhance>
-				<input type="hidden" name="providerId" value="google" />
-				<input type="hidden" name="redirectTo" value="/board" />
+			<form {...signInWithGoogleForm}>
+				<input
+					{...signInWithGoogleForm.fields[
+						PRIVACY_CONSENT_GRANTED_METADATA_KEY
+					].as('hidden', String(privacyAccepted))}
+				/>
+				<input
+					{...signInWithGoogleForm.fields[
+						PRIVACY_CONSENT_VERSION_METADATA_KEY
+					].as('hidden', __APP_VERSION__)}
+				/>
 				<Button type="submit" class="w-full" disabled={!privacyAccepted}
 					><Google />Anmelden mit Google</Button
 				>
@@ -321,7 +339,6 @@
 		</Dialog.Header>
 	</Dialog.Content>
 </Dialog.Root>
-
 <Dialog.Root bind:open={feedbackDialogOpen}>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>

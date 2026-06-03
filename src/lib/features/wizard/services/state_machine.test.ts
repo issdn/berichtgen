@@ -9,7 +9,6 @@ import { CalendarDate } from '@internationalized/date';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('$app/navigation', () => ({ invalidate: vi.fn() }));
-vi.mock('$wizard/api/wizard.remote', () => ({}));
 vi.mock('$core/stores/berichtgen.svelte', () => ({
 	default: {
 		get: (key: keyof App.BerichtgenSettings) => {
@@ -27,9 +26,8 @@ vi.mock('$core/stores/berichtgen.svelte', () => ({
 
 const mockSendBatch = vi.hoisted(() => vi.fn());
 const mockUploadToGcs = vi.hoisted(() => vi.fn());
-vi.mock('$wizard/completion/completion', async (importOriginal) => ({
-	...((await importOriginal()) as object),
-	sendBatchCompletion: mockSendBatch
+vi.mock('$wizard/api/wizard.remote', () => ({
+	submitBatchCompletionCommand: mockSendBatch
 }));
 vi.mock('$wizard/services/gcs_service', () => ({
 	uploadToGcs: mockUploadToGcs
@@ -83,9 +81,10 @@ beforeEach(() => {
 
 describe('State machine full lifecycle', () => {
 	test('INITIALISING -> WAITING -> PROCESSING -> BATCH_PENDING -> AI_COMPLETION -> TIME_SPREADING -> DONE', async () => {
-		mockSendBatch.mockResolvedValue(
-			okResult({ insufficient_tokens: false, results: [[AI_RESULT]] })
-		);
+		mockSendBatch.mockResolvedValue({
+			insufficient_tokens: false,
+			results: [[AI_RESULT]]
+		});
 
 		const scheduler = WizardMediator.createDefault({
 			persistence: createPersistenceMock(),
@@ -247,9 +246,10 @@ describe('State machine full lifecycle', () => {
 	});
 
 	test('removed file is not included in AI completion flush input', async () => {
-		mockSendBatch.mockResolvedValue(
-			okResult({ insufficient_tokens: false, results: [[AI_RESULT]] })
-		);
+		mockSendBatch.mockResolvedValue({
+			insufficient_tokens: false,
+			results: [[AI_RESULT]]
+		});
 
 		const scheduler = WizardMediator.createDefault({
 			persistence: createPersistenceMock(),
@@ -276,6 +276,42 @@ describe('State machine full lifecycle', () => {
 		await scheduler.flushAiCompletion();
 
 		expect(mockSendBatch).toHaveBeenCalledTimes(1);
-		expect(mockSendBatch.mock.calls[0][0]).toHaveLength(1);
+		expect(mockSendBatch.mock.calls[0][0].items).toHaveLength(1);
+	});
+
+	test('binary files are uploaded during PROCESSING before AI completion starts', async () => {
+		mockUploadToGcs.mockResolvedValueOnce(
+			okResult({
+				fileUri: 'gs://bucket/late.pdf',
+				signedUrl: 'https://signed.example/late.pdf'
+			})
+		);
+		mockSendBatch.mockResolvedValueOnce({
+			insufficient_tokens: false,
+			results: [[AI_RESULT]]
+		});
+
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		const file = new File(['pdf-bytes'], 'late.pdf', {
+			type: 'application/pdf'
+		});
+
+		scheduler.createSchedule([[{ file, type: 'file' }]]);
+
+		const [process] = scheduler.schedule!;
+		process.context.dateRanges = createDateRanges();
+		process.machine.send('next');
+		await flush();
+		await flush();
+
+		expect(process.machine.current).toBe(WizardStep.BATCH_PENDING);
+		expect(mockUploadToGcs).toHaveBeenCalledOnce();
+
+		await scheduler.flushAiCompletion();
+
+		expect(process.machine.current).toBe(WizardStep.DONE);
 	});
 });

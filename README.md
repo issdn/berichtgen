@@ -1,28 +1,4 @@
-﻿### Configuration
-
-# GCS
-
-Backups
-
-```ps1
-gcloud storage buckets create gs://[bucket name] \
-    --default-storage-class=NEARLINE \
-    --location=EU \
-    --uniform-bucket-level-access \
-    --public-access-prevention
-```
-
-Wizard Vertex AI process
-
-```ps1
-gcloud storage buckets create gs://[bucket name] \
-    --default-storage-class=STANDARD \
-    --location=EUROPE-WEST3 \
-    --uniform-bucket-level-access \
-    --public-access-prevention
-```
-
-### ENVs
+﻿### ENVs
 
 | Variable                          | Benötigt | Beschreibung                         |
 | --------------------------------- | -------- | ------------------------------------ |

@@ -8,6 +8,8 @@
 	import { DOCXParser } from '$core/parser/docx_parser';
 	import ErrorAlert from '$lib/components/ui/ErrorAlert.svelte';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
+	import { BerichtgenError } from '$lib/errors';
+	import { EFileRoutingError } from '$wizard/errors';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	const { fileUrl }: { fileUrl: string } = $props();
@@ -21,7 +23,11 @@
 
 	async function loadDocx(fileUrl: string): Promise<LoadedDocx> {
 		const res = await fetch(fileUrl);
-		if (!res.ok) throw new Error(`HTTP ${res.status}`);
+		if (!res.ok)
+			throw new BerichtgenError({
+				...EFileRoutingError.FILE_READ_FAILED,
+				cause: `HTTP ${res.status}`
+			});
 		const bytes = new Uint8Array(await res.arrayBuffer());
 
 		const parser = new DOCXParser();

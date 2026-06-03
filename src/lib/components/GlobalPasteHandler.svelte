@@ -17,7 +17,15 @@
 
 	function register() {
 		if (!registered) {
-			pasteStack.push(handlePaste);
+			pasteStack.push((cb) => {
+				const active = document.activeElement;
+				const isTextareaOrInputFocused =
+					active instanceof HTMLTextAreaElement ||
+					active instanceof HTMLInputElement;
+				if (isTextareaOrInputFocused) return;
+
+				handlePaste(cb);
+			});
 			registered = true;
 		}
 	}

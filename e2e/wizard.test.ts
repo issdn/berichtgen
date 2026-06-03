@@ -76,15 +76,31 @@ function extractCompletionItemCount({
 
 async function flushPendingCompletions({ page }: { page: Page }) {
 	const flushButton = page.getByTestId('wizard-flush-button');
-	try {
-		await expect(flushButton).toBeEnabled({ timeout: 8_000 });
-		await flushButton.click();
-	} catch {
-		await flushButton.evaluate((el) => {
-			if (el instanceof HTMLButtonElement) el.disabled = false;
-		});
-		await flushButton.click({ force: true });
-	}
+
+	await expect
+		.poll(
+			async () => {
+				const statuses = await page
+					.getByTestId('wizard-file-status')
+					.allInnerTexts();
+				const isReady = statuses.every(
+					(status) =>
+						!status.includes('Warten auf Eingabe') &&
+						!status.includes('Verarbeitung...') &&
+						!status.includes('Initialiserung...')
+				);
+				const isEnabled = await flushButton.isEnabled();
+				return isReady && isEnabled;
+			},
+			{
+				message:
+					'Wizard did not reach a flushable state before clicking Ausführen.',
+				timeout: 30_000
+			}
+		)
+		.toBe(true);
+
+	await flushButton.click();
 }
 
 function getMonthStartIsoDate({
@@ -444,7 +460,7 @@ test.describe('Wizard — full state-machine flow', () => {
 		await expect(page.getByTestId('wizard-completion-button')).toBeEnabled();
 	});
 
-	test('cancels one of two files and sends only one file per flush', async ({
+	test('removes one of two files and sends only one file per flush', async ({
 		page
 	}) => {
 		test.setTimeout(120_000);
@@ -487,16 +503,18 @@ test.describe('Wizard — full state-machine flow', () => {
 		});
 
 		await setDateRangeForFileByName({
-			fileName: 'cancel-2.txt',
+			fileName: 'cancel-1.txt',
 			page,
 			startIsoDate: getMonthStartIsoDate()
 		});
 
-		await firstFile.getByTestId('wizard-file-cancel').click();
-		await expect(firstFile).toContainText('Abgebrochen', { timeout: 10_000 });
+		await secondFile.getByTestId('wizard-file-remove').click();
+		await expect(page.getByTestId('wizard-file')).toHaveCount(1, {
+			timeout: 10_000
+		});
 
 		await flushPendingCompletions({ page });
-		await expect(secondFile).toContainText('Fertig', { timeout: 15_000 });
+		await expect(firstFile).toContainText('Fertig', { timeout: 15_000 });
 		expect(completionItemCounts[0]).toBe(1);
 
 		await expect(page.getByTestId('wizard-dialog-content')).toBeVisible({
@@ -507,16 +525,31 @@ test.describe('Wizard — full state-machine flow', () => {
 			timeout: 10_000
 		});
 
-		await firstFile.getByTestId('wizard-file-restart').click();
+		await uploadFiles({
+			files: [
+				{
+					buffer: Buffer.from(TXT_CONTENT, 'utf-8'),
+					mimeType: 'text/plain',
+					name: 'cancel-2.txt'
+				}
+			],
+			page
+		});
 
 		await setDateRangeForFileByName({
-			fileName: 'cancel-1.txt',
+			fileName: 'cancel-2.txt',
 			page,
 			startIsoDate: getMonthStartIsoDate()
 		});
 
 		await flushPendingCompletions({ page });
-		await expect(firstFile).toContainText('Fertig', { timeout: 15_000 });
+		const reuploadedSecondFile = await getWizardFileByName({
+			fileName: 'cancel-2.txt',
+			page
+		});
+		await expect(reuploadedSecondFile).toContainText('Fertig', {
+			timeout: 15_000
+		});
 		expect(completionItemCounts[1]).toBe(1);
 	});
 });

@@ -14,9 +14,8 @@
  *   - `updatePaymentIntent` — `command` — client-only, used for quantity changes
  */
 
-import { command, getRequestEvent, query } from '$app/server';
-import { ECommonServerError } from '$lib/errors';
-import { svelteApiError } from '$server/errors';
+import { getRequestEvent } from '$app/server';
+import { guardedCommand, guardedQuery } from '$lib/server/remote';
 import * as z from 'zod';
 
 import {
@@ -28,20 +27,12 @@ const quantitySchema = z.object({
 	quantity: z.number().int().min(1).max(90)
 });
 
-/** Shared auth helper. */
-async function getAuthenticatedUserId(): Promise<string> {
-	const { locals } = getRequestEvent();
-	const userId = (await locals.safeGetSession())?.user?.id;
-	if (!userId) throw svelteApiError(ECommonServerError.UNAUTHORIZED);
-	return userId!;
-}
-
 /**
  * SSR-safe initial fetch — looks up the user's cart quantity and returns
  * the corresponding client secret. No input needed; quantity comes from the DB.
  */
-export const getPaymentIntent = query(async () => {
-	const userId = await getAuthenticatedUserId();
+export const getPaymentIntent = guardedQuery(z.void(), async () => {
+	const userId = getRequestEvent().locals.user!.id;
 	return handleGetPaymentIntent(userId);
 });
 
@@ -49,10 +40,10 @@ export const getPaymentIntent = query(async () => {
  * Client-only mutation — updates the PaymentIntent when the user changes quantity.
  * Cannot be called during SSR.
  */
-export const updatePaymentIntent = command(
+export const updatePaymentIntent = guardedCommand(
 	quantitySchema,
 	async ({ quantity }) => {
-		const userId = await getAuthenticatedUserId();
+		const userId = getRequestEvent().locals.user!.id;
 		return handleCreatePaymentIntent(userId, quantity);
 	}
 );

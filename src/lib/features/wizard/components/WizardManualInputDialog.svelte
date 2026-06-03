@@ -46,12 +46,6 @@
 	}
 
 	async function handlePaste(e: ClipboardEvent) {
-		const active = document.activeElement;
-		const isTextareaFocused =
-			active instanceof HTMLTextAreaElement &&
-			textareaContainer?.contains(active);
-		if (isTextareaFocused) return;
-
 		const text = e.clipboardData?.getData('text/plain')?.trim();
 		if (!text) return;
 		inputs = [...inputs, text];

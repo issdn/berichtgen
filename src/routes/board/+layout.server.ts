@@ -1,19 +1,20 @@
+import { readVertexAiConsentGranted } from '$core/auth/api/consent.handlers';
 import { ECommonServerError } from '$lib/errors';
 import { tryResultAsync } from '$lib/result';
 import db from '$server/db';
 import * as Sentry from '@sentry/sveltekit';
 import { loadFlash } from 'sveltekit-flash-message/server';
 
-import type { LayoutServerLoad } from './$types';
-
-export const load: LayoutServerLoad = loadFlash(
+export const load = loadFlash(
 	async ({ depends, locals: { session, user } }) => {
 		depends('user:tokenCount');
+		depends('user:vertexAiConsent');
 
 		if (!user) {
 			return {
 				session,
-				tokenCount: null
+				tokenCount: null,
+				vertexAiConsentGranted: false
 			};
 		}
 
@@ -51,11 +52,21 @@ export const load: LayoutServerLoad = loadFlash(
 				.where('user_id', '=', user.id)
 				.executeTakeFirst()) ?? null;
 
+		const vertexAiConsentResult = await readVertexAiConsentGranted({
+			userId: user.id
+		});
+		if (!vertexAiConsentResult.ok) {
+			Sentry.captureException(vertexAiConsentResult.error);
+		}
+
 		return {
 			session,
 			tokenCount,
 			user,
-			userMetadata
+			userMetadata,
+			vertexAiConsentGranted: vertexAiConsentResult.ok
+				? vertexAiConsentResult.data
+				: false
 		};
 	}
-);
+) as unknown as import('./$types').LayoutServerLoad;

@@ -1,12 +1,3 @@
-import type { Ort } from '$wizard/enums';
-import type { BatchCompletionItem } from '$wizard/schemas';
-import type { FileRouting } from '$wizard/services/routing';
-import type { BatchCompletionApiResponse } from '$wizard/types';
-
-import { type Result, tryResultAsync } from '$lib/result';
-import { submitBatchCompletionCommand } from '$wizard/api/wizard.remote';
-import { EWizardError } from '$wizard/errors';
-
 /** Maximum total UTF-8 byte size for a single batch request (4 MB). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
 
@@ -53,29 +44,6 @@ export function createBatchesBySize<T>(
 	}
 
 	return batches;
-}
-
-/**
- * Sends a single batch of completion items to the server endpoint.
- * Returns the raw API response, including `insufficient_tokens` when the user's
- * token budget could not cover all items.
- *
- * Each item carries a `FileRouting` descriptor that determines how it is sent:
- * - `inline` -> `{ type: 'inline', data, mimeType, ort }`
- * - `gcs`    -> `{ type: 'gcs', fileUri, mimeType, ort }`
- * - `url`    -> `{ type: 'url', url, ort }`
- */
-export function sendBatchCompletion(
-	items: Array<{ ort: Ort; routing: FileRouting }>
-): Promise<Result<BatchCompletionApiResponse>> {
-	const mapped: BatchCompletionItem[] = items.map(({ ort, routing }) =>
-		routing.toBatchCompletionItem({ ort })
-	);
-
-	return tryResultAsync({
-		apiError: EWizardError.INVALID_JSON_FROM_AI,
-		promise: submitBatchCompletionCommand({ items: mapped })
-	});
 }
 
 function getByteSize(text: string): number {

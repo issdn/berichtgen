@@ -1,4 +1,4 @@
-import { createBatchesBySize } from '$wizard/completion/completion';
+import { createBatchesBySize } from '$wizard/completion/batching';
 import { describe, expect, test } from 'vitest';
 
 describe('createBatchesBySize', () => {

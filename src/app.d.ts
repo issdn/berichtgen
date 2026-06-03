@@ -29,7 +29,9 @@ declare global {
 		interface PageData {
 			flash?: import('$core/types').FlashMessage;
 			session: null | Session;
+			supabase: SupabaseClient;
 			userMetadata?: KyselyDatabase['user_metadata'];
+			vertexAiConsentGranted?: boolean;
 		}
 		// interface PageState {}
 		// interface Platform {}

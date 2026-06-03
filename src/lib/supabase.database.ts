@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
 	| string
 	| number
 	| boolean
@@ -33,6 +33,50 @@ export type Database = {
 						foreignKeyName: 'cart_user_id_fkey';
 						columns: ['user_id'];
 						isOneToOne: true;
+						referencedRelation: 'profile';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			consent: {
+				Row: {
+					app_version: string;
+					consent_type: string;
+					created_at: string;
+					deleted_user_at: null | string;
+					id: string;
+					source: string;
+					status: string;
+					user_email: string;
+					user_id: null | string;
+				};
+				Insert: {
+					app_version: string;
+					consent_type: string;
+					created_at?: string;
+					deleted_user_at?: null | string;
+					id?: string;
+					source: string;
+					status: string;
+					user_email: string;
+					user_id?: null | string;
+				};
+				Update: {
+					app_version?: string;
+					consent_type?: string;
+					created_at?: string;
+					deleted_user_at?: null | string;
+					id?: string;
+					source?: string;
+					status?: string;
+					user_email?: string;
+					user_id?: null | string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'consent_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
 						referencedRelation: 'profile';
 						referencedColumns: ['id'];
 					}

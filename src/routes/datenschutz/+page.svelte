@@ -8,9 +8,10 @@
 		<h1 class="text-2xl font-semibold">Datenschutzerklärung</h1>
 		<p><strong>Karol Bielski Software - berichtgen.de</strong></p>
 		<p>
-			Diese Datenschutzerklärung erläutert, welche personenbezogenen Daten wir
-			verarbeiten, zu welchen Zwecken dies erfolgt und welche Rechte Sie in
-			Bezug auf Ihre Daten haben.
+			In dieser Datenschutzerklärung wird transparent dargestellt, welche
+			personenbezogenen Daten bei der Nutzung von berichtgen.de verarbeitet
+			werden, zu welchen Zwecken die Verarbeitung erfolgt und welche Rechte
+			Ihnen in Bezug auf diese Daten zustehen.
 		</p>
 	</section>
 
@@ -35,38 +36,70 @@
 		</Accordion.Item>
 
 		<Accordion.Item value="point-2">
-			<Accordion.Trigger>2. Welche Daten wir verarbeiten</Accordion.Trigger>
-			<Accordion.Content class="space-y-2">
+			<Accordion.Trigger>2. Welche Daten verarbeitet werden</Accordion.Trigger>
+			<Accordion.Content class="space-y-4">
 				<p>
-					Beim Besuch unserer Website und bei der Nutzung unserer Anwendung
-					verarbeiten wir insbesondere folgende personenbezogene Daten:
+					Beim Besuch der Website und bei der Nutzung der Anwendung werden
+					insbesondere die folgenden personenbezogenen Daten verarbeitet:
 				</p>
-				<ul class="list-disc space-y-1 pl-5">
-					<li>
-						<strong>Anmeldung per Magic Link:</strong> Ihre E-Mail-Adresse
-					</li>
-					<li>
-						<strong>Google-Login (optional):</strong> Von Google bzw. Supabase bereitgestellte
-						Profildaten, insbesondere E-Mail-Adresse, Name und Profilbild
-					</li>
-					<li>
-						<strong>Konten- und Sitzungsdaten:</strong> Authentifizierungsdaten, Session-Informationen
-						und sicherheitsrelevante Login-Informationen
-					</li>
-					<li>
-						<strong>Zahlungsdaten:</strong> Transaktions- und Zahlungsinformationen,
-						soweit Sie freiwillig kostenpflichtige Funktionen nutzen
-					</li>
-					<li>
-						<strong>Nutzungsinhalte:</strong> Texte, Dateien und sonstige Inhalte,
-						die Sie zur Verarbeitung, Speicherung oder KI-gestützten Bearbeitung hochladen
-						oder eingeben
-					</li>
-					<li>
-						<strong>Technische Daten:</strong> IP-Adresse, Browsertyp, Gerätedaten,
-						Zugriffszeitpunkt sowie Fehler- und Performance-Daten
-					</li>
-				</ul>
+				<Table.Root>
+					<Table.Header>
+						<Table.Row>
+							<Table.Head>Datenkategorie</Table.Head>
+							<Table.Head>Verarbeitete Daten</Table.Head>
+						</Table.Row>
+					</Table.Header>
+					<Table.Body>
+						<Table.Row>
+							<Table.Cell>Anmeldung per Magic Link</Table.Cell>
+							<Table.Cell>Ihre E-Mail-Adresse</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Google-Login (optional)</Table.Cell>
+							<Table.Cell>
+								Von Google über Supabase Auth bereitgestellte Profildaten,
+								insbesondere E-Mail-Adresse, Name und Profilbild
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Konten- und Sitzungsdaten</Table.Cell>
+							<Table.Cell>
+								Authentifizierungsdaten, Session-Informationen und
+								sicherheitsrelevante Login-Informationen
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Zahlungsdaten</Table.Cell>
+							<Table.Cell>
+								Transaktions- und Zahlungsinformationen, soweit kostenpflichtige
+								Funktionen genutzt werden
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Nutzungsinhalte</Table.Cell>
+							<Table.Cell>
+								Texte, Dateien und sonstige Inhalte, die zur Verarbeitung,
+								Speicherung oder KI-gestützten Bearbeitung hochgeladen oder
+								eingegeben werden
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Technische Daten</Table.Cell>
+							<Table.Cell>
+								IP-Adresse, Browsertyp, Gerätedaten, Zugriffszeitpunkt sowie
+								Fehler- und Performance-Daten
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Einwilligungsprotokolle</Table.Cell>
+							<Table.Cell>
+								Status der erteilten oder widerrufenen Einwilligung,
+								Versionsstand der Datenschutzerklärung oder Einwilligung,
+								E-Mail-Adresse, IP-Adresse sowie Zeitpunkt der Protokollierung
+							</Table.Cell>
+						</Table.Row>
+					</Table.Body>
+				</Table.Root>
 			</Accordion.Content>
 		</Accordion.Item>
 
@@ -75,9 +108,9 @@
 			>
 			<Accordion.Content class="space-y-4">
 				<p>
-					Unsere Website verwendet Cookies und ähnliche Technologien, soweit
-					dies technisch erforderlich ist oder Sie eine entsprechende Funktion
-					ausdrücklich nutzen. Rechtsgrundlage für technisch erforderliche
+					Cookies und ähnliche Technologien werden eingesetzt, soweit dies
+					technisch erforderlich ist oder eine entsprechende Funktion
+					ausdrücklich genutzt wird. Rechtsgrundlage für technisch erforderliche
 					Cookies ist § 25 Abs. 2 TDDDG; die anschließende Verarbeitung
 					personenbezogener Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b
 					oder lit. f DSGVO.
@@ -107,10 +140,10 @@
 								>__stripe_sid</Table.Cell
 							>
 							<Table.Cell>Stripe</Table.Cell>
-							<Table.Cell
-								>Zuordnung zusammenhängender Zahlungsschritte innerhalb einer
-								Sitzung.</Table.Cell
-							>
+							<Table.Cell>
+								Zuordnung zusammenhängender Zahlungsschritte innerhalb einer
+								Sitzung.
+							</Table.Cell>
 							<Table.Cell>Erforderlich</Table.Cell>
 						</Table.Row>
 						<Table.Row>
@@ -177,7 +210,7 @@
 							>
 							<Table.Cell>Consent Manager</Table.Cell>
 							<Table.Cell
-								>Speichert Ihre Auswahl zu Cookie-Einstellungen.</Table.Cell
+								>Speicherung Ihrer Auswahl zu Cookie-Einstellungen.</Table.Cell
 							>
 							<Table.Cell>Erforderlich</Table.Cell>
 						</Table.Row>
@@ -187,16 +220,17 @@
 							>
 							<Table.Cell>UI Preferences</Table.Cell>
 							<Table.Cell>
-								Speichert die von Ihnen gewählte Darstellung der Oberfläche und
-								wird nur gesetzt, wenn Sie diese Auswahl aktiv treffen.
+								Speicherung der von Ihnen gewählten Darstellung der Oberfläche;
+								das Cookie wird nur gesetzt, wenn diese Auswahl aktiv getroffen
+								wird.
 							</Table.Cell>
 							<Table.Cell>Funktional</Table.Cell>
 						</Table.Row>
 					</Table.Body>
 				</Table.Root>
 				<p>
-					Wir verwenden keine Cookies zu Werbezwecken oder für trackingbasiertes
-					Marketing.
+					Cookies zu Werbezwecken oder für trackingbasiertes Marketing werden
+					nicht eingesetzt.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>
@@ -205,8 +239,8 @@
 			<Accordion.Trigger>4. Empfänger und Dienstleister</Accordion.Trigger>
 			<Accordion.Content class="space-y-4">
 				<p>
-					Zur Bereitstellung unserer Plattform setzen wir folgende Dienstleister
-					und Empfänger ein:
+					Zur Bereitstellung der Plattform werden die folgenden Dienstleister
+					und Empfänger eingesetzt:
 				</p>
 				<Table.Root>
 					<Table.Header>
@@ -219,13 +253,16 @@
 					<Table.Body>
 						<Table.Row>
 							<Table.Cell>Vercel</Table.Cell>
-							<Table.Cell>EU / ggf. Drittland</Table.Cell>
+							<Table.Cell>Primär EU / mögliche Drittstaatenzugriffe</Table.Cell>
 							<Table.Cell>Hosting und Serverless Functions</Table.Cell>
 						</Table.Row>
 						<Table.Row>
 							<Table.Cell>Supabase</Table.Cell>
-							<Table.Cell>EU / ggf. Drittland</Table.Cell>
-							<Table.Cell>Authentifizierung, Datenbank und Sessions</Table.Cell>
+							<Table.Cell>Primär EU / mögliche Drittstaatenzugriffe</Table.Cell>
+							<Table.Cell>
+								Authentifizierung, Datenbank, Sessions und Speicherung von
+								Dateien, insbesondere Vorlagen
+							</Table.Cell>
 						</Table.Row>
 						<Table.Row>
 							<Table.Cell>Stripe</Table.Cell>
@@ -234,7 +271,7 @@
 						</Table.Row>
 						<Table.Row>
 							<Table.Cell>Sentry</Table.Cell>
-							<Table.Cell>EU / USA</Table.Cell>
+							<Table.Cell>Primär EU / mögliche Drittstaatenzugriffe</Table.Cell>
 							<Table.Cell>Fehler- und Performance-Monitoring</Table.Cell>
 						</Table.Row>
 						<Table.Row>
@@ -243,18 +280,49 @@
 							<Table.Cell>Optionale Anmeldung über ein Google-Konto</Table.Cell>
 						</Table.Row>
 						<Table.Row>
-							<Table.Cell>Google Cloud / Vertex AI</Table.Cell>
-							<Table.Cell>EU / USA</Table.Cell>
+							<Table.Cell
+								>Google Cloud / Gemini Enterprise Agent Platform</Table.Cell
+							>
+							<Table.Cell>Primär EU / mögliche Drittstaatenzugriffe</Table.Cell>
 							<Table.Cell>
-								Datei-Uploads, Dateispeicherung und KI-gestützte Verarbeitung
-								von Nutzungsinhalten
+								Temporäre Dateispeicherung für die KI-gestützte Verarbeitung
+								sowie Speicherung von Datenbanksicherungen
 							</Table.Cell>
 						</Table.Row>
 					</Table.Body>
 				</Table.Root>
 				<p>
-					Soweit erforderlich, bestehen mit den eingesetzten Dienstleistern
-					Verträge zur Auftragsverarbeitung gemäß Art. 28 DSGVO.
+					Soweit erforderlich, werden mit den eingesetzten Dienstleistern
+					Verträge zur Auftragsverarbeitung gemäß Art. 28 DSGVO abgeschlossen.
+				</p>
+				<p>
+					Für die KI-gestützte Verarbeitung wird Google Cloud bzw. die Gemini
+					Enterprise Agent Platform eingesetzt. Die Verarbeitung hochgeladener
+					Dateien erfolgt erst nach ausdrücklicher Einwilligung; ohne diese
+					Einwilligung wird keine entsprechende Dateianalyse durchgeführt.
+					Soweit statt Dateien URLs zur Analyse übermittelt werden, können diese
+					Angaben im Rahmen von Grounding- bzw. Suchfunktionen an Google
+					übermittelt werden, um die angegebene Webseite für die gewünschte
+					Auswertung abzurufen und zu analysieren.
+				</p>
+				<p>
+					Nach den von Google veröffentlichten Bedingungen und Informationen zu
+					Google Cloud wird Kundendaten ohne vorherige Genehmigung oder
+					Anweisung nicht zum Training oder Fine-Tuning von AI/ML-Modellen
+					verwendet. Bestimmte Inhalte, insbesondere Prompts, Kontextdaten und
+					Ausgaben im Zusammenhang mit Grounding- bzw. Suchfunktionen, können
+					nach Google-Angaben vorübergehend verarbeitet oder für bis zu 30 Tage
+					gespeichert werden. Maßgeblich sind insbesondere die Informationen von
+					Google zur Gemini Enterprise Agent Platform und die Google Cloud
+					Service Specific Terms:
+					<a
+						href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/resources/zero-data-retention"
+						>https://docs.cloud.google.com/gemini-enterprise-agent-platform/resources/zero-data-retention</a
+					>
+					sowie
+					<a href="https://cloud.google.com/terms/service-terms"
+						>https://cloud.google.com/terms/service-terms</a
+					>.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>
@@ -274,27 +342,34 @@
 					2023 oder auf Grundlage geeigneter Garantien, insbesondere
 					Standardvertragsklauseln gemäß Art. 46 DSGVO.
 				</p>
+				<p>
+					Soweit Übermittlungen auf geeignete Garantien, insbesondere
+					Standardvertragsklauseln, gestützt werden, kann eine Kopie der
+					einschlägigen Garantien unter der oben genannten Kontaktadresse
+					angefordert werden.
+				</p>
 			</Accordion.Content>
 		</Accordion.Item>
 
 		<Accordion.Item value="point-6">
 			<Accordion.Trigger>6. Zwecke der Datenverarbeitung</Accordion.Trigger>
 			<Accordion.Content class="space-y-2">
-				<p>Die Verarbeitung erfolgt ausschließlich zu folgenden Zwecken:</p>
+				<p>Die Verarbeitung erfolgt ausschließlich zu den folgenden Zwecken:</p>
 				<ul class="list-disc space-y-1 pl-5">
 					<li>Anmeldung, Authentifizierung und Kontoverwaltung</li>
 					<li>Bereitstellung der Webanwendung und ihrer Kernfunktionen</li>
 					<li>Verarbeitung hochgeladener Dateien und eingegebener Inhalte</li>
 					<li>
-						KI-gestützte Bearbeitung der von Ihnen bereitgestellten Inhalte
+						KI-gestützte Bearbeitung der bereitgestellten Inhalte nach
+						gesonderter Einwilligung, soweit eine solche erforderlich ist
 					</li>
 					<li>Optionale Zahlungsabwicklung</li>
 					<li>Fehleranalyse, Performance-Überwachung und Systemsicherheit</li>
-					<li>Weiterentwicklung und Verbesserung unseres Angebots</li>
+					<li>Weiterentwicklung und Verbesserung des Angebots</li>
 				</ul>
 				<p>
-					Eine Nutzung Ihrer Daten zu Werbezwecken oder eine Weitergabe an
-					Werbenetzwerke erfolgt nicht.
+					Eine Nutzung personenbezogener Daten zu Werbezwecken oder eine
+					Weitergabe an Werbenetzwerke erfolgt nicht.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>
@@ -302,7 +377,9 @@
 		<Accordion.Item value="point-7">
 			<Accordion.Trigger>7. Rechtsgrundlagen</Accordion.Trigger>
 			<Accordion.Content class="space-y-2">
-				<p>Die Verarbeitung erfolgt auf Basis folgender Rechtsgrundlagen:</p>
+				<p>
+					Die Verarbeitung erfolgt auf Basis der folgenden Rechtsgrundlagen:
+				</p>
 				<ul class="list-disc space-y-1 pl-5">
 					<li>
 						Art. 6 Abs. 1 lit. b DSGVO für vertraglich erforderliche Vorgänge,
@@ -314,51 +391,86 @@
 						Fehleranalyse, Stabilität und technische Weiterentwicklung
 					</li>
 					<li>
-						Art. 6 Abs. 1 lit. a DSGVO, soweit Sie uns eine Einwilligung
-						erteilen oder optionale Funktionen freiwillig aktivieren
+						Art. 6 Abs. 1 lit. a DSGVO, soweit eine Einwilligung erteilt oder
+						optionale Funktionen freiwillig aktiviert werden
 					</li>
 				</ul>
 				<p>
-					Unsere berechtigten Interessen im Sinne von Art. 6 Abs. 1 lit. f DSGVO
-					bestehen insbesondere in einem sicheren, stabilen und wirtschaftlich
-					betriebenen Online-Angebot.
+					Als berechtigte Interessen im Sinne von Art. 6 Abs. 1 lit. f DSGVO
+					werden insbesondere der sichere, stabile und wirtschaftliche Betrieb
+					des Online-Angebots verfolgt.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>
 
 		<Accordion.Item value="point-8">
 			<Accordion.Trigger>8. Speicherdauer</Accordion.Trigger>
-			<Accordion.Content class="space-y-2">
+			<Accordion.Content class="space-y-4">
 				<p>
-					Wir speichern personenbezogene Daten nur so lange, wie dies für die
-					genannten Zwecke erforderlich ist oder gesetzliche
-					Aufbewahrungspflichten bestehen:
+					Personenbezogene Daten werden nur so lange gespeichert, wie dies für
+					die genannten Zwecke erforderlich ist oder gesetzliche
+					Aufbewahrungspflichten bestehen.
 				</p>
-				<ul class="list-disc space-y-1 pl-5">
-					<li>
-						<strong>Kontodaten:</strong> solange Ihr Nutzerkonto aktiv ist
-					</li>
-					<li><strong>Vercel-Logs:</strong> in der Regel bis zu 3 Tage</li>
-					<li>
-						<strong>Zahlungs- und Abrechnungsdaten:</strong> nach handels- und steuerrechtlichen
-						Vorgaben bis zu 10 Jahre
-					</li>
-					<li>
-						<strong>Fehlerdaten (Sentry):</strong> in der Regel bis zu 30 Tage
-					</li>
-					<li>
-						<strong>Von Ihnen bereitgestellte Vorlagen:</strong>
-						solange dies für die Bereitstellung der Funktion oder bis zur Löschung
-						durch Sie bzw. uns erforderlich ist
-					</li>
-					<li>
-						<strong>Dateien über 1 MB:</strong> können zum Zwecke der Wiederverwendung
-						(Caching) bis zu 1 Tag in einem Cloud-Bucket gespeichert werden
-					</li>
-				</ul>
+				<Table.Root>
+					<Table.Header>
+						<Table.Row>
+							<Table.Head>Datenkategorie</Table.Head>
+							<Table.Head>Speicherdauer</Table.Head>
+						</Table.Row>
+					</Table.Header>
+					<Table.Body>
+						<Table.Row>
+							<Table.Cell>Kontodaten</Table.Cell>
+							<Table.Cell>Solange das Nutzerkonto aktiv ist</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Vercel-Logs</Table.Cell>
+							<Table.Cell>In der Regel bis zu 3 Tage</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Zahlungs- und Abrechnungsdaten</Table.Cell>
+							<Table.Cell>
+								Nach handels- und steuerrechtlichen Vorgaben bis zu 10 Jahre
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Fehlerdaten (Sentry)</Table.Cell>
+							<Table.Cell>In der Regel bis zu 30 Tage</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Von Ihnen bereitgestellte Vorlagen</Table.Cell>
+							<Table.Cell>
+								Bis zur Löschung durch Sie oder bis zur Löschung des
+								Nutzerkontos
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Dateien über 1 MB</Table.Cell>
+							<Table.Cell>
+								Zum Zwecke der Wiederverwendung (Caching) bis zu 1 Tag in einem
+								Cloud-Bucket
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>
+								Prompts, Kontextdaten und Ausgaben bei Grounding mit Google
+								Search
+							</Table.Cell>
+							<Table.Cell>Nach Google-Angaben bis zu 30 Tage</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Einwilligungsprotokolle</Table.Cell>
+							<Table.Cell>
+								Die protokollierte E-Mail-Adresse, die protokollierte IP-Adresse
+								und die weiteren Einwilligungsdaten werden bis zu 3 Jahre nach
+								Löschung des Nutzerkontos gespeichert und anschließend gelöscht
+							</Table.Cell>
+						</Table.Row>
+					</Table.Body>
+				</Table.Root>
 				<p>
 					Soweit keine gesetzlichen Aufbewahrungspflichten entgegenstehen,
-					löschen wir Daten nach Wegfall des Verarbeitungszwecks.
+					werden Daten nach Wegfall des Verarbeitungszwecks gelöscht.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>
@@ -366,7 +478,7 @@
 		<Accordion.Item value="point-9">
 			<Accordion.Trigger>9. Ihre Rechte</Accordion.Trigger>
 			<Accordion.Content class="space-y-2">
-				<p>Sie haben insbesondere das Recht auf:</p>
+				<p>Ihnen stehen insbesondere die folgenden Rechte zu:</p>
 				<ul class="list-disc space-y-1 pl-5">
 					<li>Auskunft über gespeicherte Daten (Art. 15 DSGVO)</li>
 					<li>Berichtigung unrichtiger Daten (Art. 16 DSGVO)</li>
@@ -377,15 +489,15 @@
 					<li>Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft</li>
 				</ul>
 				<p>
-					Zur Ausübung Ihrer Rechte kontaktieren Sie uns unter der oben
-					genannten Adresse.
+					Zur Ausübung dieser Rechte kann unter der oben genannten Adresse
+					Kontakt aufgenommen werden.
 				</p>
 				<p>
-					Sie haben außerdem das Recht, sich bei einer
-					Datenschutzaufsichtsbehörde zu beschweren. Zuständig für
-					nicht-öffentliche Stellen in Nordrhein-Westfalen ist insbesondere die
-					Landesbeauftragte für Datenschutz und Informationsfreiheit
-					Nordrhein-Westfalen (LDI NRW).
+					Es besteht außerdem das Recht, eine Beschwerde bei einer
+					Datenschutzaufsichtsbehörde einzureichen. Zuständige Aufsichtsbehörde
+					für nicht-öffentliche Stellen am Sitz in Paderborn ist insbesondere
+					die Landesbeauftragte für Datenschutz und Informationsfreiheit
+					Nordrhein-Westfalen (LDI NRW), Kavalleriestraße 2-4, 40213 Düsseldorf.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>
@@ -396,9 +508,11 @@
 			>
 			<Accordion.Content class="space-y-2">
 				<p>
-					Die Bereitstellung Ihrer Daten ist teilweise für die Nutzung unserer
-					Dienste erforderlich. Ohne E-Mail-Adresse, Login-Daten oder die von
-					Ihnen zur Verarbeitung bereitgestellten Inhalte können wesentliche
+					Eine gesetzliche Pflicht zur Bereitstellung personenbezogener Daten
+					besteht grundsätzlich nicht. Bestimmte Daten sind jedoch für die
+					Nutzung der Dienste erforderlich. Wenn insbesondere keine
+					E-Mail-Adresse, keine Login-Daten oder keine zur Verarbeitung
+					bereitgestellten Inhalte angegeben werden, können wesentliche
 					Funktionen der Plattform nicht oder nicht vollständig genutzt werden.
 				</p>
 			</Accordion.Content>
@@ -410,8 +524,8 @@
 			>
 			<Accordion.Content class="space-y-2">
 				<p>
-					Eine automatisierte Entscheidungsfindung oder ein Profiling im Sinne
-					von Art. 22 DSGVO findet nicht statt.
+					Eine automatisierte Entscheidungsfindung einschließlich Profiling im
+					Sinne von Art. 22 DSGVO findet nicht statt.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>
@@ -420,9 +534,9 @@
 			<Accordion.Trigger>12. Minderjährige</Accordion.Trigger>
 			<Accordion.Content class="space-y-2">
 				<p>
-					Unsere Plattform richtet sich nicht gezielt an Minderjährige.
-					Optionale Käufe über Stripe sollten nur mit Zustimmung der
-					Erziehungsberechtigten erfolgen.
+					Die Plattform richtet sich nicht gezielt an Minderjährige. Optionale
+					Käufe über Stripe sollten nur mit Zustimmung der
+					Erziehungsberechtigten vorgenommen werden.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>
@@ -434,7 +548,7 @@
 			<Accordion.Content class="space-y-2">
 				<p>
 					Diese Datenschutzerklärung kann bei Bedarf aktualisiert werden. Die
-					jeweils aktuelle Version ist jederzeit auf unserer Website einsehbar.
+					jeweils aktuelle Version wird auf der Website bereitgehalten.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>

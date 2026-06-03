@@ -10,8 +10,9 @@ import { Ort } from '$wizard/enums';
 import { generateReportBytes } from '$wizard/write/write_docx';
 import JSZip from 'jszip';
 import * as fs from 'node:fs';
-import { getQuickJS } from 'quickjs-emscripten';
 import { describe, expect, test } from 'vitest';
+
+import { getQuickJS } from '../shims/quickjs_node';
 
 const TEMPLATE_PATH = './src/test/fixtures/template.docx';
 

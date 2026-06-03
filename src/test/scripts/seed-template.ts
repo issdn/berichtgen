@@ -5,8 +5,6 @@
  * Usage: node --experimental-strip-types src/test/scripts/seed-template.ts
  */
 
-import type { SupabaseDatabase } from '$lib/schema';
-
 import { createClient } from '@supabase/supabase-js';
 import { config as loadEnv } from 'dotenv';
 import { Kysely, PostgresDialect } from 'kysely';
@@ -14,6 +12,11 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+
+import type { SupabaseDatabase } from '../../lib/schema';
+
+const PRIVACY_CONSENT_GRANTED_METADATA_KEY = 'consent_granted';
+const PRIVACY_CONSENT_VERSION_METADATA_KEY = 'privacy_consent_version';
 
 // Running this script with plain `node` does not auto-load `.env`.
 loadEnv();
@@ -68,6 +71,13 @@ const db = new Kysely<{
 console.log(`Creating user ${TEST_EMAIL}...`);
 const { error: signUpError } = await supabase.auth.signUp({
 	email: TEST_EMAIL,
+	options: {
+		data: {
+			[PRIVACY_CONSENT_GRANTED_METADATA_KEY]: true,
+			[PRIVACY_CONSENT_VERSION_METADATA_KEY]:
+				process.env.npm_package_version ?? 'seed-script'
+		}
+	},
 	password: TEST_PASSWORD
 });
 if (signUpError) throw signUpError;
