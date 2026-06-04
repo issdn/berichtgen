@@ -1,8 +1,8 @@
 import type { KyselyDatabase } from '$lib/schema';
 import type { User } from '@supabase/supabase-js';
 
-import { LOCALE, TIMEZONE } from '$lib/constants';
-import { DateFormatter, parseAbsolute } from '@internationalized/date';
+import { LOCALE } from '$lib/constants';
+import { DateFormatter } from '@internationalized/date';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -30,20 +30,6 @@ export function downloadBlob(blob: Blob, filename: string) {
 	URL.revokeObjectURL(url);
 }
 
-export function parsePostgresDate(dateString: string): string {
-	return new DateFormatter(LOCALE, { dateStyle: 'medium' })
-		.format(parseAbsolute(dateString, TIMEZONE).toDate())
-		.toString();
-}
-
-export function promisify<T, E>(
-	fn: (success: (value: T) => void, error: (message: E) => void) => void
-): Promise<T> {
-	return new Promise((resolve, reject) => {
-		fn(resolve, reject);
-	});
-}
-
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
 	func: F,
 	waitFor: number = 500
@@ -64,14 +50,6 @@ export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
 export function clamp(num: number, min: number, max: number) {
 	return Math.min(Math.max(num, min), max);
 }
-
-export function getArrayDepth(arr: unknown[]): number {
-	if (!Array.isArray(arr)) return 0;
-	return (
-		1 + Math.max(0, ...arr.map(getArrayDepth as (value: unknown) => number))
-	);
-}
-
 export function getUserDisplayName(
 	profile: KyselyDatabase['profile'] | null,
 	user?: null | User
@@ -92,11 +70,3 @@ export function getUserDisplayName(
 export const dateFormatter = new DateFormatter(LOCALE, {
 	dateStyle: 'short'
 });
-
-export function toBase64(bytes: Uint8Array): string {
-	let binary = '';
-	for (let i = 0; i < bytes.length; i++) {
-		binary += String.fromCharCode(bytes[i]);
-	}
-	return btoa(binary);
-}

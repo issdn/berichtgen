@@ -254,7 +254,7 @@ export async function uploadTemplateFile(
 /**
  * Enforces per-user template creation limits while allowing overwrite of existing paths.
  */
-export async function validateCanCreateTemplate({
+async function validateCanCreateTemplate({
 	existingTemplateId,
 	userId
 }: {

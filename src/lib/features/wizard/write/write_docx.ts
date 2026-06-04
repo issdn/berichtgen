@@ -17,7 +17,7 @@ export type SandBox = Parameters<
  * Exported for unit testing. The caller is responsible for disposing `vm` after
  * `createReport` resolves — this function must NOT call `vm.dispose()`.
  */
-export function buildRunJs(vm: QuickJSContext, injected: Map<string, string>) {
+function buildRunJs(vm: QuickJSContext, injected: Map<string, string>) {
 	return ({ sandbox }: { sandbox: SandBox }) => {
 		for (const [key, value] of Object.entries(sandbox)) {
 			if (key === '__code__' || key === '__result__') continue;

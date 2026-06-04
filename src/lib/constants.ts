@@ -16,8 +16,6 @@ export const DEFAULT_MODEL = 'gemini-3.1-flash-lite-preview';
 
 export const MODEL_LOCATION = 'global';
 
-export const DEFAULT_ANONYM_NAME = 'Anonym';
-
 export const WIZARD_PERSISTENCE_VERSION = 1;
 
 export const WIZARD_PERSISTENCE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -68,12 +66,6 @@ export const PRIVACY_CONSENT_GRANTED_METADATA_KEY = 'consent_granted';
  * Used in: `signInWithOtp(...)`, OAuth callback `updateUser(...)`, and `private.sync_profile_from_auth()`.
  */
 export const PRIVACY_CONSENT_VERSION_METADATA_KEY = 'privacy_consent_version';
-
-/**
- * Retention window for consent audit logs after the linked user account has been deleted.
- * Used in: `supabase/migrations/20250529175914_1.sql` cron cleanup and Datenschutz text.
- */
-export const CONSENT_LOG_RETENTION_YEARS = 3;
 
 /** Only TXT files at or below this size are sent inline in the completion request. */
 export const INLINE_MAX_BYTES = 2 * 1024 * 1024; // 2 MB

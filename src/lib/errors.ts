@@ -1,4 +1,4 @@
-export const errorRegistry = new Map<string, Record<string, AnyErrorValue>>();
+const errorRegistry = new Map<string, Record<string, AnyErrorValue>>();
 
 export const ECommonServerError = buildError('core.server', {
 	DATABASE_ERROR: { httpCode: 500, message: 'Datenbankfehler.' },
@@ -16,7 +16,7 @@ export const ECommonServerError = buildError('core.server', {
 	VALIDATION_ERROR: { httpCode: 400, message: 'Validierungsfehler.' }
 } as const);
 
-export const EBaseErrors = buildError('core.base', {
+const EBaseErrors = buildError('core.base', {
 	UNKNOWN_ERROR: {
 		httpCode: 500,
 		message: 'Ein unbekannter Fehler ist aufgetreten.'

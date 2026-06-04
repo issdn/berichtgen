@@ -59,7 +59,7 @@ export const load = async ({ cookies, locals: { supabase }, url }) => {
 
 		throw svelteApiError({
 			...EAuthError.OAUTH_LOGIN_FAILED,
-			message: `OAuth-Login Fehler mit code: ${error?.code ?? 'unbekannt'}`
+			cause: `OAuth-Login Fehler mit code: ${error?.code ?? 'unbekannt'}`
 		});
 	}
 

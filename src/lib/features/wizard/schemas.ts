@@ -16,7 +16,7 @@ const ortEnum = z.enum([
 	Ort['SCHULE/BETRIEB']
 ]);
 
-export const fullResultSchema = z
+const fullResultSchema = z
 	.object({
 		datum: z.string({ message: 'Das Object muss ein Datum enthalten!' }),
 		ort: z
@@ -107,7 +107,7 @@ export const urlItemSchema = z.object({
 });
 
 /** One item in a batch completion request — inline file, GCS file, or URL. */
-export const batchCompletionItemSchema = z.discriminatedUnion('type', [
+const batchCompletionItemSchema = z.discriminatedUnion('type', [
 	z.object({ ...inlineItemSchema.shape, ort: ortEnum }),
 	z.object({ ...fileApiItemSchema.shape, ort: ortEnum }),
 	z.object({ ...urlItemSchema.shape, ort: ortEnum })

@@ -31,7 +31,7 @@ export async function countItemTokens(
 	return result.data.totalTokens ?? 0;
 }
 
-export function geminiApiErrorToApiError(e: unknown) {
+function geminiApiErrorToApiError(e: unknown) {
 	if (e instanceof GcsApiError) {
 		const httpCode = e.code ?? 500;
 		return new BerichtgenError({
@@ -50,7 +50,7 @@ export function geminiApiErrorToApiError(e: unknown) {
 }
 
 /** Maps a `BatchCompletionItem` to its Gemini content part. */
-export function itemToContentPart(item: BatchCompletionItem): genai.Part {
+function itemToContentPart(item: BatchCompletionItem): genai.Part {
 	if (item.type === 'inline')
 		return { inlineData: { data: item.data, mimeType: item.mimeType } };
 	if (item.type === 'url') return { text: `URL zu dem Text: ${item.url}` };
