@@ -6,6 +6,7 @@ import { SvelteMap } from 'svelte/reactivity';
 const DEFAULT_SETTINGS: App.BerichtgenSettings = {
 	constantHours: false,
 	preferredTemplatePath: null,
+	preferredWizardDownloadType: null,
 	rewordJSON: false,
 	tempEmailContainer: null
 };

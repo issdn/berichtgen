@@ -2,6 +2,7 @@ import type { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
 
 import { WizardStep } from '$wizard/enums';
 import { createStateMachineForContext } from '$wizard/services/state_machine';
+import { WizardFile as WizardEntryFile } from '$wizard/services/wizard_file';
 import { WizardFileContext } from '$wizard/services/wizard_file_context';
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/svelte';
@@ -19,10 +20,11 @@ afterEach(() => {
 });
 
 function renderWizardFile({ step }: { step: WizardStep }) {
-	const context = new WizardFileContext({
-		file: new File(['hello'], 'beispiel.txt', { type: 'text/plain' }),
-		type: 'file'
-	});
+	const context = new WizardFileContext(
+		WizardEntryFile.fromFile({
+			file: new File(['hello'], 'beispiel.txt', { type: 'text/plain' })
+		})
+	);
 	const scheduler = {
 		finish: vi.fn(),
 		hasProcess: vi.fn(() => true),

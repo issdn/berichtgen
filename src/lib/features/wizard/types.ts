@@ -4,7 +4,6 @@ import type { Ort } from '$wizard/enums';
 import type { WizardStep } from '$wizard/enums';
 import type {
 	completionResultSchema,
-	DateRangeSchema,
 	genaiCompletionSchema
 } from '$wizard/schemas';
 import type { FileRouting } from '$wizard/services/routing';
@@ -66,15 +65,7 @@ export type TimeSpreadResult = (CompletionResult[number] & {
 
 export type WizardDirectories = WizardDirectory[];
 
-export type WizardDirectory = WizardDirectoryEntry[];
-
-export type WizardDirectoryEntry = WizardFileEntry | WizardUrlEntry;
-
-export type WizardFileEntry = {
-	config?: DateRangeSchema;
-	file: File;
-	type: 'file';
-};
+export type WizardDirectory = File[];
 
 export type WizardPersistedFile = ReplaceAttr<
 	Attributes<WizardFileContext>,
@@ -106,9 +97,3 @@ export type WizardProcessStateMachine = {
 export type WizardRawDirectories = File[][];
 
 export type WizardRawDirectory = WizardRawDirectories[number];
-
-export type WizardUrlEntry = {
-	config?: DateRangeSchema;
-	type: 'url';
-	url: string;
-};

@@ -160,10 +160,6 @@ export class WizardMediator {
 		};
 	}
 
-	finish = () => {
-		void this.clearPersistedSession();
-	};
-
 	async flushAiCompletion(): Promise<void> {
 		if (this.schedulerState.schedule === null) return;
 
@@ -257,7 +253,6 @@ export class WizardMediator {
 		}
 
 		this.persistSoon();
-		if (this.isDone) this.finish();
 	}
 
 	private applyResults(
@@ -295,7 +290,6 @@ export class WizardMediator {
 		}
 
 		this.persistSoon();
-		if (this.isDone) this.finish();
 	}
 
 	private classifyBatchError(error: BerichtgenError): BatchErrorScope {
@@ -394,7 +388,6 @@ export class WizardMediator {
 				this.batcher.register(process);
 			}
 		}
-		if (this.isDone) this.finish();
 		this.persistence.isRehydrating = false;
 	}
 

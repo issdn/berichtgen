@@ -2,8 +2,6 @@
 	import type {
 		CSVConfigFile,
 		WizardDirectory,
-		WizardDirectoryEntry,
-		WizardFileEntry,
 		WizardRawDirectories,
 		WizardRawDirectory
 	} from '$wizard/types';
@@ -21,6 +19,7 @@
 	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
 	import { FileTypes } from '$wizard/enums';
+	import { WizardFile } from '$wizard/services/wizard_file';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -114,7 +113,9 @@
 		const configFile =
 			files.find((f) => CONFIG_FILENAME_REGEX.test(f.name)) ?? null;
 		const dataFiles = files.filter((f) => !CONFIG_FILENAME_REGEX.test(f.name));
-		const entries: WizardDirectory = dataFiles.map(fileToEntry);
+		const entries: WizardDirectory = dataFiles.map((file) =>
+			WizardFile.fromFile({ file })
+		);
 
 		if (configFile === null) return entries;
 
@@ -129,29 +130,20 @@
 		return applyConfig(entries, config.data);
 	}
 
-	function fileToEntry(file: File): WizardDirectoryEntry {
-		if (file.type === FileTypes.URI_LIST)
-			return { type: 'url', url: file.name };
-		return { file, type: 'file' };
-	}
-
 	function applyConfig(
 		entries: WizardDirectory,
 		configRows: CSVConfigFile[]
 	): WizardDirectory {
-		const fileEntries = new Map(
-			entries
-				.filter((e): e is WizardFileEntry => 'file' in e)
-				.map((e) => [e.file.name, e])
-		);
+		const fileEntries = new Map(entries.map((entry) => [entry.name, entry]));
 		const notFound: string[] = [];
 
 		for (const { file, ort, ranges } of configRows) {
 			const config = { ort, ranges: ranges.map((r, i) => ({ ...r, id: i })) };
 			if (URL.canParse(file)) {
-				entries.push({ config, type: 'url', url: file });
+				const urlFile = WizardFile.fromUrl({ config, url: file });
+				entries.push(urlFile);
 			} else if (fileEntries.has(file)) {
-				fileEntries.get(file)!.config = config;
+				WizardFile.fromFile({ file: fileEntries.get(file)!, config });
 			} else {
 				notFound.push(file);
 			}

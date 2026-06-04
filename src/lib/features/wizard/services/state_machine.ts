@@ -1,7 +1,4 @@
-import type {
-	GenaiCompletionResult,
-	WizardDirectoryEntry
-} from '$wizard/types';
+import type { GenaiCompletionResult } from '$wizard/types';
 
 import { invalidate } from '$app/navigation';
 import berichtgenStore from '$core/stores/berichtgen.svelte';
@@ -17,6 +14,7 @@ import {
 	InlineRouting,
 	UrlRouting
 } from '$wizard/services/routing';
+import { WizardFile } from '$wizard/services/wizard_file';
 import { FiniteStateMachine } from 'runed';
 
 import type { WizardFileContext } from './wizard_file_context';
@@ -63,13 +61,15 @@ export function createStateMachineForContext({
 			},
 			[WizardStep.PROCESSING]: {
 				_enter() {
-					if ('url' in context.entry) {
-						context.snapshot = new UrlRouting({ url: context.entry.url });
+					if (context.file.isUrl) {
+						context.snapshot = new UrlRouting({
+							url: context.file.url!
+						});
 						machine.send('next');
 						return;
 					}
 
-					processFile({ entry: context.entry }).then((result) => {
+					processFile({ file: context.file }).then((result) => {
 						if (!scheduler.hasProcess({ id })) return;
 
 						if (!result.ok) {
@@ -149,9 +149,6 @@ export function createStateMachineForContext({
 			[WizardStep.DONE]: {
 				cancel: () => {
 					return WizardStep.CANCELLED;
-				},
-				_enter: () => {
-					if (scheduler.isDone) scheduler.finish();
 				}
 			},
 			[WizardStep.ERROR]: {}
@@ -161,15 +158,12 @@ export function createStateMachineForContext({
 	return machine;
 }
 
-async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
-	if (
-		entry.type === 'file' &&
-		entry.file.type === FileTypes.JSON &&
-		!berichtgenStore.get('rewordJSON')
-	) {
+/** Resolves a wizard file into either parsed JSON or a routing descriptor. */
+async function processFile({ file }: { file: WizardFile }) {
+	if (file.type === FileTypes.JSON && !berichtgenStore.get('rewordJSON')) {
 		const text = await tryResultAsync({
 			apiError: EFileRoutingError.FORMAT_NOT_SUPPORTED,
-			promise: entry.file.text()
+			promise: file.text()
 		});
 
 		if (!text.ok) return text;
@@ -182,28 +176,26 @@ async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
 		return parsed;
 	}
 
-	if (entry.type === 'url') return okResult(new UrlRouting({ url: entry.url }));
-
-	if (entry.file.size > GCS_MAX_BYTES) {
+	if (file.size > GCS_MAX_BYTES) {
 		return errResult(EFileRoutingError.FILE_TOO_LARGE);
 	}
 
-	if (entry.file.type === FileTypes.TXT) {
-		if (entry.file.size > INLINE_MAX_BYTES) {
+	if (file.type === FileTypes.TXT) {
+		if (file.size > INLINE_MAX_BYTES) {
 			return errResult(EFileRoutingError.INLINE_TXT_TOO_LARGE);
 		}
 		const text = await tryResultAsync({
 			apiError: EFileRoutingError.FILE_READ_FAILED,
-			promise: entry.file.text()
+			promise: file.text()
 		});
 		if (!text.ok) return text;
 
 		return okResult(
-			new InlineRouting({ data: text.data, mimeType: entry.file.type })
+			new InlineRouting({ data: text.data, mimeType: file.type })
 		);
 	}
 
-	const urls = await uploadToGcs(entry.file);
+	const urls = await uploadToGcs(file);
 
 	if (!urls.ok) {
 		return urls;
@@ -212,7 +204,7 @@ async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
 	return okResult(
 		new GcsRouting({
 			fileUri: urls.data.fileUri,
-			mimeType: entry.file.type,
+			mimeType: file.type,
 			signedUrl: urls.data.signedUrl
 		})
 	);
@@ -220,8 +212,6 @@ async function processFile({ entry }: { entry: WizardDirectoryEntry }) {
 
 function shouldSkipAiCompletion(context: WizardFileContext): boolean {
 	return (
-		'file' in context.entry &&
-		context.entry.file.type === FileTypes.JSON &&
-		!berichtgenStore.get('rewordJSON')
+		context.file.type === FileTypes.JSON && !berichtgenStore.get('rewordJSON')
 	);
 }

@@ -15,6 +15,7 @@ vi.mock('$core/stores/berichtgen.svelte', () => ({
 			const values: App.BerichtgenSettings = {
 				constantHours: false,
 				preferredTemplatePath: null,
+				preferredWizardDownloadType: null,
 				rewordJSON: false,
 				tempEmailContainer: null
 			};
@@ -91,7 +92,7 @@ describe('State machine full lifecycle', () => {
 			userId: null
 		});
 		const file = new File([DUMMY_TEXT], 'test.txt', { type: 'text/plain' });
-		scheduler.createSchedule([[{ file, type: 'file' }]]);
+		scheduler.createSchedule([[file]]);
 
 		const { context, machine } = scheduler.schedule![0];
 
@@ -131,7 +132,7 @@ describe('State machine full lifecycle', () => {
 			persistence: createPersistenceMock(),
 			userId: null
 		});
-		scheduler.createSchedule([[{ file: jsonFile, type: 'file' }]]);
+		scheduler.createSchedule([[jsonFile]]);
 
 		const { context, machine } = scheduler.schedule![0];
 		expect(machine.current).toBe(WizardStep.WAITING);
@@ -175,7 +176,7 @@ describe('State machine full lifecycle', () => {
 			type: 'text/plain'
 		});
 
-		scheduler.createSchedule([[{ file, type: 'file' }]]);
+		scheduler.createSchedule([[file]]);
 
 		const [process] = scheduler.schedule!;
 		process.remove();
@@ -191,7 +192,7 @@ describe('State machine full lifecycle', () => {
 		});
 		const file = new File([DUMMY_TEXT], 'pending.txt', { type: 'text/plain' });
 
-		scheduler.createSchedule([[{ file, type: 'file' }]]);
+		scheduler.createSchedule([[file]]);
 
 		const [process] = scheduler.schedule!;
 		expect(process.machine.current).toBe(WizardStep.WAITING);
@@ -224,7 +225,7 @@ describe('State machine full lifecycle', () => {
 			type: 'application/pdf'
 		});
 
-		scheduler.createSchedule([[{ file, type: 'file' }]]);
+		scheduler.createSchedule([[file]]);
 
 		const [process] = scheduler.schedule!;
 		process.context.dateRanges = createDateRanges();
@@ -258,12 +259,7 @@ describe('State machine full lifecycle', () => {
 		const first = new File([DUMMY_TEXT], 'first.txt', { type: 'text/plain' });
 		const second = new File([DUMMY_TEXT], 'second.txt', { type: 'text/plain' });
 
-		scheduler.createSchedule([
-			[
-				{ file: first, type: 'file' },
-				{ file: second, type: 'file' }
-			]
-		]);
+		scheduler.createSchedule([[first, second]]);
 
 		for (const process of scheduler.schedule!) {
 			process.context.dateRanges = createDateRanges();
@@ -299,7 +295,7 @@ describe('State machine full lifecycle', () => {
 			type: 'application/pdf'
 		});
 
-		scheduler.createSchedule([[{ file, type: 'file' }]]);
+		scheduler.createSchedule([[file]]);
 
 		const [process] = scheduler.schedule!;
 		process.context.dateRanges = createDateRanges();

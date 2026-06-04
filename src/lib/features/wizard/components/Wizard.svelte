@@ -1,8 +1,5 @@
-﻿<script lang="ts">
-	import type {
-		WizardDirectoryEntry,
-		WizardProcessStateMachine
-	} from '$wizard/types';
+<script lang="ts">
+	import type { WizardProcessStateMachine } from '$wizard/types';
 
 	import { invalidate } from '$app/navigation';
 	import { page } from '$app/state';
@@ -22,13 +19,14 @@
 	import Docx from '$ui/svg/DOCX.svelte';
 	import Pdf from '$ui/svg/PDF.svelte';
 	import Png from '$ui/svg/PNG.svelte';
-	import { checkPreferredTemplate } from '$wizard/api/wizard.remote';
 	import { FileTypes } from '$wizard/enums';
 	import { EFileRoutingError } from '$wizard/errors';
 	import { combineJSONs } from '$wizard/postprocess/combine';
 	import { genaiCompletionSchema } from '$wizard/schemas';
+	import { WizardFile as WizardEntryFile } from '$wizard/services/wizard_file';
 	import { WizardFileContext } from '$wizard/services/wizard_file_context';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
+	import { getPreferredTemplateBytes } from '$wizard/write/download';
 	import { handleDOCXDownload } from '$wizard/write/write_docx';
 	import { handleJSONDownload } from '$wizard/write/write_json';
 	import {
@@ -59,27 +57,29 @@
 		(wizardMediator.filesStates?.done ?? 0) > 0
 	);
 
-	function toWizardEntry(
-		value: string,
-		index: number
-	): null | WizardDirectoryEntry {
+	function toWizardEntry({
+		index,
+		value
+	}: {
+		index: number;
+		value: string;
+	}): File | null {
 		const trimmed = value.trim();
 		if (!trimmed) return null;
 		const completionJson = parseGenaiCompletionJson(trimmed);
 		if (completionJson !== null) {
-			return {
+			return WizardEntryFile.fromFile({
 				file: new File(
 					[JSON.stringify(completionJson)],
 					`manueller-json-${index + 1}.json`,
 					{
 						type: FileTypes.JSON
 					}
-				),
-				type: 'file'
-			};
+				)
+			});
 		}
 		if (URL.canParse(trimmed)) {
-			return { type: 'url', url: trimmed };
+			return WizardEntryFile.fromUrl({ url: trimmed });
 		}
 		const bytes = new TextEncoder().encode(trimmed);
 		if (bytes.byteLength > INLINE_MAX_BYTES) {
@@ -88,12 +88,11 @@
 				cause: `Text ${index + 1} überschreitet 2MB.`
 			});
 		}
-		return {
+		return WizardEntryFile.fromFile({
 			file: new File([trimmed], `manueller-text-${index + 1}.txt`, {
 				type: FileTypes.TXT
-			}),
-			type: 'file'
-		};
+			})
+		});
 	}
 
 	function parseGenaiCompletionJson(text: string): null | string[] {
@@ -113,10 +112,10 @@
 			return;
 		}
 
-		const entries: WizardDirectoryEntry[] = [];
+		const entries: File[] = [];
 		try {
 			for (let index = 0; index < values.length; index++) {
-				const entry = toWizardEntry(values[index], index);
+				const entry = toWizardEntry({ index, value: values[index] });
 				if (entry !== null) entries.push(entry);
 			}
 		} catch (error) {
@@ -223,45 +222,25 @@
 	const downloadDOCX = new AsyncResource(
 		async () => {
 			const path = berichtgenStore.get('preferredTemplatePath');
-			if (!path) {
-				toast.error(
-					'Keine bevorzugte Vorlage ausgewählt. Bitte wähle eine Vorlage aus den Einstellungen aus.'
-				);
-				return;
-			}
-			const { exists } = await checkPreferredTemplate({
-				storagePath: path
+			const template = await getPreferredTemplateBytes({
+				preferredTemplatePath: path,
+				supabase: page.data.supabase
 			});
-			if (!exists) {
-				berichtgenStore.set('preferredTemplatePath', null);
-				toast.info(
-					'Deine bevorzugte Vorlage wurde gelöscht. Bitte wähle eine neue Vorlage aus.',
-					{ closeButton: true, dismissable: true }
-				);
-				return;
-			}
-			const templateResult = await page.data.supabase.storage
-				.from('templates')
-				.download(path);
-			if (!templateResult.data) {
-				toast.error(
-					'Vorlage existiert nicht. Bitte wähle eine andere Vorlage aus.'
-				);
-				return;
-			}
-			const uintarray = new Uint8Array(await templateResult.data.arrayBuffer());
 			const combined = combineJSONs(
 				wizardMediator.schedulerState.getFinishedDirectories(),
 				berichtgenStore.get('constantHours')
 			);
 			await handleDOCXDownload({
 				entries: Promise.resolve(combined),
-				template: uintarray,
+				template,
 				userMetadata: page.data.userMetadata
 			});
 		},
 		{
 			onError: (error) => {
+				if (error.code === 'PREFERRED_TEMPLATE_DELETED') {
+					berichtgenStore.set('preferredTemplatePath', null);
+				}
 				toast.error(error.message, {
 					description: error.cause
 				});

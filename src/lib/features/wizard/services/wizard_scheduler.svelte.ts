@@ -1,7 +1,6 @@
 import type {
 	TimeSpreadResult,
 	WizardDirectories,
-	WizardDirectoryEntry,
 	WizardPersistedFile,
 	WizardProcessStateMachine
 } from '$wizard/types';
@@ -46,11 +45,9 @@ export class WizardScheduler {
 
 	createSchedule(
 		directories: WizardDirectories,
-		createProcess: (entry: WizardDirectoryEntry) => WizardProcessStateMachine
+		createProcess: (file: File) => WizardProcessStateMachine
 	) {
-		this.schedule = [...directories]
-			.flat()
-			.map((entry) => createProcess(entry));
+		this.schedule = [...directories].flat().map((file) => createProcess(file));
 	}
 
 	findById(id: string): undefined | WizardProcessStateMachine {

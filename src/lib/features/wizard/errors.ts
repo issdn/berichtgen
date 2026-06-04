@@ -110,6 +110,22 @@ export const ETemplateError = buildError('templates', {
 		httpCode: 409,
 		message: 'Du kannst maximal 3 Vorlagen hochladen.'
 	},
+	PREFERRED_TEMPLATE_DELETED: {
+		cause:
+			'Die bevorzugte Vorlage wurde gelöscht. Bitte wähle eine neue Vorlage aus.',
+		httpCode: 404,
+		message: 'Bevorzugte Vorlage nicht mehr verfügbar.'
+	},
+	PREFERRED_TEMPLATE_FILE_MISSING: {
+		cause: 'Bitte wähle eine andere Vorlage aus.',
+		httpCode: 404,
+		message: 'Vorlage existiert nicht.'
+	},
+	PREFERRED_TEMPLATE_MISSING_SELECTION: {
+		cause: 'Bitte wähle eine Vorlage aus den Einstellungen aus.',
+		httpCode: 400,
+		message: 'Keine bevorzugte Vorlage ausgewählt.'
+	},
 	TEMPLATE_NOT_FOUND: { httpCode: 404, message: 'Vorlage nicht gefunden.' },
 	TEMPLATE_SAFE: {
 		httpCode: 403,

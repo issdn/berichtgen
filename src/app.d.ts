@@ -10,6 +10,7 @@ declare global {
 		interface BerichtgenSettings {
 			constantHours: boolean;
 			preferredTemplatePath: null | string;
+			preferredWizardDownloadType: 'docx' | 'json' | null;
 			rewordJSON: boolean;
 			tempEmailContainer: null | string;
 		}

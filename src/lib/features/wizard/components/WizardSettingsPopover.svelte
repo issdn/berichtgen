@@ -15,6 +15,12 @@
 			? K
 			: never;
 	}[keyof App.BerichtgenSettings];
+
+	let canChangeRewordJSON = $derived.by(() => {
+		if (!wizardMediator.filesStates) return true;
+		const { batch_pending, completion } = wizardMediator.filesStates;
+		return batch_pending + completion === 0;
+	});
 </script>
 
 <Popover.Root>
@@ -29,7 +35,8 @@
 						'rewordJSON',
 						'reword-json-switch',
 						'JSON-Dateien umformulieren',
-						'Du kannst schon vorhandene JSON-Dateien mit dem Berichtgen-Format datieren lassen. Aktiviere diese Option, um die JSON-Dateien wie alle andere doch umzuschreiben.'
+						'Du kannst schon vorhandene JSON-Dateien mit dem Berichtgen-Format datieren lassen. Aktiviere diese Option, um die JSON-Dateien wie alle andere doch umzuschreiben.',
+						!canChangeRewordJSON
 					)}
 				{/if}
 				{@render settingSwitch(
@@ -47,11 +54,12 @@
 	key: BooleanSettingKey,
 	id: string,
 	label: string,
-	description: string
+	description: string,
+	disabled: boolean = false
 )}
 	<LabeledSwitch
 		checked={berichtgenStore.get(key)}
-		disabled={!wizardMediator.isDone}
+		{disabled}
 		onchange={(value) => berichtgenStore.set(key, value)}
 		{id}
 		{label}
