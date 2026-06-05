@@ -6,6 +6,7 @@
 	import { buttonVariants } from '$ui/button';
 	import { Textarea } from '$ui/textarea';
 	import { FileInput } from '@lucide/svelte';
+	import { tick } from 'svelte';
 	import { slide } from 'svelte/transition';
 
 	let {
@@ -27,6 +28,14 @@
 
 		return inputs;
 	});
+
+	function scrollTextareaContainerToBottom() {
+		const el = textareaContainer;
+		if (!el || el.scrollHeight <= el.clientHeight) return;
+		tick().then(() => {
+			el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+		});
+	}
 
 	function resetManualInputs() {
 		inputs = [''];
@@ -75,7 +84,13 @@
 				bind:this={textareaContainer}
 			>
 				{#each visualInputs as _, index (index)}
-					<div transition:slide>
+					{@const isNewestVisualInput = index === visualInputs.length - 1}
+					<div
+						transition:slide
+						onintroend={isNewestVisualInput
+							? scrollTextareaContainerToBottom
+							: undefined}
+					>
 						<Textarea
 							data-testid={`wizard-manual-input-${index}`}
 							class="min-h-none resize-none"

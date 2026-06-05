@@ -4,7 +4,7 @@
 	import type { SuperFormData } from 'sveltekit-superforms/client';
 
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { RangeCalendar } from '$lib/components/ui/range-calendar/index.js';
+	import { WeekRangeCalendar } from '$lib/components/ui/week-range-calendar/index.js';
 	import { LOCALE, TIMEZONE } from '$lib/constants';
 	import { dateFormatter } from '$lib/utils';
 	import { buttonVariants } from '$ui/button';
@@ -65,7 +65,7 @@
 			name={`ranges[${index}].daterange`}
 		>
 			<div>
-				<p class="text-left font-normal">Datumsbereich</p>
+				<p class="text-left font-normal">Kalenderwoche(n)</p>
 				<Form.Control>
 					<Popover.Root>
 						<Popover.Trigger
@@ -81,7 +81,7 @@
 							{label}
 						</Popover.Trigger>
 						<Popover.Content class="w-auto p-0">
-							<RangeCalendar
+							<WeekRangeCalendar
 								locale={LOCALE}
 								bind:value={$formData.ranges[index].daterange}
 								class="w-fit"

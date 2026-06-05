@@ -174,7 +174,7 @@
 			>{context.file.name}</span
 		>
 		<div class="flex flex-row gap-x-2">
-			{#if step === WizardStep.WAITING}
+			{#if step === WizardStep.WAITING || step === WizardStep.BATCH_PENDING}
 				<TimeSpreadDialog
 					{id}
 					onClose={confirmDateRanges}
