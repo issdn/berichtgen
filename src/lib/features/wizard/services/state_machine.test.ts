@@ -2,8 +2,11 @@
 import type { WizardPersistenceController } from '$core/persistence/wizard_persistence_controller.svelte';
 import type { DateRangeSchema } from '$wizard/schemas';
 
+import { INLINE_MAX_BYTES } from '$lib/constants';
+import { BerichtgenError } from '$lib/errors';
 import { okResult } from '$lib/result';
 import { WizardStep } from '$wizard/enums';
+import { EWizardError } from '$wizard/errors';
 import { WizardMediator } from '$wizard/services/wizard_mediator.svelte';
 import { CalendarDate } from '@internationalized/date';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -82,10 +85,7 @@ beforeEach(() => {
 
 describe('State machine full lifecycle', () => {
 	test('INITIALISING -> WAITING -> PROCESSING -> BATCH_PENDING -> AI_COMPLETION -> TIME_SPREADING -> DONE', async () => {
-		mockSendBatch.mockResolvedValue({
-			insufficient_tokens: false,
-			results: [[AI_RESULT]]
-		});
+		mockSendBatch.mockResolvedValue([{ data: [AI_RESULT], ok: true }]);
 
 		const scheduler = WizardMediator.createDefault({
 			persistence: createPersistenceMock(),
@@ -247,10 +247,7 @@ describe('State machine full lifecycle', () => {
 	});
 
 	test('removed file is not included in AI completion flush input', async () => {
-		mockSendBatch.mockResolvedValue({
-			insufficient_tokens: false,
-			results: [[AI_RESULT]]
-		});
+		mockSendBatch.mockResolvedValue([{ data: [AI_RESULT], ok: true }]);
 
 		const scheduler = WizardMediator.createDefault({
 			persistence: createPersistenceMock(),
@@ -282,10 +279,7 @@ describe('State machine full lifecycle', () => {
 				signedUrl: 'https://signed.example/late.pdf'
 			})
 		);
-		mockSendBatch.mockResolvedValueOnce({
-			insufficient_tokens: false,
-			results: [[AI_RESULT]]
-		});
+		mockSendBatch.mockResolvedValueOnce([{ data: [AI_RESULT], ok: true }]);
 
 		const scheduler = WizardMediator.createDefault({
 			persistence: createPersistenceMock(),
@@ -309,5 +303,155 @@ describe('State machine full lifecycle', () => {
 		await scheduler.flushAiCompletion();
 
 		expect(process.machine.current).toBe(WizardStep.DONE);
+	});
+
+	test('stops later batches after a global error but keeps current-batch successes', async () => {
+		mockUploadToGcs
+			.mockResolvedValueOnce(
+				okResult({
+					fileUri: 'gs://bucket/first.pdf',
+					signedUrl: 'https://signed.example/first.pdf'
+				})
+			)
+			.mockResolvedValueOnce(
+				okResult({
+					fileUri: 'gs://bucket/second.pdf',
+					signedUrl: 'https://signed.example/second.pdf'
+				})
+			)
+			.mockResolvedValueOnce(
+				okResult({
+					fileUri: 'gs://bucket/third.pdf',
+					signedUrl: 'https://signed.example/third.pdf'
+				})
+			);
+		mockSendBatch
+			.mockResolvedValueOnce([
+				{ data: [AI_RESULT], ok: true },
+				{
+					error: {
+						...EWizardError.COMPLETION_FAILED,
+						global: true
+					},
+					ok: false
+				}
+			])
+			.mockResolvedValueOnce([{ data: [AI_RESULT], ok: true }]);
+
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		const first = new File(['pdf-1'], 'first.pdf', { type: 'application/pdf' });
+		const second = new File(['pdf-2'], 'second.pdf', {
+			type: 'application/pdf'
+		});
+		const third = new File(['pdf-3'], 'third.pdf', { type: 'application/pdf' });
+
+		scheduler.createSchedule([[first, second, third]]);
+
+		for (const process of scheduler.schedule!) {
+			process.context.dateRanges = createDateRanges();
+			process.machine.send('next');
+		}
+		await flush();
+		await flush();
+
+		await scheduler.flushAiCompletion();
+		await flush();
+
+		expect(mockSendBatch).toHaveBeenCalledTimes(1);
+		expect(scheduler.schedule![0].machine.current).toBe(WizardStep.DONE);
+		expect(scheduler.schedule![1].machine.current).toBe(WizardStep.ERROR);
+		expect(scheduler.schedule![2].machine.current).toBe(WizardStep.ERROR);
+	});
+
+	test('sends pending files in strict batches of 10', async () => {
+		mockSendBatch
+			.mockResolvedValueOnce(
+				Array.from({ length: 10 }, () => ({ data: [AI_RESULT], ok: true }))
+			)
+			.mockResolvedValueOnce([{ data: [AI_RESULT], ok: true }]);
+
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		const files = Array.from(
+			{ length: 11 },
+			(_, index) =>
+				new File([`file-${index}`], `file-${index}.txt`, {
+					type: 'text/plain'
+				})
+		);
+
+		scheduler.createSchedule([files]);
+
+		for (const process of scheduler.schedule!) {
+			process.context.dateRanges = createDateRanges();
+			process.machine.send('next');
+		}
+		await flush();
+		await flush();
+
+		await scheduler.flushAiCompletion();
+		await flush();
+
+		expect(mockSendBatch).toHaveBeenCalledTimes(2);
+		expect(mockSendBatch.mock.calls[0][0].items).toHaveLength(10);
+		expect(mockSendBatch.mock.calls[1][0].items).toHaveLength(1);
+	});
+
+	test('txt files over 400 KB fail before batching', async () => {
+		const oversizedText = 'x'.repeat(INLINE_MAX_BYTES + 1);
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		const file = new File([oversizedText], 'too-large.txt', {
+			type: 'text/plain'
+		});
+
+		scheduler.createSchedule([[file]]);
+
+		const [process] = scheduler.schedule!;
+		process.context.dateRanges = createDateRanges();
+		process.machine.send('next');
+		await flush();
+		await flush();
+
+		expect(process.machine.current).toBe(WizardStep.ERROR);
+		expect(mockSendBatch).not.toHaveBeenCalled();
+	});
+
+	test('error state can restart from the last state and clears the error', async () => {
+		const scheduler = WizardMediator.createDefault({
+			persistence: createPersistenceMock(),
+			userId: null
+		});
+		const file = new File([DUMMY_TEXT], 'retry.txt', { type: 'text/plain' });
+
+		scheduler.createSchedule([[file]]);
+
+		const [process] = scheduler.schedule!;
+		process.context.dateRanges = createDateRanges();
+		process.machine.send('next');
+		await flush();
+
+		expect(process.machine.current).toBe(WizardStep.BATCH_PENDING);
+
+		process.context.error = new BerichtgenError(EWizardError.COMPLETION_FAILED);
+		process.machine.send('error');
+
+		expect(process.machine.current).toBe(WizardStep.ERROR);
+		expect(process.context.lastState).toBe(WizardStep.BATCH_PENDING);
+		expect(process.context.error?.apiError.code).toBe(
+			EWizardError.COMPLETION_FAILED.code
+		);
+
+		process.restart();
+
+		expect(process.machine.current).toBe(WizardStep.BATCH_PENDING);
+		expect(process.context.error).toBeUndefined();
 	});
 });

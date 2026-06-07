@@ -68,7 +68,7 @@ export const PRIVACY_CONSENT_GRANTED_METADATA_KEY = 'consent_granted';
 export const PRIVACY_CONSENT_VERSION_METADATA_KEY = 'privacy_consent_version';
 
 /** Only TXT files at or below this size are sent inline in the completion request. */
-export const INLINE_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+export const INLINE_MAX_BYTES = 400 * 1024; // 400 KB
 
 /** Strict max file size for wizard processing. */
 export const GCS_MAX_BYTES = 50 * 1024 * 1024; // 50 MB

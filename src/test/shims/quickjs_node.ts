@@ -4,8 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 const nativeFetch = globalThis.fetch.bind(globalThis);
 
-(globalThis as typeof globalThis & { window?: typeof globalThis }).window =
-	globalThis;
+(
+	globalThis as typeof globalThis & { window?: typeof globalThis & Window }
+).window = globalThis as unknown as typeof globalThis & Window;
 
 globalThis.fetch = async (
 	input: Parameters<typeof fetch>[0],

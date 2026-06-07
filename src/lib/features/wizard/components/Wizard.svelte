@@ -51,7 +51,8 @@
 	let flushLoading = $state(false);
 	let consentDialogOpen = $state(false);
 	let canRunFlush = $derived(
-		(wizardMediator.filesStates?.batch_pending ?? 0) > 0
+		(wizardMediator.filesStates?.batch_pending ?? 0) > 0 &&
+			(wizardMediator.filesStates?.process ?? 0) === 0
 	);
 	let atLeastOneFileDone = $derived(
 		(wizardMediator.filesStates?.done ?? 0) > 0
@@ -84,8 +85,8 @@
 		const bytes = new TextEncoder().encode(trimmed);
 		if (bytes.byteLength > INLINE_MAX_BYTES) {
 			throw new BerichtgenError({
-				...EFileRoutingError.FILE_TOO_LARGE,
-				cause: `Text ${index + 1} überschreitet 2MB.`
+				...EFileRoutingError.INLINE_TXT_TOO_LARGE,
+				cause: `Text ${index + 1} �berschreitet 400 KB.`
 			});
 		}
 		return WizardEntryFile.fromFile({

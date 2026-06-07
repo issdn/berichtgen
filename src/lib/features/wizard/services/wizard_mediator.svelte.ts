@@ -3,25 +3,21 @@ import type { Ort } from '$wizard/enums';
 import type { BatchCompletionItem } from '$wizard/schemas';
 import type { FileRouting } from '$wizard/services/routing';
 import type {
-	BatchErrorScope,
 	BatchItem,
+	BatchResult,
 	GenaiCompletionResult,
 	WizardDirectories,
 	WizardPersistedSession,
 	WizardProcessStateMachine
 } from '$wizard/types';
-import type { BatchCompletionApiResponse } from '$wizard/types';
 
 import { BerichtgenError } from '$lib/errors';
 import { type Result, tryResultAsync } from '$lib/result';
 import { debounce } from '$lib/utils';
 import { submitBatchCompletionCommand } from '$wizard/api/wizard.remote';
-import {
-	createBatchesBySize,
-	MAX_BATCH_BYTES
-} from '$wizard/completion/batching';
+import { createBatchesByCount } from '$wizard/completion/batching';
 import { WizardStep } from '$wizard/enums';
-import { ECompletionException, EWizardError } from '$wizard/errors';
+import { EWizardError } from '$wizard/errors';
 import { Context } from 'runed';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
@@ -29,8 +25,6 @@ import { createStateMachineForContext } from './state_machine';
 import { WizardBatcher } from './wizard_batcher';
 import { WizardFileContext } from './wizard_file_context';
 import { WizardScheduler } from './wizard_scheduler.svelte';
-
-const MAX_PARALLEL_REQUESTS = 5;
 
 export class WizardMediator {
 	readonly batcher: WizardBatcher;
@@ -163,14 +157,6 @@ export class WizardMediator {
 	async flushAiCompletion(): Promise<void> {
 		if (this.schedulerState.schedule === null) return;
 
-		for (const process of this.schedulerState.schedule) {
-			const step = process.machine.current as WizardStep;
-			if (step === WizardStep.INITIALISING || step === WizardStep.PROCESSING) {
-				return;
-			}
-			if (step === WizardStep.WAITING) return;
-		}
-
 		this.persistSoon();
 
 		const pendingList = this.takePendingProcesses();
@@ -186,10 +172,10 @@ export class WizardMediator {
 			};
 		});
 
-		const batches = createBatchesBySize(pendingItems, MAX_BATCH_BYTES);
+		const batches = createBatchesByCount({ items: pendingItems });
 
 		const fileResults = new SvelteMap<number, GenaiCompletionResult>();
-		const fileErrors = new SvelteMap<number, BerichtgenError>();
+		const fileErrors = new SvelteMap<number, BerichtgenError['apiError']>();
 		const startedFileIndices = new SvelteSet<number>();
 		const globalError = await this.processBatches(
 			batches,
@@ -258,7 +244,7 @@ export class WizardMediator {
 	private applyResults(
 		pendingList: WizardProcessStateMachine[],
 		fileResults: Map<number, GenaiCompletionResult>,
-		fileErrors: Map<number, BerichtgenError>,
+		fileErrors: Map<number, BerichtgenError['apiError']>,
 		globalError: BerichtgenError | null
 	) {
 		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
@@ -272,7 +258,7 @@ export class WizardMediator {
 			}
 			const fileError = fileErrors.get(fileIndex);
 			if (fileError) {
-				process.context.error = fileError;
+				process.context.error = new BerichtgenError(fileError);
 				process.machine.send('error');
 				continue;
 			}
@@ -292,21 +278,41 @@ export class WizardMediator {
 		this.persistSoon();
 	}
 
-	private classifyBatchError(error: BerichtgenError): BatchErrorScope {
-		return error.apiError.code === EWizardError.INVALID_JSON_FROM_AI.code
-			? 'file_scoped'
-			: 'global';
-	}
-
-	private collectBatchResults(
-		batch: BatchItem[],
-		results: GenaiCompletionResult[],
-		fileResults: SvelteMap<number, GenaiCompletionResult>
-	) {
+	private collectBatchResults({
+		batch,
+		batchResults,
+		fileErrors,
+		fileResults
+	}: {
+		batch: BatchItem[];
+		batchResults: BatchResult[];
+		fileErrors: SvelteMap<number, BerichtgenError['apiError']>;
+		fileResults: SvelteMap<number, GenaiCompletionResult>;
+	}): BerichtgenError['apiError'] | null {
+		let globalError: BerichtgenError['apiError'] | null = null;
 		for (let i = 0; i < batch.length; i++) {
 			const { fileIndex } = batch[i];
-			const result = results[i];
-			if (result != null) fileResults.set(fileIndex, result);
+			const result = batchResults[i];
+			if (!result) continue;
+			if (result.ok) {
+				fileResults.set(fileIndex, result.data);
+				continue;
+			}
+			fileErrors.set(fileIndex, result.error);
+			globalError = globalError ?? (result.error.global ? result.error : null);
+		}
+		return globalError;
+	}
+
+	private markRemainingFilesWithGlobalError(
+		pendingList: WizardProcessStateMachine[],
+		startedFileIndices: SvelteSet<number>,
+		fileErrors: SvelteMap<number, BerichtgenError['apiError']>,
+		globalError: BerichtgenError['apiError']
+	) {
+		for (let fileIndex = 0; fileIndex < pendingList.length; fileIndex++) {
+			if (startedFileIndices.has(fileIndex)) continue;
+			fileErrors.set(fileIndex, globalError);
 		}
 	}
 
@@ -315,50 +321,35 @@ export class WizardMediator {
 		pendingList: WizardProcessStateMachine[],
 		startedFileIndices: SvelteSet<number>,
 		fileResults: SvelteMap<number, GenaiCompletionResult>,
-		fileErrors: SvelteMap<number, BerichtgenError>
+		fileErrors: SvelteMap<number, BerichtgenError['apiError']>
 	): Promise<BerichtgenError | null> {
-		if (batches.length === 0) return null;
+		for (const batch of batches) {
+			this.startBatchFiles(batch, pendingList, startedFileIndices);
 
-		let cursor = 0;
-		let globalError: BerichtgenError | null = null;
-		const workerCount = Math.min(MAX_PARALLEL_REQUESTS, batches.length);
+			const result = await sendBatchCompletion(batch);
 
-		const worker = async () => {
-			while (true) {
-				if (globalError !== null) return;
-				const index = cursor;
-				cursor++;
-				const batch = batches[index];
-				if (!batch) return;
-
-				this.startBatchFiles(batch, pendingList, startedFileIndices);
-				const result = await sendBatchCompletion(batch);
-
-				if (!result.ok) {
-					const scope = this.classifyBatchError(result.error);
-					if (scope === 'global') {
-						globalError = result.error;
-						return;
-					}
-					for (const { fileIndex } of batch) {
-						fileErrors.set(fileIndex, result.error);
-					}
-					continue;
-				}
-
-				this.collectBatchResults(batch, result.data.results, fileResults);
-
-				if (result.data.insufficient_tokens) {
-					globalError = new BerichtgenError(
-						ECompletionException.NOT_ENOUGH_TOKENS
-					);
-					return;
-				}
+			if (!result.ok) {
+				return result.error;
 			}
-		};
 
-		await Promise.all(Array.from({ length: workerCount }, () => worker()));
-		return globalError;
+			const globalBatchError = this.collectBatchResults({
+				batch,
+				batchResults: result.data,
+				fileErrors,
+				fileResults
+			});
+			if (globalBatchError) {
+				this.markRemainingFilesWithGlobalError(
+					pendingList,
+					startedFileIndices,
+					fileErrors,
+					globalBatchError
+				);
+				return null;
+			}
+		}
+
+		return null;
 	}
 
 	private rehydrateFromSnapshot(snapshot: WizardPersistedSession): void {
@@ -416,8 +407,7 @@ export class WizardMediator {
 
 /**
  * Sends a single batch of completion items to the server endpoint.
- * Returns the raw API response, including `insufficient_tokens` when the user's
- * token budget could not cover all items.
+ * Returns the raw batch response with one structured result entry per item.
  *
  * Each item carries a `FileRouting` descriptor that determines how it is sent:
  * - `inline` -> `{ type: 'inline', data, mimeType, ort }`
@@ -426,7 +416,7 @@ export class WizardMediator {
  */
 function sendBatchCompletion(
 	items: Array<{ ort: Ort; routing: FileRouting }>
-): Promise<Result<BatchCompletionApiResponse>> {
+): Promise<Result<BatchResult[]>> {
 	const mapped: BatchCompletionItem[] = items.map(({ ort, routing }) =>
 		routing.toBatchCompletionItem({ ort })
 	);

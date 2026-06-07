@@ -73,8 +73,9 @@ class ResizeObserverMock {
 	unobserve() {}
 }
 if (!('ResizeObserver' in globalThis)) {
-	(globalThis as { ResizeObserver: typeof ResizeObserverMock }).ResizeObserver =
-		ResizeObserverMock;
+	(
+		globalThis as unknown as { ResizeObserver: typeof ResizeObserverMock }
+	).ResizeObserver = ResizeObserverMock;
 }
 
 const waitUntil = async ({

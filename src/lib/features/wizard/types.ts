@@ -1,5 +1,5 @@
 import type { Attributes, ReplaceAttr } from '$core/types';
-import type { BerichtgenError } from '$lib/errors';
+import type { AnyErrorValue, BerichtgenError } from '$lib/errors';
 import type { Ort } from '$wizard/enums';
 import type { WizardStep } from '$wizard/enums';
 import type {
@@ -16,16 +16,11 @@ import * as z from 'zod';
 export type GenaiCompletionResult = z.infer<typeof genaiCompletionSchema>;
 
 /**
- * Response from the batch completion endpoint.
- * `results[i]` is `null` when item i was not processed due to an insufficient token budget.
- * `insufficient_tokens` is true when some items were skipped for that reason.
+ * One batch completion result entry for a single requested item.
  */
-export type BatchCompletionApiResponse = {
-	insufficient_tokens: boolean;
-	results: GenaiCompletionResult[];
-};
-
-export type BatchErrorScope = 'file_scoped' | 'global';
+export type BatchResult =
+	| { data: GenaiCompletionResult; ok: true }
+	| { error: AnyErrorValue & { global: boolean }; ok: false };
 
 export type BatchItem = {
 	fileIndex: number;

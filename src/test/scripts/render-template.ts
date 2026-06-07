@@ -8,7 +8,8 @@
 import { Ort } from '$wizard/enums';
 import { createReport } from 'docx-templates';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -36,8 +37,9 @@ const userMetadata = {
 // Main
 // ---------------------------------------------------------------------------
 
-const templatePath = join(import.meta.dir, '..', 'fixtures', 'template.docx');
-const outputPath = join(import.meta.dir, '..', 'fixtures', 'out.docx');
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const templatePath = join(currentDir, '..', 'fixtures', 'template.docx');
+const outputPath = join(currentDir, '..', 'fixtures', 'out.docx');
 
 console.log(`Reading template: ${templatePath}`);
 const template = new Uint8Array(readFileSync(templatePath));

@@ -15,10 +15,11 @@ import {
 	UrlRouting
 } from '$wizard/services/routing';
 import { WizardFile } from '$wizard/services/wizard_file';
-import { FiniteStateMachine } from 'runed';
 
 import type { WizardFileContext } from './wizard_file_context';
 import type { WizardMediator } from './wizard_mediator.svelte';
+
+import { WizardStateMachine } from './wizard_state_machine';
 
 export type StateMachineSignature = ReturnType<
 	typeof createStateMachineForContext
@@ -37,9 +38,9 @@ export function createStateMachineForContext({
 	initialStep?: WizardStep;
 	scheduler: WizardMediator;
 }) {
-	const machine = new FiniteStateMachine<WizardStep, WizardMachineEvent>(
-		initialStep,
-		{
+	const machine = new WizardStateMachine<WizardStep, WizardMachineEvent>({
+		initial: initialStep,
+		states: {
 			[WizardStep.INITIALISING]: {
 				cancel: () => {
 					return WizardStep.CANCELLED;
@@ -151,9 +152,17 @@ export function createStateMachineForContext({
 					return WizardStep.CANCELLED;
 				}
 			},
-			[WizardStep.ERROR]: {}
+			[WizardStep.ERROR]: {
+				_enter(meta) {
+					context.lastState = meta.from;
+				},
+				next() {
+					context.error = undefined;
+					return context.lastState ?? WizardStep.INITIALISING;
+				}
+			}
 		}
-	);
+	});
 
 	return machine;
 }

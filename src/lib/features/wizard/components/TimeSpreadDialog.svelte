@@ -17,8 +17,10 @@
 	let {
 		id,
 		onClose,
-		onValidChange
+		onValidChange,
+		hasConfig
 	}: {
+		hasConfig: boolean;
 		id: string;
 		onClose: () => void;
 		onValidChange: (data: DateRangeSchema) => void;
@@ -33,6 +35,7 @@
 
 	// End date is today by default. Is there no start date, then it is invalid.
 	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
+	// svelte-ignore state_referenced_locally
 	const { enhance, errors, form, validateForm, ...rest } = superForm(
 		defaults({ ort: Ort.SCHULE, ranges: [newRow(0)] }, zod4(dateRangeSchema)),
 		{
@@ -63,8 +66,9 @@
 	}}
 >
 	<Dialog.Trigger data-testid="time-spread-trigger"
-		><Button class="animate-breathing-shadow" variant="default"
-			><Calendar /></Button
+		><Button
+			class={hasConfig ? '' : 'animate-breathing-shadow'}
+			variant="default"><Calendar /></Button
 		></Dialog.Trigger
 	>
 	<Dialog.Content data-testid="time-spread-dialog" class="w-full px-4">

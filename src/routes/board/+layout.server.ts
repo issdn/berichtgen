@@ -20,29 +20,26 @@ export const load = loadFlash(
 
 		let tokenCount = 0;
 
-		const tokenRow = await db
-			.selectFrom('user_token_count')
-			.select('tokens')
-			.where('user_id', '=', user.id)
-			.executeTakeFirst();
-
-		if (tokenRow) {
-			tokenCount = tokenRow.tokens;
+		const tokenRowResult = await tryResultAsync({
+			apiError: ECommonServerError.DATABASE_ERROR,
+			promise: db
+				.insertInto('user_token_count')
+				.values({ user_id: user.id })
+				.onConflict((oc) =>
+					// No-op update so Postgres returns the existing row on conflict.
+					// Caveat: this is still a real UPDATE, so it will fire update
+					// triggers and touch updated_at-style columns if that table has them.
+					oc.column('user_id').doUpdateSet({
+						user_id: (eb) => eb.ref('excluded.user_id')
+					})
+				)
+				.returning('tokens')
+				.executeTakeFirst()
+		});
+		if (tokenRowResult.ok) {
+			tokenCount = tokenRowResult.data?.tokens ?? 0;
 		} else {
-			const insertedResult = await tryResultAsync({
-				apiError: ECommonServerError.DATABASE_ERROR,
-				promise: db
-					.insertInto('user_token_count')
-					.values({ tokens: 0, user_id: user.id })
-					.onConflict((oc) => oc.column('user_id').doNothing())
-					.returning('tokens')
-					.executeTakeFirst()
-			});
-			if (insertedResult.ok) {
-				tokenCount = insertedResult.data?.tokens ?? 0;
-			} else {
-				Sentry.captureException(insertedResult.error);
-			}
+			Sentry.captureException(tokenRowResult.error);
 		}
 
 		const userMetadata =

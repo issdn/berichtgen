@@ -25,23 +25,22 @@
 
 	let { data } = $props();
 
-	const profileNameForm = $derived(
-		superForm(data.profileNameForm, {
-			dataType: 'json',
-			invalidateAll: true,
-			onError({ result }) {
-				toast.error(result.error.message);
-			},
-			onUpdated({ form }) {
-				if (form.valid) {
-					toast.success(form.message);
-				}
-			},
-			resetForm: false,
-			validationMethod: 'oninput',
-			validators: zod4Client(profileNameSchema)
-		})
-	);
+	// svelte-ignore state_referenced_locally
+	const profileNameForm = superForm(data.profileNameForm, {
+		dataType: 'json',
+		invalidateAll: true,
+		onError({ result }) {
+			toast.error(result.error.message);
+		},
+		onUpdated({ form }) {
+			if (form.valid) {
+				toast.success(form.message);
+			}
+		},
+		resetForm: false,
+		validationMethod: 'oninput',
+		validators: zod4Client(profileNameSchema)
+	});
 
 	const {
 		enhance: profileEnhance,
@@ -49,23 +48,22 @@
 		submitting: profileSubmitting
 	} = profileNameForm;
 
-	const userMetadataForm = $derived(
-		superForm(data.userMetadataForm, {
-			dataType: 'json',
-			invalidateAll: true,
-			onError({ result }) {
-				toast.error(result.error.message);
-			},
-			onUpdated({ form }) {
-				if (form.valid) {
-					toast.success(form.message);
-				}
-			},
-			resetForm: false,
-			validationMethod: 'oninput',
-			validators: zod4Client(userMetadataSchema)
-		})
-	);
+	// svelte-ignore state_referenced_locally
+	const userMetadataForm = superForm(data.userMetadataForm, {
+		dataType: 'json',
+		invalidateAll: true,
+		onError({ result }) {
+			toast.error(result.error.message);
+		},
+		onUpdated({ form }) {
+			if (form.valid) {
+				toast.success(form.message);
+			}
+		},
+		resetForm: false,
+		validationMethod: 'oninput',
+		validators: zod4Client(userMetadataSchema)
+	});
 
 	const {
 		enhance: metadataEnhance,
@@ -110,7 +108,10 @@
 					<User size={20} />
 					Profildaten
 				</Card.Title>
-				<Card.Description>Dein angezeigter Name im Profil.</Card.Description>
+				<Card.Description>
+					Dein angezeigter Name im Profil, z. B. der Name, den andere Nutzer
+					beim Durchsehen von Vorlagen sehen.
+				</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<form
@@ -145,7 +146,9 @@
 					Berichtsdaten
 				</Card.Title>
 				<Card.Description>
-					Deine persönlichen Daten für die Berichtsgenerierung.
+					Deine persönlichen Daten für die Berichtsgenerierung. Sie werden z. B.
+					beim Erstellen von Berichten automatisch in Platzhalter der Vorlage
+					eingefügt.
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>

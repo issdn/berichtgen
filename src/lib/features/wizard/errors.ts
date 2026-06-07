@@ -24,7 +24,7 @@ export const EFileRoutingError = buildError('wizard.routing', {
 	},
 	INLINE_TXT_TOO_LARGE: {
 		httpCode: 413,
-		message: 'TXT-Datei ist größer als 2 MB.'
+		message: 'TXT-Datei ist größer als 400 KB.'
 	}
 } as const);
 

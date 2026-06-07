@@ -62,7 +62,7 @@ export const submitBatchCompletionCommand = guardedCommand(
 
 		const result = await tryResultAsync({
 			apiError: ECommonServerError.INTERNAL_ERROR,
-			promise: runBatchCompletion(items, user!.id)
+			promise: runBatchCompletion({ items, userId: user!.id })
 		});
 		if (!result.ok) {
 			throw svelteApiError(result.error.apiError);

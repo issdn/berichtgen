@@ -76,7 +76,8 @@
 		step === WizardStep.INITIALISING ||
 			step === WizardStep.PROCESSING ||
 			step === WizardStep.WAITING ||
-			step === WizardStep.BATCH_PENDING
+			step === WizardStep.BATCH_PENDING ||
+			step === WizardStep.ERROR
 	);
 	let showCancelButton = $derived(
 		step === WizardStep.TIME_SPREADING || step === WizardStep.DONE
@@ -179,6 +180,7 @@
 					{id}
 					onClose={confirmDateRanges}
 					onValidChange={(data) => (context.dateRanges = data)}
+					hasConfig={context.dateRanges !== undefined}
 				/>
 			{/if}
 			{#if showRemoveButton}
@@ -195,7 +197,7 @@
 					onclick={cancel}><XIcon /></Button
 				>
 			{/if}
-			{#if step === WizardStep.CANCELLED}
+			{#if step === WizardStep.CANCELLED || step === WizardStep.ERROR}
 				<Button
 					data-testid="wizard-file-restart"
 					variant="default"

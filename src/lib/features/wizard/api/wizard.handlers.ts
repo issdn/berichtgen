@@ -9,11 +9,16 @@
  */
 
 import type { GenaiCompletionResult } from '$wizard/types';
+import type { BatchResult } from '$wizard/types';
 
 import { env } from '$env/dynamic/private';
 import { GCS_BUCKET_NAME, GCS_SERVICE_ACCOUNT_KEY } from '$env/static/private';
 import { DEFAULT_MODEL, MODEL_LOCATION } from '$lib/constants';
-import { BerichtgenError, ECommonServerError } from '$lib/errors';
+import {
+	type AnyErrorValue,
+	BerichtgenError,
+	ECommonServerError
+} from '$lib/errors';
 import { tryResult, tryResultAsync } from '$lib/result';
 import db from '$lib/server/db';
 import { countItemTokens, runCompletion } from '$wizard/completion/gemini';
@@ -92,10 +97,17 @@ export async function requestGcsUploadTarget({
 	return signedUploadResult.data;
 }
 
-export async function runBatchCompletion(
-	items: BatchCompletionItem[],
-	userId: string
-) {
+/**
+ * Runs Gemini completion for one batch and returns one structured result per
+ * requested item. Only true batch-global failures throw.
+ */
+export async function runBatchCompletion({
+	items,
+	userId
+}: {
+	items: BatchCompletionItem[];
+	userId: string;
+}): Promise<BatchResult[]> {
 	const credentialsResult = await tryResultAsync({
 		apiError: ECompletionException.INTERNAL,
 		promise: Promise.resolve(
@@ -124,49 +136,42 @@ export async function runBatchCompletion(
 	const tokenCounts = await Promise.all(
 		items.map((item) => countItemTokens(item, ai, model))
 	);
+	const totalTokens = tokenCounts.reduce((sum, count) => sum + count, 0);
 
 	const userBalance = await readUserBalance(userId);
-	if (!userBalance || userBalance <= 0) {
-		throw new BerichtgenError(ECompletionException.NOT_ENOUGH_TOKENS);
-	}
-
-	const budget = selectItemsWithinBudget(tokenCounts, userBalance);
-	if (budget.fittingIndices.length === 0) {
+	if (!userBalance || userBalance < totalTokens) {
 		throw new BerichtgenError(ECompletionException.NOT_ENOUGH_TOKENS);
 	}
 
 	const deductResult = await tryResultAsync({
 		apiError: ECompletionException.INTERNAL,
-		promise: deductUserTokens(userId, budget.totalTokens)
+		promise: deductUserTokens(userId, totalTokens)
 	});
 	if (!deductResult.ok) throw deductResult.error;
 
 	const geminiResults = await Promise.allSettled(
-		budget.fittingIndices.map((i) => runCompletion(items[i], ai, model))
+		items.map((item) => runCompletion(item, ai, model))
 	);
 
-	if (geminiResults.some((r) => r.status === 'rejected')) {
-		await refundUserTokens(userId, budget.totalTokens);
-		throw new BerichtgenError(ECompletionException.UNKNOWN_THIRD_PARTY_ERROR);
+	const batches = geminiResults.map((result) =>
+		classifyBatchResult({ result })
+	);
+	const failedTokenTotal = sumFailedTokenCounts({
+		batches,
+		tokenCounts
+	});
+
+	if (failedTokenTotal > 0) {
+		await refundUserTokens(userId, failedTokenTotal);
 	}
 
-	const { parseErrorCount, results } = parseGeminiResponses(
-		geminiResults as PromiseFulfilledResult<GenaiCompletionResult>[],
-		budget.fittingIndices,
-		items.length
+	await deleteProcessedGcsFilesBestEffort(
+		items,
+		items.map((_, index) => index),
+		userId
 	);
 
-	if (parseErrorCount > 0) {
-		await refundUserTokens(userId, budget.totalTokens);
-		throw new BerichtgenError(EWizardError.INVALID_JSON_FROM_AI);
-	}
-
-	await deleteProcessedGcsFilesBestEffort(items, budget.fittingIndices, userId);
-
-	return {
-		insufficient_tokens: budget.insufficientTokens,
-		results
-	};
+	return batches;
 }
 
 async function createSignedUploadPayload({
@@ -271,27 +276,48 @@ async function deleteProcessedGcsFilesBestEffort(
 	);
 }
 
-function parseGeminiResponses(
-	settled: PromiseFulfilledResult<GenaiCompletionResult>[],
-	fittingIndices: number[],
-	totalItems: number
-) {
-	const results: GenaiCompletionResult[] = new Array(totalItems).fill(null);
-	let parseErrorCount = 0;
-
-	for (let i = 0; i < fittingIndices.length; i++) {
-		const parsed = settled[i].value;
-		if (parsed === null) {
-			parseErrorCount++;
+function classifyBatchError({
+	error
+}: {
+	error: unknown;
+}): AnyErrorValue & { global: boolean } {
+	if (error instanceof BerichtgenError) {
+		if (error.apiError.code === EWizardError.INVALID_JSON_FROM_AI.code) {
 			Sentry.captureMessage(
 				'Gemini response could not be parsed for a batch item'
 			);
-			continue;
+			return { ...EWizardError.INVALID_JSON_FROM_AI, global: false };
 		}
-		results[fittingIndices[i]] = parsed;
+		if (error.apiError.httpCode === 429) {
+			return { ...ECompletionException.TOO_MANY_REQUESTS, global: true };
+		}
 	}
 
-	return { parseErrorCount, results };
+	return { ...ECompletionException.UNKNOWN_THIRD_PARTY_ERROR, global: true };
+}
+
+function classifyBatchResult({
+	result
+}: {
+	result: PromiseSettledResult<GenaiCompletionResult>;
+}): BatchResult {
+	if (result.status === 'fulfilled') {
+		if (result.value === null) {
+			Sentry.captureMessage(
+				'Gemini response could not be parsed for a batch item'
+			);
+			return {
+				error: { ...EWizardError.INVALID_JSON_FROM_AI, global: false },
+				ok: false
+			};
+		}
+		return { data: result.value, ok: true };
+	}
+
+	return {
+		error: classifyBatchError({ error: result.reason }),
+		ok: false
+	};
 }
 
 function parseGsUri(
@@ -320,30 +346,15 @@ async function refundUserTokens(userId: string, amount: number): Promise<void> {
 		.execute();
 }
 
-function selectItemsWithinBudget(
-	tokenCounts: number[],
-	availableTokens: number
-): {
-	fittingIndices: number[];
-	insufficientTokens: boolean;
-	totalTokens: number;
-} {
-	const fittingIndices: number[] = [];
-	let totalTokens = 0;
-	let remaining = availableTokens;
-
-	for (let i = 0; i < tokenCounts.length; i++) {
-		const cost = tokenCounts[i];
-		if (cost && remaining >= cost) {
-			fittingIndices.push(i);
-			totalTokens += cost;
-			remaining -= cost;
-		}
-	}
-
-	return {
-		fittingIndices,
-		insufficientTokens: fittingIndices.length < tokenCounts.length,
-		totalTokens
-	};
+function sumFailedTokenCounts({
+	batches,
+	tokenCounts
+}: {
+	batches: BatchResult[];
+	tokenCounts: number[];
+}): number {
+	return batches.reduce((sum, batch, index) => {
+		if (batch.ok) return sum;
+		return sum + (tokenCounts[index] ?? 0);
+	}, 0);
 }

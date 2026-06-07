@@ -1,6 +1,5 @@
 ﻿<script lang="ts">
 	import type {
-		CSVConfigFile,
 		WizardDirectory,
 		WizardRawDirectories,
 		WizardRawDirectory
@@ -11,13 +10,15 @@
 	import { readCsvConfig } from '$core/config/services/config_reader';
 	import { scanDroppedInput } from '$core/scan/file_scan';
 	import { ScanReturnValue } from '$core/types';
-	import {
-		CONFIG_FILENAME_REGEX,
-		GCS_MAX_BYTES,
-		INLINE_MAX_BYTES
-	} from '$lib/constants';
-	import { BerichtgenError, ECommonServerError } from '$lib/errors';
+	import { CONFIG_FILENAME_REGEX } from '$lib/constants';
+	import { ECommonServerError } from '$lib/errors';
 	import { tryResultAsync } from '$lib/result';
+	import {
+		applyConfigToEntries,
+		hasAnyNonJsonFiles,
+		splitDirectoryFiles,
+		validateWizardDropFile
+	} from '$wizard/components/wizard_dropzone.helpers';
 	import { FileTypes } from '$wizard/enums';
 	import { WizardFile } from '$wizard/services/wizard_file';
 	import { wizardMediatorContext } from '$wizard/services/wizard_mediator.svelte';
@@ -30,32 +31,7 @@
 	);
 
 	const isValidFile = (file: File): void => {
-		if (file.type === FileTypes.URI_LIST) return;
-		if (!page.data.loggedIn && file.type !== FileTypes.JSON) {
-			throw new BerichtgenError({
-				...ECommonServerError.UNAUTHORIZED,
-				cause:
-					'Du musst angemeldet sein, um Dateien zu verarbeiten. Ohne Login ist nur das Datieren von JSON-Dateien erlaubt.'
-			});
-		}
-		if (file.type === FileTypes.TXT && file.size > INLINE_MAX_BYTES) {
-			throw new BerichtgenError({
-				...ECommonServerError.VALIDATION_ERROR,
-				cause: `"${file.name}" ist zu groß für direkten Text-Upload (max. 2MB für TXT).`
-			});
-		}
-		if (file.type.length === 0 || !accept.includes(file.type)) {
-			throw new BerichtgenError({
-				...ECommonServerError.VALIDATION_ERROR,
-				cause: `"${file.name}" hat einen nicht erlaubten Dateityp (${file.type || 'leer'}).`
-			});
-		}
-		if (file.size > GCS_MAX_BYTES) {
-			throw new BerichtgenError({
-				...ECommonServerError.VALIDATION_ERROR,
-				cause: `"${file.name}" überschreitet die maximale Dateigröße von 50MB.`
-			});
-		}
+		validateWizardDropFile({ accept, file, loggedIn: page.data.loggedIn });
 	};
 
 	async function handleFiles(items: DataTransferItemList | FileList) {
@@ -75,16 +51,8 @@
 			toast.error('Keine gueltigen Dateien gefunden.');
 			return;
 		}
-		const anyNonJsonFiles = directories
-			.flat()
-			.find((f) => f.type !== FileTypes.JSON);
 
-		if (page.data.loggedIn) {
-			init(directories);
-			return;
-		}
-
-		if (anyNonJsonFiles) {
+		if (!page.data.loggedIn && hasAnyNonJsonFiles({ directories })) {
 			toast.error(
 				'Du musst angemeldet sein um andere Dateien parsen und umformulieren zu können! Bitte lade nur JSON-Dateien hoch.'
 			);
@@ -110,9 +78,10 @@
 	async function resolveDirectory(
 		files: WizardRawDirectory
 	): Promise<WizardDirectory> {
-		const configFile =
-			files.find((f) => CONFIG_FILENAME_REGEX.test(f.name)) ?? null;
-		const dataFiles = files.filter((f) => !CONFIG_FILENAME_REGEX.test(f.name));
+		const { configFile, dataFiles } = splitDirectoryFiles({
+			configFilePattern: CONFIG_FILENAME_REGEX,
+			files
+		});
 		const entries: WizardDirectory = dataFiles.map((file) =>
 			WizardFile.fromFile({ file })
 		);
@@ -127,42 +96,21 @@
 			return entries;
 		}
 
-		return applyConfig(entries, config.data);
-	}
+		const applied = applyConfigToEntries({
+			configRows: config.data,
+			entries
+		});
 
-	function applyConfig(
-		entries: WizardDirectory,
-		configRows: CSVConfigFile[]
-	): WizardDirectory {
-		const fileEntries = new Map(entries.map((entry) => [entry.name, entry]));
-		const notFound: string[] = [];
-
-		for (const { file, ort, ranges } of configRows) {
-			const config = { ort, ranges: ranges.map((r, i) => ({ ...r, id: i })) };
-			if (URL.canParse(file)) {
-				const urlFile = WizardFile.fromUrl({ config, url: file });
-				entries.push(urlFile);
-			} else if (fileEntries.has(file)) {
-				WizardFile.fromFile({ file: fileEntries.get(file)!, config });
-			} else {
-				notFound.push(file);
-			}
-		}
-
-		const configuredFileCount = configRows.filter(
-			({ file }) => !URL.canParse(file)
-		).length;
-
-		if (configuredFileCount < fileEntries.size) {
+		if (applied.missingConfiguredFiles) {
 			toast.error('Nicht alle Dateien in der Konfiguration gefunden.');
 		}
-		if (notFound.length > 0) {
+		if (applied.notFound.length > 0) {
 			toast.error(
-				`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${notFound.join(', ')}`
+				`Die folgenden Dateien aus der Konfig wurden nicht hochgeladen: ${applied.notFound.join(', ')}`
 			);
 		}
 
-		return entries;
+		return applied.entries;
 	}
 </script>
 

@@ -1,51 +1,23 @@
-/** Maximum total UTF-8 byte size for a single batch request (4 MB). */
-export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
+/** Fixed number of wizard files sent in one completion request. */
+export const MAX_BATCH_ITEMS = 10;
 
 /**
- * Groups items into the fewest sequential batches where the combined UTF-8
- * byte size of all texts in each batch does not exceed `maxBytes`.
- * An item whose text alone exceeds `maxBytes` forms a batch by itself.
+ * Splits items into sequential batches of at most `batchSize` entries.
  */
-export function createBatchesBySize<T>(
-	items: T[],
-	maxBytes: number = MAX_BATCH_BYTES,
-	getItemSize: ({ item }: { item: T }) => number = ({ item }) => {
-		const candidate = item as {
-			data?: unknown;
-			routing?: { getSize: () => number };
-			text?: unknown;
-		};
-		if (candidate.routing && typeof candidate.routing.getSize === 'function') {
-			return candidate.routing.getSize();
-		}
-		if (typeof candidate.data === 'string') return getByteSize(candidate.data);
-		if (typeof candidate.text === 'string') return getByteSize(candidate.text);
-		return getByteSize(JSON.stringify(item));
-	}
-) {
+export function createBatchesByCount<T>({
+	batchSize = MAX_BATCH_ITEMS,
+	items
+}: {
+	batchSize?: number;
+	items: T[];
+}): T[][] {
+	if (items.length === 0) return [];
+
 	const batches: T[][] = [];
-	let currentBatch: T[] = [];
-	let currentSize = 0;
 
-	for (const item of items) {
-		const size = getItemSize({ item });
-		if (currentBatch.length > 0 && currentSize + size > maxBytes) {
-			batches.push(currentBatch);
-			currentBatch = [item];
-			currentSize = size;
-		} else {
-			currentBatch.push(item);
-			currentSize += size;
-		}
-	}
-
-	if (currentBatch.length > 0) {
-		batches.push(currentBatch);
+	for (let start = 0; start < items.length; start += batchSize) {
+		batches.push(items.slice(start, start + batchSize));
 	}
 
 	return batches;
-}
-
-function getByteSize(text: string): number {
-	return new TextEncoder().encode(text).byteLength;
 }
