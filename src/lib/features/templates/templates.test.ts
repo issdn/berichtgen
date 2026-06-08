@@ -139,7 +139,7 @@ vi.mock('$templates/api/templates.remote', () => ({
 	deleteReport: vi.fn(),
 	deleteTemplate: vi.fn(),
 	getTemplates: getTemplatesMock,
-	markTemplateSafe: vi.fn(),
+
 	reportTemplate: vi.fn(),
 	uploadTemplate: vi.fn()
 }));

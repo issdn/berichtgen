@@ -141,19 +141,6 @@ export async function fetchTemplates(
 	return paginateTemplates(data, afterId, TEMPLATE_PAGE_SIZE);
 }
 
-export async function markTemplateSafeById(templateId: string): Promise<void> {
-	await db
-		.updateTable('template')
-		.set({ safe_marked_at: new Date().toISOString() })
-		.where('id', '=', templateId)
-		.execute();
-
-	await db
-		.deleteFrom('template_report')
-		.where('template_id', '=', templateId)
-		.execute();
-}
-
 export function paginateTemplates(
 	data: TemplateRow[],
 	afterId: string | undefined,

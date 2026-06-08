@@ -4,6 +4,11 @@ export const ECommonServerError = buildError('core.server', {
 	DATABASE_ERROR: { httpCode: 500, message: 'Datenbankfehler.' },
 	INTERNAL_ERROR: { httpCode: 500, message: 'Interner Serverfehler.' },
 	STRIPE_ERROR: { httpCode: 500, message: 'Stripe-Fehler.' },
+	TOO_MANY_REQUESTS: {
+		cause: 'Bitte versuche es in Kürze erneut.',
+		httpCode: 429,
+		message: 'Zu viele Anfragen.'
+	},
 	UNAUTHORIZED: {
 		cause: 'Muss angemeldet sein, um diese Aktion durchzuführen.',
 		httpCode: 401,

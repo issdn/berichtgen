@@ -7,6 +7,7 @@ import {
 import { ECommonServerError } from '$lib/errors';
 import { guardedCommand } from '$lib/server/remote';
 import { svelteApiError } from '$server/errors';
+import { withRateLimit } from '$server/rate_limit';
 import { z } from 'zod';
 
 import { appendConsentLog } from './consent.handlers';
@@ -23,24 +24,29 @@ const appendConsentLogSchema = z.object({
 
 export const appendConsentLogCommand = guardedCommand(
 	appendConsentLogSchema,
-	async ({ appVersion, consentType, source, status }) => {
-		const user = getRequestEvent().locals.user!;
-		if (!user.email) {
-			throw svelteApiError({
-				...ECommonServerError.UNAUTHORIZED,
-				cause: 'Für die Einwilligung ist eine E-Mail-Adresse erforderlich.'
-			});
-		}
-		const result = await appendConsentLog({
-			appVersion,
-			consentType,
-			source,
-			status,
-			userEmail: user.email,
-			userId: user.id
-		});
-		if (!result.ok) {
-			throw svelteApiError(result.error.apiError);
-		}
-	}
+	async ({ appVersion, consentType, source, status }) =>
+		withRateLimit({
+			policyId: 'append-consent-log',
+			fn: async () => {
+				const user = getRequestEvent().locals.user!;
+				if (!user.email) {
+					throw svelteApiError({
+						...ECommonServerError.UNAUTHORIZED,
+						cause: 'Für die Einwilligung ist eine E-Mail-Adresse erforderlich.'
+					});
+				}
+
+				const result = await appendConsentLog({
+					appVersion,
+					consentType,
+					source,
+					status,
+					userEmail: user.email,
+					userId: user.id
+				});
+				if (!result.ok) {
+					throw svelteApiError(result.error.apiError);
+				}
+			}
+		})
 );

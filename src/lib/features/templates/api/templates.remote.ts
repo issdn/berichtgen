@@ -1,22 +1,17 @@
 /**
  * Remote function transport shell for template operations.
  *
- * This file is intentionally thin — it only handles:
- *   1. Input schema validation (via zod)
- *   2. Extracting request context (`user`) from `getRequestEvent()`
- *   3. Delegating to the pure business-logic functions in `$lib/server/templates`
- *
- * All actual logic lives in `$lib/server/templates.ts` so it can be unit-tested
- * without the remote-function transport layer.
+ * This file is intentionally thin: schema validation, request context,
+ * optional rate limiting, then delegation to handlers.
  */
 
 import { getRequestEvent, query } from '$app/server';
+import { withRateLimit } from '$lib/server/rate_limit';
 import { guardedCommand } from '$lib/server/remote';
 import {
 	deleteTemplateFile,
 	deleteTemplateReport,
 	fetchTemplates,
-	markTemplateSafeById,
 	submitTemplateReport,
 	uploadTemplateFile
 } from '$templates/api/templates.handlers';
@@ -43,12 +38,16 @@ export const uploadTemplate = guardedCommand(
 		name: z.string().min(1),
 		type: z.string().min(1)
 	}),
-	async (params) => {
-		const {
-			locals: { user }
-		} = getRequestEvent();
-		return uploadTemplateFile(params, user!.id);
-	}
+	async (params) =>
+		withRateLimit({
+			policyId: 'upload-template',
+			fn: async () => {
+				const {
+					locals: { user }
+				} = getRequestEvent();
+				return uploadTemplateFile(params, user!.id);
+			}
+		})
 );
 
 export const deleteTemplate = guardedCommand(
@@ -71,15 +70,14 @@ export const reportTemplate = guardedCommand(
 		message: z.string().max(1000).optional(),
 		templateId: z.uuid()
 	}),
-	async (params) => {
-		const {
-			locals: { user }
-		} = getRequestEvent();
-		return submitTemplateReport(params, user!.id);
-	}
-);
-
-export const markTemplateSafe = guardedCommand(
-	z.object({ templateId: z.uuid() }),
-	async ({ templateId }) => markTemplateSafeById(templateId)
+	async (params) =>
+		withRateLimit({
+			policyId: 'report-template',
+			fn: async () => {
+				const {
+					locals: { user }
+				} = getRequestEvent();
+				return submitTemplateReport(params, user!.id);
+			}
+		})
 );

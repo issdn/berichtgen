@@ -62,7 +62,6 @@ vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
 
 import {
 	deleteTemplateReport,
-	markTemplateSafeById,
 	paginateTemplates,
 	submitTemplateReport,
 	type TemplateRow,
@@ -333,35 +332,6 @@ describe('submitTemplateReport', () => {
 		).rejects.toMatchObject({
 			status: ECommonServerError.DATABASE_ERROR.httpCode
 		});
-	});
-});
-
-// ─── markTemplateSafeById ────────────────────────────────────────────────────
-
-describe('markTemplateSafeById', () => {
-	beforeEach(() => vi.clearAllMocks());
-
-	test('GIVEN a template id WHEN markTemplateSafeById runs THEN it sets safe_marked_at and clears reports', async () => {
-		dbMock.execute.mockResolvedValue({});
-
-		await markTemplateSafeById('tmpl-uuid');
-
-		expect(dbMock.updateTable).toHaveBeenCalledWith('template');
-		expect(dbMock.set).toHaveBeenCalledWith(
-			expect.objectContaining({ safe_marked_at: expect.any(String) })
-		);
-		expect(dbMock.deleteFrom).toHaveBeenCalledWith('template_report');
-	});
-
-	test('GIVEN a template id WHEN markTemplateSafeById runs THEN it does not touch storage and still updates DB', async () => {
-		dbMock.execute.mockResolvedValue({});
-
-		await markTemplateSafeById('tmpl-uuid');
-
-		expect(storageMock.from).not.toHaveBeenCalled();
-		expect(storageMock.remove).not.toHaveBeenCalled();
-		expect(dbMock.updateTable).toHaveBeenCalledWith('template');
-		expect(dbMock.deleteFrom).toHaveBeenCalledWith('template_report');
 	});
 });
 
