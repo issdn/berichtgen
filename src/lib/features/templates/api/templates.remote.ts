@@ -12,8 +12,7 @@ import {
 	deleteTemplateFile,
 	deleteTemplateReport,
 	fetchTemplates,
-	submitTemplateReport,
-	uploadTemplateFile
+	submitTemplateReport
 } from '$templates/api/templates.handlers';
 import * as z from 'zod';
 
@@ -29,25 +28,6 @@ export const getTemplates = query(
 		} = getRequestEvent();
 		return fetchTemplates(params, user?.id);
 	}
-);
-
-export const uploadTemplate = guardedCommand(
-	z.object({
-		data: z.instanceof(Uint8Array),
-		isPublic: z.boolean().default(false),
-		name: z.string().min(1),
-		type: z.string().min(1)
-	}),
-	async (params) =>
-		withRateLimit({
-			policyId: 'upload-template',
-			fn: async () => {
-				const {
-					locals: { user }
-				} = getRequestEvent();
-				return uploadTemplateFile(params, user!.id);
-			}
-		})
 );
 
 export const deleteTemplate = guardedCommand(

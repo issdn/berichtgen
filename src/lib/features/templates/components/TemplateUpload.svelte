@@ -9,14 +9,14 @@
 		TEMPLATE_MAX_BYTES,
 		TEMPLATE_MAX_COUNT_PER_USER
 	} from '$lib/constants';
-	import {
-		getTemplates,
-		uploadTemplate
-	} from '$templates/api/templates.remote';
+	import { BerichtgenError, ECommonServerError } from '$lib/errors';
+	import { getTemplates } from '$templates/api/templates.remote';
 	import Checkbox from '$ui/checkbox/checkbox.svelte';
 	import { Label } from '$ui/label';
 	import { FileTypes } from '$wizard/enums';
+	import { ETemplateError } from '$wizard/errors';
 	import { renderDocxBlob } from '$wizard/write/write_docx';
+	import * as Sentry from '@sentry/sveltekit';
 	import { onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -49,7 +49,9 @@
 		isDuplicate: boolean;
 		previewUrl: string;
 	}>(null);
+
 	let previewOpen = $state(false);
+
 	let isPublic = $state(false);
 
 	const preparePreview = new AsyncResource(
@@ -86,15 +88,14 @@
 	);
 
 	const uploadMutation = new AsyncResource(
-		async (params: {
-			data: Uint8Array<ArrayBuffer>;
-			isPublic: boolean;
-			name: string;
-			type: string;
-		}) => {
+		async (params: { file: File; isPublic: boolean }) => {
 			mutation?.start();
 			try {
-				await uploadTemplate(params).updates(query);
+				await uploadTemplateFile({
+					file: params.file,
+					isPublic: params.isPublic
+				});
+				await query.refresh();
 				return true;
 			} finally {
 				mutation?.end();
@@ -102,8 +103,8 @@
 		},
 		{
 			onError: (error) => {
-				toast.error('Fehler beim Hochladen der Datei.', {
-					description: error.cause ?? error.message
+				toast.error(error.message, {
+					description: error.cause
 				});
 			},
 			onSuccess: () => {
@@ -173,15 +174,71 @@
 		if (!pendingPreparedFile) return false;
 
 		const uploaded = await uploadMutation.execute({
-			data: pendingPreparedFile.bytes,
-			isPublic,
-			name: pendingPreparedFile.file.name,
-			type: pendingPreparedFile.file.type
+			file: pendingPreparedFile.file,
+			isPublic
 		});
 
 		if (!uploaded) return false;
 		clearPendingPreview();
 		return true;
+	}
+
+	function getTemplateBucketName({ isPublic }: { isPublic: boolean }) {
+		return isPublic ? 'templates' : 'private-templates';
+	}
+
+	async function uploadTemplateFile({
+		file,
+		isPublic
+	}: {
+		file: File;
+		isPublic: boolean;
+	}) {
+		const userId = page.data.user?.id;
+		if (!userId) {
+			throw new BerichtgenError(ECommonServerError.UNAUTHORIZED);
+		}
+
+		const storagePath = `${userId}/${file.name}`;
+		const targetBucketName = getTemplateBucketName({ isPublic });
+		const existingTemplate = query.current?.templates.find(
+			(template) => template.is_mine && template.storage_path === storagePath
+		);
+		const previousBucketName = existingTemplate
+			? getTemplateBucketName({ isPublic: existingTemplate.is_public })
+			: null;
+
+		const uploadResult = await page.data.supabase.storage
+			.from(targetBucketName)
+			.upload(storagePath, file, {
+				contentType: file.type,
+				upsert: true
+			});
+
+		if (uploadResult.error) {
+			throw new BerichtgenError({
+				...ETemplateError.TEMPLATE_UPLOAD_FAILED,
+				cause: uploadResult.error.message
+			});
+		}
+
+		if (
+			previousBucketName !== null &&
+			previousBucketName !== targetBucketName
+		) {
+			const removeResult = await page.data.supabase.storage
+				.from(previousBucketName)
+				.remove([storagePath]);
+
+			if (removeResult.error) {
+				Sentry.captureException(
+					new BerichtgenError({
+						...ETemplateError.TEMPLATE_OLD_BUCKET_CLEANUP_FAILED,
+						cause: removeResult.error.message
+					})
+				);
+			}
+		}
 	}
 </script>
 

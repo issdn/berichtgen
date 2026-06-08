@@ -127,6 +127,14 @@ export const ETemplateError = buildError('templates', {
 		message: 'Keine bevorzugte Vorlage ausgewählt.'
 	},
 	TEMPLATE_NOT_FOUND: { httpCode: 404, message: 'Vorlage nicht gefunden.' },
+	TEMPLATE_OLD_BUCKET_CLEANUP_FAILED: {
+		httpCode: 500,
+		message: 'Alte Vorlage konnte nicht bereinigt werden.'
+	},
+	TEMPLATE_UPLOAD_FAILED: {
+		httpCode: 500,
+		message: 'Vorlage konnte nicht hochgeladen werden.'
+	},
 	TEMPLATE_SAFE: {
 		httpCode: 403,
 		message: 'Diese Vorlage wurde als sicher markiert.'

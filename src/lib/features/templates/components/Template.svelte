@@ -56,37 +56,40 @@
 	const mutation = templatesMutationContext.get();
 
 	let reportDialogOpen = $state(false);
-
 	let confirmSelectOpen = $state(false);
-
 	let confirmDeleteOpen = $state(false);
-
+	let previewOpen = $state(false);
+	let previewFileUrl = $state<null | string>(null);
 	let reportMessage = $state('');
-
 	let reportPending = $state(false);
-
 	let deletePending = $state(false);
 
-	const isReportedByMe = $derived(
-		template.template_report?.some(
-			(r) => page.data.user && r.reporter_user_id === page.data.user.id
-		) ?? false
-	);
-
 	const isSafe = $derived(template.safe_marked_at !== null);
-
 	const isOwnTemplate = $derived(page.data.user?.id === template.user_id);
 
-	const { filepath, name } = $derived.by(() => {
-		const name = template.storage_path
-			.split('/')
-			.at(-1)
-			?.split('.')
-			.slice(0, -1)
-			.join('.');
-		const filepath = `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/templates/${template.storage_path}`;
-		return { filepath, name };
-	});
+	const { bucketName, name, previewDescription, publicFileUrl } = $derived.by(
+		() => {
+			const name =
+				template.storage_path
+					.split('/')
+					.at(-1)
+					?.split('.')
+					.slice(0, -1)
+					.join('.') ?? template.storage_path;
+			const bucketName = template.is_public ? 'templates' : 'private-templates';
+			const publicFileUrl = template.is_public
+				? `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/${bucketName}/${template.storage_path}`
+				: null;
+			const previewDescription = `${profile.full_name ?? 'Anonym'} - Hochgeladen am ${new Date(
+				template.created_at
+			).toLocaleDateString(LOCALE)}${
+				template.updated_at
+					? ` - Zuletzt geändert ${new Date(template.updated_at).toLocaleDateString(LOCALE)}`
+					: ''
+			}`;
+			return { bucketName, name, previewDescription, publicFileUrl };
+		}
+	);
 
 	function reportOverride(reported: boolean) {
 		return query.withOverride((result) => ({
@@ -95,25 +98,38 @@
 				t.id === template.id
 					? {
 							...t,
-							template_report: reported
-								? [
-										{
-											created_at: new Date().toISOString(),
-											id: 'optimistic',
-											message: null,
-											reporter_user_id: page.data.user!.id,
-											safe_marked_at: null,
-											storage_path: '',
-											template_id: template.id,
-											updated_at: null,
-											user_id: page.data.user!.id
-										}
-									]
-								: []
+							has_pending_report: reported,
+							reported_by_me: reported
 						}
 					: t
 			)
 		}));
+	}
+
+	/**
+	 * Resolves a URL for preview/download/open.
+	 * Public templates use the stable public bucket URL.
+	 * Private templates use a short-lived signed URL.
+	 */
+	async function resolveTemplateUrl(): Promise<null | string> {
+		if (publicFileUrl) {
+			return publicFileUrl;
+		}
+
+		const signedUrlResult = await page.data.supabase.storage
+			.from(bucketName)
+			.createSignedUrl(template.storage_path, 60 * 5);
+
+		if (signedUrlResult.error || !signedUrlResult.data?.signedUrl) {
+			toast.error('Fehler beim Laden der Vorlage.', {
+				description:
+					signedUrlResult.error?.message ??
+					'Private Vorlagen-URL konnte nicht erstellt werden.'
+			});
+			return null;
+		}
+
+		return signedUrlResult.data.signedUrl;
 	}
 
 	async function undoReport() {
@@ -181,6 +197,29 @@
 		reportPending = false;
 		mutation?.end();
 	}
+
+	async function openPreview() {
+		const resolvedUrl = await resolveTemplateUrl();
+		if (!resolvedUrl) return;
+		previewFileUrl = resolvedUrl;
+		previewOpen = true;
+	}
+
+	async function openInGoogleDocs() {
+		const resolvedUrl = await resolveTemplateUrl();
+		if (!resolvedUrl) return;
+		window.open(
+			`https://docs.google.com/viewer?url=${encodeURIComponent(resolvedUrl)}`,
+			'_blank',
+			'noopener,noreferrer'
+		);
+	}
+
+	async function downloadTemplateFile() {
+		const resolvedUrl = await resolveTemplateUrl();
+		if (!resolvedUrl) return;
+		window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
+	}
 </script>
 
 <div
@@ -208,7 +247,6 @@
 		>
 	</div>
 
-	<!-- Action buttons -->
 	<div class="flex shrink-0 items-center gap-1">
 		{#if !isPreferred}
 			<Button
@@ -227,45 +265,27 @@
 			</Button>
 		{/if}
 
-		<TemplateDocxPreviewDialog
-			title={name ?? 'Vorlage'}
-			description={`${profile.full_name ?? 'Anonym'} - Hochgeladen am ${new Date(
-				template.created_at
-			).toLocaleDateString(LOCALE)}${
-				template.updated_at
-					? ` - Zuletzt geaendert ${new Date(template.updated_at).toLocaleDateString(LOCALE)}`
-					: ''
-			}`}
-			fileUrl={filepath}
-		>
-			{#snippet trigger()}
-				<Button variant="ghost" size="icon" title="Vorschau">
-					<View size={16} />
-				</Button>
-			{/snippet}
-		</TemplateDocxPreviewDialog>
+		<Button variant="ghost" size="icon" title="Vorschau" onclick={openPreview}>
+			<View size={16} />
+		</Button>
 
-		<!-- Open in Google Docs -->
-		<a
-			href="https://docs.google.com/viewer?url={encodeURIComponent(filepath)}"
-			target="_blank"
-			rel="noopener noreferrer"
-			title="In Word Online öffnen"
+		<Button
+			variant="ghost"
+			size="icon"
+			title="In Google Docs öffnen"
+			onclick={openInGoogleDocs}
 		>
-			<Button variant="ghost" size="icon" tabindex={-1}>
-				<ExternalLink size={16} />
-			</Button>
-		</a>
-		<a
-			href={filepath}
-			rel="external"
-			download={name}
+			<ExternalLink size={16} />
+		</Button>
+
+		<Button
+			variant="ghost"
+			size="icon"
 			title="Vorlage herunterladen"
+			onclick={downloadTemplateFile}
 		>
-			<Button variant="ghost" size="icon" tabindex={-1}>
-				<Download size={16} />
-			</Button>
-		</a>
+			<Download size={16} />
+		</Button>
 
 		<Authed>
 			{#if isOwnTemplate}
@@ -280,7 +300,7 @@
 				</Button>
 			{/if}
 
-			{#if !isOwnTemplate && isReportedByMe}
+			{#if !isOwnTemplate && template.reported_by_me}
 				<Button
 					variant="ghost"
 					size="icon"
@@ -291,7 +311,7 @@
 				</Button>
 			{/if}
 
-			{#if !isOwnTemplate && !isSafe && !isReportedByMe}
+			{#if !isOwnTemplate && !isSafe && !template.reported_by_me}
 				<Dialog.Root bind:open={reportDialogOpen}>
 					<Dialog.Trigger>
 						<Button variant="destructive" size="icon" title="Vorlage melden">
@@ -335,6 +355,15 @@
 		</Authed>
 	</div>
 </div>
+
+{#if previewFileUrl}
+	<TemplateDocxPreviewDialog
+		bind:open={previewOpen}
+		title={name}
+		description={previewDescription}
+		fileUrl={previewFileUrl}
+	/>
+{/if}
 
 <AlertDialog.Root bind:open={confirmSelectOpen}>
 	<AlertDialog.Content>

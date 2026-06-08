@@ -178,8 +178,7 @@
 							{@const isPreferred =
 								berichtgenStore.get('preferredTemplatePath') ===
 								template.storage_path}
-							{@const hasPendingReport =
-								(template.template_report?.length ?? 0) > 0}
+							{@const hasPendingReport = template.has_pending_report}
 							<Template
 								profile={template.profile!}
 								{isPreferred}

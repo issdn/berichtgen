@@ -1,4 +1,5 @@
 CREATE SCHEMA IF NOT EXISTS private;
+CREATE SCHEMA IF NOT EXISTS extensions;
 
 -- UUIDv7 generator: timestamp-ordered, no extension required (works on PG17+)
 CREATE OR REPLACE FUNCTION private.uuidv7() RETURNS uuid AS $$
@@ -6,7 +7,7 @@ CREATE OR REPLACE FUNCTION private.uuidv7() RETURNS uuid AS $$
     set_bit(
       set_bit(
         overlay(
-          uuid_send(gen_random_uuid())
+          uuid_send(extensions.gen_random_uuid())
           placing substring(int8send(floor(extract(epoch from clock_timestamp()) * 1000)::bigint) from 3)
           from 1 for 6
         ),
@@ -16,11 +17,13 @@ CREATE OR REPLACE FUNCTION private.uuidv7() RETURNS uuid AS $$
     ),
     'hex'
   )::uuid;
-$$ LANGUAGE sql VOLATILE;
+$$ LANGUAGE sql VOLATILE
+SET search_path = pg_catalog;
 
 -- Enable the pg_cron extension (if not already enabled)
 CREATE EXTENSION IF NOT EXISTS pg_cron;
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA extensions;
+ALTER EXTENSION pg_trgm SET SCHEMA extensions;
 
 -- Schedule the cron job to run every day at midnight
 SELECT cron.schedule(
@@ -86,7 +89,7 @@ CREATE TABLE private.template (
 
 CREATE INDEX IF NOT EXISTS template_user_id_idx ON private.template (user_id);
 CREATE INDEX template_public_id_desc_idx ON private.template (is_public, id DESC);
-CREATE INDEX template_storage_path_trgm_idx ON private.template USING gin (storage_path gin_trgm_ops);
+CREATE INDEX template_storage_path_trgm_idx ON private.template USING gin (storage_path extensions.gin_trgm_ops);
 
 CREATE TABLE private.user_metadata (
     user_id uuid PRIMARY KEY REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -129,7 +132,6 @@ CREATE TABLE private.template_report (
 );
 
 CREATE INDEX template_report_template_id_idx ON private.template_report (template_id);
-CREATE UNIQUE INDEX template_report_template_reporter_uidx ON private.template_report (template_id, reporter_user_id);
 
 -- ============================================================
 -- Storage buckets
@@ -145,6 +147,196 @@ SELECT
 WHERE NOT EXISTS (
     SELECT 1 FROM storage.buckets WHERE id = 'templates'
 );
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+SELECT
+    'private-templates',
+    'private-templates',
+    false,
+    5242880, -- 5MB (mirror of src/lib/constants.ts -> TEMPLATE_MAX_BYTES)
+    ARRAY['application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+WHERE NOT EXISTS (
+    SELECT 1 FROM storage.buckets WHERE id = 'private-templates'
+);
+
+CREATE POLICY "Owners can insert into public templates bucket"
+    ON storage.objects
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        bucket_id = 'templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    );
+
+CREATE POLICY "Owners can read public templates bucket objects via storage API"
+    ON storage.objects
+    FOR SELECT
+    TO authenticated
+    USING (
+        bucket_id = 'templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    );
+
+CREATE POLICY "Owners can update public templates bucket objects"
+    ON storage.objects
+    FOR UPDATE
+    TO authenticated
+    USING (
+        bucket_id = 'templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    )
+    WITH CHECK (
+        bucket_id = 'templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    );
+
+CREATE POLICY "Owners can delete public templates bucket objects"
+    ON storage.objects
+    FOR DELETE
+    TO authenticated
+    USING (
+        bucket_id = 'templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    );
+
+CREATE POLICY "Owners can insert into private templates bucket"
+    ON storage.objects
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        bucket_id = 'private-templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    );
+
+CREATE POLICY "Owners can read private templates bucket objects"
+    ON storage.objects
+    FOR SELECT
+    TO authenticated
+    USING (
+        bucket_id = 'private-templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    );
+
+CREATE POLICY "Owners can update private templates bucket objects"
+    ON storage.objects
+    FOR UPDATE
+    TO authenticated
+    USING (
+        bucket_id = 'private-templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    )
+    WITH CHECK (
+        bucket_id = 'private-templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    );
+
+CREATE POLICY "Owners can delete private templates bucket objects"
+    ON storage.objects
+    FOR DELETE
+    TO authenticated
+    USING (
+        bucket_id = 'private-templates'
+        AND (storage.foldername(name))[1] = (SELECT auth.jwt()->>'sub')
+    );
+
+CREATE OR REPLACE FUNCTION private.validate_template_storage_object()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = private
+AS $$
+DECLARE
+    template_count bigint;
+    template_owner uuid;
+BEGIN
+    IF NEW.bucket_id NOT IN ('templates', 'private-templates') THEN
+        RETURN NEW;
+    END IF;
+
+    template_owner := ((storage.foldername(NEW.name))[1])::uuid;
+
+    IF template_owner IS NULL THEN
+        RAISE EXCEPTION 'Template path must start with the owner UUID.'
+            USING ERRCODE = 'P0001';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM private.template t
+        WHERE t.storage_path = NEW.name
+    ) THEN
+        SELECT COUNT(*)
+        INTO template_count
+        FROM private.template t
+        WHERE t.user_id = template_owner;
+
+        IF template_count >= 3 THEN
+            RAISE EXCEPTION 'Du kannst maximal 3 Vorlagen hochladen.'
+                USING ERRCODE = 'P0001';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION private.sync_template_from_storage_object()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = private
+AS $$
+DECLARE
+    template_owner uuid;
+    template_is_public boolean;
+BEGIN
+    IF NEW.bucket_id NOT IN ('templates', 'private-templates') THEN
+        RETURN NEW;
+    END IF;
+
+    template_owner := ((storage.foldername(NEW.name))[1])::uuid;
+    template_is_public := NEW.bucket_id = 'templates';
+
+    INSERT INTO private.template (
+        is_public,
+        storage_path,
+        updated_at,
+        user_id
+    )
+    VALUES (
+        template_is_public,
+        NEW.name,
+        CASE WHEN TG_OP = 'UPDATE' THEN NOW() ELSE NULL END,
+        template_owner
+    )
+    ON CONFLICT (storage_path) DO UPDATE
+    SET
+        is_public = EXCLUDED.is_public,
+        updated_at = NOW(),
+        user_id = EXCLUDED.user_id;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION private.delete_template_from_storage_object()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = private
+AS $$
+BEGIN
+    IF OLD.bucket_id NOT IN ('templates', 'private-templates') THEN
+        RETURN OLD;
+    END IF;
+
+    DELETE FROM private.template
+    WHERE storage_path = OLD.name
+      AND is_public = (OLD.bucket_id = 'templates');
+
+    RETURN OLD;
+END;
+$$;
 
 -- ============================================================
 -- Functions
@@ -245,6 +437,18 @@ CREATE TRIGGER on_profile_delete_mark_consents
     -- user's rows could no longer be matched for retention stamping.
     BEFORE DELETE ON private.profile
     FOR EACH ROW EXECUTE FUNCTION private.mark_deleted_user_consents();
+
+CREATE TRIGGER on_template_storage_object_validate
+    BEFORE INSERT OR UPDATE ON storage.objects
+    FOR EACH ROW EXECUTE FUNCTION private.validate_template_storage_object();
+
+CREATE TRIGGER on_template_storage_object_sync
+    AFTER INSERT OR UPDATE ON storage.objects
+    FOR EACH ROW EXECUTE FUNCTION private.sync_template_from_storage_object();
+
+CREATE TRIGGER on_template_storage_object_delete
+    AFTER DELETE ON storage.objects
+    FOR EACH ROW EXECUTE FUNCTION private.delete_template_from_storage_object();
 
 -- ============================================================
 -- RLS — tables are locked down; only service_role has access.

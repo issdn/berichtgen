@@ -4,15 +4,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import TemplatesDialog from './components/TemplatesDialog.svelte';
 
-type TemplateReport = { reporter_user_id: string };
 type TemplateRow = {
 	created_at: string;
+	has_pending_report: boolean;
 	id: string;
 	is_mine: boolean;
 	profile: { avatar_url: null | string; full_name: string; id: string };
+	reported_by_me: boolean;
 	safe_marked_at: null | string;
 	storage_path: string;
-	template_report: TemplateReport[];
 	updated_at: null | string;
 	user_id: string;
 };
@@ -31,34 +31,37 @@ type TemplatesQuery = Promise<TemplatesPage> & {
 const allTemplates: TemplateRow[] = [
 	{
 		created_at: '2025-01-01T00:00:00Z',
+		has_pending_report: false,
 		id: 'tpl-1',
 		is_mine: false,
 		profile: { avatar_url: null, full_name: 'Erika Muster', id: 'user-a' },
+		reported_by_me: false,
 		safe_marked_at: null,
 		storage_path: 'user-a/Azubi_Bericht.docx',
-		template_report: [],
 		updated_at: null,
 		user_id: 'user-a'
 	},
 	{
 		created_at: '2025-01-02T00:00:00Z',
+		has_pending_report: true,
 		id: 'tpl-2',
 		is_mine: false,
 		profile: { avatar_url: null, full_name: 'Erika Muster', id: 'user-a' },
+		reported_by_me: true,
 		safe_marked_at: null,
 		storage_path: 'user-a/Wochenbericht_Vorlage.docx',
-		template_report: [{ reporter_user_id: 'user-story' }],
 		updated_at: null,
 		user_id: 'user-a'
 	},
 	{
 		created_at: '2025-01-03T00:00:00Z',
+		has_pending_report: false,
 		id: 'tpl-3',
 		is_mine: false,
 		profile: { avatar_url: null, full_name: 'Erika Muster', id: 'user-a' },
+		reported_by_me: false,
 		safe_marked_at: null,
 		storage_path: 'user-a/Jahresbericht_2025.docx',
-		template_report: [],
 		updated_at: null,
 		user_id: 'user-a'
 	}
@@ -125,7 +128,7 @@ const getFilteredTemplates = ({
 }) => {
 	const query = search.trim().toLowerCase();
 	return allTemplates.filter((template) => {
-		if (hideReported && template.template_report.length > 0) return false;
+		if (hideReported && template.has_pending_report) return false;
 		if (!query) return true;
 		return template.storage_path.toLowerCase().includes(query);
 	});
@@ -139,9 +142,7 @@ vi.mock('$templates/api/templates.remote', () => ({
 	deleteReport: vi.fn(),
 	deleteTemplate: vi.fn(),
 	getTemplates: getTemplatesMock,
-
-	reportTemplate: vi.fn(),
-	uploadTemplate: vi.fn()
+	reportTemplate: vi.fn()
 }));
 
 getTemplatesMock.mockImplementation(
@@ -165,6 +166,14 @@ vi.mock('$app/state', () => ({
 		data: {
 			loggedIn: false,
 			profile: null,
+			supabase: {
+				storage: {
+					from: vi.fn().mockReturnValue({
+						remove: vi.fn().mockResolvedValue({ error: null }),
+						upload: vi.fn().mockResolvedValue({ error: null })
+					})
+				}
+			},
 			user: { email: 'user@example.com', id: 'user-story' },
 			userMetadata: { full_name: 'User Story' }
 		},

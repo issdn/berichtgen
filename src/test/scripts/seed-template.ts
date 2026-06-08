@@ -1,6 +1,6 @@
 /**
- * Creates a test user and uploads src/test/fixtures/template.docx to their storage subfolder.
- * Also inserts the template metadata row directly (trigger removed).
+ * Creates a test user and uploads one public and one private template into the
+ * user's storage subfolders. Storage triggers create the template rows.
  *
  * Usage: node --experimental-strip-types src/test/scripts/seed-template.ts
  */
@@ -56,7 +56,7 @@ const admin = createClient<SupabaseDatabase, 'private'>(
 );
 
 const db = new Kysely<{
-	template: { storage_path: string; user_id: string };
+	template: { is_public: boolean; storage_path: string; user_id: string };
 	user_token_count: { tokens: number; user_id: string };
 }>({
 	dialect: new PostgresDialect({
@@ -96,37 +96,69 @@ if (signInResult.error) {
 const user = signInResult.data.user!;
 console.log('Signed in as:', user.id);
 
-const templateName = `template-${id}.docx`;
+const publicTemplateName = `template-public-${id}.docx`;
+const privateTemplateName = `template-private-${id}.docx`;
 
 // 2. Upload the template file using the admin client (storage policies removed)
 const currentFilePath = fileURLToPath(import.meta.url);
 const currentDir = dirname(currentFilePath);
 const templatePath = join(currentDir, '..', 'fixtures', 'template.docx');
 const fileBytes = readFileSync(templatePath);
-const file = new File([fileBytes], templateName, {
+const file = new File([fileBytes], publicTemplateName, {
 	type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 });
 
-const storagePath = `${user.id}/${templateName}`;
-console.log(`Uploading to templates/${storagePath}...`);
+const publicStoragePath = `${user.id}/${publicTemplateName}`;
+const privateStoragePath = `${user.id}/${privateTemplateName}`;
 
-const { error: uploadError } = await admin.storage
+console.log(`Uploading public template to templates/${publicStoragePath}...`);
+const { error: publicUploadError } = await admin.storage
 	.from('templates')
-	.upload(storagePath, file, { contentType: file.type, upsert: true });
+	.upload(publicStoragePath, file, { contentType: file.type, upsert: true });
 
-if (uploadError) throw uploadError;
-console.log('Upload successful.');
+if (publicUploadError) throw publicUploadError;
+console.log('Public upload successful.');
 
-// 3. Insert template metadata row (insert trigger removed)
-await db
-	.deleteFrom('template')
-	.where('storage_path', '=', storagePath)
+console.log(
+	`Uploading private template to private-templates/${privateStoragePath}...`
+);
+const { error: privateUploadError } = await admin.storage
+	.from('private-templates')
+	.upload(
+		privateStoragePath,
+		new File([fileBytes], privateTemplateName, {
+			type: file.type
+		}),
+		{ contentType: file.type, upsert: true }
+	);
+
+if (privateUploadError) throw privateUploadError;
+console.log('Private upload successful.');
+
+// 3. Verify that storage triggers created both template rows
+const templateRows = await db
+	.selectFrom('template')
+	.select(['is_public', 'storage_path', 'user_id'])
+	.where('user_id', '=', user.id)
+	.where('storage_path', 'in', [publicStoragePath, privateStoragePath])
 	.execute();
-await db
-	.insertInto('template')
-	.values({ storage_path: storagePath, user_id: user.id })
-	.execute();
-console.log('Template metadata row created.');
+const publicTemplate = templateRows.find(
+	(template) => template.storage_path === publicStoragePath
+);
+const privateTemplate = templateRows.find(
+	(template) => template.storage_path === privateStoragePath
+);
+
+if (!publicTemplate || !privateTemplate) {
+	throw new Error(
+		`Expected both template rows from storage triggers, got ${templateRows.length}.`
+	);
+}
+
+if (!publicTemplate.is_public || privateTemplate.is_public) {
+	throw new Error('Template visibility flags do not match their buckets.');
+}
+console.log('Template metadata rows created via storage triggers.');
 
 // 4. Grant the test user a large token balance
 await db

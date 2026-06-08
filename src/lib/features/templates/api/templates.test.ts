@@ -65,7 +65,6 @@ import {
 	paginateTemplates,
 	submitTemplateReport,
 	type TemplateRow,
-	uploadTemplateFile,
 	validateCanReport
 } from '$templates/api/templates.handlers';
 
@@ -75,13 +74,14 @@ import {
 function makeRow(overrides: Partial<TemplateRow> = {}): TemplateRow {
 	return {
 		created_at: '2024-01-01T00:00:00Z',
+		has_pending_report: false,
 		id: 'row-1',
 		is_mine: false,
 		is_public: false,
 		profile: null,
+		reported_by_me: false,
 		safe_marked_at: null,
 		storage_path: 'user-1/file.docx',
-		template_report: [],
 		updated_at: null,
 		user_id: 'user-1',
 		...overrides
@@ -332,51 +332,5 @@ describe('submitTemplateReport', () => {
 		).rejects.toMatchObject({
 			status: ECommonServerError.DATABASE_ERROR.httpCode
 		});
-	});
-});
-
-describe('uploadTemplateFile', () => {
-	beforeEach(() => vi.clearAllMocks());
-
-	test('rejects new template insert when user already has 3 templates', async () => {
-		dbMock.executeTakeFirst
-			.mockResolvedValueOnce(undefined)
-			.mockResolvedValueOnce({ count: 3 });
-
-		await expect(
-			uploadTemplateFile(
-				{
-					data: new Uint8Array([1, 2, 3]),
-					isPublic: false,
-					name: 'new-template.docx',
-					type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-				},
-				'user-1'
-			)
-		).rejects.toMatchObject({
-			status: ETemplateError.MAX_TEMPLATES_REACHED.httpCode
-		});
-	});
-
-	test('allows overwrite when storage_path already exists even if user has 3 templates', async () => {
-		dbMock.executeTakeFirst.mockResolvedValueOnce({
-			id: 'existing-template-id'
-		});
-		dbMock.execute.mockResolvedValue({});
-
-		await expect(
-			uploadTemplateFile(
-				{
-					data: new Uint8Array([1, 2, 3]),
-					isPublic: true,
-					name: 'existing-template.docx',
-					type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-				},
-				'user-1'
-			)
-		).resolves.toBeUndefined();
-
-		expect(dbMock.updateTable).toHaveBeenCalledWith('template');
-		expect(dbMock.insertInto).not.toHaveBeenCalledWith('template');
 	});
 });

@@ -14,7 +14,7 @@
   - `PUBLIC_SUPABASE_URL`
   - `PUBLIC_SUPABASE_PUBLISHABLE_KEY`
   - `SUPABASE_SECRET`
-  - `DATABASE_URL` - direct Postgres connection string from Supabase
+  - `DATABASE_URL` - direct Postgres connection string from Supabase for the app/server
   - `SUPABASE_CA` - Supabase database CA certificate used for the enforced SSL connection
 
 #### Email Login
@@ -105,7 +105,7 @@
 #### Repository Secrets
 
 - [ ] Add:
-  - `DATABASE_URL` - direct Postgres connection string from Supabase, used by backup workflow
+  - `DATABASE_URL` - Supabase Session mode pooler connection string for the backup workflow (`pg_dump` from GitHub Actions should not use the direct DB host)
   - `GCS_BACKUP_BUCKET_NAME` - bucket receiving compressed DB dumps
   - `GCS_BACKUP_ACCOUNT_KEY` - Google service account JSON for the backup workflow
 
