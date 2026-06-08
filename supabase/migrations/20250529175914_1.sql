@@ -55,7 +55,7 @@ CREATE TABLE private.profile (
 
 CREATE TABLE private.user_token_count (
     user_id uuid PRIMARY KEY REFERENCES private.profile(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    tokens bigint DEFAULT 5000 NOT NULL
+    tokens bigint DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE private.cart (

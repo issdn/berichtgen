@@ -78,7 +78,6 @@
 			},
 			onSuccess: () => {
 				token = '';
-				toast.success('OTP erfolgreich verifiziert');
 				berichtgenStore.set('tempEmailContainer', '');
 				otpDialogOpen = false;
 				goto(resolve('/board'), {
@@ -126,6 +125,7 @@
 			zod4(emailSchema)
 		),
 		{
+			clearOnSubmit: 'none',
 			async onUpdate({ form }) {
 				if (form.valid) {
 					if (otpCooldownSeconds > 0) {

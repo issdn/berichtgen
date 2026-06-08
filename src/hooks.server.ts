@@ -43,9 +43,13 @@ const supabase: Handle = async ({ event, resolve }) => {
 	 */
 	event.locals.safeGetSession = async () => {
 		const {
-			data: { session }
+			data: { session },
+			error: sessionError
 		} = await event.locals.supabase.auth.getSession();
 		if (!session) {
+			if (sessionError) {
+				Sentry.captureException(sessionError);
+			}
 			return { session: null, user: null };
 		}
 
@@ -54,6 +58,16 @@ const supabase: Handle = async ({ event, resolve }) => {
 			error
 		} = await event.locals.supabase.auth.getUser();
 		if (error) {
+			Sentry.captureException(error, {
+				tags: {
+					area: 'auth',
+					operation: 'safeGetSession.getUser'
+				},
+				extra: {
+					path: event.url.pathname,
+					hasAccessToken: Boolean(session.access_token)
+				}
+			});
 			// JWT validation has failed
 			return { session: null, user: null };
 		}
@@ -78,7 +92,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	event.locals.user = user;
 
 	if (session && event.url.pathname === '/') {
-		redirect(303, '/board');
+		throw redirect(303, '/board');
 	}
 
 	return resolve(event);
