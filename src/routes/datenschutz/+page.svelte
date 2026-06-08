@@ -69,10 +69,32 @@
 							</Table.Cell>
 						</Table.Row>
 						<Table.Row>
+							<Table.Cell>Profil- und Einstellungsdaten</Table.Cell>
+							<Table.Cell>
+								Profilangaben wie Name und Profilbild sowie optionale Angaben
+								wie Ausbildungsberuf, Abteilung, bevorzugte Vorlage und sonstige
+								von Ihnen gewählte Anwendungseinstellungen
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
 							<Table.Cell>Zahlungsdaten</Table.Cell>
 							<Table.Cell>
 								Transaktions- und Zahlungsinformationen, soweit kostenpflichtige
 								Funktionen genutzt werden
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Vorlagen- und Freigabedaten</Table.Cell>
+							<Table.Cell>
+								Hochgeladene Vorlagen, Dateinamen, Freigabestatus als
+								öffentliche Vorlage sowie Meldungen zu Vorlagen einschließlich
+								optionaler Nachrichten
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Feedbackdaten</Table.Cell>
+							<Table.Cell>
+								Freiwillig übermittelte Feedback-Nachrichten zum Angebot
 							</Table.Cell>
 						</Table.Row>
 						<Table.Row>
@@ -88,6 +110,14 @@
 							<Table.Cell>
 								IP-Adresse, Browsertyp, Gerätedaten, Zugriffszeitpunkt sowie
 								Fehler- und Performance-Daten
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Rate-Limit- und Missbrauchsschutzdaten</Table.Cell>
+							<Table.Cell>
+								IP-Adresse, pseudonymisierte interne Nutzerkennung bei
+								angemeldeten Nutzern sowie Zähler- und Zeitstempel-Daten zur
+								Durchsetzung technischer Zugriffsbeschränkungen
 							</Table.Cell>
 						</Table.Row>
 						<Table.Row>
@@ -226,11 +256,29 @@
 							</Table.Cell>
 							<Table.Cell>Funktional</Table.Cell>
 						</Table.Row>
+						<Table.Row>
+							<Table.Cell class="align-top font-mono text-xs"
+								>localStorage / IndexedDB</Table.Cell
+							>
+							<Table.Cell>Browser-Speicher</Table.Cell>
+							<Table.Cell>
+								Speicherung von Anwendungseinstellungen sowie einer lokalen
+								Wiederherstellung laufender Wizard-Sitzungen auf Ihrem Gerät.
+							</Table.Cell>
+							<Table.Cell>Funktional</Table.Cell>
+						</Table.Row>
 					</Table.Body>
 				</Table.Root>
 				<p>
 					Cookies zu Werbezwecken oder für trackingbasiertes Marketing werden
 					nicht eingesetzt.
+				</p>
+				<p>
+					Zusätzlich zu Cookies werden im Browser lokale Speichertechnologien
+					verwendet. Dabei werden insbesondere ausgewählte Einstellungen in
+					`localStorage` und temporäre Wizard-Sitzungen in `IndexedDB`
+					gespeichert, um die Nutzung der Anwendung und die Wiederherstellung
+					abgebrochener Arbeitsstände zu ermöglichen.
 				</p>
 			</Accordion.Content>
 		</Accordion.Item>
@@ -275,6 +323,24 @@
 							<Table.Cell>Fehler- und Performance-Monitoring</Table.Cell>
 						</Table.Row>
 						<Table.Row>
+							<Table.Cell>Upstash Redis</Table.Cell>
+							<Table.Cell>EU (Frankfurt)</Table.Cell>
+							<Table.Cell>
+								Rate Limiting, Missbrauchsschutz sowie Sicherung von
+								Verfügbarkeit und Stabilität serverseitiger Funktionen
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>SMTP2GO</Table.Cell>
+							<Table.Cell>
+								EU-SMTP-Server / mögliche Drittstaatenzugriffe
+							</Table.Cell>
+							<Table.Cell>
+								Versand von Authentifizierungs-E-Mails, insbesondere Magic Links
+								und OTP-Codes
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
 							<Table.Cell>Google OAuth</Table.Cell>
 							<Table.Cell>EU / USA</Table.Cell>
 							<Table.Cell>Optionale Anmeldung über ein Google-Konto</Table.Cell>
@@ -294,6 +360,21 @@
 				<p>
 					Soweit erforderlich, werden mit den eingesetzten Dienstleistern
 					Verträge zur Auftragsverarbeitung gemäß Art. 28 DSGVO abgeschlossen.
+				</p>
+				<p>
+					Für technische Zugriffsbeschränkungen und Missbrauchsschutz wird
+					Upstash Redis in der Region Frankfurt eingesetzt. Dabei werden keine
+					Inhalte hochgeladener Dateien, keine Vorlageninhalte und keine
+					Zahlungsdaten gespeichert, sondern lediglich für das Rate Limiting
+					erforderliche Kennungen und Metadaten, insbesondere IP-Adresse,
+					pseudonymisierte interne Nutzerkennung bei angemeldeten Nutzern sowie
+					Zähler- und Zeitstempel-Daten.
+				</p>
+				<p>
+					Für den Versand von Authentifizierungs-E-Mails bei der Anmeldung per
+					Magic Link oder OTP wird ein externer SMTP-Dienst genutzt. Dabei wird
+					insbesondere Ihre E-Mail-Adresse sowie die zur Zustellung
+					erforderliche Nachrichten- und Transportmetadaten verarbeitet.
 				</p>
 				<p>
 					Für die KI-gestützte Verarbeitung wird Google Cloud bzw. die Gemini
@@ -360,10 +441,23 @@
 					<li>Bereitstellung der Webanwendung und ihrer Kernfunktionen</li>
 					<li>Verarbeitung hochgeladener Dateien und eingegebener Inhalte</li>
 					<li>
+						Speicherung lokaler Einstellungen und Wiederherstellung von
+						Wizard-Sitzungen
+					</li>
+					<li>
 						KI-gestützte Bearbeitung der bereitgestellten Inhalte nach
 						gesonderter Einwilligung, soweit eine solche erforderlich ist
 					</li>
 					<li>Optionale Zahlungsabwicklung</li>
+					<li>
+						Bereitstellung und optionale öffentliche Freigabe von Vorlagen
+					</li>
+					<li>
+						Entgegennahme und Bearbeitung von Feedback und Vorlagenmeldungen
+					</li>
+					<li>
+						Rate Limiting, Missbrauchsschutz sowie Sicherung der Verfügbarkeit
+					</li>
 					<li>Fehleranalyse, Performance-Überwachung und Systemsicherheit</li>
 					<li>Weiterentwicklung und Verbesserung des Angebots</li>
 				</ul>
@@ -383,12 +477,14 @@
 				<ul class="list-disc space-y-1 pl-5">
 					<li>
 						Art. 6 Abs. 1 lit. b DSGVO für vertraglich erforderliche Vorgänge,
-						insbesondere Login, Kontonutzung, Datei-Uploads, KI-Verarbeitung und
+						insbesondere Login, Kontonutzung, Datei-Uploads, Vorlagenverwaltung,
+						öffentliche Freigabe von Vorlagen, KI-Verarbeitung und
 						Zahlungsabwicklung
 					</li>
 					<li>
 						Art. 6 Abs. 1 lit. f DSGVO für Systemsicherheit, Missbrauchsschutz,
-						Fehleranalyse, Stabilität und technische Weiterentwicklung
+						Rate Limiting, Fehleranalyse, Stabilität und technische
+						Weiterentwicklung
 					</li>
 					<li>
 						Art. 6 Abs. 1 lit. a DSGVO, soweit eine Einwilligung erteilt oder
@@ -428,6 +524,17 @@
 							<Table.Cell>In der Regel bis zu 3 Tage</Table.Cell>
 						</Table.Row>
 						<Table.Row>
+							<Table.Cell>Lokale Wizard-Sitzungen (IndexedDB)</Table.Cell>
+							<Table.Cell>Bis zu 24 Stunden auf Ihrem Gerät</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Lokale Einstellungen (localStorage)</Table.Cell>
+							<Table.Cell>
+								Bis zur Löschung durch Sie im Browser oder bis zur Entfernung
+								der jeweiligen Einstellung
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
 							<Table.Cell>Zahlungs- und Abrechnungsdaten</Table.Cell>
 							<Table.Cell>
 								Nach handels- und steuerrechtlichen Vorgaben bis zu 10 Jahre
@@ -438,10 +545,25 @@
 							<Table.Cell>In der Regel bis zu 30 Tage</Table.Cell>
 						</Table.Row>
 						<Table.Row>
+							<Table.Cell>Rate-Limit-Daten (Upstash Redis)</Table.Cell>
+							<Table.Cell>
+								Nur für die Dauer des jeweiligen Rate-Limit-Fensters und bis zum
+								automatischen Ablauf der jeweiligen Redis-Einträge
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
 							<Table.Cell>Von Ihnen bereitgestellte Vorlagen</Table.Cell>
 							<Table.Cell>
 								Bis zur Löschung durch Sie oder bis zur Löschung des
 								Nutzerkontos
+							</Table.Cell>
+						</Table.Row>
+						<Table.Row>
+							<Table.Cell>Feedback und Vorlagenmeldungen</Table.Cell>
+							<Table.Cell>
+								Bis zur Löschung des Nutzerkontos oder solange die jeweilige
+								Nachricht für Bearbeitung, Missbrauchsschutz oder Nachweiszwecke
+								erforderlich ist
 							</Table.Cell>
 						</Table.Row>
 						<Table.Row>
