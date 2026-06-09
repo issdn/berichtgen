@@ -32,7 +32,7 @@ export const checkPreferredTemplate = query(
  */
 export const requestGcsUploadCommand = guardedCommand(
 	uploadUrlRequestSchema,
-	async ({ contentType, fullFilePath }) =>
+	async ({ fullFilePath }) =>
 		withRateLimit({
 			policyId: 'wizard-gcs-upload',
 			fn: async () => {
@@ -43,7 +43,6 @@ export const requestGcsUploadCommand = guardedCommand(
 				const storageResult = await tryResultAsync({
 					apiError: ECommonServerError.INTERNAL_ERROR,
 					promise: requestGcsUploadTarget({
-						contentType,
 						fullFilePath,
 						userId: user!.id
 					})

@@ -55,11 +55,9 @@ export async function checkPreferredTemplateExists(
 }
 
 export async function requestGcsUploadTarget({
-	contentType,
 	fullFilePath,
 	userId
 }: {
-	contentType: string;
 	fullFilePath: string;
 	userId: string;
 }): Promise<{ fileUri: string; signedUrl: null | string }> {
@@ -86,7 +84,6 @@ export async function requestGcsUploadTarget({
 	const signedUploadResult = await tryResultAsync({
 		apiError: EGCSError.INTERNAL_SERVER_ERROR,
 		promise: createSignedUploadPayload({
-			contentType,
 			fileUri,
 			objectPath,
 			storage: storageResult.data
@@ -175,12 +172,10 @@ export async function runBatchCompletion({
 }
 
 async function createSignedUploadPayload({
-	contentType,
 	fileUri,
 	objectPath,
 	storage
 }: {
-	contentType: string;
 	fileUri: string;
 	objectPath: string;
 	storage: Storage;
@@ -191,10 +186,9 @@ async function createSignedUploadPayload({
 
 	const [signedUrl] = await file.getSignedUrl({
 		action: 'write',
-		contentType,
 		expires: Date.now() + 5 * 60 * 1000,
-		extensionHeaders: {
-			'x-goog-if-generation-match': '0'
+		queryParams: {
+			ifGenerationMatch: '0'
 		},
 		version: 'v4'
 	});

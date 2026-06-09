@@ -6,10 +6,6 @@ import { EFileRoutingError } from '$wizard/errors';
 async function upload({ file, signedUrl }: { file: File; signedUrl: string }) {
 	const res = await fetch(signedUrl, {
 		body: file,
-		headers: {
-			'Content-Type': file.type,
-			'x-goog-if-generation-match': '0'
-		},
 		method: 'PUT'
 	});
 
@@ -22,7 +18,6 @@ export async function uploadToGcs(file: File) {
 	const result = await tryResultAsync({
 		apiError: EFileRoutingError.GCS_UPLOAD_URL_FAILED,
 		promise: requestGcsUploadCommand({
-			contentType: file.type,
 			fileName: file.name,
 			fileSize: file.size,
 			fullFilePath: file.webkitRelativePath || file.name

@@ -126,7 +126,6 @@ export const batchCompletionApiSchema = z.object({
 
 /** Request body for `POST /board/user/upload-url`. */
 export const uploadUrlRequestSchema = z.object({
-	contentType: z.string().nonempty(),
 	fileName: z.string().nonempty(),
 	fileSize: z.number().int().positive(),
 	fullFilePath: z.string().nonempty()
