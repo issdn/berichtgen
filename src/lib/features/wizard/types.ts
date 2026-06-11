@@ -76,7 +76,7 @@ export type WizardPersistedSession = {
 	updatedAt: number;
 };
 export type WizardProcessStateMachine = {
-	/** Sets cancelled and advances the machine â€” call instead of mutating context directly. */
+	/** Sets cancelled and advances the machine - call instead of mutating context directly. */
 	cancel: () => void;
 	/** Advances the machine when the user has confirmed their date ranges. */
 	confirmDateRanges: () => void;
@@ -85,7 +85,7 @@ export type WizardProcessStateMachine = {
 	machine: StateMachineSignature;
 	/** Removes the file from the active wizard schedule before AI completion starts. */
 	remove: () => void;
-	/** Clears cancelled and re-enqueues the machine â€” call instead of mutating context directly. */
+	/** Clears cancelled and re-enqueues the machine - call instead of mutating context directly. */
 	restart: () => void;
 };
 

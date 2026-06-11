@@ -11,8 +11,6 @@
 	} from '$lib/constants';
 	import { BerichtgenError, ECommonServerError } from '$lib/errors';
 	import { getTemplates } from '$templates/api/templates.remote';
-	import Checkbox from '$ui/checkbox/checkbox.svelte';
-	import { Label } from '$ui/label';
 	import { FileTypes } from '$wizard/enums';
 	import { ETemplateError } from '$wizard/errors';
 	import { renderDocxBlob } from '$wizard/write/write_docx';
@@ -51,8 +49,6 @@
 	}>(null);
 
 	let previewOpen = $state(false);
-
-	let isPublic = $state(false);
 
 	const preparePreview = new AsyncResource(
 		async (file: File) => {
@@ -170,7 +166,11 @@
 		previewOpen = true;
 	}
 
-	async function submitUpload(): Promise<boolean> {
+	async function submitUpload({
+		isPublic
+	}: {
+		isPublic: boolean;
+	}): Promise<boolean> {
 		if (!pendingPreparedFile) return false;
 
 		const uploaded = await uploadMutation.execute({
@@ -242,15 +242,7 @@
 	}
 </script>
 
-<div class="flex h-full w-full flex-col gap-y-2">
-	<div class="flex items-center gap-x-2">
-		<Checkbox id="template-public" bind:checked={isPublic} />
-		<Label for="template-public" class="text-sm">
-			Vorlage für andere Nutzer öffentlich machen
-		</Label>
-	</div>
-	<Dropzone disabled={isPending} {handleFiles} class="min-h-48" />
-</div>
+<Dropzone disabled={isPending} {handleFiles} class="min-h-48" />
 
 {#if pendingPreparedFile}
 	<TemplateDocxPreviewDialog
@@ -260,8 +252,14 @@
 			? `Die Vorlage "${pendingPreparedFile.file.name}" existiert bereits und wird beim Upload überschrieben.`
 			: 'Prüfe die gerenderte Beispielausgabe und bestätige danach den Upload.'}
 		fileUrl={pendingPreparedFile.previewUrl}
-		confirmLabel={pendingPreparedFile.isDuplicate ? 'Ersetzen' : 'Hochladen'}
+		confirmLabel={pendingPreparedFile.isDuplicate
+			? 'Privat ersetzen'
+			: 'Privat hochladen'}
 		confirmDisabled={isPending}
-		onConfirm={submitUpload}
+		onConfirm={() => submitUpload({ isPublic: false })}
+		secondaryConfirmLabel={pendingPreparedFile.isDuplicate
+			? 'Öffentlich ersetzen'
+			: 'Öffentlich hochladen'}
+		onSecondaryConfirm={() => submitUpload({ isPublic: true })}
 	/>
 {/if}

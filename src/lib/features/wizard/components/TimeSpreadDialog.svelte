@@ -18,9 +18,9 @@
 		id,
 		onClose,
 		onValidChange,
-		hasConfig
+		dateRanges
 	}: {
-		hasConfig: boolean;
+		dateRanges: DateRangeSchema | null;
 		id: string;
 		onClose: () => void;
 		onValidChange: (data: DateRangeSchema) => void;
@@ -30,14 +30,18 @@
 		return {
 			daterange: { end: today('Europe/Berlin') as DateValue, start: undefined },
 			id
-		};
+		} as DateRangeSchema['ranges'][number];
 	}
+
+	let initialDateRanges = $derived(
+		dateRanges ? dateRanges : { ort: Ort.SCHULE as Ort, ranges: [newRow(0)] }
+	);
 
 	// End date is today by default. Is there no start date, then it is invalid.
 	// If the daterange is valid then preemptively create next one so that the user doesn't have to click anything.
 	// svelte-ignore state_referenced_locally
 	const { enhance, errors, form, validateForm, ...rest } = superForm(
-		defaults({ ort: Ort.SCHULE, ranges: [newRow(0)] }, zod4(dateRangeSchema)),
+		defaults(initialDateRanges, zod4(dateRangeSchema)),
 		{
 			dataType: 'json',
 			id,
@@ -67,7 +71,7 @@
 >
 	<Dialog.Trigger data-testid="time-spread-trigger"
 		><Button
-			class={hasConfig ? '' : 'animate-breathing-shadow'}
+			class={dateRanges !== undefined ? '' : 'animate-breathing-shadow'}
 			variant="default"><Calendar /></Button
 		></Dialog.Trigger
 	>
@@ -75,7 +79,7 @@
 		<Dialog.Header class="px-2">
 			<Dialog.Title>Wähle Datumbereiche!</Dialog.Title>
 			<Dialog.Description
-				>Der letzte (ungefüllte) Eintrag wird nicht übernommen 😉</Dialog.Description
+				>Der letzte (ungefüllte) Eintrag wird nicht übernommen.</Dialog.Description
 			>
 		</Dialog.Header>
 		<form method="POST" use:enhance>

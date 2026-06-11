@@ -180,7 +180,7 @@
 					{id}
 					onClose={confirmDateRanges}
 					onValidChange={(data) => (context.dateRanges = data)}
-					hasConfig={context.dateRanges !== undefined}
+					dateRanges={context.dateRanges}
 				/>
 			{/if}
 			{#if showRemoveButton}

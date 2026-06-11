@@ -14,6 +14,8 @@
 		fileUrl,
 		onConfirm,
 		open = $bindable(false),
+		secondaryConfirmLabel,
+		onSecondaryConfirm,
 		title,
 		trigger
 	}: {
@@ -22,7 +24,9 @@
 		description?: string;
 		fileUrl: string;
 		onConfirm?: ConfirmHandler;
+		onSecondaryConfirm?: ConfirmHandler;
 		open?: boolean;
+		secondaryConfirmLabel?: string;
 		title: string;
 		trigger?: Snippet;
 	} = $props();
@@ -34,6 +38,13 @@
 	async function handleConfirm() {
 		if (!onConfirm) return;
 		const result = await onConfirm();
+		if (result === false) return;
+		open = false;
+	}
+
+	async function handleSecondaryConfirm() {
+		if (!onSecondaryConfirm) return;
+		const result = await onSecondaryConfirm();
 		if (result === false) return;
 		open = false;
 	}
@@ -59,7 +70,7 @@
 				{#snippet pending()}
 					<div class="flex h-full items-center justify-center">
 						<div class="text-muted-foreground animate-pulse text-sm">
-							Dokument wird geladen…
+							Dokument wird geladen...
 						</div>
 					</div>
 				{/snippet}
@@ -92,14 +103,25 @@
 			{/if}
 		</div>
 
-		{#if confirmLabel}
+		{#if confirmLabel || secondaryConfirmLabel}
 			<Dialog.Footer>
 				<Button variant="outline" onclick={() => (open = false)}>
 					Abbrechen
 				</Button>
-				<Button disabled={confirmDisabled} onclick={handleConfirm}>
-					{confirmLabel}
-				</Button>
+				{#if secondaryConfirmLabel}
+					<Button
+						variant="secondary"
+						disabled={confirmDisabled}
+						onclick={handleSecondaryConfirm}
+					>
+						{secondaryConfirmLabel}
+					</Button>
+				{/if}
+				{#if confirmLabel}
+					<Button disabled={confirmDisabled} onclick={handleConfirm}>
+						{confirmLabel}
+					</Button>
+				{/if}
 			</Dialog.Footer>
 		{/if}
 	</Dialog.Content>

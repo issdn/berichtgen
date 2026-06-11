@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import Arrow from '$ui/svg/Arrow.svelte';
 	import DOCX from '$ui/svg/DOCX.svelte';
 	import PDF from '$ui/svg/PDF.svelte';
 	import PNG from '$ui/svg/PNG.svelte';
-	import { FileUp, Lock } from '@lucide/svelte';
+	import { ArrowRight, FileUp, Lock } from '@lucide/svelte';
 </script>
 
 <svelte:head>
@@ -23,10 +24,15 @@
 					KI-Automatisierung für deine Ausbildungsnachweise.
 				</p>
 			</div>
-			<div class="flex flex-col gap-y-1 text-base">
-				<p class="text-xl font-medium">
-					<b class="text-queer-blue text-4xl font-bold">5€</b> / ~700 Seiten
-				</p>
+			<div class="flex flex-col gap-y-1">
+				<a
+					href={resolve('/board')}
+					class="flex w-fit flex-row items-center gap-x-1 text-xl font-medium"
+				>
+					<span class="text-base">
+						<b class="text-queer-blue text-4xl font-bold">5€</b> / ~700 Seiten
+					</span><ArrowRight size={24} class="text-muted-foreground inline" />
+				</a>
 				<p class="text-md opacity-80">
 					oder <a
 						href="https://codeberg.org/isdn/Berichtgen"
